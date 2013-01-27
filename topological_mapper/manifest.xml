@@ -1,0 +1,14 @@
+<package>
+  <description brief="topological_mapper">
+
+     topological_mapper
+
+  </description>
+  <author>Piyush Khandelwal</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/topological_mapper</url>
+
+</package>
+
+
