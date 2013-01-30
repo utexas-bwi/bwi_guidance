@@ -1,0 +1,17 @@
+<package>
+  <description brief="bwi_gazebo_entities">
+
+     bwi_gazebo_entities
+
+  </description>
+  <author>Piyush Khandelwal</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/bwi_gazebo_entities</url>
+
+  <depend package="gazebo"/>
+  <depend package="gazebo_plugins"/>
+   
+</package>
+
+
