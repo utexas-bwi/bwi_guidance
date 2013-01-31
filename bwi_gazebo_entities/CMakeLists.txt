@@ -28,3 +28,8 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
+
+rosbuild_add_boost_directories()
+
+rosbuild_add_library(object_controller_plugin src/object_controller_plugin.cc)
+rosbuild_link_boost(object_controller_plugin thread)
