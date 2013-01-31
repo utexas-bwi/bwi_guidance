@@ -12,7 +12,7 @@
         <imageSize>640 480</imageSize>
         <hfov>60</hfov>
         <nearClip>0.01</nearClip>
-        <farClip>5</farClip>
+        <farClip>20</farClip>
         <updateRate>20.0</updateRate>
         <controller:gazebo_ros_camera name="${name}_controller" plugin="libgazebo_ros_prosilica.so">
           <alwaysOn>true</alwaysOn>
