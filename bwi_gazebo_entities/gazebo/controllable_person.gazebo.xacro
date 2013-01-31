@@ -7,14 +7,14 @@
 
   <xacro:macro name="generic_camera" params="name">
     <gazebo reference="${name}_link">
-      <sensor:camera name="${name}_link_sensor">
+      <sensor:camera name="${name}_sensor">
         <imageFormat>R8G8B8</imageFormat>
         <imageSize>640 480</imageSize>
         <hfov>60</hfov>
         <nearClip>0.01</nearClip>
         <farClip>5</farClip>
         <updateRate>20.0</updateRate>
-        <controller:gazebo_ros_camera name="${name}_frame_controller" plugin="libgazebo_ros_camera.so">
+        <controller:gazebo_ros_camera name="${name}_controller" plugin="libgazebo_ros_prosilica.so">
           <alwaysOn>true</alwaysOn>
           <updateRate>20.0</updateRate>
           <cameraName>${name}</cameraName>
@@ -26,7 +26,8 @@
           <distortionK3>0.00000001</distortionK3>
           <distortionT1>0.00000001</distortionT1>
           <distortionT2>0.00000001</distortionT2>
-        </controller:gazebo_ros_openni_kinect>
+          <interface:camera name="${name}_iface"/>
+        </controller:gazebo_ros_camera>
       </sensor:camera>
     </gazebo>
   </xacro:macro>
