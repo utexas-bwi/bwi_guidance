@@ -2,6 +2,8 @@
 
 <root xmlns:xacro="http://ros.org/wiki/xacro">
 
+  <include filename="$(find bwi_gazebo_entities)/urdf/person.gazebo.xacro" />
+
   <xacro:macro name="person">
     
     <!-- root link, on the ground just below the person origin (torso) -->
@@ -15,7 +17,7 @@
     </link>
 
     <joint name="base_link_joint" type="fixed">
-      <origin xyz="0.0 0 1.25" rpy="0 0 0" />
+      <origin xyz="0.0 0 1.0" rpy="0 0 0" />
       <parent link="base_footprint"/>
       <child link="base_link" />
     </joint>
@@ -23,7 +25,7 @@
     <!-- the person's torso -->
     <link name="base_link">
       <inertial>
-        <mass value="40" />
+        <mass value="0.01" />
         <origin xyz="0 0 0" />
         <inertia ixx="1.0" ixy="0.0" ixz="0.0"
           iyy="1.0" iyz="0.0" 
@@ -31,20 +33,21 @@
       </inertial>
       <visual>
         <geometry>
-          <box size="0.2 0.4 0.7" />
+          <box size="0.16 0.32 0.56" />
         </geometry>
         <material name="dark_grey" />
       </visual>
       <collision>
+        <origin xyz="0 0 -0.25" />
         <geometry>
-          <box size="0.2 0.4 0.6" />
+          <cylinder length="1.5" radius="0.3" />
         </geometry>
       </collision>
     </link>
 
     <!-- depth perception lidar -->
     <joint name="lidar_joint" type="fixed">
-      <origin xyz="0.15 0 0" rpy="0 0 0" />
+      <origin xyz="0.3 0 0" rpy="0 0 0" />
       <parent link="base_link"/>
       <child link="lidar_link" />
     </joint>
@@ -60,75 +63,67 @@
 
     <!-- left leg -->
     <joint name="left_leg_joint" type="fixed">
-      <origin xyz="0.0 0.11 -0.35" rpy="0 0 0" />
+      <origin xyz="0.0 0.09 -0.28" rpy="0 0 0" />
       <parent link="base_link"/>
       <child link="left_leg_link" />
     </joint>
     <link name="left_leg_link">
       <inertial>
-        <mass value="40" />
+        <mass value="0.01" />
         <origin xyz="0 0 0" />
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0"
-          iyy="1.0" iyz="0.0" 
-          izz="1.0" />
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+          iyy="0.001" iyz="0.0" 
+          izz="0.001" />
       </inertial>
       <visual>
-        <origin xyz="0 0 -0.45" />
+        <origin xyz="0 0 -0.36" />
         <geometry>
-          <cylinder length="0.9" radius="0.09" />
+          <cylinder length="0.72" radius="0.07" />
         </geometry>
         <material name="dark_grey" />
       </visual>
-      <collision>
-        <origin xyz="0 0 -0.45" />
-        <geometry>
-          <cylinder length="0.9" radius="0.09" />
-        </geometry>
-      </collision>
     </link>
+
+    <xacro:default_surface name="left_leg" />
 
     <!-- right leg -->
     <joint name="right_leg_joint" type="fixed">
-      <origin xyz="0.0 -0.11 -0.35" rpy="0 0 0" />
+      <origin xyz="0.0 -0.09 -0.28" rpy="0 0 0" />
       <parent link="base_link"/>
       <child link="right_leg_link" />
     </joint>
     <link name="right_leg_link">
       <inertial>
-        <mass value="40" />
+        <mass value="0.01" />
         <origin xyz="0 0 0" />
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0"
-          iyy="1.0" iyz="0.0" 
-          izz="1.0" />
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+          iyy="0.001" iyz="0.0" 
+          izz="0.001" />
       </inertial>
       <visual>
-        <origin xyz="0 0 -0.45" />
+        <origin xyz="0 0 -0.36" />
         <geometry>
-          <cylinder length="0.9" radius="0.09" />
+          <cylinder length="0.72" radius="0.07" />
         </geometry>
         <material name="dark_grey" />
       </visual>
-      <collision>
-        <origin xyz="0 0 -0.45" />
-        <geometry>
-          <cylinder length="0.9" radius="0.09" />
-        </geometry>
-      </collision>
     </link>
+
+    <xacro:default_surface name="right_leg" />
 
     <!-- head -->
     <joint name="head_joint" type="fixed">
-      <origin xyz="0 0 0.5" rpy="0 0 0" />
+      <origin xyz="0 0 0.43" rpy="0 0 0" />
       <parent link="base_link"/>
       <child link="head_link" />
     </joint>
     <link name="head_link">
       <inertial>
-        <mass value="20" />
+        <mass value="0.01" />
         <origin xyz="0 0 0" />
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0"
-          iyy="1.0" iyz="0.0" 
-          izz="1.0" />
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+          iyy="0.001" iyz="0.0" 
+          izz="0.001" />
       </inertial>
       <visual>
         <geometry>
@@ -136,11 +131,6 @@
         </geometry>
         <material name="dark_grey" />
       </visual>
-      <collision>
-        <geometry>
-          <sphere radius="0.15" />
-        </geometry>
-      </collision>
     </link>
 
     <!-- camera -->
@@ -153,9 +143,9 @@
       <inertial>
         <mass value="0.001" />
         <origin xyz="0 0 0" />
-        <inertia ixx="0.01" ixy="0.0" ixz="0.0"
-          iyy="0.01" iyz="0.0" 
-          izz="0.01" />
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+          iyy="0.001" iyz="0.0" 
+          izz="0.001" />
       </inertial>
     </link>
 
@@ -169,133 +159,109 @@
       <inertial>
         <mass value="0.001" />
         <origin xyz="0 0 0" />
-        <inertia ixx="0.01" ixy="0.0" ixz="0.0"
-          iyy="0.01" iyz="0.0" 
-          izz="0.01" />
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+          iyy="0.001" iyz="0.0" 
+          izz="0.001" />
       </inertial>
     </link>
 
     <!-- left arm -->
     <joint name="left_arm_joint" type="fixed">
-      <origin xyz="0 0.27 0.28" rpy="0 ${M_PI} 0" />
+      <origin xyz="0 0.22 0.22" rpy="0 ${M_PI} 0" />
       <parent link="base_link"/>
       <child link="left_arm_link" />
     </joint>
     <link name="left_arm_link">
       <inertial>
-        <mass value="20" />
+        <mass value="0.01" />
         <origin xyz="0 0 0" />
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0"
-          iyy="1.0" iyz="0.0" 
-          izz="1.0" />
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+          iyy="0.001" iyz="0.0" 
+          izz="0.001" />
       </inertial>
       <visual>
-        <origin xyz="0 0 0.175" />
+        <origin xyz="0 0 0.14" />
         <geometry>
-          <cylinder length="0.35" radius="0.07" />
+          <cylinder length="0.28" radius="0.06" />
         </geometry>
         <material name="dark_grey" />
       </visual>
-      <collision>
-        <origin xyz="0 0 0.175" />
-        <geometry>
-          <cylinder length="0.35" radius="0.07" />
-        </geometry>
-      </collision>
     </link>
 
     <!-- left fore arm -->
     <joint name="left_forearm_joint" type="fixed">
-      <origin xyz="0 0 0.35" rpy="0 -${M_PI/6} 0" />
+      <origin xyz="0 0 0.28" rpy="0 -${M_PI/6} 0" />
       <parent link="left_arm_link"/>
       <child link="left_forearm_link" />
     </joint>
     <link name="left_forearm_link">
       <inertial>
-        <mass value="20" />
+        <mass value="0.01" />
         <origin xyz="0 0 0" />
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0"
-          iyy="1.0" iyz="0.0" 
-          izz="1.0" />
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+          iyy="0.001" iyz="0.0" 
+          izz="0.001" />
       </inertial>
       <visual>
-        <origin xyz="0 0 0.175" />
+        <origin xyz="0 0 0.14" />
         <geometry>
-          <cylinder length="0.35" radius="0.07" />
+          <cylinder length="0.28" radius="0.06" />
         </geometry>
         <material name="dark_grey" />
       </visual>
-      <collision>
-        <origin xyz="0 0 0.175" />
-        <geometry>
-          <cylinder length="0.35" radius="0.07" />
-        </geometry>
-      </collision>
     </link>
 
     <!-- right arm -->
     <joint name="right_arm_joint" type="fixed">
-      <origin xyz="0 -0.27 0.28" rpy="0 ${M_PI} 0" />
+      <origin xyz="0 -0.22 0.22" rpy="0 ${M_PI} 0" />
       <parent link="base_link"/>
       <child link="right_arm_link" />
     </joint>
     <link name="right_arm_link">
       <inertial>
-        <mass value="20" />
+        <mass value="0.01" />
         <origin xyz="0 0 0" />
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0"
-          iyy="1.0" iyz="0.0" 
-          izz="1.0" />
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+          iyy="0.001" iyz="0.0" 
+          izz="0.001" />
       </inertial>
       <visual>
-        <origin xyz="0 0 0.175" />
+        <origin xyz="0 0 0.14" />
         <geometry>
-          <cylinder length="0.35" radius="0.07" />
+          <cylinder length="0.28" radius="0.06" />
         </geometry>
         <material name="dark_grey" />
       </visual>
-      <collision>
-        <origin xyz="0 0 0.175" />
-        <geometry>
-          <cylinder length="0.35" radius="0.07" />
-        </geometry>
-      </collision>
     </link>
 
     <!-- right fore arm -->
     <joint name="right_forearm_joint" type="fixed">
-      <origin xyz="0 0 0.35" rpy="0 -${M_PI/6} 0" />
+      <origin xyz="0 0 0.28" rpy="0 -${M_PI/6} 0" />
       <parent link="right_arm_link"/>
       <child link="right_forearm_link" />
     </joint>
     <link name="right_forearm_link">
       <inertial>
-        <mass value="20" />
+        <mass value="0.01" />
         <origin xyz="0 0 0" />
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0"
-          iyy="1.0" iyz="0.0" 
-          izz="1.0" />
+        <inertia ixx="0.001" ixy="0.0" ixz="0.0"
+          iyy="0.001" iyz="0.0" 
+          izz="0.001" />
       </inertial>
       <visual>
-        <origin xyz="0 0 0.175" />
+        <origin xyz="0 0 0.14" />
         <geometry>
-          <cylinder length="0.35" radius="0.07" />
+          <cylinder length="0.28" radius="0.06" />
         </geometry>
         <material name="dark_grey" />
       </visual>
-      <collision>
-        <origin xyz="0 0 0.175" />
-        <geometry>
-          <cylinder length="0.35" radius="0.07" />
-        </geometry>
-      </collision>
     </link>
-  <!-- <gazebo> -->
-  <!--   <canonicalBody>base_footprint</canonicalBody> -->
-  <!--   <controller:personcontroller_plugin name="controller" plugin="libpersoncontroller_plugin.so"> -->
-  <!--     <topicName>cmd_vel</topicName> -->
-  <!--   </controller:personcontroller_plugin> -->
-  <!-- </gazebo> -->
+
+    <gazebo>
+      <xacro:gazebo_person_drive />
+      <xacro:gazebo_ros_controller />
+    </gazebo>
+
   </xacro:macro>
 
 </root>

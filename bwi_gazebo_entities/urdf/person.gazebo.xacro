@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+
+<root
+  xmlns:sensor="http://playerstage.sourceforge.net/gazebo/xmlschema/#sensor"
+  xmlns:controller="http://playerstage.sourceforge.net/gazebo/xmlschema/#controller"
+  xmlns:interface="http://playerstage.sourceforge.net/gazebo/xmlschema/#interface"
+  xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:macro name="default_surface" params="name">
+    <gazebo reference="${name}_link" >
+      <mu1 value="100.0" />
+      <mu2 value="100.0" />
+      <kp  value="1000000.0" />
+      <kd  value="1.0" />
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="gazebo_ros_controller">
+    <canonicalBody>base_footprint</canonicalBody>
+    <controller:gazebo_ros_controller_manager name="gazebo_ros_controller_manager" plugin="libgazebo_ros_controller_manager.so">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>5.0</updateRate>
+      <interface:audio name="gazebo_ros_controller_manager_dummy_iface" />
+    </controller:gazebo_ros_controller_manager>
+  </xacro:macro>
+
+  <xacro:macro name="gazebo_person_drive">
+    <controller:person_drive_plugin name="object_controller" plugin="libobject_controller_plugin.so">
+      <alwaysOn>true</alwaysOn>
+      <updateRate>50</updateRate>
+      <topicName>cmd_vel</topicName>
+      <mapTopic>map</mapTopic>
+      <modelRadius>0.3</modelRadius>
+      <robotPadding>0.025</robotPadding>
+    </controller:person_drive_plugin>
+  </xacro:macro>
+
+</root>
