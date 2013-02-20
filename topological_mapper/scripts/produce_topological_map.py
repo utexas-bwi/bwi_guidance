@@ -189,36 +189,70 @@ class TopologicalMapper(MapLoader):
                     inflated_map_idx = self.map.info.width * j + i
                     self.inflated_map.data[inflated_map_idx] = 100
 
-        # for each point not an obstacle, compute basis points
+        # for each point not close enough to an obstacle, compute voronoiness
         self.voronoi_points = {}
         for j in range(self.map.info.height):
             for i in range(self.map.info.width):
-                inflated_map_idx = self.map.info.width * j + i
+                basis_points = []
+                basis_distance = 0
+                inflated_map_idx = self.inflated_map.info.width * j + i
                 if self.inflated_map.data[inflated_map_idx] != 0: #this point within threshold distance of obstacle, cannot be a voronoi point
                     continue
-                for box in range (1,max(self.inflated_map.info.height,self.inflated_map.info.width)):
+                for box in range (threshold,max(self.map.info.height,self.map.info.width)):
 
-                llow_j != j - (threshold - 1) or high_j != j + (threshold - 1) or i < threshold - 1 or i >= self.map.info.width - (threshold - 1):
-                    obstacle_found = True
-                else:
-                    for j_kernel in range(low_j, high_j + 1):
-                        j_diff = j - j_kernel
-                        i_diff = math.sqrt((threshold - 1)*(threshold - 1) - j_diff * j_diff)
-                        low_i = max(0, int(math.floor(i - i_diff)))
-                        high_i = min(self.map.info.width - 1, int(math.ceil(i + i_diff)))
-                        for i_kernel in range(low_i, high_i + 1):
-                            kernel_idx = self.map.info.width * j_kernel + i_kernel
-                            if self.map.data[kernel_idx] != 0:
-                                #print "in"
-                                obstacle_found = True
-                                break
-                        if obstacle_found:
+                    # we have come too far since finding the first point, that is it for this one
+                    if len(basis_points) != 0 and box > basis_distance + 1:
+                        break
+
+                    #find new points we are comparing against
+                    low_j = max(0, j - box)
+                    high_j = min(self.map.info.height - 1, j + box)
+                    low_i = max(0, i - box)
+                    high_i = min(self.map.info.width - 1, i + box)
+                    box_points = [(i_box, j_box) for i_box in (low_i, high_i) for j_box in range(low_j, high_j + 1)] #left and right + corners
+                    box_points.extend([(i_box, j_box) for i_box in range(low_i + 1, high_i) for j_box in (low_j, high_j)]) # top and bottom
+                    obstacle_points = [(box[0], box[1]) for box in box_points if self.map.data[self.map.info.width * box[1] + box[0]] != 0]
+
+                    #if no obstacles are found, proceed to next box
+                    if len(obstacle_points) == 0: 
+                        continue
+
+                    # obstacles have been found, sort!
+                    obstacle_distances = [(pt[0], pt[1], math.sqrt((i-pt[0])*(i-pt[0]) + (j-pt[1])*(j-pt[1]))) for pt in obstacle_points]
+                    sorted_distances = sorted(obstacle_distances, key=lambda point: point[2])
+                    #print "------------------"
+                    #print i,j,sorted_distances
+
+                    #if no basis points exist, the closest obstacle becomes the first basis point
+                    if len(basis_points) == 0:
+                        obstacle = sorted_distances[0]
+                        basis_points.append((obstacle[0], obstacle[1], obstacle[2]))
+                        basis_distance = obstacle[2]
+                        if len(sorted_distances) == 1: # no more points, no need to continue
+                            continue
+                        else: #more points, remove the basis point and continue
+                            sorted_distances.pop(0)
+
+                    #obstacles exist that need to be compared to existing basis points
+                    for obstacle in sorted_distances:
+                        if obstacle[2] > basis_distance + 1: #no more useful obstacles
                             break
-                if obstacle_found:
-                    inflated_map_idx = self.map.info.width * j + i
-                    self.inflated_map.data[inflated_map_idx] = 100
+                        #check if this basis point is not too close to existing basis points
+                        should_add = True
+                        for existing_point in basis_points:
+                            if math.sqrt(math.pow(existing_point[0] - obstacle[0], 2) + math.pow(existing_point[1] - obstacle[1], 2)) < 2.0 * threshold:
+                                should_add = False
+                                break
+                        if should_add:
+                            basis_points.append((obstacle[0], obstacle[1], obstacle[2]))
 
-        
+                    #closer basis points may be available. recompute the basis distance and filter
+                    basis_points = sorted(basis_points, key=lambda point: point[2])
+                    basis_distance = basis_points[0][2]
+                    basis_points = [point for point in basis_points if point[2] <= basis_distance + 1]
+
+                if len(basis_points) >= 2:
+                    self.voronoi_points[(i,j)] = basis_points, basis_distance
 
     # def findVoronoiPoints(self, threshold):
     #     circle_provider = CircleProvider()
@@ -334,6 +368,7 @@ class TopologicalMapper(MapLoader):
         self.drawMap(canvas, self.inflated_map)
 
     def drawVoronoiPoints(self, canvas):
+        #print self.voronoi_points
         for point in self.voronoi_points.keys():
             canvas.setPixel(point[0], self.map.info.height - 1 - point[1], "red")
 
@@ -359,11 +394,9 @@ def run():
     print "DONE"
 
     print "Finding voronoi points... ",
-    mapper.findVoronoiPoints(0.4)
-    #mapper.drawVoronoiPoints(canvas)
-    mapper.drawInflatedMap(canvas)
+    mapper.findVoronoiPoints(0.3)
+    mapper.drawVoronoiPoints(canvas)
     print "DONE"
-
 
     root.mainloop()
                 
