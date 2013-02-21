@@ -48,3 +48,7 @@ target_link_libraries(test_map_loader ${YAML_CPP_LIBRARIES})
 target_link_libraries(test_map_loader ${OPENCV_LIBRARIES})
 target_link_libraries(test_map_loader image_loader)
 
+rosbuild_add_executable(test_voronoi test/test_voronoi.cpp)
+target_link_libraries(test_voronoi ${YAML_CPP_LIBRARIES})
+target_link_libraries(test_voronoi ${OPENCV_LIBRARIES})
+target_link_libraries(test_voronoi image_loader)

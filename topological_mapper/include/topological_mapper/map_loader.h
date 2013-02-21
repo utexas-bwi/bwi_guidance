@@ -58,7 +58,7 @@ namespace topological_mapper {
 
   class MapLoader {
     public:
-      MapLoader (const std::string fname) {
+      MapLoader (const std::string& fname) {
 
         std::string mapfname = "";   
         double origin[3];
@@ -136,20 +136,20 @@ namespace topological_mapper {
           exit(-1);
         }
 
-        std::cout << "Loading map from image " << mapfname << std::endl;
+        std::cout << "MapLoader: Loading map from image " << mapfname << std::endl;
         map_server::loadMapFromFile(&map_resp_, mapfname.c_str(), res, negate, 
             occ_th, free_th, origin);
 
       }
 
       void drawMap(cv::Mat &image, uint32_t orig_x = 0, uint32_t orig_y = 0) {
-        drawMap(image, orig_x, orig_y, map_resp_.map);
+        drawMap(image, map_resp_.map, orig_x, orig_y);
       } 
 
     protected:
 
-      void drawMap(cv::Mat &image, uint32_t orig_x, uint32_t orig_y, 
-          const nav_msgs::OccupancyGrid& map) {
+      void drawMap(cv::Mat &image, const nav_msgs::OccupancyGrid& map, 
+          uint32_t orig_x = 0, uint32_t orig_y = 0) {
 
         // Check if matrix has enough space, otherwise make it larger
         if (image.data == NULL ||
@@ -157,6 +157,7 @@ namespace topological_mapper {
             (uint32_t) image.rows < orig_y + map.info.height) {
           cv::Mat old_mat = image.clone();
           image.create(orig_y + map.info.height, orig_x + map.info.width, CV_8UC3);
+          std::cout << "drawMap(): Resizing image to " << orig_y + map.info.height << "x" << orig_x + map.info.width << std::endl;
           for (uint32_t j = 0; j < (uint32_t) old_mat.rows; ++j) {
             const cv::Vec3b* old_row_j = old_mat.ptr<cv::Vec3b>(j);
             cv::Vec3b* row_j = image.ptr<cv::Vec3b>(j);
