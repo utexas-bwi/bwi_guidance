@@ -58,14 +58,39 @@ namespace topological_mapper {
     }
   } point2dDistanceComp;
 
-  // class DirectedDFS {
-  //   public:
-  //     DirectedDFS(const nav_msgs::OccupancyGrid& map);
+  class DirectedDFS {
+    public:
+      DirectedDFS(const nav_msgs::OccupancyGrid& map) {
+        map_ = map;
+      }
 
-  //   private:
+      bool searchForPath(Point2d start, Point2d goal, uint32_t max_depth) {
+        std::vector<bool> visited(map_.info.height * map_.info.width, false);
+        uint32_t start_idx = MAP_IDX(map_.info.width, start.x, start.y);
+        visited[start_idx] = true;
+        
 
 
-  // };
+ 
+
+        1  procedure DFS(G,v):
+2      label v as explored
+3      for all edges e in G.adjacentEdges(v) do
+4          if edge e is unexplored then
+5              w ← G.adjacentVertex(v,e)
+6              if vertex w is unexplored then
+7                  label e as a discovery edge
+8                  recursively call DFS(G,w)
+9              else
+10                 label e as a back edge
+
+      }
+
+    private:
+
+      const nav_msgs::OccupancyGrid& map_;
+
+  };
 
   class VoronoiPoint {
     public:
