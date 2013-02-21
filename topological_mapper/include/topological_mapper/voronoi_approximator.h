@@ -58,6 +58,15 @@ namespace topological_mapper {
     }
   } point2dDistanceComp;
 
+  // class DirectedDFS {
+  //   public:
+  //     DirectedDFS(const nav_msgs::OccupancyGrid& map);
+
+  //   private:
+
+
+  // };
+
   class VoronoiPoint {
     public:
       Point2d point;
@@ -65,7 +74,9 @@ namespace topological_mapper {
 
       float basis_distance;
       
-      void addBasisCandidate(const Point2d& candidate, uint32_t threshold) {
+      void addBasisCandidate(const Point2d& candidate, uint32_t threshold, 
+          const nav_msgs::OccupancyGrid& map) {
+
         if (basis_points.size() == 0) {
           basis_points.push_back(candidate);
           basis_distance = candidate.distance_from_ref;
@@ -108,7 +119,10 @@ namespace topological_mapper {
               break;
             }
 
-            // See if this point is too close by 2nd temporary metric
+            // See if these basis points are really close by searching for a
+            // short path in the walls
+
+            // // See if this point is too close by 2nd temporary metric
             // if (distance < basis_distance) {
             //   elements_to_erase.push_back(i);
             //   break;
@@ -144,7 +158,6 @@ namespace topological_mapper {
           std::max(inflated_map_.info.height, inflated_map_.info.width);
 
         for (uint32_t j = 0; j < inflated_map_.info.height; j++) {
-          std::cout << j << std::endl;
           for (uint32_t i = 0; i < inflated_map_.info.width; i++) {
 
             // Check if this location is too close to a given obstacle
@@ -167,9 +180,9 @@ namespace topological_mapper {
 
               // Get obstacles at this box size
               std::vector<Point2d> obstacles;
-              uint32_t low_j = std::max((uint32_t)0, j - box);
+              uint32_t low_j = std::max(0, (int)j - (int)box);
               uint32_t high_j = std::min(map_resp_.map.info.height - 1, j + box);
-              uint32_t low_i = std::max((uint32_t)0, i - box);
+              uint32_t low_i = std::max(0, (int)i - (int)box);
               uint32_t high_i = std::min(map_resp_.map.info.width - 1, i + box);
 
               // Corners of the box + vertical edges
@@ -184,9 +197,6 @@ namespace topological_mapper {
                     p.y = j_box;
                     p.distance_from_ref = sqrt(((int32_t)j_box - j) * ((int32_t)j_box - j) +
                         ((int32_t)i_box - i) * ((int32_t)i_box - i));
-                    // if (obstacles[q].distance_from_ref > 20) {
-                    //   std::cout << obstacles[q].distance_from_ref << std::endl;
-                    // }
                     obstacles.push_back(p);
                   }
                 }
@@ -220,7 +230,7 @@ namespace topological_mapper {
               for (size_t q = 0; q < obstacles.size(); q++) {
                 if (vp.basis_points.size() == 0 ||
                     obstacles[q].distance_from_ref <= vp.basis_distance + 1) {
-                  vp.addBasisCandidate(obstacles[q], pixel_threshold);
+                  vp.addBasisCandidate(obstacles[q], pixel_threshold, inflated_map_);
                 }
               }
             }
