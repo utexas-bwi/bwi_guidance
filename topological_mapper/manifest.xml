@@ -9,6 +9,12 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/topological_mapper</url>
 
+  <depend package="nav_msgs" />
+  <depend package="map_server" />
+
+  <rosdep name="opencv2" />
+  <rosdep name="yaml-cpp" />
+
 </package>
 
 

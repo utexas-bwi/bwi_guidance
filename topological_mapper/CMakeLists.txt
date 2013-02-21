@@ -16,6 +16,17 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
+# find yaml and opencv lib definitions
+include($ENV{ROS_ROOT}/core/rosbuild/FindPkgConfig.cmake)
+
+pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
+include_directories(${YAML_CPP_INCLUDE_DIRS})
+link_directories(${YAML_CPP_LIBRARY_DIRS})
+
+pkg_check_modules(OPENCV REQUIRED opencv)
+include_directories(${OPENCV_INCLUDE_DIRS})
+link_directories(${OPENCV_LIBRARY_DIRS})
+
 #uncomment if you have defined messages
 #rosbuild_genmsg()
 #uncomment if you have defined services
@@ -28,3 +39,12 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
+
+#test binaries
+rosbuild_add_executable(test_circle test/test_circle.cpp)
+
+rosbuild_add_executable(test_map_loader test/test_map_loader.cpp)
+target_link_libraries(test_map_loader ${YAML_CPP_LIBRARIES})
+target_link_libraries(test_map_loader ${OPENCV_LIBRARIES})
+target_link_libraries(test_map_loader image_loader)
+

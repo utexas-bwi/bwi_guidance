@@ -237,12 +237,13 @@ class TopologicalMapper(MapLoader):
                     for obstacle in sorted_distances:
                         if obstacle[2] > basis_distance + 1: #no more useful obstacles
                             break
-                        #check if this basis point is not too close to existing basis points
+
                         should_add = True
-                        for existing_point in basis_points:
-                            if math.sqrt(math.pow(existing_point[0] - obstacle[0], 2) + math.pow(existing_point[1] - obstacle[1], 2)) < 2.0 * threshold:
-                                should_add = False
-                                break
+                        if not obstacle[2] < basis_distance:
+                            for existing_point in basis_points:
+                                if math.sqrt(math.pow(existing_point[0] - obstacle[0], 2) + math.pow(existing_point[1] - obstacle[1], 2)) < 2.0 * threshold:
+                                    should_add = False
+                                    break
                         if should_add:
                             basis_points.append((obstacle[0], obstacle[1], obstacle[2]))
 
