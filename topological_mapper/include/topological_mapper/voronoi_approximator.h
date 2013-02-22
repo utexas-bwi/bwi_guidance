@@ -60,33 +60,72 @@ namespace topological_mapper {
 
   class DirectedDFS {
     public:
-      DirectedDFS(const nav_msgs::OccupancyGrid& map) {
-        map_ = map;
-      }
+      DirectedDFS(const nav_msgs::OccupancyGrid& map) : map_(map) { }
 
-      bool searchForPath(Point2d start, Point2d goal, uint32_t max_depth) {
+      bool searchForPath(const Point2d &start, const Point2d &goal, uint32_t depth) {
         std::vector<bool> visited(map_.info.height * map_.info.width, false);
-        uint32_t start_idx = MAP_IDX(map_.info.width, start.x, start.y);
-        visited[start_idx] = true;
-        
-
-
- 
-
-        1  procedure DFS(G,v):
-2      label v as explored
-3      for all edges e in G.adjacentEdges(v) do
-4          if edge e is unexplored then
-5              w ← G.adjacentVertex(v,e)
-6              if vertex w is unexplored then
-7                  label e as a discovery edge
-8                  recursively call DFS(G,w)
-9              else
-10                 label e as a back edge
-
+        return searchForPath(start, goal, depth, visited);
       }
 
     private:
+
+      bool searchForPath(const Point2d &start, const Point2d &goal, uint32_t depth, std::vector<bool> &visited) {
+
+        //std::cout << start.x << " " << start.y << std::endl;
+
+        // Termination crit
+        if (start.x == goal.x && start.y == goal.y) {
+          return true;
+        }
+        if (depth == 0) {
+          return false;
+        }
+
+        uint32_t start_idx = MAP_IDX(map_.info.width, start.x, start.y);
+        visited[start_idx] = true;
+
+        std::vector<Point2d> neighbours;
+        getOrderedNeighbours(start, goal, visited, neighbours);
+        for (size_t i = 0; i < neighbours.size(); ++i) {
+          Point2d& n = neighbours[i];
+          // Check if it has been visited again
+          uint32_t n_idx = MAP_IDX(map_.info.width, n.x, n.y);
+          if (visited[n_idx]) {
+            continue;
+          }
+          bool success = searchForPath(n, goal, depth - 1, visited);
+          if (success)
+            return true;
+        }
+
+        return false; // disconnected components
+      }
+
+      void getOrderedNeighbours(const Point2d &from, const Point2d &goal, const std::vector<bool> &visited, std::vector<Point2d> &neighbours) {
+        size_t neighbour_count = 8;
+        int32_t x_offset[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+        int32_t y_offset[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+        neighbours.clear();
+        for (size_t i = 0; i < neighbour_count; ++i) {
+          // Check if neighbours are still on map
+          Point2d p;
+          p.x = (int)from.x + x_offset[i];
+          p.y = (int)from.y + y_offset[i];
+          //std::cout << " " << p.x << " " << p.y << std::endl;
+          if (p.x >= map_.info.width || p.y >= map_.info.height) { //covers negative case as well (unsigned)
+            continue;
+          }
+          uint32_t map_idx = MAP_IDX(map_.info.width, p.x, p.y);
+          if (visited[map_idx] || map_.data[map_idx] == 0) {
+            //std::cout << " neighbour " << p.x << " " << p.y << " thrown: " << visited[map_idx] << std::endl;
+            continue;
+          }
+          p.distance_from_ref = sqrt((p.x - goal.x)*(p.x - goal.x) + (p.y - goal.y)*(p.y - goal.y));
+          neighbours.push_back(p);
+          //std::cout << "  " << p.x << " " << p.y << std::endl;
+        }
+        std::sort(neighbours.begin(), neighbours.end(), point2dDistanceComp);
+      }
 
       const nav_msgs::OccupancyGrid& map_;
 
@@ -114,6 +153,9 @@ namespace topological_mapper {
         basis_points.push_back(candidate);
         std::sort(basis_points.begin(), basis_points.end(), point2dDistanceComp);
         basis_distance = basis_points[0].distance_from_ref;
+
+        // Get the directed DFS searcher
+        DirectedDFS dfs(map);
 
         // Mark elements that are too close to be erased
         std::vector<size_t> elements_to_erase;
@@ -146,8 +188,13 @@ namespace topological_mapper {
 
             // See if these basis points are really close by searching for a
             // short path in the walls
+            if (dfs.searchForPath(basis_points[i], basis_points[j], 2 * basis_distance)) {
+              elements_to_erase.push_back(i);
+              break;
+            }
 
             // // See if this point is too close by 2nd temporary metric
+            // // This is a HACK. Will create bad map for some situations
             // if (distance < basis_distance) {
             //   elements_to_erase.push_back(i);
             //   break;
@@ -183,6 +230,7 @@ namespace topological_mapper {
           std::max(inflated_map_.info.height, inflated_map_.info.width);
 
         for (uint32_t j = 0; j < inflated_map_.info.height; j++) {
+          std::cout << j << std::endl;
           for (uint32_t i = 0; i < inflated_map_.info.width; i++) {
 
             // Check if this location is too close to a given obstacle

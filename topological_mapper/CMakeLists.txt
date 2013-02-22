@@ -52,3 +52,5 @@ rosbuild_add_executable(test_voronoi test/test_voronoi.cpp)
 target_link_libraries(test_voronoi ${YAML_CPP_LIBRARIES})
 target_link_libraries(test_voronoi ${OPENCV_LIBRARIES})
 target_link_libraries(test_voronoi image_loader)
+
+rosbuild_add_executable(test_dfs test/test_dfs.cpp)
