@@ -88,7 +88,7 @@ namespace topological_mapper {
         getOrderedNeighbours(start, goal, visited, neighbours);
         for (size_t i = 0; i < neighbours.size(); ++i) {
           Point2d& n = neighbours[i];
-          // Check if it has been visited again
+          // Check if it has been visited again - quite likely that one of the previous loop iterations have covered this already
           uint32_t n_idx = MAP_IDX(map_.info.width, n.x, n.y);
           if (visited[n_idx]) {
             continue;
@@ -136,7 +136,8 @@ namespace topological_mapper {
       Point2d point;
       std::vector<Point2d> basis_points;
 
-      float basis_distance;
+      float basis_distance; // minimum clearance to a basis point - used while computing basis points
+      float average_clearance; // average clearance from all basis points - used after all basis points have been computed
       
       void addBasisCandidate(const Point2d& candidate, uint32_t threshold, 
           const nav_msgs::OccupancyGrid& map) {
@@ -193,8 +194,7 @@ namespace topological_mapper {
               break;
             }
 
-            // // See if this point is too close by 2nd temporary metric
-            // // This is a HACK. Will create bad map for some situations
+            // This is the original HACK version of DFS. Will create bad map for some situations
             // if (distance < basis_distance) {
             //   elements_to_erase.push_back(i);
             //   break;
@@ -217,7 +217,7 @@ namespace topological_mapper {
       VoronoiApproximator(const std::string& fname) :
         MapLoader(fname), initialized_(false) { }
 
-      void findVoronoiPoints(double threshold) {
+      void findVoronoiPoints(double threshold, double critical_epsilon) {
 
         // Get the inflated cost map
         inflateMap(threshold, map_resp_.map, inflated_map_);
@@ -230,7 +230,6 @@ namespace topological_mapper {
           std::max(inflated_map_.info.height, inflated_map_.info.width);
 
         for (uint32_t j = 0; j < inflated_map_.info.height; j++) {
-          std::cout << j << std::endl;
           for (uint32_t i = 0; i < inflated_map_.info.width; i++) {
 
             // Check if this location is too close to a given obstacle
@@ -314,6 +313,53 @@ namespace topological_mapper {
           }
         }
 
+        // Compute average basis distance for each voronoi point
+        for (size_t i = 0; i < voronoi_points_.size(); ++i) {
+          VoronoiPoint &vp = voronoi_points_[i];
+          float basis_distance_sum = 0;
+          for (size_t j = 0; j < vp.basis_points.size(); ++j) {
+            basis_distance_sum += vp.basis_points[j].distance_from_ref;
+          }
+          vp.average_clearance = basis_distance_sum / vp.basis_points.size();
+          //std::cout << "vp: (" << vp.point.x << "," << vp.point.y << ") -> " << vp.average_clearance << std::endl;
+        }
+
+        // Compute critical points
+        float pixel_critical_epsilon = critical_epsilon / map_resp_.map.info.resolution;
+        //std::cout << "Critical epsilon (pxl): " << pixel_critical_epsilon << std::endl;
+        for (size_t i = 0; i < voronoi_points_.size(); ++i) {
+          VoronoiPoint &vpi = voronoi_points_[i];
+          //std::cout << "vpi: (" << vpi.point.x << "," << vpi.point.y << ") -> " << vpi.average_clearance << std::endl;
+          bool is_clearance_minima = true;
+          // Get all voronoi points in a region around this voronoi point
+          for (size_t j = 0; j < voronoi_points_.size(); ++j) {
+            // Don't check if it is the same point
+            if (j == i) {
+              continue;
+            }
+
+            // Compute distance of jth point to ith point - don't compare if too far away
+            VoronoiPoint &vpj = voronoi_points_[j];
+            float distance = 
+              sqrt((vpj.point.x - vpi.point.x) * (vpj.point.x - vpi.point.x) + 
+                  (vpj.point.y - vpi.point.y) * (vpj.point.y - vpi.point.y));
+            if (distance > pixel_critical_epsilon) {
+              continue;
+            }
+
+            //std::cout << "vpj: (" << vpj.point.x << "," << vpj.point.y << ") -> " << vpj.average_clearance << std::endl;
+            // See if the jth point has lower clearance than the ith
+            if (vpj.average_clearance < vpi.average_clearance) {
+              is_clearance_minima = false;
+              break;
+            }
+          }
+
+          if (is_clearance_minima) {
+            critical_points_.push_back(vpi);
+          }
+        }
+
         // Label the voronoi diagram as being available
         initialized_ = true;
       }
@@ -327,7 +373,10 @@ namespace topological_mapper {
         drawMap(image, inflated_map_, map_resp_.map.info.width); 
         drawMap(image, 2 * map_resp_.map.info.width);
         drawVoronoiPoints(image, 2 * map_resp_.map.info.width);
+        drawMap(image, 3 * map_resp_.map.info.width);
+        drawCriticalPoints(image, 3 * map_resp_.map.info.width);
         //printVoronoiPoints();
+        //printCriticalPoints();
       }
 
 
@@ -342,6 +391,27 @@ namespace topological_mapper {
         }
       }
 
+      void drawCriticalPoints(cv::Mat &image, 
+          uint32_t orig_x = 0, uint32_t orig_y = 0) {
+        for (size_t i = 0; i < critical_points_.size(); ++i) {
+          VoronoiPoint &vp = critical_points_[i];
+          //std::cout << "in" << orig_y + inflated_map_.info.height - 1 - vp.point.y << " " << vp.point.x + orig_x << std::endl;
+          cv::circle(image, cv::Point(vp.point.x + orig_x, orig_y + inflated_map_.info.height - 1 - vp.point.y), 2, cv::Scalar(0,0,255), -1);
+          // critical points should only have 2 basis points
+          if (vp.basis_points.size() != 2) {
+            std::cout << "ERROR: Found a critical point with more than 2 basis points. This should not have happened" << std::endl;
+          } else {
+            Point2d &p1(vp.basis_points[0]);
+            Point2d &p2(vp.basis_points[1]);
+            cv::line(image, 
+                cv::Point(p1.x + orig_x, orig_y + inflated_map_.info.height - 1 - p1.y),
+                cv::Point(p2.x + orig_x, orig_y + inflated_map_.info.height - 1 - p2.y),
+                cv::Scalar(0,0,255),
+                1);
+          }
+        }
+      }
+
       void printVoronoiPoints() {
         for (size_t i = 0; i < voronoi_points_.size(); ++i) {
           VoronoiPoint &vp = voronoi_points_[i];
@@ -353,7 +423,19 @@ namespace topological_mapper {
         }
       }
 
+      void printCriticalPoints() {
+        for (size_t i = 0; i < critical_points_.size(); ++i) {
+          VoronoiPoint &vp = critical_points_[i];
+          std::cout << " (" << vp.point.x << "," << vp.point.y << "): ";
+          for (size_t j = 0; j < vp.basis_points.size(); ++j) {
+            std::cout << " (" << vp.basis_points[j].x << "," << vp.basis_points[j].y << "," << vp.basis_points[j].distance_from_ref << "), ";
+          }
+          std::cout << std::endl;
+        }
+      }
+
       std::vector<VoronoiPoint> voronoi_points_;
+      std::vector<VoronoiPoint> critical_points_;
       nav_msgs::OccupancyGrid inflated_map_;
       bool initialized_;
         

@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 
   topological_mapper::VoronoiApproximator voronoi(argv[1]);
   cv::Mat image;
-  voronoi.findVoronoiPoints(0.3);
+  voronoi.findVoronoiPoints(0.3, 1.0);
   voronoi.drawOutput(image);
 
   cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
