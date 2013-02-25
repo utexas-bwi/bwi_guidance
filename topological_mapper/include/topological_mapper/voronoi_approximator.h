@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 
 #include <topological_mapper/map_loader.h>
 #include <topological_mapper/map_inflator.h>
@@ -61,12 +62,12 @@ namespace topological_mapper {
   class ConnectedComponents {
     /* data */
   public:
-    ConnectedComponents (const nav_msgs::OccupancyGrid& map) :
-        map_(map), component_number_(map.info.height * map.info.width, -1) {
+    ConnectedComponents (const nav_msgs::OccupancyGrid& map, std::vector<int32_t>& component_map) :
+        component_number_(component_map), map_(map) {
 
       // Label all non-free spaces as obstacles in the component space
-      for (size_t i = 0; i < map_.size(); ++i) {
-        if (map_[i] != 0) {
+      for (size_t i = 0; i < map_.data.size(); ++i) {
+        if (map_.data[i] != 0) {
           component_number_[i] = 0;
         }
       }
@@ -85,13 +86,14 @@ namespace topological_mapper {
         }
       }
     }
-    std::vector<int32_t> component_number_;
+    std::vector<int32_t> &component_number_;
+    size_t current_component_number_;
 
   private:
 
-    void labelFrom(size_t i, size_t j) {
+    void labelFrom(size_t x, size_t y) {
       // Label this idx
-      uint32_t map_idx = MAP_IDX(map_.info.width, i, j);
+      uint32_t map_idx = MAP_IDX(map_.info.width, x, y);
       component_number_[map_idx] = current_component_number_;
 
       // Check for unlabelled neighbours and mark them as well
@@ -101,8 +103,8 @@ namespace topological_mapper {
       for (size_t i = 0; i < neighbour_count; ++i) {
         // Check if neighbours are still on map
         Point2d p;
-        p.x = (int)from.x + x_offset[i];
-        p.y = (int)from.y + y_offset[i];
+        p.x = (int)x + x_offset[i];
+        p.y = (int)y + y_offset[i];
         //std::cout << " " << p.x << " " << p.y << std::endl;
         if (p.x >= map_.info.width || p.y >= map_.info.height) { //covers negative case as well (unsigned)
           continue;
@@ -112,13 +114,13 @@ namespace topological_mapper {
           // Not a free vertex
           continue;
         }
+        //std::cout << x << " " << y << " -> " << p.x << " " << p.y << std::endl;
 
         labelFrom(p.x, p.y);
       }
     }
 
     const nav_msgs::OccupancyGrid& map_;
-    size_t current_component_number_;
   };
 
   class DirectedDFS {
@@ -472,15 +474,19 @@ namespace topological_mapper {
         }
 
         // Once you have critical lines, produce connected regions (4-connected)
-        component_map_.resize(map_resp_.info.height * map_resp_.info.width);
-        for (size_t i = 0; i < component_map_.size(); ++i) {
-          component_map_[i] = -1;
+        // draw the critical lines on to a copy of the map
+        component_map_.info = map_resp_.map.info;
+        component_map_.data = map_resp_.map.data;
+        drawCriticalLines(component_map_);
+
+        component_number_.resize(component_map_.info.height * component_map_.info.width);
+        for (size_t i = 0; i < component_number_.size(); ++i) {
+          component_number_[i] = -1;
         }
-        ConnectedComponents cc(map_resp_.map, component_map_);
+        ConnectedComponents cc(component_map_, component_number_);
+        num_components_ = cc.current_component_number_;
 
-
-
-        // No region that is not free space can be part of any component
+        std::cout << "Number of components found: " << num_components_ << std::endl;
 
         // Label the voronoi diagram as being available
         initialized_ = true;
@@ -496,6 +502,7 @@ namespace topological_mapper {
         drawMap(image, map_resp_.map.info.width);
         drawVoronoiPoints(image, map_resp_.map.info.width);
         drawMap(image, 2 * map_resp_.map.info.width);
+        drawConnectedComponents(image, 2 * map_resp_.map.info.width);
         drawCriticalPoints(image, 2 * map_resp_.map.info.width);
         //printVoronoiPoints();
         //printCriticalPoints();
@@ -534,6 +541,62 @@ namespace topological_mapper {
         }
       }
 
+      void drawConnectedComponents(cv::Mat &image,
+          uint32_t orig_x = 0, uint32_t orig_y = 0) {
+
+        // Figure out different colors - 1st color should always be black
+        size_t num_colors = num_components_;
+        component_colors_.resize(num_colors);
+        component_colors_[0][0] = component_colors_[0][1] = component_colors_[0][2] = 0;
+        for (size_t i = 1; i < num_colors; ++i) {
+          component_colors_[i] = cv::Vec3b(rand() % 256, rand() % 256, rand() % 256);
+        }
+
+        // Now paint!
+        for (uint32_t j = 0; j < map_resp_.map.info.height; ++j) {
+          cv::Vec3b* image_row_j = image.ptr<cv::Vec3b>(j + orig_y);
+          for (uint32_t i = 0; i < map_resp_.map.info.width; ++i) {
+            size_t map_idx = MAP_IDX(map_resp_.map.info.width, i, map_resp_.map.info.height - j - 1);
+            cv::Vec3b& pixel = image_row_j[i + orig_x];
+            pixel[0] = component_colors_[component_number_[map_idx]][0];
+            pixel[1] = component_colors_[component_number_[map_idx]][1];
+            pixel[2] = component_colors_[component_number_[map_idx]][2];
+            
+          }
+        }
+      }
+
+      void drawCriticalLines(nav_msgs::OccupancyGrid& map) {
+        cv::Mat image(map.info.height, map.info.width, CV_8UC1, cv::Scalar(0));
+        for (size_t i = 0; i < critical_points_.size(); ++i) {
+          VoronoiPoint &vp = critical_points_[i];
+          //std::cout << "in" << orig_y + inflated_map_.info.height - 1 - vp.point.y << " " << vp.point.x + orig_x << std::endl;
+          if (vp.basis_points.size() != 2) {
+            std::cerr << "ERROR: Found a critical point with more than 2 basis points. This should not have happened" << std::endl;
+          } else {
+            Point2d &p1(vp.basis_points[0]);
+            Point2d &p2(vp.basis_points[1]);
+            cv::line(image, 
+                cv::Point(p1.x, inflated_map_.info.height - 1 - p1.y),
+                cv::Point(p2.x, inflated_map_.info.height - 1 - p2.y),
+                cv::Scalar(100),
+                1);
+          }
+        }
+
+        for (uint32_t j = 0; j < map.info.height; ++j) {
+          uint8_t* image_row_j = image.ptr<uint8_t>(j);
+          for (uint32_t i = 0; i < map.info.width; ++i) {
+            size_t map_idx = MAP_IDX(map.info.width, i, map.info.height - 1 - j);
+            uint8_t pixel = image_row_j[i];
+            if (pixel != 0) {
+              map.data[map_idx] = pixel;
+            }
+          }
+        }
+
+      }
+
       void printVoronoiPoints() {
         for (size_t i = 0; i < voronoi_points_.size(); ++i) {
           VoronoiPoint &vp = voronoi_points_[i];
@@ -559,7 +622,10 @@ namespace topological_mapper {
       std::vector<VoronoiPoint> voronoi_points_;
       std::vector<VoronoiPoint> critical_points_;
       nav_msgs::OccupancyGrid inflated_map_;
-      std::vector<int32_t> component_map_;
+      nav_msgs::OccupancyGrid component_map_;
+      std::vector<int32_t> component_number_;
+      std::vector<cv::Vec3b> component_colors_;
+      size_t num_components_;
       bool initialized_;
         
   }; /* VoronoiApproximator */
