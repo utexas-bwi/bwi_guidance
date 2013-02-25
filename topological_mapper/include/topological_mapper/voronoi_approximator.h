@@ -58,6 +58,69 @@ namespace topological_mapper {
     }
   } point2dDistanceComp;
 
+  class ConnectedComponents {
+    /* data */
+  public:
+    ConnectedComponents (const nav_msgs::OccupancyGrid& map) :
+        map_(map), component_number_(map.info.height * map.info.width, -1) {
+
+      // Label all non-free spaces as obstacles in the component space
+      for (size_t i = 0; i < map_.size(); ++i) {
+        if (map_[i] != 0) {
+          component_number_[i] = 0;
+        }
+      }
+      current_component_number_ = 1;
+
+      // Run simple connected components to figure out component labellings and centroids
+      for (size_t j = 0; j < map_.info.height; ++j) {
+        for (size_t i = 0; i < map_.info.width; ++i) {
+          uint32_t map_idx = MAP_IDX(map_.info.width, i, j);
+          // Check if location has already been labelled
+          if (component_number_[map_idx] != -1) {
+            continue;
+          }
+          labelFrom(i, j);
+          ++current_component_number_;
+        }
+      }
+    }
+    std::vector<int32_t> component_number_;
+
+  private:
+
+    void labelFrom(size_t i, size_t j) {
+      // Label this idx
+      uint32_t map_idx = MAP_IDX(map_.info.width, i, j);
+      component_number_[map_idx] = current_component_number_;
+
+      // Check for unlabelled neighbours and mark them as well
+      size_t neighbour_count = 4;
+      int32_t x_offset[] = {0, -1, 1, 0};
+      int32_t y_offset[] = {-1, 0, 0, 1};
+      for (size_t i = 0; i < neighbour_count; ++i) {
+        // Check if neighbours are still on map
+        Point2d p;
+        p.x = (int)from.x + x_offset[i];
+        p.y = (int)from.y + y_offset[i];
+        //std::cout << " " << p.x << " " << p.y << std::endl;
+        if (p.x >= map_.info.width || p.y >= map_.info.height) { //covers negative case as well (unsigned)
+          continue;
+        }
+        uint32_t map_idx = MAP_IDX(map_.info.width, p.x, p.y);
+        if (component_number_[map_idx] != -1) {
+          // Not a free vertex
+          continue;
+        }
+
+        labelFrom(p.x, p.y);
+      }
+    }
+
+    const nav_msgs::OccupancyGrid& map_;
+    size_t current_component_number_;
+  };
+
   class DirectedDFS {
     public:
       DirectedDFS(const nav_msgs::OccupancyGrid& map) : map_(map) { }
@@ -408,6 +471,17 @@ namespace topological_mapper {
           }
         }
 
+        // Once you have critical lines, produce connected regions (4-connected)
+        component_map_.resize(map_resp_.info.height * map_resp_.info.width);
+        for (size_t i = 0; i < component_map_.size(); ++i) {
+          component_map_[i] = -1;
+        }
+        ConnectedComponents cc(map_resp_.map, component_map_);
+
+
+
+        // No region that is not free space can be part of any component
+
         // Label the voronoi diagram as being available
         initialized_ = true;
       }
@@ -418,11 +492,11 @@ namespace topological_mapper {
               "initialized, call findVoronoiPoints first");
         }
         drawMap(image);
-        drawMap(image, inflated_map_, map_resp_.map.info.width); 
+        //drawMap(image, inflated_map_, map_resp_.map.info.width); 
+        drawMap(image, map_resp_.map.info.width);
+        drawVoronoiPoints(image, map_resp_.map.info.width);
         drawMap(image, 2 * map_resp_.map.info.width);
-        drawVoronoiPoints(image, 2 * map_resp_.map.info.width);
-        drawMap(image, 3 * map_resp_.map.info.width);
-        drawCriticalPoints(image, 3 * map_resp_.map.info.width);
+        drawCriticalPoints(image, 2 * map_resp_.map.info.width);
         //printVoronoiPoints();
         //printCriticalPoints();
       }
@@ -447,7 +521,7 @@ namespace topological_mapper {
           cv::circle(image, cv::Point(vp.point.x + orig_x, orig_y + inflated_map_.info.height - 1 - vp.point.y), 2, cv::Scalar(0,0,255), -1);
           // critical points should only have 2 basis points
           if (vp.basis_points.size() != 2) {
-            std::cout << "ERROR: Found a critical point with more than 2 basis points. This should not have happened" << std::endl;
+            std::cerr << "ERROR: Found a critical point with more than 2 basis points. This should not have happened" << std::endl;
           } else {
             Point2d &p1(vp.basis_points[0]);
             Point2d &p2(vp.basis_points[1]);
@@ -485,6 +559,7 @@ namespace topological_mapper {
       std::vector<VoronoiPoint> voronoi_points_;
       std::vector<VoronoiPoint> critical_points_;
       nav_msgs::OccupancyGrid inflated_map_;
+      std::vector<int32_t> component_map_;
       bool initialized_;
         
   }; /* VoronoiApproximator */
