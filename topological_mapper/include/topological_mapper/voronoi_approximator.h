@@ -138,6 +138,7 @@ namespace topological_mapper {
 
       float basis_distance; // minimum clearance to a basis point - used while computing basis points
       float average_clearance; // average clearance from all basis points - used after all basis points have been computed
+      float critical_clearance_diff; // if this point is a critical point, how lower is the clearance of this point in comparison of its neighbours
       
       void addBasisCandidate(const Point2d& candidate, uint32_t threshold, 
           const nav_msgs::OccupancyGrid& map) {
@@ -329,6 +330,8 @@ namespace topological_mapper {
         //std::cout << "Critical epsilon (pxl): " << pixel_critical_epsilon << std::endl;
         for (size_t i = 0; i < voronoi_points_.size(); ++i) {
           VoronoiPoint &vpi = voronoi_points_[i];
+          float average_neighbourhood_clearance = 0;
+          size_t neighbour_count = 0;
           //std::cout << "vpi: (" << vpi.point.x << "," << vpi.point.y << ") -> " << vpi.average_clearance << std::endl;
           bool is_clearance_minima = true;
           // Get all voronoi points in a region around this voronoi point
@@ -347,6 +350,9 @@ namespace topological_mapper {
               continue;
             }
 
+            average_neighbourhood_clearance += vpj.average_clearance;
+            ++neighbour_count;
+
             //std::cout << "vpj: (" << vpj.point.x << "," << vpj.point.y << ") -> " << vpj.average_clearance << std::endl;
             // See if the jth point has lower clearance than the ith
             if (vpj.average_clearance < vpi.average_clearance) {
@@ -355,7 +361,49 @@ namespace topological_mapper {
             }
           }
 
+          // If no neighbours, then this cannot be a critical point
+          if (neighbour_count == 0) {
+            //continue;
+          }
+
+          // Check if the point is indeed better than the neighbourhood
+          // This can happen is any 2 walls of the map are too straight
+          average_neighbourhood_clearance /= neighbour_count;
+          if (vpi.average_clearance >= average_neighbourhood_clearance) {
+            //std::cout << vpi.average_clearance << " " << average_neighbourhood_clearance << std::endl;
+            continue;
+          }
+          vpi.critical_clearance_diff = average_neighbourhood_clearance - vpi.average_clearance;
+
+          std::vector<size_t> mark_for_removal;
+          // This removal is not perfect, but ensures you don't have critical points too close.
+          for (size_t j = 0; j < critical_points_.size(); ++j) {
+            
+            // Check if in same neighbourhood
+            VoronoiPoint &vpj = critical_points_[j];
+            float distance = 
+              sqrt((vpj.point.x - vpi.point.x) * (vpj.point.x - vpi.point.x) + 
+                  (vpj.point.y - vpi.point.y) * (vpj.point.y - vpi.point.y));
+            if (distance > pixel_critical_epsilon) {
+              continue;
+            }
+
+            // If in same neighbourhood, retain better point
+            if (vpj.critical_clearance_diff >= vpi.critical_clearance_diff) {
+              is_clearance_minima = false;
+              break;
+            } else {
+              mark_for_removal.push_back(j);
+            }
+          }
+
           if (is_clearance_minima) {
+            // Let's remove any points marked for removal
+            for (size_t j = mark_for_removal.size() - 1; j < mark_for_removal.size(); --j) { //unsigned
+              critical_points_.erase(critical_points_.begin() + mark_for_removal[j]);
+            }
+
+            // And then add this critical point
             critical_points_.push_back(vpi);
           }
         }
