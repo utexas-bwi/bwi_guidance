@@ -35,4 +35,13 @@
  *
  **/
 
+#include <iostream>
+#include <fstream>
+#include <stdio.h>
+#include <libgen.h>
+
+namespace topological_mapper {
+  
+} /* topological_mapper */
+
 

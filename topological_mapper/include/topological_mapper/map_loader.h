@@ -40,16 +40,12 @@
 #ifndef MAP_LOADER_QANRO76Q
 #define MAP_LOADER_QANRO76Q
 
-#include <iostream>
-#include <fstream>
-#include <stdio.h>
-#include <libgen.h>
+#include <string>
 
 #include <map_server/image_loader.h>
 #include <nav_msgs/GetMapResponse.h>
 #include <yaml-cpp/yaml.h>
 #include <opencv/cv.h>
-#include <string>
 
 // compute linear index for given map coords
 #define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
