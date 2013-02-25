@@ -1,6 +1,6 @@
 /**
- * \file  map_inflator.h
- * \brief  Provides a simple costmap inflation function
+ * \file  map_loader.cpp
+ * \brief  Implementation for map_loader.h
  *
  * \author  Piyush Khandelwal (piyushk@cs.utexas.edu)
  *
@@ -31,28 +31,8 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  *
- * $ Id: 02/21/2013 11:54:18 AM piyushk $
+ * $ Id: 02/25/2013 05:50:20 PM piyushk $
  *
  **/
 
-#ifndef MAP_INFLATOR_7FSXTBKS
-#define MAP_INFLATOR_7FSXTBKS
 
-#include <nav_msgs/OccupancyGrid.h>
-
-namespace topological_mapper {
-  
-  /**
-   * \brief   A simple utility function that expands the map based on inflation
-   *          distance in meters
-   * \param   threshold inflation distance in meters
-   * \param   map the map to inflate
-   * \param   inflated_map the returned inflated map passed as a reference
-   */
-
-  void inflateMap(double threshold, const nav_msgs::OccupancyGrid& map, 
-      nav_msgs::OccupancyGrid& inflated_map);
-
-} /* topological_mapper */
-
-#endif /* end of include guard: MAP_INFLATOR_7FSXTBKS */
