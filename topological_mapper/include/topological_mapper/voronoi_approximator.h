@@ -53,6 +53,11 @@ namespace topological_mapper {
     float distance_from_ref;
   };
 
+  struct Point2f {
+    float x;
+    float y;
+  };
+
   struct Point2dDistanceComp {
     bool operator() (Point2d i, Point2d j) {
       return i.distance_from_ref < j.distance_from_ref;
@@ -277,6 +282,24 @@ namespace topological_mapper {
 
   };
 
+  class CriticalPoint : public VoronoiPoint {
+    public:
+      size_t critical_region_1_idx_;
+      size_t critical_region_2_idx_;
+
+  }; /* CriticalPoint */
+
+  class CriticalRegion {
+    public:
+      geometry_msgs::Point32
+  }; /* CriticalRegion */
+
+  class TopologicalGraph {
+    public:
+
+
+  };
+
   class VoronoiApproximator : public MapLoader {
 
     public:
@@ -486,7 +509,10 @@ namespace topological_mapper {
         ConnectedComponents cc(component_map_, component_number_);
         num_components_ = cc.current_component_number_;
 
-        std::cout << "Number of components found: " << num_components_ << std::endl;
+        // Finally, produce the topological graph
+        // for each critical point, pick a basis point and see which 2 regions lie next
+
+
 
         // Label the voronoi diagram as being available
         initialized_ = true;
