@@ -40,8 +40,148 @@
 #include <stdio.h>
 #include <libgen.h>
 
+#include <map_server/image_loader.h>
+#include <topological_mapper/map_loader.h>
+
 namespace topological_mapper {
-  
+
+  /**
+   * \brief   Constructor. Initializes map_resp_ with the given file
+   */
+  MapLoader::MapLoader (const std::string& fname) {
+
+    std::string mapfname = "";   
+    double origin[3];
+    int negate;
+    double occ_th, free_th;
+    double res;
+
+    // open supplied yaml file
+    std::ifstream fin(fname.c_str());
+    if (fin.fail()) {
+      std::cerr << "FATAL: Map_server could not open: " 
+        << fname << std::endl;
+      exit(-1);
+    }
+
+    // Initilize parameters
+    YAML::Parser parser(fin);   
+    YAML::Node doc;
+    parser.GetNextDocument(doc);
+    try { 
+      doc["resolution"] >> res; 
+    } catch (YAML::InvalidScalar) { 
+      std::cerr << "FATAL: The map does not contain a resolution tag "
+        << "or it is invalid." << std::endl;
+      exit(-1);
+    }
+    try { 
+      doc["negate"] >> negate; 
+    } catch (YAML::InvalidScalar) { 
+      std::cerr << "FATAL: The map does not contain a negate tag "
+        << "or it is invalid." << std::endl;
+      exit(-1);
+    }
+    try { 
+      doc["occupied_thresh"] >> occ_th; 
+    } catch (YAML::InvalidScalar) { 
+      std::cerr << "FATAL: The map does not contain occupied_thresh tag "
+        << "or it is invalid." << std::endl;
+      exit(-1);
+    }
+    try { 
+      doc["free_thresh"] >> free_th; 
+    } catch (YAML::InvalidScalar) { 
+      std::cerr << "FATAL: The map does not contain free_thresh tag "
+        << "or it is invalid." << std::endl;
+      exit(-1);
+    }
+    try { 
+      doc["origin"][0] >> origin[0]; 
+      doc["origin"][1] >> origin[1]; 
+      doc["origin"][2] >> origin[2]; 
+    } catch (YAML::InvalidScalar) { 
+      std::cerr << "FATAL: The map does not contain origin tag "
+        << "or it is invalid." << std::endl;
+      exit(-1);
+    }
+
+    // Get image data
+    try { 
+      doc["image"] >> mapfname; 
+      if(mapfname.size() == 0) {
+        std::cerr << "FATAL: The image tag cannot be an empty string."
+          << std::endl;
+        exit(-1);
+      }
+      if(mapfname[0] != '/') {
+        // dirname can modify what you pass it
+        char* fname_copy = strdup(fname.c_str());
+        mapfname = std::string(dirname(fname_copy)) + '/' + mapfname;
+        free(fname_copy);
+      }
+    } catch (YAML::InvalidScalar) { 
+      std::cerr << "FATAL: The map does not contain an image tag "
+        << "or it is invalid." << std::endl;
+      exit(-1);
+    }
+
+    std::cout << "MapLoader: Loading map from image " << mapfname << std::endl;
+    map_server::loadMapFromFile(&map_resp_, mapfname.c_str(), res, negate, 
+        occ_th, free_th, origin);
+
+  }
+
+  /**
+   * \brief   Draw map_resp_ onto image starting at (orig_x, orig_y). Uses
+   *          the overloaded drawMap internally.
+   */
+  void MapLoader::drawMap(cv::Mat &image, uint32_t orig_x, uint32_t orig_y) {
+    drawMap(image, map_resp_.map, orig_x, orig_y);
+  } 
+
+  /**
+   * \brief   Draw map onto image starting at (orig_x, orig_y)
+   */
+  void MapLoader::drawMap(cv::Mat &image, const nav_msgs::OccupancyGrid& map, 
+      uint32_t orig_x, uint32_t orig_y) {
+
+    // Check if matrix has enough space, otherwise make it larger
+    if (image.data == NULL ||
+        (uint32_t) image.cols < orig_x + map.info.width ||
+        (uint32_t) image.rows < orig_y + map.info.height) {
+      cv::Mat old_mat = image.clone();
+      image.create(orig_y + map.info.height, orig_x + map.info.width, CV_8UC3);
+      std::cout << "drawMap(): Resizing image to " << orig_y + map.info.height << "x" << orig_x + map.info.width << std::endl;
+      for (uint32_t j = 0; j < (uint32_t) old_mat.rows; ++j) {
+        const cv::Vec3b* old_row_j = old_mat.ptr<cv::Vec3b>(j);
+        cv::Vec3b* row_j = image.ptr<cv::Vec3b>(j);
+        for (uint32_t i = 0; i < (uint32_t) old_mat.cols; ++i) {
+          row_j[i] = old_row_j[i];
+        }
+      }
+    }
+
+    // Put map onto image
+    for (uint32_t j = 0; j < map.info.height; ++j) {
+      cv::Vec3b* image_row_j = image.ptr<cv::Vec3b>(j + orig_y);
+      for (uint32_t i = 0; i < map.info.width; ++i) {
+        uint8_t val = map.data[MAP_IDX(map.info.width, i, (map.info.height - 1 - j))];
+        cv::Vec3b& pixel = image_row_j[i + orig_x];
+        switch (val) {
+          case 100:
+            pixel[0] = pixel[1] = pixel[2] = 0;
+            break;
+          case 0:
+            pixel[0] = pixel[1] = pixel[2] = 255;
+            break;
+          default:
+            pixel[0] = pixel[1] = pixel[2] = 128;
+        }
+      }
+    }
+  }
+
 } /* topological_mapper */
 
 

@@ -40,6 +40,8 @@
 #ifndef CIRCLE_PROVIDER_1USEBX40
 #define CIRCLE_PROVIDER_1USEBX40
 
+#include <vector>
+
 #define CIRCLE_REF(c,r,x,y) c[(y+r)*(2*r + 1) + (x+r)]
 
 namespace topological_mapper {

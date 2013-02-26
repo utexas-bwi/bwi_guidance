@@ -38,14 +38,13 @@
 #include <topological_mapper/circle_provider.h>
 
 #include <iostream>
-#include <vector>
 
 namespace topological_mapper {
 
   /**
    * \brief   Returns the singleton instance
    */
-  static CircleProvider& CircleProvider::getInstance() {
+  CircleProvider& CircleProvider::getInstance() {
     static CircleProvider instance;
     return instance;
   }

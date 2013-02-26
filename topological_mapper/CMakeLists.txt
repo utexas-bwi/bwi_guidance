@@ -40,17 +40,20 @@ link_directories(${OPENCV_LIBRARY_DIRS})
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
+#main library
+rosbuild_add_library(topological_mapper src/libtopological_mapper/circle_provider.cpp src/libtopological_mapper/map_inflator.cpp src/libtopological_mapper/map_loader.cpp)
+target_link_libraries(topological_mapper ${YAML_CPP_LIBRARIES})
+target_link_libraries(topological_mapper ${OPENCV_LIBRARIES})
+target_link_libraries(topological_mapper image_loader)
+
 #test binaries
 rosbuild_add_executable(test_circle test/test_circle.cpp)
+target_link_libraries(test_circle topological_mapper)
 
 rosbuild_add_executable(test_map_loader test/test_map_loader.cpp)
-target_link_libraries(test_map_loader ${YAML_CPP_LIBRARIES})
-target_link_libraries(test_map_loader ${OPENCV_LIBRARIES})
-target_link_libraries(test_map_loader image_loader)
+target_link_libraries(test_map_loader topological_mapper)
 
 rosbuild_add_executable(test_voronoi test/test_voronoi.cpp)
-target_link_libraries(test_voronoi ${YAML_CPP_LIBRARIES})
-target_link_libraries(test_voronoi ${OPENCV_LIBRARIES})
-target_link_libraries(test_voronoi image_loader)
+target_link_libraries(test_voronoi topological_mapper)
 
 rosbuild_add_executable(test_dfs test/test_dfs.cpp)
