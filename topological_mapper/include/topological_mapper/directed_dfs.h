@@ -37,6 +37,9 @@
  *
  **/
 
+#include <nav_msgs/OccupancyGrid.h>
+#include <topological_mapper/point.h>
+
 namespace topological_mapper {
 
   /**
@@ -68,69 +71,27 @@ namespace topological_mapper {
     private:
 
       /**
-       * \brief   Recusrive function performing DFS
+       * \brief   Recursive function performing DFS
        * \param   depth DFS attempts an 8 connected search. This is the max 
        *          pixel depth that we perform the search to.
+       * \param   visited a boolean vector of size height * width containing
+       *          information whether a map_idx has been visited already or not
        * \return  bool true if path found within depth, false otherwise
        */
-      bool searchForPath(const Point2d &start, const Point2d &goal, uint32_t depth, std::vector<bool> &visited) {
+      bool searchForPath(const Point2d &start, const Point2d &goal, 
+          uint32_t depth, std::vector<bool> &visited);
 
-        //std::cout << start.x << " " << start.y << std::endl;
+      /**
+       * \brief   Gets neighbours for a given node iff they are also obstacles 
+       *          and have not been visited before
+       * \param   visited a boolean vector of size height * width containing
+       *          information whether a map_idx has been visited already or not
+       * \param   neighbours returned neighbours 
+       */
+      void getOrderedNeighbours(const Point2d &from, const Point2d &goal, 
+          const std::vector<bool> &visited, std::vector<Point2d> &neighbours);
 
-        // Termination crit
-        if (start.x == goal.x && start.y == goal.y) {
-          return true;
-        }
-        if (depth == 0) {
-          return false;
-        }
-
-        uint32_t start_idx = MAP_IDX(map_.info.width, start.x, start.y);
-        visited[start_idx] = true;
-
-        std::vector<Point2d> neighbours;
-        getOrderedNeighbours(start, goal, visited, neighbours);
-        for (size_t i = 0; i < neighbours.size(); ++i) {
-          Point2d& n = neighbours[i];
-          // Check if it has been visited again - quite likely that one of the previous loop iterations have covered this already
-          uint32_t n_idx = MAP_IDX(map_.info.width, n.x, n.y);
-          if (visited[n_idx]) {
-            continue;
-          }
-          bool success = searchForPath(n, goal, depth - 1, visited);
-          if (success)
-            return true;
-        }
-
-        return false; // disconnected components
-      }
-
-      void getOrderedNeighbours(const Point2d &from, const Point2d &goal, const std::vector<bool> &visited, std::vector<Point2d> &neighbours) {
-        size_t neighbour_count = 8;
-        int32_t x_offset[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-        int32_t y_offset[] = {-1, -1, -1, 0, 0, 1, 1, 1};
-        neighbours.clear();
-        for (size_t i = 0; i < neighbour_count; ++i) {
-          // Check if neighbours are still on map
-          Point2d p;
-          p.x = (int)from.x + x_offset[i];
-          p.y = (int)from.y + y_offset[i];
-          //std::cout << " " << p.x << " " << p.y << std::endl;
-          if (p.x >= map_.info.width || p.y >= map_.info.height) { //covers negative case as well (unsigned)
-            continue;
-          }
-          uint32_t map_idx = MAP_IDX(map_.info.width, p.x, p.y);
-          if (visited[map_idx] || map_.data[map_idx] == 0) {
-            //std::cout << " neighbour " << p.x << " " << p.y << " thrown: " << visited[map_idx] << std::endl;
-            continue;
-          }
-          p.distance_from_ref = sqrt((p.x - goal.x)*(p.x - goal.x) + (p.y - goal.y)*(p.y - goal.y));
-          neighbours.push_back(p);
-          //std::cout << "  " << p.x << " " << p.y << std::endl;
-        }
-        std::sort(neighbours.begin(), neighbours.end(), point2dDistanceComp);
-      }
-
+      /** /brief the underlying map over which DFS is performed */
       const nav_msgs::OccupancyGrid& map_;
 
   };

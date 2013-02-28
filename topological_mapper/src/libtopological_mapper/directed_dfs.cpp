@@ -35,15 +35,89 @@
  *
  **/
 
-namespace topological_mapper {
-  
-      /**
-       * \brief   Non-recusrive start point for performing DFS
-       */
-      bool DirectedDFS::searchForPath(const Point2d &start, const Point2d &goal,
-          uint32_t depth) {
+#include <topological_mapper/directed_dfs.h>
+#include <topological_mapper/map_loader.h> // for MAP_IDX
 
-        std::vector<bool> visited(map_.info.height * map_.info.width, false);
-        return searchForPath(start, goal, depth, visited);
+namespace topological_mapper {
+
+  /**
+   * \brief   Non-recusrive start point for performing DFS
+   */
+  bool DirectedDFS::searchForPath(const Point2d &start, const Point2d &goal,
+      uint32_t depth) {
+
+    std::vector<bool> visited(map_.info.height * map_.info.width, false);
+    return searchForPath(start, goal, depth, visited);
+  }
+
+  /**
+   * \brief   Recusrive function performing DFS
+   */
+  bool DirectedDFS::searchForPath(const Point2d &start, const Point2d &goal, 
+      uint32_t depth, std::vector<bool> &visited) {
+
+    //std::cout << start.x << " " << start.y << std::endl;
+
+    // Termination crit
+    if (start.x == goal.x && start.y == goal.y) {
+      return true;
+    }
+    if (depth == 0) {
+      return false;
+    }
+
+    uint32_t start_idx = MAP_IDX(map_.info.width, start.x, start.y);
+    visited[start_idx] = true;
+
+    std::vector<Point2d> neighbours;
+    getOrderedNeighbours(start, goal, visited, neighbours);
+    for (size_t i = 0; i < neighbours.size(); ++i) {
+      Point2d& n = neighbours[i];
+      // Check if it has been visited again - quite likely that one of the 
+      // previous loop iterations have covered this already
+      uint32_t n_idx = MAP_IDX(map_.info.width, n.x, n.y);
+      if (visited[n_idx]) {
+        continue;
       }
+      bool success = searchForPath(n, goal, depth - 1, visited);
+      if (success)
+        return true;
+    }
+
+    return false; // disconnected components
+  }
+
+
+  /**
+   * \brief   Gets neighbours for a given node iff they are also obstacles 
+   *          and have not been visited before
+   */
+  void DirectedDFS::getOrderedNeighbours(const Point2d &from, 
+      const Point2d &goal, const std::vector<bool> &visited, 
+      std::vector<Point2d> &neighbours) {
+
+    size_t neighbour_count = 8;
+    int32_t x_offset[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+    int32_t y_offset[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+    neighbours.clear();
+    for (size_t i = 0; i < neighbour_count; ++i) {
+      // Check if neighbours are still on map
+      Point2d p;
+      p.x = (int)from.x + x_offset[i];
+      p.y = (int)from.y + y_offset[i];
+      // covers negative case as well (unsigned)
+      if (p.x >= map_.info.width || p.y >= map_.info.height) { 
+        continue;
+      }
+      uint32_t map_idx = MAP_IDX(map_.info.width, p.x, p.y);
+      if (visited[map_idx] || map_.data[map_idx] == 0) {
+        continue;
+      }
+      p.distance_from_ref = 
+        sqrt((p.x - goal.x)*(p.x - goal.x) + (p.y - goal.y)*(p.y - goal.y));
+      neighbours.push_back(p);
+    }
+    std::sort(neighbours.begin(), neighbours.end(), point2dDistanceComp);
+  }
+
 } /* topological_mapper */

@@ -41,7 +41,12 @@ link_directories(${OPENCV_LIBRARY_DIRS})
 #target_link_libraries(example ${PROJECT_NAME})
 
 #main library
-rosbuild_add_library(topological_mapper src/libtopological_mapper/circle_provider.cpp src/libtopological_mapper/map_inflator.cpp src/libtopological_mapper/map_loader.cpp)
+rosbuild_add_library(topological_mapper 
+  src/libtopological_mapper/circle_provider.cpp 
+  src/libtopological_mapper/map_inflator.cpp 
+  src/libtopological_mapper/map_loader.cpp
+  src/libtopological_mapper/directed_dfs.cpp
+  )
 target_link_libraries(topological_mapper ${YAML_CPP_LIBRARIES})
 target_link_libraries(topological_mapper ${OPENCV_LIBRARIES})
 target_link_libraries(topological_mapper image_loader)
