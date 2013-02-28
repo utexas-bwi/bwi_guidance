@@ -62,3 +62,4 @@ rosbuild_add_executable(test_voronoi test/test_voronoi.cpp)
 target_link_libraries(test_voronoi topological_mapper)
 
 rosbuild_add_executable(test_dfs test/test_dfs.cpp)
+target_link_libraries(test_dfs topological_mapper)

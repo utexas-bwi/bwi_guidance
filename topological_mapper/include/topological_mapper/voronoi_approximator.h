@@ -44,6 +44,7 @@
 
 #include <topological_mapper/map_loader.h>
 #include <topological_mapper/map_inflator.h>
+#include <topological_mapper/directed_dfs.h>
 #include <topological_mapper/point.h>
 
 namespace topological_mapper {
@@ -186,24 +187,6 @@ namespace topological_mapper {
         }
         
       }
-
-  };
-
-  class CriticalPoint : public VoronoiPoint {
-    public:
-      size_t critical_region_1_idx_;
-      size_t critical_region_2_idx_;
-
-  }; /* CriticalPoint */
-
-  class CriticalRegion {
-    public:
-      geometry_msgs::Point32
-  }; /* CriticalRegion */
-
-  class TopologicalGraph {
-    public:
-
 
   };
 
