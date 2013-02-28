@@ -44,25 +44,9 @@
 
 #include <topological_mapper/map_loader.h>
 #include <topological_mapper/map_inflator.h>
+#include <topological_mapper/point.h>
 
 namespace topological_mapper {
-
-  struct Point2d {
-    uint32_t x;
-    uint32_t y;
-    float distance_from_ref;
-  };
-
-  struct Point2f {
-    float x;
-    float y;
-  };
-
-  struct Point2dDistanceComp {
-    bool operator() (Point2d i, Point2d j) {
-      return i.distance_from_ref < j.distance_from_ref;
-    }
-  } point2dDistanceComp;
 
   class ConnectedComponents {
     /* data */
@@ -128,78 +112,6 @@ namespace topological_mapper {
     const nav_msgs::OccupancyGrid& map_;
   };
 
-  class DirectedDFS {
-    public:
-      DirectedDFS(const nav_msgs::OccupancyGrid& map) : map_(map) { }
-
-      bool searchForPath(const Point2d &start, const Point2d &goal, uint32_t depth) {
-        std::vector<bool> visited(map_.info.height * map_.info.width, false);
-        return searchForPath(start, goal, depth, visited);
-      }
-
-    private:
-
-      bool searchForPath(const Point2d &start, const Point2d &goal, uint32_t depth, std::vector<bool> &visited) {
-
-        //std::cout << start.x << " " << start.y << std::endl;
-
-        // Termination crit
-        if (start.x == goal.x && start.y == goal.y) {
-          return true;
-        }
-        if (depth == 0) {
-          return false;
-        }
-
-        uint32_t start_idx = MAP_IDX(map_.info.width, start.x, start.y);
-        visited[start_idx] = true;
-
-        std::vector<Point2d> neighbours;
-        getOrderedNeighbours(start, goal, visited, neighbours);
-        for (size_t i = 0; i < neighbours.size(); ++i) {
-          Point2d& n = neighbours[i];
-          // Check if it has been visited again - quite likely that one of the previous loop iterations have covered this already
-          uint32_t n_idx = MAP_IDX(map_.info.width, n.x, n.y);
-          if (visited[n_idx]) {
-            continue;
-          }
-          bool success = searchForPath(n, goal, depth - 1, visited);
-          if (success)
-            return true;
-        }
-
-        return false; // disconnected components
-      }
-
-      void getOrderedNeighbours(const Point2d &from, const Point2d &goal, const std::vector<bool> &visited, std::vector<Point2d> &neighbours) {
-        size_t neighbour_count = 8;
-        int32_t x_offset[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-        int32_t y_offset[] = {-1, -1, -1, 0, 0, 1, 1, 1};
-        neighbours.clear();
-        for (size_t i = 0; i < neighbour_count; ++i) {
-          // Check if neighbours are still on map
-          Point2d p;
-          p.x = (int)from.x + x_offset[i];
-          p.y = (int)from.y + y_offset[i];
-          //std::cout << " " << p.x << " " << p.y << std::endl;
-          if (p.x >= map_.info.width || p.y >= map_.info.height) { //covers negative case as well (unsigned)
-            continue;
-          }
-          uint32_t map_idx = MAP_IDX(map_.info.width, p.x, p.y);
-          if (visited[map_idx] || map_.data[map_idx] == 0) {
-            //std::cout << " neighbour " << p.x << " " << p.y << " thrown: " << visited[map_idx] << std::endl;
-            continue;
-          }
-          p.distance_from_ref = sqrt((p.x - goal.x)*(p.x - goal.x) + (p.y - goal.y)*(p.y - goal.y));
-          neighbours.push_back(p);
-          //std::cout << "  " << p.x << " " << p.y << std::endl;
-        }
-        std::sort(neighbours.begin(), neighbours.end(), point2dDistanceComp);
-      }
-
-      const nav_msgs::OccupancyGrid& map_;
-
-  };
 
   class VoronoiPoint {
     public:
@@ -265,11 +177,6 @@ namespace topological_mapper {
               break;
             }
 
-            // This is the original HACK version of DFS. Will create bad map for some situations
-            // if (distance < basis_distance) {
-            //   elements_to_erase.push_back(i);
-            //   break;
-            // }
           }
         }
 
