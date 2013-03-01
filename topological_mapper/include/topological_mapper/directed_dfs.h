@@ -38,7 +38,7 @@
  **/
 
 #include <nav_msgs/OccupancyGrid.h>
-#include <topological_mapper/point.h>
+#include <topological_mapper/structures/point.h>
 
 namespace topological_mapper {
 

@@ -47,6 +47,7 @@ rosbuild_add_library(topological_mapper
   src/libtopological_mapper/map_loader.cpp
   src/libtopological_mapper/directed_dfs.cpp
   )
+
 target_link_libraries(topological_mapper ${YAML_CPP_LIBRARIES})
 target_link_libraries(topological_mapper ${OPENCV_LIBRARIES})
 target_link_libraries(topological_mapper image_loader)
@@ -63,3 +64,6 @@ target_link_libraries(test_voronoi topological_mapper)
 
 rosbuild_add_executable(test_dfs test/test_dfs.cpp)
 target_link_libraries(test_dfs topological_mapper)
+
+rosbuild_add_executable(test_graph test/test_graph.cpp)
+target_link_libraries(test_graph topological_mapper)

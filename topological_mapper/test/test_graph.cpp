@@ -1,7 +1,7 @@
 /**
- * \file  test_voronoi.cpp
- * \brief  Simple test for the voronoi approximator. Reads a map and displays 
- * information from the voronoi approximator on to the screen
+ * \file  test_dfs.cpp
+ * \brief  Simple test for the graph generator. Reads a map and displays 
+ * information from the topological mapper on to the screen
  *
  * \author  Piyush Khandelwal (piyushk@cs.utexas.edu)
  *
@@ -42,7 +42,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include <topological_mapper/voronoi_approximator.h>
+#include <topological_mapper/topological_mapper.h>
 
 int main(int argc, char** argv) {
 
@@ -51,10 +51,10 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  topological_mapper::VoronoiApproximator voronoi(argv[1]);
+  topological_mapper::TopologicalMapper mapper(argv[1]);
   cv::Mat image;
-  voronoi.findVoronoiPoints(0.3);
-  voronoi.drawOutput(image);
+  mapper.computeTopologicalGraph(0.3, 0.1);
+  mapper.drawOutput(image);
 
   cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
   cv::imshow("Display window", image);                
