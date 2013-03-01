@@ -55,7 +55,6 @@ namespace topological_mapper {
         computeCriticalRegions(critical_epsilon);
       }
 
-
       void drawCriticalPoints(cv::Mat &image, 
           uint32_t orig_x = 0, uint32_t orig_y = 0) {
         for (size_t i = 0; i < critical_points_.size(); ++i) {
@@ -116,7 +115,7 @@ namespace topological_mapper {
       void drawOutput(cv::Mat &image) {
         VoronoiApproximator::drawOutput(image);
         drawMap(image, 2 * map_resp_.map.info.width);
-        drawConnectedComponents(image, 2 * map_resp_.map.info.width);
+        /* drawConnectedComponents(image, 2 * map_resp_.map.info.width); */
         drawCriticalPoints(image, 2 * map_resp_.map.info.width);
       }
 
@@ -125,8 +124,10 @@ namespace topological_mapper {
       void computeCriticalRegions (double critical_epsilon) {
 
         // Compute critical points
-        float pixel_critical_epsilon = 
+        size_t pixel_critical_epsilon = 
           critical_epsilon / map_resp_.map.info.resolution;
+        std::cout << "pixel_critical_epsilon: " << map_resp_.map.info.resolution;
+
         for (size_t i = 0; i < voronoi_points_.size(); ++i) {
           VoronoiPoint &vpi = voronoi_points_[i];
           float average_neighbourhood_clearance = 0;
@@ -161,7 +162,7 @@ namespace topological_mapper {
 
           // If no neighbours, then this cannot be a critical point
           if (neighbour_count == 0) {
-            //continue;
+            continue;
           }
 
           // Check if the point is indeed better than the neighbourhood
@@ -221,8 +222,9 @@ namespace topological_mapper {
         for (size_t i = 0; i < component_number_.size(); ++i) {
           component_number_[i] = -1;
         }
-        ConnectedComponents cc(component_map_, component_number_);
-        num_components_ = cc.getNumberComponents();
+        //ConnectedComponents cc(component_map_, component_number_);
+        //num_components_ = cc.getNumberComponents();
+        num_components_ = 0;
 
       }
 
