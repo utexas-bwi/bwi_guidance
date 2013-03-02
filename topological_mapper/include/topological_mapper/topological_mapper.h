@@ -57,23 +57,16 @@ namespace topological_mapper {
 
       void drawCriticalPoints(cv::Mat &image, 
           uint32_t orig_x = 0, uint32_t orig_y = 0) {
+
         for (size_t i = 0; i < critical_points_.size(); ++i) {
           VoronoiPoint &vp = critical_points_[i];
-          //std::cout << "in" << orig_y + inflated_map_.info.height - 1 - vp.y << " " << vp.x + orig_x << std::endl;
-          cv::circle(image, cv::Point(vp.x + orig_x, orig_y + inflated_map_.info.height - 1 - vp.y), 2, cv::Scalar(0,0,255), -1);
-          // critical points should only have 2 basis points
-          if (vp.basis_points.size() != 2) {
-            std::cerr << "ERROR: Found a critical point with more than 2 basis points. This should not have happened" << std::endl;
-          } else {
-            Point2d &p1(vp.basis_points[0]);
-            Point2d &p2(vp.basis_points[1]);
-            cv::line(image, 
-                cv::Point(p1.x + orig_x, orig_y + inflated_map_.info.height - 1 - p1.y),
-                cv::Point(p2.x + orig_x, orig_y + inflated_map_.info.height - 1 - p2.y),
-                cv::Scalar(0,0,255),
-                1);
-          }
+          cv::circle(image, 
+              cv::Point(vp.x + orig_x, 
+                        orig_y + inflated_map_.info.height - 1 - vp.y), 
+              2, cv::Scalar(0,0,255), -1);
         }
+
+        drawCriticalLines(image, orig_x, orig_y);
       }
 
       void drawConnectedComponents(cv::Mat &image,
@@ -92,6 +85,8 @@ namespace topological_mapper {
           cv::Vec3b* image_row_j = image.ptr<cv::Vec3b>(j + orig_y);
           for (uint32_t i = 0; i < map_resp_.map.info.width; ++i) {
             size_t map_idx = MAP_IDX(map_resp_.map.info.width, i, map_resp_.map.info.height - j - 1);
+            if (component_number_[map_idx] == -1)
+              continue;
             cv::Vec3b& pixel = image_row_j[i + orig_x];
             pixel[0] = component_colors_[component_number_[map_idx]][0];
             pixel[1] = component_colors_[component_number_[map_idx]][1];
@@ -115,7 +110,7 @@ namespace topological_mapper {
       void drawOutput(cv::Mat &image) {
         VoronoiApproximator::drawOutput(image);
         drawMap(image, 2 * map_resp_.map.info.width);
-        /* drawConnectedComponents(image, 2 * map_resp_.map.info.width); */
+        drawConnectedComponents(image, 2 * map_resp_.map.info.width);
         drawCriticalPoints(image, 2 * map_resp_.map.info.width);
       }
 
@@ -126,7 +121,6 @@ namespace topological_mapper {
         // Compute critical points
         size_t pixel_critical_epsilon = 
           critical_epsilon / map_resp_.map.info.resolution;
-        std::cout << "pixel_critical_epsilon: " << map_resp_.map.info.resolution;
 
         for (size_t i = 0; i < voronoi_points_.size(); ++i) {
           VoronoiPoint &vpi = voronoi_points_[i];
@@ -213,53 +207,42 @@ namespace topological_mapper {
         // Once you have critical lines, produce connected regions (4-connected)
         // draw the critical lines on to a copy of the map so that we can find
         // connected regions
-        component_map_.info = map_resp_.map.info;
-        component_map_.data = map_resp_.map.data;
+        cv::Mat component_map_color;
+        drawMap(component_map_color);
+        cvtColor(component_map_color, component_map_, CV_RGB2GRAY);
         drawCriticalLines(component_map_);
 
         component_number_.resize(
-            component_map_.info.height * component_map_.info.width);
-        for (size_t i = 0; i < component_number_.size(); ++i) {
-          component_number_[i] = -1;
-        }
-        //ConnectedComponents cc(component_map_, component_number_);
-        //num_components_ = cc.getNumberComponents();
-        num_components_ = 0;
+            component_map_.rows * component_map_.cols);
+        ConnectedComponents cc(component_map_, component_number_);
+        num_components_ = cc.getNumberComponents();
 
       }
 
-      void drawCriticalLines(nav_msgs::OccupancyGrid& map) {
-        cv::Mat image(map.info.height, map.info.width, CV_8UC1, cv::Scalar(0));
+      void drawCriticalLines(cv::Mat &image, 
+          uint32_t orig_x = 0, uint32_t orig_y = 0) {
+
         for (size_t i = 0; i < critical_points_.size(); ++i) {
           VoronoiPoint &vp = critical_points_[i];
-          //std::cout << "in" << orig_y + inflated_map_.info.height - 1 - vp.y << " " << vp.x + orig_x << std::endl;
           if (vp.basis_points.size() != 2) {
-            std::cerr << "ERROR: Found a critical point with more than 2 basis points. This should not have happened" << std::endl;
+            std::cerr << "ERROR: Found a critical point with more than 2 basis" 
+                      << "points. This should not have happened" << std::endl;
           } else {
             Point2d &p1(vp.basis_points[0]);
             Point2d &p2(vp.basis_points[1]);
             cv::line(image, 
-                cv::Point(p1.x, inflated_map_.info.height - 1 - p1.y),
-                cv::Point(p2.x, inflated_map_.info.height - 1 - p2.y),
-                cv::Scalar(100),
+                cv::Point(orig_x + p1.x, 
+                          orig_y + inflated_map_.info.height - 1 - p1.y),
+                cv::Point(orig_x + p2.x, 
+                          orig_y + inflated_map_.info.height - 1 - p2.y),
+                cv::Scalar(0),
                 1);
-          }
-        }
-
-        for (uint32_t j = 0; j < map.info.height; ++j) {
-          uint8_t* image_row_j = image.ptr<uint8_t>(j);
-          for (uint32_t i = 0; i < map.info.width; ++i) {
-            size_t map_idx = MAP_IDX(map.info.width, i, map.info.height - 1 - j);
-            uint8_t pixel = image_row_j[i];
-            if (pixel != 0) {
-              map.data[map_idx] = pixel;
-            }
           }
         }
       }
 
       std::vector<VoronoiPoint> critical_points_;
-      nav_msgs::OccupancyGrid component_map_;
+      cv::Mat component_map_;
       std::vector<int32_t> component_number_;
       std::vector<cv::Vec3b> component_colors_;
       size_t num_components_;

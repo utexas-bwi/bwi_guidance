@@ -39,75 +39,64 @@
 #ifndef CONNECTED_COMPONENTS_DVJRQLHV
 #define CONNECTED_COMPONENTS_DVJRQLHV
 
+#include <topological_mapper/map_loader.h> // for MAP_IDX
+#include <cvblobs/BlobResult.h>
+#include <vector>
+
 namespace topological_mapper {
 
   class ConnectedComponents {
 
     public:
-      ConnectedComponents (const nav_msgs::OccupancyGrid& map, 
-          std::vector<int32_t>& component_map) :
-        map_(map), component_map(component_map) {
+      ConnectedComponents (cv::Mat& image,
+          std::vector<int32_t>& component_map) {
 
-          // Label all non-free spaces as obstacles in the component space
-          for (size_t i = 0; i < map_.data.size(); ++i) {
-            if (map_.data[i] != 0) {
-              component_map[i] = 0;
-            }
-          }
-          current_component_number_ = 1;
+        IplImage ipl_image = (IplImage)image;
+        IplImage* image_ptr = cvCloneImage(&ipl_image);
+        CBlobResult blobs(image_ptr, NULL, 0);
+        number_components_ = blobs.GetNumBlobs();
 
-          // Run simple connected components to figure out component labellings 
-          // and centroids
-          for (size_t j = 0; j < map_.info.height; ++j) {
-            for (size_t i = 0; i < map_.info.width; ++i) {
-              uint32_t map_idx = MAP_IDX(map_.info.width, i, j);
-              // Check if location has already been labelled
-              if (component_map[map_idx] != -1) {
-                continue;
-              }
-              labelFrom(i, j);
-              ++current_component_number_;
-            }
-          }
+        // Initialize vector to all zeros 
+        for (size_t i = 0; i < component_map.size(); ++i) {
+          component_map[i] = -1;
         }
 
+        // Draw individual components onto image
+        for (size_t t = 0; t < number_components_; ++t) {
+
+          // Draw this component on to an image
+          CBlob blob(blobs.GetBlob(t));
+          IplImage *blob_image = 
+            cvCreateImage(cvSize(image.cols, image.rows), IPL_DEPTH_8U, 1);
+          cvSetZero(blob_image);
+          blob.FillBlob(blob_image, cvScalar(255));
+
+          // Read the image and fill the std::vector
+          int step = blob_image->widthStep / sizeof(uchar);
+          uchar* data = (uchar *) blob_image->imageData;
+          for (int j = 0; j < image.rows; ++j) {
+            for (int i = 0; i < image.cols; ++i) {
+              if (data[j * step + i] == 255) {
+                size_t map_idx = MAP_IDX(image.cols, i, j);
+                component_map[map_idx] = t;
+              }
+            }
+          }
+
+          cvReleaseImage(&blob_image);
+        }
+
+        cvReleaseImage(&image_ptr);
+
+      }
+
       size_t getNumberComponents() {
-        return current_component_number_;
+        return number_components_;
       }
 
     private:
 
-      void labelFrom(size_t x, size_t y) {
-        // Label this idx
-        uint32_t map_idx = MAP_IDX(map_.info.width, x, y);
-        component_map[map_idx] = current_component_number_;
-
-        // Check for unlabelled neighbours and mark them as well
-        size_t neighbour_count = 4;
-        int32_t x_offset[] = {0, -1, 1, 0};
-        int32_t y_offset[] = {-1, 0, 0, 1};
-        for (size_t i = 0; i < neighbour_count; ++i) {
-          // Check if neighbours are still on map
-          Point2d p;
-          p.x = (int)x + x_offset[i];
-          p.y = (int)y + y_offset[i];
-          //covers negative case as well (unsigned)
-          if (p.x >= map_.info.width || p.y >= map_.info.height) { 
-            continue;
-          }
-          uint32_t map_idx = MAP_IDX(map_.info.width, p.x, p.y);
-          if (component_map[map_idx] != -1) {
-            // Not a free vertex
-            continue;
-          }
-
-          labelFrom(p.x, p.y);
-        }
-      }
-
-      const nav_msgs::OccupancyGrid& map_;
-      std::vector<int32_t> &component_map;
-      size_t current_component_number_;
+      size_t number_components_;
 
   }; /* ConnectedComponents */
 
