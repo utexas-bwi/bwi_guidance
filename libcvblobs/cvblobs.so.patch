@@ -5,7 +5,7 @@ diff -crB cvblobs8.3_linux_src/Makefile cvblobs8.3_linux/Makefile
 *** 4,10 ****
   
   CFLAGS= `pkg-config --cflags opencv gtk+-2.0` -I. 
-  LDFLAGS= `pkg-config --libs opencv gtk+-2.0` -L. -lblob 
+! LDFLAGS= `pkg-config --libs opencv gtk+-2.0` -L. -lblob 
 ! CXX=g++
   
   CPPFILES= \
@@ -13,7 +13,7 @@ diff -crB cvblobs8.3_linux_src/Makefile cvblobs8.3_linux/Makefile
 --- 4,10 ----
   
   CFLAGS= `pkg-config --cflags opencv gtk+-2.0` -I. 
-  LDFLAGS= `pkg-config --libs opencv gtk+-2.0` -L. -lblob 
+! LDFLAGS= `pkg-config --libs opencv gtk+-2.0` 
 ! CXX=g++ -fPIC
   
   CPPFILES= \
@@ -34,7 +34,7 @@ diff -crB cvblobs8.3_linux_src/Makefile cvblobs8.3_linux/Makefile
   .SILENT:
   
 ! libblob.so: $(CPPFILES:.cpp=.o)
-! 	g++ -shared -o libblob.so $(CPPFILES:.cpp=.o) 2> /dev/null
+! 	g++ -fPIC -shared -Wl,-soname,libblob.so -o libblob.so $(CPPFILES:.cpp=.o) $(LDFLAGS)
 ! 
   #
   #	@echo Build tests, examples and tools...
