@@ -1,0 +1,54 @@
+diff -crB cvblobs8.3_linux_src/Makefile cvblobs8.3_linux/Makefile
+*** Makefile	2011-07-13 03:58:48.000000000 -0500
+--- Makefile	2013-03-04 12:56:58.706145001 -0600
+***************
+*** 4,10 ****
+  
+  CFLAGS= `pkg-config --cflags opencv gtk+-2.0` -I. 
+  LDFLAGS= `pkg-config --libs opencv gtk+-2.0` -L. -lblob 
+! CXX=g++
+  
+  CPPFILES= \
+  	blob.cpp\
+--- 4,10 ----
+  
+  CFLAGS= `pkg-config --cflags opencv gtk+-2.0` -I. 
+  LDFLAGS= `pkg-config --libs opencv gtk+-2.0` -L. -lblob 
+! CXX=g++ -fPIC
+  
+  CPPFILES= \
+  	blob.cpp\
+***************
+*** 19,27 ****
+  
+  .SILENT:
+  
+! libblob.a: $(CPPFILES:.cpp=.o)
+! 	ar ru libblob.a $(CPPFILES:.cpp=.o) 2> /dev/null
+! 	ranlib libblob.a
+  #
+  #	@echo Build tests, examples and tools...
+  #	$(CXX) -g blobdemo.cpp $(LDFLAGS) $(CFLAGS) -o blobdemo
+--- 19,27 ----
+  
+  .SILENT:
+  
+! libblob.so: $(CPPFILES:.cpp=.o)
+! 	g++ -shared -o libblob.so $(CPPFILES:.cpp=.o) 2> /dev/null
+! 
+  #
+  #	@echo Build tests, examples and tools...
+  #	$(CXX) -g blobdemo.cpp $(LDFLAGS) $(CFLAGS) -o blobdemo
+***************
+*** 37,41 ****
+  clean:
+  	@echo Cleaning...
+  	rm -f $(CFILES:.cpp=.o)
+! 	rm -f libblob.a
+  
+--- 37,41 ----
+  clean:
+  	@echo Cleaning...
+  	rm -f $(CFILES:.cpp=.o)
+! 	rm -f libblob.so
+  
