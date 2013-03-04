@@ -65,7 +65,6 @@ namespace topological_mapper {
        * \brief   Constructor. Initializes map_resp_ with the given file
        * \param   fname absolute or relative system file location for the YAML
        *          file
-       * \return  
        */
       MapLoader (const std::string& fname);
 

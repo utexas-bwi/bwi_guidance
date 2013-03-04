@@ -38,8 +38,8 @@
 #ifndef TOPOLOGICAL_MAPPER_EA94RQRE
 #define TOPOLOGICAL_MAPPER_EA94RQRE
 
-#include <topological_mapper/voronoi_approximator.h>
 #include <topological_mapper/connected_components.h>
+#include <topological_mapper/voronoi_approximator.h>
 
 namespace topological_mapper {
 
@@ -80,11 +80,13 @@ namespace topological_mapper {
           component_colors_[i] = cv::Vec3b(rand() % 256, rand() % 256, rand() % 256);
         }
 
+        // component 0 is obstacles + background. don't draw?
+
         // Now paint!
-        for (uint32_t j = 0; j < map_resp_.map.info.height; ++j) {
+        for (uint32_t j = 1; j < map_resp_.map.info.height; ++j) {
           cv::Vec3b* image_row_j = image.ptr<cv::Vec3b>(j + orig_y);
           for (uint32_t i = 0; i < map_resp_.map.info.width; ++i) {
-            size_t map_idx = MAP_IDX(map_resp_.map.info.width, i, map_resp_.map.info.height - j - 1);
+            size_t map_idx = MAP_IDX(map_resp_.map.info.width, i, j);
             if (component_number_[map_idx] == -1)
               continue;
             cv::Vec3b& pixel = image_row_j[i + orig_x];
@@ -236,7 +238,7 @@ namespace topological_mapper {
                 cv::Point(orig_x + p2.x, 
                           orig_y + inflated_map_.info.height - 1 - p2.y),
                 cv::Scalar(0),
-                1);
+                1, 4); // draw a 4 connected line
           }
         }
       }
