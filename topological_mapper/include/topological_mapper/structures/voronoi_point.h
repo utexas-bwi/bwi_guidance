@@ -36,6 +36,9 @@
  *
  **/
 
+#ifndef VORONOI_POINT_JI6FXE0K
+#define VORONOI_POINT_JI6FXE0K
+
 #include <vector>
 #include <nav_msgs/OccupancyGrid.h>
 #include <topological_mapper/structures/point.h>
@@ -60,82 +63,26 @@ namespace topological_mapper {
       /** /brief if this point is a critical point, how lower is the clearance 
        *         of this point in comparison of its neighbours 
        */
-      float critical_clearance_diff; 
-      
+      float critical_clearance_diff;
+
+       
+      /**
+       * \brief   Attempts to add a basis candidate to this voronoi point. The 
+       *          basis candidate is only added if and only if it is
+       *          2 * threshhold away from an existing basis for that  point, 
+       *          and is not too close to existing basis point in obstacle space
+       *          If it is too close, then it is only retained if it is better
+       *          than an existing basis, in which case the existing basis is 
+       *          thrown out.
+       * \param   threshold Any point having an obstacle closer than threshold 
+       *          is rejected as it is not useful, even if it might be a valid 
+       *          voronoi point
+       */
       void addBasisCandidate(const Point2d& candidate, uint32_t threshold, 
-          const nav_msgs::OccupancyGrid& map) {
-
-        if (basis_points.size() == 0) {
-          basis_points.push_back(candidate);
-          basis_distance = candidate.distance_from_ref;
-          return;
-        }
-        if (candidate.distance_from_ref > basis_distance + 1) {
-          return;
-        }
-
-        basis_points.push_back(candidate);
-        std::sort(basis_points.begin(), basis_points.end(), 
-            point2dDistanceComp);
-        basis_distance = basis_points[0].distance_from_ref;
-
-        // Get the directed DFS searcher
-        DirectedDFS dfs(map);
-
-        // Mark elements that are too close to be erased
-        std::vector<size_t> elements_to_erase;
-        for (size_t i = 0; i < basis_points.size(); ++i) {
-
-          // Check if the clearance for this point is much further away from the 
-          // minimum clearance
-          if (basis_points[i].distance_from_ref > basis_distance + 1) {
-            elements_to_erase.push_back(i);
-            break;
-          }
-
-          uint32_t xi = basis_points[i].x;
-          uint32_t yi = basis_points[i].y;
-          std::vector<size_t>::iterator erase_iterator = 
-            elements_to_erase.begin();
-
-          for (size_t j = 0; j < i; ++j) {
-
-            while (erase_iterator != elements_to_erase.end() && 
-                *erase_iterator < j) {
-              erase_iterator++;
-            }
-
-            if (erase_iterator != elements_to_erase.end() && 
-                *erase_iterator == j) { 
-              continue;
-            }
-
-            // See if basis point i is too close to basis point j. retain j
-            uint32_t xj = basis_points[j].x;
-            uint32_t yj = basis_points[j].y;
-            float distance = sqrt((xi - xj)*(xi - xj) + (yi - yj) *(yi - yj));
-            if (distance < 2 * threshold) {
-              elements_to_erase.push_back(i); // does not affect erase_iterator
-              break;
-            }
-
-            // See if these basis points are really close by searching for a
-            // short path in the walls
-            if (dfs.searchForPath(basis_points[i], basis_points[j], 
-                2 * basis_distance)) {
-              elements_to_erase.push_back(i);
-              break;
-            }
-          }
-        }
-
-        // Actually remove elements from the basis point array
-        for (size_t i = elements_to_erase.size() - 1; 
-            i <= elements_to_erase.size(); --i) {
-          basis_points.erase(basis_points.begin() + elements_to_erase[i]);
-        }
-      }
+          const nav_msgs::OccupancyGrid& map);
 
   }; /* VoronoiPoint */
   
 } /* topological_mapper */
+
+#endif /* end of include guard: VORONOI_POINT_JI6FXE0K */

@@ -117,7 +117,7 @@ namespace topological_mapper {
         sqrt((p.x - goal.x)*(p.x - goal.x) + (p.y - goal.y)*(p.y - goal.y));
       neighbours.push_back(p);
     }
-    std::sort(neighbours.begin(), neighbours.end(), point2dDistanceComp);
+    std::sort(neighbours.begin(), neighbours.end(), Point2dDistanceComp());
   }
 
 } /* topological_mapper */

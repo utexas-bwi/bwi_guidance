@@ -1,7 +1,8 @@
 /**
  * \file  connected_components.h
  * \brief  Connected Components implementation to get all the points in a
- *         critical region, along with neighbouring critical points
+ *         critical region, along with neighbouring critical points to form the
+ *         topological graph.
  *
  * \author  Piyush Khandelwal (piyushk@cs.utexas.edu)
  *
@@ -39,63 +40,43 @@
 #ifndef CONNECTED_COMPONENTS_DVJRQLHV
 #define CONNECTED_COMPONENTS_DVJRQLHV
 
-#include <topological_mapper/map_loader.h> // for MAP_IDX
-#include <cvblobs/BlobResult.h>
+#include <opencv/cv.h>
 #include <vector>
 
 namespace topological_mapper {
 
+  /**
+   * \class ConnectedComponents
+   * \brief API for 8-connected connected components algorithm to find critical
+   *        regions in a map demarcated by obstalces and critical lines
+   *        Neigbouring critical regions help form the topological graph. Since
+   *        this algorithm is 8-connected, any demarcating lines should be drawn
+   *        4-connected if they are single pixel.
+   */
   class ConnectedComponents {
 
     public:
-      ConnectedComponents (cv::Mat& image,
-          std::vector<int32_t>& component_map) {
 
-        IplImage ipl_image = (IplImage)image;
-        IplImage* image_ptr = cvCloneImage(&ipl_image);
-        CBlobResult blobs(image_ptr, NULL, 0);
-        number_components_ = blobs.GetNumBlobs();
+      /**
+       * \brief  Given an image map containing obstacles and demarcating
+       *         critical lines, the constructor runs a critical components
+       *         algorithm to find critical regions.
+       * \param  image map with obstacles and critical lines 
+       * \return  
+       */
+      ConnectedComponents (cv::Mat& image, std::vector<int32_t>& component_map);
 
-        // Initialize vector to all zeros 
-        for (size_t i = 0; i < component_map.size(); ++i) {
-          component_map[i] = -1;
-        }
-
-        // Draw individual components onto image
-        for (size_t t = 0; t < number_components_; ++t) {
-
-          // Draw this component on to an image
-          CBlob blob(blobs.GetBlob(t));
-          IplImage *blob_image = 
-            cvCreateImage(cvSize(image.cols, image.rows), IPL_DEPTH_8U, 1);
-          cvSetZero(blob_image);
-          blob.FillBlob(blob_image, cvScalar(255));
-
-          // Read the image and fill the std::vector
-          int step = blob_image->widthStep / sizeof(uchar);
-          uchar* data = (uchar *) blob_image->imageData;
-          for (int j = 0; j < image.rows; ++j) {
-            for (int i = 0; i < image.cols; ++i) {
-              if (data[j * step + i] == 255) {
-                size_t map_idx = MAP_IDX(image.cols, i, j);
-                component_map[map_idx] = t;
-              }
-            }
-          }
-
-          cvReleaseImage(&blob_image);
-        }
-
-        cvReleaseImage(&image_ptr);
-
-      }
-
-      size_t getNumberComponents() {
-        return number_components_;
-      }
+      /**
+       * \brief Returns the number of components obtained by running the
+       *        critical components algorithm.
+       */
+      size_t getNumberComponents();
 
     private:
 
+      /** \brief The number of critical components that are found is stored so
+       *         that it can be retrieved later using getNumberComponents
+       */
       size_t number_components_;
 
   }; /* ConnectedComponents */

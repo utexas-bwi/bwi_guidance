@@ -8,6 +8,7 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
 # set(ROS_BUILD_TYPE Debug)
+# set(CMAKE_VERBOSE_MAKEFILE on)
 
 rosbuild_init()
 
@@ -46,11 +47,14 @@ rosbuild_add_library(topological_mapper
   src/libtopological_mapper/map_inflator.cpp 
   src/libtopological_mapper/map_loader.cpp
   src/libtopological_mapper/directed_dfs.cpp
+  src/libtopological_mapper/connected_components.cpp
+  src/libtopological_mapper/structures/point.cpp
+  src/libtopological_mapper/structures/voronoi_point.cpp
   )
 
 target_link_libraries(topological_mapper ${YAML_CPP_LIBRARIES})
 target_link_libraries(topological_mapper ${OPENCV_LIBRARIES})
-target_link_libraries(topological_mapper image_loader)
+target_link_libraries(topological_mapper image_loader) #from map_server
 
 #test binaries
 rosbuild_add_executable(test_circle test/test_circle.cpp)

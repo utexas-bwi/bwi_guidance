@@ -138,7 +138,7 @@ namespace topological_mapper {
 
               // Now that obstacles are available, sort and add to the vp as
               // necessary
-              std::sort(obstacles.begin(), obstacles.end(), point2dDistanceComp);
+              std::sort(obstacles.begin(), obstacles.end(), Point2dDistanceComp());
               for (size_t q = 0; q < obstacles.size(); q++) {
                 if (vp.basis_points.size() == 0 ||
                     obstacles[q].distance_from_ref <= vp.basis_distance + 1) {

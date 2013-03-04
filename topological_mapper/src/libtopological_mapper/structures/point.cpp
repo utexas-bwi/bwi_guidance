@@ -1,6 +1,6 @@
 /**
- * \file  point.h
- * \brief  Contains basic point data structures for topological_mapper
+ * \file  point.cpp
+ * \brief  Implementations for the basic point data structures
  *
  * \author  Piyush Khandelwal (piyushk@cs.utexas.edu)
  *
@@ -31,54 +31,22 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  *
- * $ Id: 02/27/2013 04:19:42 PM piyushk $
+ * $ Id: 03/04/2013 12:14:44 PM piyushk $
  *
  **/
 
-#ifndef POINT_71CJ9X0J
-#define POINT_71CJ9X0J
-
-#include <stdint.h>
+#include <topological_mapper/structures/point.h>
 
 namespace topological_mapper {
 
   /**
-   * \class Point2d
-   * \brief A simple class to hold a 2D pixel point along with distance to a 
-   *        reference position
+   * \brief   comapares 2 Point2d objects. When used with std::sort, returns a
+   *          sorted ist of Point2d objects (ascending w.r.t distance_from_ref
    */
-  struct Point2d {
-    uint32_t x;
-    uint32_t y;
-    float distance_from_ref;
-  }; /* Point2d */
-  
+  bool Point2dDistanceComp::operator() (Point2d i, Point2d j) {
+    return i.distance_from_ref < j.distance_from_ref;
+  }
 
-  /**
-   * \class Point2dDistanceComp
-   * \brief A simple class acting as a comparator for Point2d using the 
-   *        reference distance. Useful while using std::sort.
-   */
-  struct Point2dDistanceComp {
-
-    /**
-     * \brief   comapares 2 Point2d objects. When used with std::sort, returns a
-     *          sorted ist of Point2d objects (ascending w.r.t distance_from_ref
-     */
-    bool operator() (Point2d i, Point2d j);
-
-  }; /* Point2dDistanceComp */
-
-  /**
-   * \class Point2f
-   * \brief A floating point 2D point
-   */
-  struct Point2f {
-    float x;
-    float y;
-  }; /* Point2f */
-
-  
 } /* topological_mapper */
 
-#endif /* end of include guard: POINT_71CJ9X0J */
+
