@@ -36,52 +36,24 @@
  **/
 
 #include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/labeled_graph.hpp>
 #include <topological_mapper/structures/point.h>
 
 namespace topological_mapper {
 
   // Graph
   struct Vertex {
-    uint32_t index;
     Point2f location;
-    double pixels; // Stores area for regions and clearance for vertices
+    double pixels;
     double resolution;
   };
 
-  struct Edge {
-    uint32_t index;
-  };
-
   //Define the graph using those classes
-  typedef boost::adjacency_list<
-    boost::listS, 
-    boost::listS, 
-    boost::undirectedS, 
-    Vertex, 
-    Edge
+  typedef boost::labeled_graph <
+    boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, Vertex, 
+                          boost::no_property>,
+    size_t
   > Graph;
-
-  const Vertex* getVertex(const Graph &g, uint32_t index) {
-    boost::graph_traits<Graph>::vertex_iterator vi, vi_end;
-    boost::tie(vi, vi_end) = boost::vertices(g);
-    for (; vi != vi_end; ++vi) {
-      if (g[*vi].index == index) {
-        return &g[*vi];
-      }
-    }
-    return NULL;
-  }
-
-  const Edge* getEdge(const Graph &g, uint32_t index) {
-    boost::graph_traits<Graph>::edge_iterator ei, ei_end;
-    boost::tie(ei, ei_end) = edges(g);
-    for (; ei != ei_end; ++ei) {
-      if (g[*ei].index == index) {
-        return &g[*ei];
-      }
-    }
-    return NULL;
-  }
 
 } /* topological_mapper */
 
