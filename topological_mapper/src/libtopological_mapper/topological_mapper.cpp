@@ -66,9 +66,7 @@ namespace topological_mapper {
     for (size_t i = 0; i < critical_points_.size(); ++i) {
       VoronoiPoint &vp = critical_points_[i];
       cv::circle(image, 
-          cv::Point(vp.x + orig_x, 
-            orig_y + inflated_map_.info.height - 1 - vp.y), 
-          2, cv::Scalar(0,0,255), -1);
+          cv::Point(vp.x + orig_x, vp.y + orig_y), 2, cv::Scalar(0,0,255), -1);
     }
 
     drawCriticalLines(image, orig_x, orig_y);
@@ -120,7 +118,7 @@ namespace topological_mapper {
       size_t vertex_size = 3 + graph[*vi].pixels / 10;
       cv::circle(image, 
           cv::Point(orig_x + (uint32_t)location.x, 
-            orig_y + map_resp_.map.info.height - 1 - (uint32_t)location.y), 
+            orig_y + (uint32_t)location.y), 
             vertex_size, cv::Scalar(0,0,255), -1);
 
       // Draw the edges from this vertex
@@ -130,10 +128,8 @@ namespace topological_mapper {
           ai != aend; ++ai) {
         Point2f location2 = graph[*ai].location;
         cv::line(image, 
-            cv::Point(orig_x + location.x, 
-              orig_y + map_resp_.map.info.height - 1 - location.y),
-            cv::Point(orig_x + location2.x, 
-              orig_y + map_resp_.map.info.height - 1 - location2.y),
+            cv::Point(orig_x + location.x, orig_y + location.y),
+            cv::Point(orig_x + location2.x, orig_y + location2.y),
             cv::Scalar(0, 0, 255),
             1, 4); // draw a 4 connected line
       }
@@ -291,7 +287,7 @@ namespace topological_mapper {
     // Draw the critical lines as their indexes on the map
     cv::Mat lines(map_resp_.map.info.height, map_resp_.map.info.width, CV_16UC1,
         cv::Scalar((uint16_t)-1));
-    drawCriticalLines(lines, 0, 0, true, false);
+    drawCriticalLines(lines, 0, 0, true);
 
     // Go over all the pixels in the lines image and find neighbouring critical
     // regions
@@ -312,7 +308,8 @@ namespace topological_mapper {
             continue;
           }
           size_t map_idx = MAP_IDX(lines.cols, x_n, y_n);
-          if (component_map_[map_idx]) {
+          if (component_map_[map_idx] > 0 && 
+              component_map_[map_idx] < (int32_t) num_components_) {
             point_neighbours[pixel].insert(component_map_[map_idx]);
           }
         }
@@ -320,14 +317,14 @@ namespace topological_mapper {
     }
 
     // Print neighbours
-    // for (size_t i = 0; i < critical_points_.size(); ++i) {
-    //   std::cout << i << " -> ";
-    //   for (std::set<uint32_t>::iterator it = point_neighbours[i].begin();
-    //       it != point_neighbours[i].end(); ++it) {
-    //     std::cout << *it << " ";
-    //   }
-    //   std::cout << std::endl;
-    // }
+    for (size_t i = 0; i < critical_points_.size(); ++i) {
+      std::cout << i << " -> ";
+      for (std::set<uint32_t>::iterator it = point_neighbours[i].begin();
+          it != point_neighbours[i].end(); ++it) {
+        std::cout << *it << " ";
+      }
+      std::cout << std::endl;
+    }
     
     // Create the point graph first
     for (size_t i = 0; i < critical_points_.size(); ++i) {
@@ -338,13 +335,15 @@ namespace topological_mapper {
     }
     // Construct the edges in this graph
     for (size_t i = 0; i < critical_points_.size(); ++i) {
-      for (std::set<uint32_t>::iterator it = point_neighbours[i].begin();
-          it != point_neighbours[i].end(); ++it) {
-        for (size_t j = 0; j < critical_points_.size(); ++j) {
-          if (i == j)
-            continue;
-          if (point_neighbours[j].count(*it)) {
-            boost::add_edge_by_label(i, j, point_graph_);
+      if (point_neighbours[i].size() == 2) {
+        for (std::set<uint32_t>::iterator it = point_neighbours[i].begin();
+            it != point_neighbours[i].end(); ++it) {
+          for (size_t j = 0; j < critical_points_.size(); ++j) {
+            if (i == j)
+              continue;
+            if (point_neighbours[j].count(*it)) {
+              boost::add_edge_by_label(i, j, point_graph_);
+            }
           }
         }
       }
@@ -373,13 +372,15 @@ namespace topological_mapper {
     }
     // Create 1 edge per critical point
     for (size_t i = 0; i < critical_points_.size(); ++i) {
-      int count = 0;
-      uint32_t v[] = {0, 0};
-      for (std::set<uint32_t>::iterator it = point_neighbours[i].begin();
-          it != point_neighbours[i].end(); ++it, ++count) {
-        v[count] = *it;
+      if (point_neighbours[i].size() == 2) {
+        int count = 0;
+        uint32_t v[] = {0, 0};
+        for (std::set<uint32_t>::iterator it = point_neighbours[i].begin();
+            it != point_neighbours[i].end(); ++it, ++count) {
+          v[count] = *it;
+        }
+        boost::add_edge_by_label(v[0], v[1], region_graph_);
       }
-      boost::add_edge_by_label(v[0], v[1], region_graph_);
     }
 
   }
@@ -389,7 +390,7 @@ namespace topological_mapper {
    *          at (orig_x, orig_y)
    */
   void TopologicalMapper::drawCriticalLines(cv::Mat &image, 
-      uint32_t orig_x, uint32_t orig_y, bool draw_idx, bool flip) {
+      uint32_t orig_x, uint32_t orig_y, bool draw_idx) {
 
     for (size_t i = 0; i < critical_points_.size(); ++i) {
       cv::Scalar color = cv::Scalar(0);
@@ -403,15 +404,9 @@ namespace topological_mapper {
       } else {
         Point2d &p1(vp.basis_points[0]);
         Point2d &p2(vp.basis_points[1]);
-        uint32_t p1y = orig_y + p1.y;
-        uint32_t p2y = orig_y + p2.y;
-        if (flip) {
-          p1y = orig_y + inflated_map_.info.height - 1 - p1.y;
-          p2y = orig_y + inflated_map_.info.height - 1 - p2.y;
-        }
         cv::line(image, 
-            cv::Point(orig_x + p1.x, p1y),
-            cv::Point(orig_x + p2.x, p2y), 
+            cv::Point(orig_x + p1.x, orig_y + p1.y),
+            cv::Point(orig_x + p2.x, orig_y + p2.y), 
             color,
             1, 4); // draw a 4 connected line
       }

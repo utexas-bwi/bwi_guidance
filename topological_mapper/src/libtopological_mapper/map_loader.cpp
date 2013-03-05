@@ -166,7 +166,7 @@ namespace topological_mapper {
     for (uint32_t j = 0; j < map.info.height; ++j) {
       cv::Vec3b* image_row_j = image.ptr<cv::Vec3b>(j + orig_y);
       for (uint32_t i = 0; i < map.info.width; ++i) {
-        uint8_t val = map.data[MAP_IDX(map.info.width, i, (map.info.height - 1 - j))];
+        uint8_t val = map.data[MAP_IDX(map.info.width, i, j)];
         cv::Vec3b& pixel = image_row_j[i + orig_x];
         switch (val) {
           case 100:

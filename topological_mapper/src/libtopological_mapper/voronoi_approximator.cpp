@@ -213,7 +213,7 @@ namespace topological_mapper {
     for (size_t i = 0; i < voronoi_points_.size(); ++i) {
       VoronoiPoint &vp = voronoi_points_[i];
       image.at<cv::Vec3b>
-        (orig_y + inflated_map_.info.height - 1 - vp.y, vp.x + orig_x) = 
+        (orig_y + vp.y, vp.x + orig_x) = 
         cv::Vec3b(255,0,0);
     }
   }
