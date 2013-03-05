@@ -37,6 +37,7 @@
 
 #include <topological_mapper/topological_mapper.h>
 #include <topological_mapper/connected_components.h>
+#include <topological_mapper/graph.h>
 
 namespace topological_mapper {
 
@@ -53,6 +54,7 @@ namespace topological_mapper {
 
     findVoronoiPoints(threshold);
     computeCriticalRegions(critical_epsilon);
+    Graph g;
   }
 
 
