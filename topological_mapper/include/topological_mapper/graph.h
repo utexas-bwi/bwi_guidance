@@ -45,7 +45,6 @@ namespace topological_mapper {
   struct Vertex {
     Point2f location;
     double pixels;
-    double resolution;
   };
 
   //Define the graph using those classes

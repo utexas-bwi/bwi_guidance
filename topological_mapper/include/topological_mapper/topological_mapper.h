@@ -39,6 +39,7 @@
 #define TOPOLOGICAL_MAPPER_EA94RQRE
 
 #include <topological_mapper/voronoi_approximator.h>
+#include <topological_mapper/graph.h>
 
 namespace topological_mapper {
 
@@ -88,6 +89,13 @@ namespace topological_mapper {
           uint32_t orig_x = 0, uint32_t orig_y = 0); 
 
       /**
+       * \brief   draws the given graph onto an image starting at 
+       *          (orig_x, orig_y)
+       */
+      void drawGraph(cv::Mat &image, const Graph& graph, 
+          uint32_t orig_x = 0, uint32_t orig_y = 0);
+
+      /**
        * \brief   Prints information about all the critical points to screen. 
        *          Used for testing the output of Topological Mapper.
        */
@@ -108,16 +116,16 @@ namespace topological_mapper {
        *          calculated
        * \param   critical_epsilon see TopologicalMapper() for more details
        */
-      void computeCriticalRegions (double critical_epsilon); 
+      void computeCriticalRegions (double critical_epsilon);
 
+      void computeGraph ();
 
       /**
        * \brief   Draws critical lines (4-connected) onto given image starting
        *          at (orig_x, orig_y)
        */
-      void drawCriticalLines(cv::Mat &image, 
-          uint32_t orig_x = 0, uint32_t orig_y = 0); 
-
+      void drawCriticalLines(cv::Mat &image, uint32_t orig_x = 0, 
+          uint32_t orig_y = 0, bool draw_idx = false, bool flip = true); 
 
       /** \brief stores the array of computed Critical Points **/
       std::vector<VoronoiPoint> critical_points_;
@@ -135,6 +143,9 @@ namespace topological_mapper {
 
       /** \brief the totatl number of components found + 1 for background */
       size_t num_components_;
+
+      Graph region_graph_;
+      Graph point_graph_;
 
   }; /* TopologicalMapper */
 
