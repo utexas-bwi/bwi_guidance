@@ -128,7 +128,7 @@ namespace topological_mapper {
 
     std::cout << "MapLoader: Loading map from image " << mapfname << std::endl;
     map_server::loadMapFromFile(&map_resp_, mapfname.c_str(), res, negate, 
-        occ_th, free_th, origin);
+        free_th, free_th, origin);
 
   }
 

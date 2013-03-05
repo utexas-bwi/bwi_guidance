@@ -82,9 +82,7 @@ namespace topological_mapper {
     // Figure out different colors - 1st color should always be black
     size_t num_colors = num_components_;
     component_colors_.resize(num_colors);
-    component_colors_[0][0] =  component_colors_[0][1] = 
-        component_colors_[0][2] = 0;
-    for (size_t i = 1; i < num_colors; ++i) {
+    for (size_t i = 0; i < num_colors; ++i) {
       component_colors_[i] = 
         cv::Vec3b(32 + rand() % 192, 32 + rand() % 192, 32 + rand() % 192);
     }
@@ -308,7 +306,7 @@ namespace topological_mapper {
             continue;
           }
           size_t map_idx = MAP_IDX(lines.cols, x_n, y_n);
-          if (component_map_[map_idx] > 0 && 
+          if (component_map_[map_idx] >= 0 && 
               component_map_[map_idx] < (int32_t) num_components_) {
             point_neighbours[pixel].insert(component_map_[map_idx]);
           }
@@ -350,7 +348,7 @@ namespace topological_mapper {
     }
 
     // Create the region graph next
-    for (size_t r = 0; r < num_components_; ++r) { // 0 component is background
+    for (size_t r = 0; r < num_components_; ++r) { 
       boost::add_vertex(r, region_graph_);
 
       // Calculate the centroid
