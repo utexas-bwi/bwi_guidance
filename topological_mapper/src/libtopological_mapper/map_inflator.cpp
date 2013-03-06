@@ -1,6 +1,6 @@
 /**
- * \file  map_inflator.h
- * \brief  Provides a simple costmap inflation function
+ * \file  map_inflator.cpp
+ * \brief  Provides an implementation for map_inflator.h
  *
  * \author  Piyush Khandelwal (piyushk@cs.utexas.edu)
  *
@@ -31,28 +31,47 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  *
- * $ Id: 02/21/2013 11:54:18 AM piyushk $
+ * $ Id: 02/25/2013 05:24:29 PM piyushk $
  *
  **/
 
-#ifndef MAP_INFLATOR_7FSXTBKS
-#define MAP_INFLATOR_7FSXTBKS
-
-#include <nav_msgs/OccupancyGrid.h>
+#include <topological_mapper/map_inflator.h>
 
 namespace topological_mapper {
   
   /**
    * \brief   A simple utility function that expands the map based on inflation
    *          distance in meters
-   * \param   threshold inflation distance in meters
-   * \param   map the map to inflate
-   * \param   inflated_map the returned inflated map passed as a reference
    */
-
   void inflateMap(double threshold, const nav_msgs::OccupancyGrid& map, 
-      nav_msgs::OccupancyGrid& inflated_map);
+      nav_msgs::OccupancyGrid& inflated_map) {
+
+    inflated_map.header = map.header;
+    inflated_map.info = map.info;
+
+    // expand the map out based on the circumscribed robot distance
+    int expand_pixels = ceil(threshold / map.info.resolution);
+    inflated_map.data.resize(map.info.height * map.info.width);
+    for (int i = 0; i < (int)map.info.height; ++i) {
+      for (int j = 0; j < (int)map.info.width; ++j) {
+        int low_i = (i - expand_pixels < 0) ? 0 : i - expand_pixels;
+        int high_i = (i + expand_pixels >= (int)map.info.height) ? 
+          map.info.height - 1 : i + expand_pixels;
+        int max = 0;
+        for (int k = low_i; k <= high_i; ++k) {
+          int diff_j = floor(sqrtf(expand_pixels * expand_pixels - (i - k) * (i - k)));
+          int low_j = (j - diff_j < 0) ? 0 : j - diff_j;
+          int high_j = (j + diff_j >= (int)map.info.width) ? 
+            map.info.width - 1 : j + diff_j;
+          for (int l = low_j; l <= high_j; ++l) {
+            if (map.data[k * map.info.width + l] > max) {
+              max = map.data[k * map.info.width + l];
+            }
+          }
+        }
+        inflated_map.data[i * map.info.width + j] = max;
+      }
+    }
+  }
 
 } /* topological_mapper */
-
-#endif /* end of include guard: MAP_INFLATOR_7FSXTBKS */

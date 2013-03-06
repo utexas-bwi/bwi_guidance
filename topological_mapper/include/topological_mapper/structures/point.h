@@ -1,7 +1,6 @@
 /**
- * \file  test_voronoi.cpp
- * \brief  Simple test for the voronoi approximator. Reads a map and displays 
- * information from the voronoi approximator on to the screen
+ * \file  point.h
+ * \brief  Contains basic point data structures for topological_mapper
  *
  * \author  Piyush Khandelwal (piyushk@cs.utexas.edu)
  *
@@ -32,35 +31,54 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  *
- * $ Id: 02/20/2013 05:09:13 PM piyushk $
+ * $ Id: 02/27/2013 04:19:42 PM piyushk $
  *
  **/
 
-#include <iostream>
-#include <string>
+#ifndef POINT_71CJ9X0J
+#define POINT_71CJ9X0J
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include <stdint.h>
 
-#include <topological_mapper/voronoi_approximator.h>
+namespace topological_mapper {
 
-int main(int argc, char** argv) {
+  /**
+   * \class Point2d
+   * \brief A simple class to hold a 2D pixel point along with distance to a 
+   *        reference position
+   */
+  struct Point2d {
+    uint32_t x;
+    uint32_t y;
+    float distance_from_ref;
+  }; /* Point2d */
+  
 
-  if (argc != 2) {
-    std::cerr << "USAGE: " << argv[0] << " <yaml-map-file>" << std::endl;
-    return -1;
-  }
+  /**
+   * \class Point2dDistanceComp
+   * \brief A simple class acting as a comparator for Point2d using the 
+   *        reference distance. Useful while using std::sort.
+   */
+  struct Point2dDistanceComp {
 
-  topological_mapper::VoronoiApproximator voronoi(argv[1]);
-  cv::Mat image;
-  voronoi.findVoronoiPoints(0.3);
-  voronoi.drawOutput(image);
+    /**
+     * \brief   comapares 2 Point2d objects. When used with std::sort, returns a
+     *          sorted ist of Point2d objects (ascending w.r.t distance_from_ref
+     */
+    bool operator() (Point2d i, Point2d j);
 
-  cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
-  cv::imshow("Display window", image);                
+  }; /* Point2dDistanceComp */
 
-  cv::waitKey(0); // Wait for a keystroke in the window
-  return 0;
-}
+  /**
+   * \class Point2f
+   * \brief A floating point 2D point
+   */
+  struct Point2f {
+    float x;
+    float y;
+  }; /* Point2f */
 
+  
+} /* topological_mapper */
 
+#endif /* end of include guard: POINT_71CJ9X0J */

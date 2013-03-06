@@ -7,7 +7,8 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 #  Release        : w/o debug symbols, w/ optimization
 #  RelWithDebInfo : w/ debug symbols, w/ optimization
 #  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE Debug)
+# set(ROS_BUILD_TYPE Debug)
+# set(CMAKE_VERBOSE_MAKEFILE on)
 
 rosbuild_init()
 
@@ -40,17 +41,35 @@ link_directories(${OPENCV_LIBRARY_DIRS})
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
+#main library
+rosbuild_add_library(topological_mapper 
+  src/libtopological_mapper/circle_provider.cpp 
+  src/libtopological_mapper/map_inflator.cpp 
+  src/libtopological_mapper/map_loader.cpp
+  src/libtopological_mapper/directed_dfs.cpp
+  src/libtopological_mapper/connected_components.cpp
+  src/libtopological_mapper/voronoi_approximator.cpp
+  src/libtopological_mapper/topological_mapper.cpp
+  src/libtopological_mapper/structures/point.cpp
+  src/libtopological_mapper/structures/voronoi_point.cpp
+  )
+
+target_link_libraries(topological_mapper ${YAML_CPP_LIBRARIES})
+target_link_libraries(topological_mapper ${OPENCV_LIBRARIES})
+target_link_libraries(topological_mapper image_loader) #from map_server
+
 #test binaries
 rosbuild_add_executable(test_circle test/test_circle.cpp)
+target_link_libraries(test_circle topological_mapper)
 
 rosbuild_add_executable(test_map_loader test/test_map_loader.cpp)
-target_link_libraries(test_map_loader ${YAML_CPP_LIBRARIES})
-target_link_libraries(test_map_loader ${OPENCV_LIBRARIES})
-target_link_libraries(test_map_loader image_loader)
+target_link_libraries(test_map_loader topological_mapper)
 
 rosbuild_add_executable(test_voronoi test/test_voronoi.cpp)
-target_link_libraries(test_voronoi ${YAML_CPP_LIBRARIES})
-target_link_libraries(test_voronoi ${OPENCV_LIBRARIES})
-target_link_libraries(test_voronoi image_loader)
+target_link_libraries(test_voronoi topological_mapper)
 
 rosbuild_add_executable(test_dfs test/test_dfs.cpp)
+target_link_libraries(test_dfs topological_mapper)
+
+rosbuild_add_executable(test_graph test/test_graph.cpp)
+target_link_libraries(test_graph topological_mapper)

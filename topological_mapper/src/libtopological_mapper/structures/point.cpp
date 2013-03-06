@@ -1,7 +1,6 @@
 /**
- * \file  test_voronoi.cpp
- * \brief  Simple test for the voronoi approximator. Reads a map and displays 
- * information from the voronoi approximator on to the screen
+ * \file  point.cpp
+ * \brief  Implementations for the basic point data structures
  *
  * \author  Piyush Khandelwal (piyushk@cs.utexas.edu)
  *
@@ -32,35 +31,22 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  *
- * $ Id: 02/20/2013 05:09:13 PM piyushk $
+ * $ Id: 03/04/2013 12:14:44 PM piyushk $
  *
  **/
 
-#include <iostream>
-#include <string>
+#include <topological_mapper/structures/point.h>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+namespace topological_mapper {
 
-#include <topological_mapper/voronoi_approximator.h>
-
-int main(int argc, char** argv) {
-
-  if (argc != 2) {
-    std::cerr << "USAGE: " << argv[0] << " <yaml-map-file>" << std::endl;
-    return -1;
+  /**
+   * \brief   comapares 2 Point2d objects. When used with std::sort, returns a
+   *          sorted ist of Point2d objects (ascending w.r.t distance_from_ref
+   */
+  bool Point2dDistanceComp::operator() (Point2d i, Point2d j) {
+    return i.distance_from_ref < j.distance_from_ref;
   }
 
-  topological_mapper::VoronoiApproximator voronoi(argv[1]);
-  cv::Mat image;
-  voronoi.findVoronoiPoints(0.3);
-  voronoi.drawOutput(image);
-
-  cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
-  cv::imshow("Display window", image);                
-
-  cv::waitKey(0); // Wait for a keystroke in the window
-  return 0;
-}
+} /* topological_mapper */
 
 

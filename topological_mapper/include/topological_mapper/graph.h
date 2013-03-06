@@ -1,7 +1,6 @@
 /**
- * \file  test_voronoi.cpp
- * \brief  Simple test for the voronoi approximator. Reads a map and displays 
- * information from the voronoi approximator on to the screen
+ * \file  graph.h
+ * \brief  Contains some simple data structures for holding the graph
  *
  * \author  Piyush Khandelwal (piyushk@cs.utexas.edu)
  *
@@ -32,35 +31,28 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  *
- * $ Id: 02/20/2013 05:09:13 PM piyushk $
+ * $ Id: 03/04/2013 04:15:26 PM piyushk $
  *
  **/
 
-#include <iostream>
-#include <string>
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/labeled_graph.hpp>
+#include <topological_mapper/structures/point.h>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+namespace topological_mapper {
 
-#include <topological_mapper/voronoi_approximator.h>
+  // Graph
+  struct Vertex {
+    Point2f location;
+    double pixels;
+  };
 
-int main(int argc, char** argv) {
+  //Define the graph using those classes
+  typedef boost::labeled_graph <
+    boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, Vertex, 
+                          boost::no_property>,
+    size_t
+  > Graph;
 
-  if (argc != 2) {
-    std::cerr << "USAGE: " << argv[0] << " <yaml-map-file>" << std::endl;
-    return -1;
-  }
-
-  topological_mapper::VoronoiApproximator voronoi(argv[1]);
-  cv::Mat image;
-  voronoi.findVoronoiPoints(0.3);
-  voronoi.drawOutput(image);
-
-  cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
-  cv::imshow("Display window", image);                
-
-  cv::waitKey(0); // Wait for a keystroke in the window
-  return 0;
-}
-
+} /* topological_mapper */
 

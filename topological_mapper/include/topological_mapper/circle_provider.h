@@ -40,81 +40,79 @@
 #ifndef CIRCLE_PROVIDER_1USEBX40
 #define CIRCLE_PROVIDER_1USEBX40
 
-#include <iostream>
 #include <vector>
 
 #define CIRCLE_REF(c,r,x,y) c[(y+r)*(2*r + 1) + (x+r)]
 
 namespace topological_mapper {
 
+  /**
+   * \class CircleProvider
+   * \brief Singleton class which provides the mid-point circle algorithm
+   * implementation
+   */
   class CircleProvider {
-
     public:
 
-      static CircleProvider& getInstance() {
-        static CircleProvider instance;
-        return instance;
-      }
+      /**
+       * \brief   Returns the singleton instance
+       * \return  A reference to the instance
+       */
+      static CircleProvider& getInstance();
 
+      /**
+       * \brief   Returns the circle in the form of a boolean array. The array
+       *          represents a box with the locations of the circle set to true.
+       * \param   radius radius of the desired circle (pixels)
+       * \param   points reference returning which points in a box of size 
+       *          (2*radius + 1)^2 are part of the circle. The vector represents
+       *          the box in row major form, with the 0th element starting at
+       *          (-radius, -radius)
+       * \param   connect4 boolean value when true returns a 4 connected circle.
+       *          If false, a 8-connected circle is returned.
+       */
       void getCircle(int radius, std::vector<bool>& points, 
-          bool connect4 = true) {
+          bool connect4 = true);
 
-        points.resize((2*radius + 1)*(2*radius + 1));
-        int error = -radius;
-        int x = radius;
-        int y =0;
-        while (x >= y) {
-          plot8Points(x, y, points, radius);
-          error += y;
-          ++y;
-          error += y;
-          if (error >= 0) {
-            error -= x;
-            if (connect4) {
-              plot8Points(x, y, points, radius);
-            }
-            --x;
-            error -= x;
-          }
-        }
-      }
-
-      void printCircle(const std::vector<bool>& points, int radius) {
-        for (size_t i = 0; i < points.size(); i++) {
-          if (i % (2*radius + 1) == 0 && i != 0) {
-            std::cout << std::endl;
-          }
-          if (points[i]) {
-            std::cout << "%";
-          } else {
-            std::cout << " ";
-          }
-        }
-        std::cout << std::endl;
-      }
+      
+      /**
+       * \brief   Prints a given circle to the screen, useful for debugging
+       * \param   points circle returned by getCircle 
+       * \param   radius radius of the circle. should be same as that supplied
+       *          to getCircle to construct points
+       */
+      void printCircle(const std::vector<bool>& points, int radius);
 
     private:
 
+      /**
+       * \brief Private constructor for singleton instance.
+       */
       CircleProvider () {}
+
+      /**
+       * \brief Unimplemented copy constructor
+       */
       CircleProvider (CircleProvider const&); //Don't implement
+
+      /**
+       * \brief Unimplemented assignment operator
+       */
       void operator=(CircleProvider const&); //Don't implement
 
-      /* all 8 octants */
-      void plot8Points(int x, int y, std::vector<bool>& points, int radius) {
+      
+      /**
+       * \brief   given an (x,y) in the first octant, plots mirrored values
+       *          along all 8 octants. See getCircle for description of the 
+       *          parameters
+       */
+      void plot8Points(int x, int y, std::vector<bool>& points, int radius);
 
-        plot4Points(x, y, points, radius);
-        if (x != y) {
-          plot4Points(y, x, points, radius);
-        }
-      }
-
-      /* all 4 quadrants */
-      void plot4Points(int x, int y, std::vector<bool>& points, int radius) {
-        CIRCLE_REF(points, radius, x, y) = true;
-        CIRCLE_REF(points, radius, x, -y) = true;
-        CIRCLE_REF(points, radius, -x, -y) = true;
-        CIRCLE_REF(points, radius, -x, y) = true;
-      }
+      /**
+       * \brief   given an (x,y) in the first octant, plots this value in all
+       *          quadrants. See getCircle for description of the parameters
+       */
+      void plot4Points(int x, int y, std::vector<bool>& points, int radius);
 
   }; /* CircleProvider */
 
