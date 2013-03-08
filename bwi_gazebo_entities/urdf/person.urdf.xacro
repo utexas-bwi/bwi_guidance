@@ -40,7 +40,7 @@
       <collision>
         <origin xyz="0 0 -0.25" />
         <geometry>
-          <cylinder length="1.5" radius="0.3" />
+          <cylinder length="1.5" radius="0.2" />
         </geometry>
       </collision>
     </link>
@@ -135,7 +135,7 @@
 
     <!-- camera -->
     <joint name="camera_joint" type="fixed">
-      <origin xyz="0.16 0 0" rpy="0 0 0" />
+      <origin xyz="-1.0 0 0.5" rpy="0 ${M_PI/6} 0" />
       <parent link="head_link"/>
       <child link="camera_link" />
     </joint>
@@ -259,7 +259,7 @@
 
     <gazebo>
       <xacro:gazebo_person_drive />
-      <xacro:gazebo_ros_controller />
+      <!-- <xacro:gazebo_ros_controller_manager /> -->
     </gazebo>
 
   </xacro:macro>

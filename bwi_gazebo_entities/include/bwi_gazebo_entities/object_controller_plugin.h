@@ -100,6 +100,7 @@ private:
   void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& cmd_msg);
 
   double x_;
+  double y_;
   double rot_;
   bool alive_;
 

@@ -126,6 +126,7 @@ void ObjectControllerPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sd
   last_odom_pose_ = this->parent->GetWorldPose();
 
   x_ = 0;
+  y_ = 0;
   rot_ = 0;
   alive_ = true;
 
@@ -168,6 +169,7 @@ void ObjectControllerPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sd
   // listen to the update event (broadcast every simulation iteration)
   this->updateConnection = event::Events::ConnectWorldUpdateStart(boost::bind(&ObjectControllerPlugin::UpdateChild, this));
 
+
 }
 
 // Update the controller
@@ -199,6 +201,7 @@ void ObjectControllerPlugin::cmdVelCallback(const geometry_msgs::Twist::ConstPtr
 {
   boost::mutex::scoped_lock scoped_lock(lock);
   x_ = cmd_msg->linear.x;
+  y_ = cmd_msg->linear.y;
   rot_ = cmd_msg->angular.z;
 }
 
@@ -214,6 +217,8 @@ void ObjectControllerPlugin::QueueThread()
 
 void ObjectControllerPlugin::getSimpleMap(const nav_msgs::OccupancyGrid::ConstPtr& map) {
 
+  ROS_INFO("Map received.");
+
   map_.header = map->header;
 
   map_.info.map_load_time = map->info.map_load_time;
@@ -228,13 +233,15 @@ void ObjectControllerPlugin::getSimpleMap(const nav_msgs::OccupancyGrid::ConstPt
   pose_in.header = map->header;
   pose_in.pose = map->info.origin;
 
-  if (listener.waitForTransform(map->header.frame_id, "/map", ros::Time(0), ros::Duration(5.0))) {
-    ROS_INFO("Transformation for simple map acquired");
-    listener.transformPose("/map", ros::Time(0), pose_in, pose_in.header.frame_id, pose_out);
-    map_.info.origin = pose_out.pose;
-  } else {
-    ROS_ERROR("Unable to get transformation from /map to %s.", map->header.frame_id.c_str());
-    map_.info.origin = pose_in.pose;
+  map_.info.origin = pose_in.pose;
+  if (map->header.frame_id != "map" && map->header.frame_id != "/map") {
+    if (listener.waitForTransform(map->header.frame_id, "/map", ros::Time(0), ros::Duration(5.0))) {
+      ROS_INFO("Transformation for simple map acquired");
+      listener.transformPose("/map", ros::Time(0), pose_in, pose_in.header.frame_id, pose_out);
+      map_.info.origin = pose_out.pose;
+    } else {
+      ROS_ERROR("Unable to get transformation from /map to %s.", map->header.frame_id.c_str());
+    }
   }
 
   // expand the map out based on the circumscribed model distance
@@ -261,9 +268,10 @@ void ObjectControllerPlugin::getSimpleMap(const nav_msgs::OccupancyGrid::ConstPt
     }
   }
 
-  ROS_INFO("Simple Map Acquired");
   pub2_.publish(map_);
   map_available_ = true;
+
+  ROS_INFO("Map processed.");
 }
 
 void ObjectControllerPlugin::publishOdometry(double step_time)
@@ -338,12 +346,17 @@ void ObjectControllerPlugin::writePositionData(double step_time)
 
     boost::mutex::scoped_lock scoped_lock(lock);
     float dr = x_ * step_time;
+    float dy = y_ * step_time;
     float da = rot_ * step_time;
 
     math::Pose orig_pose = this->parent->GetWorldPose();
     math::Pose new_pose = orig_pose;
-    new_pose.pos.x = orig_pose.pos.x + dr * cos(orig_pose.rot.GetYaw());
-    new_pose.pos.y = orig_pose.pos.y + dr * sin(orig_pose.rot.GetYaw());
+    new_pose.pos.x = orig_pose.pos.x 
+                   + dr * cos(orig_pose.rot.GetYaw()); 
+                   /* - dy * sin(orig_pose.rot.GetYaw()); */
+    new_pose.pos.y = orig_pose.pos.y 
+                   + dr * sin(orig_pose.rot.GetYaw()); 
+                   /* + dy * cos(orig_pose.rot.GetYaw()); */
     new_pose.rot.SetFromEuler(math::Vector3(0,0,orig_pose.rot.GetYaw() + da));
 
     // Check if the new pose can be allowed
@@ -352,7 +365,7 @@ void ObjectControllerPlugin::writePositionData(double step_time)
 
     if (x_pxl < 0 || x_pxl >= (int)map_.info.width ||
         y_pxl < 0 || y_pxl >= (int)map_.info.height ||
-        (map_.data[(map_.info.height - y_pxl - 1)*map_.info.width + x_pxl] < 50)) {
+        (map_.data[y_pxl * map_.info.width + x_pxl] < 50)) {
       this->parent->SetWorldPose(new_pose);
     } else {
       ROS_DEBUG_THROTTLE(2.0,"Simple Segbot plugin is preventing running into a wall. If you think this is an error, then check the map");
