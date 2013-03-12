@@ -30,7 +30,7 @@
       <updateRate>50</updateRate>
       <topicName>cmd_vel</topicName>
       <mapTopic>map</mapTopic>
-      <modelRadius>0.2</modelRadius>
+      <modelRadius>0.15</modelRadius>
       <modelPadding>0.025</modelPadding>
     </controller:person_drive_plugin>
   </xacro:macro>

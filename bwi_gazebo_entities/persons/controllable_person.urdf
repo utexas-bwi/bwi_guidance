@@ -40,7 +40,7 @@
     <collision>
       <origin xyz="0 0 -0.25"/>
       <geometry>
-        <cylinder length="1.5" radius="0.3"/>
+        <cylinder length="1.5" radius="0.15"/>
       </geometry>
     </collision>
   </link>
@@ -125,7 +125,7 @@
     </visual>
   </link>
   <joint name="camera_joint" type="fixed">
-    <origin rpy="0 0.523598775598 0" xyz="-2.0 0 0.5"/>
+    <origin rpy="0 0.523598775598 0" xyz="-1.0 0 0.5"/>
     <parent link="head_link"/>
     <child link="camera_link"/>
   </joint>
@@ -230,8 +230,8 @@
       <updateRate>50</updateRate>
       <topicName>cmd_vel</topicName>
       <mapTopic>map</mapTopic>
-      <modelRadius>0.3</modelRadius>
-      <robotPadding>0.025</robotPadding>
+      <modelRadius>0.15</modelRadius>
+      <modelPadding>0.025</modelPadding>
     </controller:person_drive_plugin>
     <!-- <xacro:gazebo_ros_controller_manager /> -->
   </gazebo>
