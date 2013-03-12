@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 
   topological_mapper::TopologicalMapper mapper(argv[1]);
   cv::Mat image;
-  mapper.computeTopologicalGraph(0.3, 1.0);
+  mapper.computeTopologicalGraph(0.3, 0.5);
   
   mapper.drawOutput(image);
 
