@@ -261,11 +261,36 @@ namespace topological_mapper {
       }
     }
 
+    // Remove any critical points where the point itself does not lie on the line
+    std::vector<size_t> mark_for_removal;
+    for (size_t i = 0; i < critical_points_.size(); ++i) {
+      VoronoiPoint &cp = critical_points_[i];
+      float theta0 = 
+        atan2((int32_t)cp.basis_points[0].y - (int32_t)cp.y, 
+              (int32_t)cp.basis_points[0].x - (int32_t)cp.x);
+      float theta1 = 
+        atan2((int32_t)cp.basis_points[1].y - (int32_t)cp.y, 
+              (int32_t)cp.basis_points[1].x - (int32_t)cp.x);
+      float thetadiff = fabs(theta1 - theta0);
+
+      // We don't need to worry about wrapping here due known range of atan2
+      if (thetadiff > M_PI + M_PI/12 || thetadiff < M_PI - M_PI/12) {
+        mark_for_removal.push_back(i);
+      }
+    }
+
+    // Remove bad critical points
+    for (size_t j = mark_for_removal.size() - 1; 
+        j < mark_for_removal.size(); --j) { //unsigned
+      critical_points_.erase(
+          critical_points_.begin() + mark_for_removal[j]);
+    }
+
     // Once you have critical lines, produce connected regions (4-connected)
     // draw the critical lines on to a copy of the map so that we can find
     // connected regions
     cv::Mat component_map_color;
-    drawMap(component_map_color);
+    drawMap(component_map_color, inflated_map_);
     cvtColor(component_map_color, component_image_, CV_RGB2GRAY);
     drawCriticalLines(component_image_);
 
