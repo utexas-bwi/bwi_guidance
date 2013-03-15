@@ -6,7 +6,7 @@ function start() {
   var mjpeg = new MjpegCanvas({
     host : 'zoidberg.csres.utexas.edu',
       /* topic : '/l_forearm_cam/image_color', */
-      topic : '/image_raw',
+      topic : '/camera/rgb/image_raw',
       canvasID : 'my-mjpeg',
       /* width : 800, */
       width : 320,
