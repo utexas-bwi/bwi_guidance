@@ -2,7 +2,7 @@ function start() {
 
   // initialize the stream on the canvas 
   var mjpeg = new MjpegCanvas({
-    host : 'localhost',
+    host : 'zoidberg.csres.utexas.edu',
       /* topic : '/l_forearm_cam/image_color', */
       topic : '/camera/rgb/image_raw',
       canvasID : 'my-mjpeg',
@@ -12,7 +12,7 @@ function start() {
       height : 240
   });
 
-  var ros = new ROS('ws://localhost:9090');
+  var ros = new ROS('ws://zoidberg.csres.utexas.edu:9090');
   var cmd_vel = null;
   ros.on('connection', function() {
     cmd_vel = new ros.Topic({
@@ -21,50 +21,69 @@ function start() {
     });
   });
 
+  var prev_velx = 0;
+  var prev_vely = 0;
+  var prev_vela = 0;
   publishVelocity = function(options) {
+    if (options.velx != null)
+      prev_velx = options.velx;
+    if (options.vely != null)
+      prev_vely = options.vely;
+    if (options.vela != null)
+      prev_vela = options.vela;
     if (cmd_vel != null) {
       var twist = new ros.Message({
         linear: {
-          x: options.velx,
-          y: options.vely,
+          x: prev_velx,
+          y: prev_vely,
           z: 0
         },
         angular: {
           x: 0,
           y: 0,
-          z: options.vela
+          z: prev_vela
         }
       });
       cmd_vel.publish(twist);
     }
   }
 
+  var arrow  = { left: 65, up: 87, right: 68, down: 83};
   document.onkeydown = function(event) {
     var keyCode = event.keyCode || event.which;
-    var arrow  = { left: 37, up: 38, right: 39, down: 40 };
-    var velx = 0;
-    var vely = 0;
     if (keyCode === arrow.up) {
-      velx = 1.5;
+      publishVelocity({velx: 1.5});
     }
     else if (keyCode === arrow.down) {
-      velx = -1.5;
+      publishVelocity({velx: -1.5});
     }
     else if (keyCode === arrow.left) {
-      vely = 1.5;
+      publishVelocity({vely: 1.5});
     }
     else if (keyCode === arrow.right) {
-      vely = -1.5;
+      publishVelocity({vely: -1.5});
     }
-    publishVelocity({
-      velx: velx,
-      vely: vely,
-      vela: 0
-    });
     return false;
   };
 
-  // http://www.html5rocks.com/en/tutorials/pointerlock/intro/
+  document.onkeyup = function(event) {
+    var keyCode = event.keyCode || event.which;
+    if (keyCode === arrow.up) {
+      publishVelocity({velx: 0});
+    }
+    else if (keyCode === arrow.down) {
+      publishVelocity({velx: 0});
+    }
+    else if (keyCode === arrow.left) {
+      publishVelocity({vely: 0});
+    }
+    else if (keyCode === arrow.right) {
+      publishVelocity({vely: 0});
+    }
+    return false;
+  };
+
+  // http://www.html5rocks.ccuom/en/tutorials/pointerlock/intro/
   // http://mrdoob.github.com/three.js/examples/misc_controls_pointerlock.html
   
   var instructions = document.getElementById( 'instructions' );
@@ -79,11 +98,11 @@ function start() {
 
     var moveCallback = function ( event ) {
       var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-      publishVelocity({
-        velx: 0,
-        vely: 0,
-        vela: movementX / 50.0
-      });
+      var vela = -movementX / 20.0;
+      if (vela > -0.25 && vela < 0.25) {
+        vela = 0;
+      }
+      publishVelocity({vela: vela});
     }
 
     var pointerlockchange = function ( event ) {
