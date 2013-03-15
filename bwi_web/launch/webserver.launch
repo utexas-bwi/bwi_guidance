@@ -1,0 +1,6 @@
+<launch>
+  <node pkg="rosapi" name="rosapi" type="rosapi" />
+  <node pkg="rosbridge_server" name="rosbridge_server" type="rosbridge_websocket" />
+  <include file="$(find mjpeg_server)/launch/mjpeg_server.launch" />
+</launch>
+

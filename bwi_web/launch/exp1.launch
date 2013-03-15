@@ -1,0 +1,7 @@
+<launch>
+  <include file="$(find bwi_web)/launch/webserver.launch" />
+  <include file="$(find utexas_gdc)/launch/3ne.launch">
+    <arg name="gui" value="false" />
+  </include>
+  <include file="$(find utexas_gdc)/launch/person.launch" />
+</launch>
