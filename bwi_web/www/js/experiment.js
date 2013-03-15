@@ -1,10 +1,8 @@
-
-
 function start() {
 
   // initialize the stream on the canvas 
   var mjpeg = new MjpegCanvas({
-    host : 'zoidberg.csres.utexas.edu',
+    host : 'localhost',
       /* topic : '/l_forearm_cam/image_color', */
       topic : '/camera/rgb/image_raw',
       canvasID : 'my-mjpeg',
@@ -14,7 +12,7 @@ function start() {
       height : 240
   });
 
-  var ros = new ROS('ws://zoidberg.csres.utexas.edu:9090');
+  var ros = new ROS('ws://localhost:9090');
   var cmd_vel = null;
   ros.on('connection', function() {
     cmd_vel = new ros.Topic({
@@ -26,12 +24,12 @@ function start() {
   publishVelocity = function(options) {
     if (cmd_vel != null) {
       var twist = new ros.Message({
-        angular: {
+        linear: {
           x: options.velx,
           y: options.vely,
           z: 0
         },
-        linear: {
+        angular: {
           x: 0,
           y: 0,
           z: options.vela
@@ -40,6 +38,31 @@ function start() {
       cmd_vel.publish(twist);
     }
   }
+
+  document.onkeydown = function(event) {
+    var keyCode = event.keyCode || event.which;
+    var arrow  = { left: 37, up: 38, right: 39, down: 40 };
+    var velx = 0;
+    var vely = 0;
+    if (keyCode === arrow.up) {
+      velx = 1.5;
+    }
+    else if (keyCode === arrow.down) {
+      velx = -1.5;
+    }
+    else if (keyCode === arrow.left) {
+      vely = 1.5;
+    }
+    else if (keyCode === arrow.right) {
+      vely = -1.5;
+    }
+    publishVelocity({
+      velx: velx,
+      vely: vely,
+      vela: 0
+    });
+    return false;
+  };
 
   // http://www.html5rocks.com/en/tutorials/pointerlock/intro/
   // http://mrdoob.github.com/three.js/examples/misc_controls_pointerlock.html
