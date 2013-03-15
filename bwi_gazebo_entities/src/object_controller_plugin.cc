@@ -349,14 +349,16 @@ void ObjectControllerPlugin::writePositionData(double step_time)
     float dy = y_ * step_time;
     float da = rot_ * step_time;
 
+    //ROS_INFO_THROTTLE(1.0,"%f %f %f", dr, dy, da);
+
     math::Pose orig_pose = this->parent->GetWorldPose();
     math::Pose new_pose = orig_pose;
     new_pose.pos.x = orig_pose.pos.x 
-                   + dr * cos(orig_pose.rot.GetYaw()); 
-                   /* - dy * sin(orig_pose.rot.GetYaw()); */
+                   + dr * cos(orig_pose.rot.GetYaw()) 
+                   - dy * sin(orig_pose.rot.GetYaw());
     new_pose.pos.y = orig_pose.pos.y 
-                   + dr * sin(orig_pose.rot.GetYaw()); 
-                   /* + dy * cos(orig_pose.rot.GetYaw()); */
+                   + dr * sin(orig_pose.rot.GetYaw()) 
+                   + dy * cos(orig_pose.rot.GetYaw());
     new_pose.rot.SetFromEuler(math::Vector3(0,0,orig_pose.rot.GetYaw() + da));
 
     // Check if the new pose can be allowed
