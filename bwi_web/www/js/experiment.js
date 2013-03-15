@@ -4,7 +4,7 @@ function start() {
 
   // initialize the stream on the canvas 
   var mjpeg = new MjpegCanvas({
-    host : 'localhost',
+    host : 'zoidberg.csres.utexas.edu',
       /* topic : '/l_forearm_cam/image_color', */
       topic : '/image_raw',
       canvasID : 'my-mjpeg',
@@ -14,7 +14,7 @@ function start() {
       height : 240
   });
 
-  var ros = new ROS('ws://localhost:9090');
+  var ros = new ROS('ws://zoidberg.csres.utexas.edu:9090');
   var cmd_vel = null;
   ros.on('connection', function() {
     cmd_vel = new ros.Topic({
