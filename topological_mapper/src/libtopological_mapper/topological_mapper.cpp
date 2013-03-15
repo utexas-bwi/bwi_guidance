@@ -35,6 +35,8 @@
  *
  **/
 
+#include <boost/lexical_cast.hpp>
+
 #include <topological_mapper/topological_mapper.h>
 #include <topological_mapper/connected_components.h>
 
@@ -109,15 +111,18 @@ namespace topological_mapper {
       uint32_t orig_x, uint32_t orig_y) {
 
     Graph::vertex_iterator vi, vend;
+    size_t count = 0;
     for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
 
       // Draw this vertex
       Point2f location = graph[*vi].location;
-      size_t vertex_size = 3 + graph[*vi].pixels / 10;
-      cv::circle(image, 
-          cv::Point(orig_x + (uint32_t)location.x, 
-            orig_y + (uint32_t)location.y), 
-            vertex_size, cv::Scalar(0,0,255), -1);
+      size_t vertex_size = 3; // + graph[*vi].pixels / 10;
+      cv::Point vertex_loc(orig_x + (uint32_t)location.x, 
+            orig_y + (uint32_t)location.y);
+      cv::Point text_loc = vertex_loc + cv::Point(4,4);
+      cv::circle(image, vertex_loc, vertex_size, cv::Scalar(0,0,255), -1);
+      cv::putText(image, boost::lexical_cast<std::string>(count), text_loc,
+        cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cvScalar(0,0,255), 1, CV_AA);
 
       // Draw the edges from this vertex
       Graph::adjacency_iterator ai, aend;
@@ -131,7 +136,39 @@ namespace topological_mapper {
             cv::Scalar(0, 0, 255),
             1, 4); // draw a 4 connected line
       }
+
+      count++;
     }
+  }
+
+  void TopologicalMapper::drawRegionGraph(cv::Mat &image,
+      uint32_t orig_x, uint32_t orig_y) {
+    drawGraph(image, region_graph_, orig_x, orig_y);
+  }
+
+  void TopologicalMapper::drawPointGraph(cv::Mat &image,
+      uint32_t orig_x, uint32_t orig_y) {
+    drawGraph(image, point_graph_, orig_x, orig_y);
+  }
+
+  void TopologicalMapper::writeGraphToFile(std::string &filename, 
+      const Graph& graph) {
+
+    std::map<Graph::vertex_iterator, size_t> vertex_map;
+    size_t count = 0;
+    for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
+      vertex_map[vi] = count;
+      count++;
+    }
+
+    count = 0;
+    for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
+
+
+
+
+
+
   }
 
   /**
@@ -163,9 +200,9 @@ namespace topological_mapper {
     drawConnectedComponents(image, 2 * map_resp_.map.info.width);
     drawCriticalPoints(image, 2 * map_resp_.map.info.width);
     drawMap(image, 3 * map_resp_.map.info.width);
-    drawGraph(image, region_graph_, 3 * map_resp_.map.info.width);
+    drawRegionGraph(image, 3 * map_resp_.map.info.width);
     drawMap(image, 4 * map_resp_.map.info.width);
-    drawGraph(image, point_graph_, 4 * map_resp_.map.info.width);
+    drawPointGraph(image, 4 * map_resp_.map.info.width);
   }
 
   /**
@@ -340,14 +377,14 @@ namespace topological_mapper {
     }
 
     // Print neighbours
-    for (size_t i = 0; i < critical_points_.size(); ++i) {
-      std::cout << i << " -> ";
-      for (std::set<uint32_t>::iterator it = point_neighbours[i].begin();
-          it != point_neighbours[i].end(); ++it) {
-        std::cout << *it << " ";
-      }
-      std::cout << std::endl;
-    }
+    // for (size_t i = 0; i < critical_points_.size(); ++i) {
+    //   std::cout << i << " -> ";
+    //   for (std::set<uint32_t>::iterator it = point_neighbours[i].begin();
+    //       it != point_neighbours[i].end(); ++it) {
+    //     std::cout << *it << " ";
+    //   }
+    //   std::cout << std::endl;
+    // }
     
     // Create the point graph first
     for (size_t i = 0; i < critical_points_.size(); ++i) {

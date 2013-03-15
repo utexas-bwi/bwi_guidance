@@ -94,6 +94,10 @@ namespace topological_mapper {
        */
       void drawGraph(cv::Mat &image, const Graph& graph, 
           uint32_t orig_x = 0, uint32_t orig_y = 0);
+      void drawRegionGraph(cv::Mat &image, 
+          uint32_t orig_x = 0, uint32_t orig_y = 0);
+      void drawPointGraph(cv::Mat &image, 
+          uint32_t orig_x = 0, uint32_t orig_y = 0);
 
       /**
        * \brief   Prints information about all the critical points to screen. 

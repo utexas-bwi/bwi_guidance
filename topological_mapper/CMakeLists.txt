@@ -58,6 +58,10 @@ target_link_libraries(topological_mapper ${YAML_CPP_LIBRARIES})
 target_link_libraries(topological_mapper ${OPENCV_LIBRARIES})
 target_link_libraries(topological_mapper image_loader) #from map_server
 
+#binaries
+rosbuild_add_executable(generate_graph src/nodes/generate_graph.cpp)
+target_link_libraries(generate_graph topological_mapper)
+
 #test binaries
 rosbuild_add_executable(test_circle test/test_circle.cpp)
 target_link_libraries(test_circle topological_mapper)
