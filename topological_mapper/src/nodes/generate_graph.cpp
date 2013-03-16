@@ -58,6 +58,9 @@ int main(int argc, char** argv) {
   cv::Mat image;
   mapper.drawMap(image);
   mapper.drawPointGraph(image);
+  std::string filename(argv[2]);
+  mapper.writePointGraphToFile(filename);
+
 
   cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
   cv::imshow("Display window", image);                

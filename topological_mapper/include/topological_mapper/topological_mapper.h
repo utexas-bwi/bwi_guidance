@@ -99,6 +99,10 @@ namespace topological_mapper {
       void drawPointGraph(cv::Mat &image, 
           uint32_t orig_x = 0, uint32_t orig_y = 0);
 
+      void writeGraphToFile(std::string &filename, const Graph& graph);
+      void writeRegionGraphToFile(std::string &filename);
+      void writePointGraphToFile(std::string &filename);
+
       /**
        * \brief   Prints information about all the critical points to screen. 
        *          Used for testing the output of Topological Mapper.
