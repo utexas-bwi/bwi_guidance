@@ -45,6 +45,7 @@
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <bwi_msgs/Teleport.h>
 
 // Custom Callback Queue
 #include <ros/callback_queue.h>
@@ -98,6 +99,8 @@ private:
 
   // DiffDrive stuff
   void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& cmd_msg);
+  bool teleport(bwi_msgs::Teleport::Request &req,
+    bwi_msgs::Teleport::Response &resp);
 
   double x_;
   double y_;

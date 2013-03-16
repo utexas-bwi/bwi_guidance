@@ -11,6 +11,7 @@
 
   <depend package="gazebo"/>
   <depend package="gazebo_plugins"/>
+  <depend package="bwi_msgs"/>
 
   <export>
     <gazebo plugin_path="${prefix}/lib" />

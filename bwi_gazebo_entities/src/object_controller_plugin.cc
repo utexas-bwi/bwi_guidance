@@ -42,6 +42,7 @@
 #include <boost/bind.hpp>
 #include <boost/thread/mutex.hpp>
 
+
 namespace gazebo
 {
 
@@ -195,6 +196,35 @@ void ObjectControllerPlugin::FiniChild()
   queue_.disable();
   rosnode_->shutdown();
   callback_queue_thread_.join();
+}
+
+bool ObjectControllerPlugin::teleport(bwi_msgs::Teleport::Request &req,
+    bwi_msgs::Teleport::Response &resp) {
+
+  // TODO probably need a transformation here
+  geometry_msgs::Pose &pose = req.location;
+  math::Vector3 new_vec(pose.position.x, pose.position.y, pose.position.z);
+  math::Quaternion new_quat(pose.orientation.w, pose.orientation.x, 
+      pose.orientation.y, pose.orientation.z);
+  math::Pose new_pose(new_vec, new_quat);
+
+  // Check if the new pose can be allowed
+  int x_pxl = 
+    (new_pose.pos.x - map_.info.origin.position.x) / map_.info.resolution;
+  int y_pxl = 
+    (new_pose.pos.y - map_.info.origin.position.y) / map_.info.resolution;
+
+  if (x_pxl < 0 || x_pxl >= (int)map_.info.width ||
+      y_pxl < 0 || y_pxl >= (int)map_.info.height ||
+      (map_.data[y_pxl * map_.info.width + x_pxl] < 50)) {
+    this->parent->SetWorldPose(new_pose);
+    resp.success = true;
+  } else {
+    resp.success = false;
+    resp.error_msg = "Given location inside obstacle space.";
+  } 
+  
+  return true;
 }
 
 void ObjectControllerPlugin::cmdVelCallback(const geometry_msgs::Twist::ConstPtr& cmd_msg)
