@@ -159,9 +159,10 @@ void ObjectControllerPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sd
   map_available_ = false;
 
   pub_ = rosnode_->advertise<nav_msgs::Odometry>("odom", 1);
-
-  // TODO: only publish while debugging?
   pub2_ = rosnode_->advertise<nav_msgs::OccupancyGrid>("expanded_map", 1, true);
+
+  teleport_service_server_ = rosnode_->advertiseService("teleport", 
+      &ObjectControllerPlugin::teleport, this);
 
   // start custom queue for diff drive
   this->callback_queue_thread_ = boost::thread(boost::bind(&ObjectControllerPlugin::QueueThread, this));

@@ -86,6 +86,7 @@ private:
   tf::TransformBroadcaster *transform_broadcaster_;
   nav_msgs::Odometry odom_;
   std::string tf_prefix_;
+  ros::ServiceServer teleport_service_server_;
 
   boost::mutex lock;
 
