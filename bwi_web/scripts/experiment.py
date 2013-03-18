@@ -8,7 +8,7 @@
 # How do we want the robot to communicate with the human??
 # have a service to aquire a lock onto this experiment
 
-import roslib; roslib.load_manifest('beginner_tutorials')
+import roslib; roslib.load_manifest('bwi_web')
 import rospy
 
 import yaml
@@ -44,9 +44,9 @@ class ExperimentController:
             rospy.logerr("Unable to open experiment file: %s"%e.what())
         self.num_experiments = len(self.experiment['experiments'])
 
-        self.person_id = self.experiments['person_id']
-        self.robots = self.experiments['robots']
-        self.ball_id = self.experiments['ball_id']
+        self.person_id = self.experiment['person_id']
+        self.robots = self.experiment['robots']
+        self.ball_id = self.experiment['ball_id']
 
         # Get the person teleporter service
         rospy.wait_for_service(self.person_id + '/teleport')

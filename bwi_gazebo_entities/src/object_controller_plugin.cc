@@ -68,11 +68,11 @@ void ObjectControllerPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sd
 
   if (!this->parent) { gzthrow("Object controller plugin requires a Model as its parent"); }
 
-  if (!_sdf->HasElement("modelNamespace")) {
-    ROS_WARN("Object controller plugin missing <modelNamespace>, defaults to \"\"");
+  if (!_sdf->HasElement("robotNamespace")) {
+    ROS_WARN("Object controller plugin missing <robotNamespace>, defaults to \"\"");
     this->modelNamespace = "";
   } else {
-    this->modelNamespace = _sdf->GetElement("modelNamespace")->GetValueString();
+    this->modelNamespace = _sdf->GetElement("robotNamespace")->GetValueString();
   }
 
   if (!_sdf->HasElement("topicName")) {
@@ -138,7 +138,6 @@ void ObjectControllerPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sd
   rosnode_ = new ros::NodeHandle(this->modelNamespace);
 
   ROS_INFO("Starting object controller plugin in ns: %s", this->modelNamespace.c_str());
-
 
   tf_prefix_ = tf::getPrefixParam(*rosnode_);
   transform_broadcaster_ = new tf::TransformBroadcaster();
@@ -264,6 +263,7 @@ void ObjectControllerPlugin::getSimpleMap(const nav_msgs::OccupancyGrid::ConstPt
   pose_in.pose = map->info.origin;
 
   map_.info.origin = pose_in.pose;
+  // TODO: not sure why I wrote in this if condition... It seems to be a bit messed up
   if (map->header.frame_id != "map" && map->header.frame_id != "/map") {
     if (listener.waitForTransform(map->header.frame_id, "/map", ros::Time(0), ros::Duration(5.0))) {
       ROS_INFO("Transformation for simple map acquired");

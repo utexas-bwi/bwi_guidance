@@ -9,6 +9,8 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/bwi_web</url>
 
+  <depend package="bwi_msgs" />
+
 </package>
 
 
