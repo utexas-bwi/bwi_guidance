@@ -1,8 +1,38 @@
 <launch>
+
   <include file="$(find bwi_web)/launch/webserver.launch" />
   <include file="$(find utexas_gdc)/launch/3ne.launch">
     <arg name="gui" value="false" />
   </include>
   <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
-  <include file="$(find utexas_gdc)/launch/person.launch" />
+  <include ns="person" file="$(find utexas_gdc)/launch/person.launch" />
+
+  <!-- launch the 2 robots that will be required for this experiment
+       as specified in the experiment file -->
+  <include ns="robot1" file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+    <arg name="x" value="500" />
+    <arg name="y" value="500" />
+    <arg name="robotid" value="robot1" />
+    <arg name="tf_prefix" value="robot1" />
+    <arg name="has_tf_prefix" value="true" />
+    <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
+    <arg name="use_full_gazebo_model" value="false" />
+  </include>
+
+  <include ns="robot2" file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+    <arg name="x" value="502" />
+    <arg name="y" value="500" />
+    <arg name="robotid" value="robot2" />
+    <arg name="tf_prefix" value="robot2" />
+    <arg name="has_tf_prefix" value="true" />
+    <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
+    <arg name="use_full_gazebo_model" value="false" />
+  </include>
+
+  <!-- launch the experiment controller node -->
+  <node name="experiment_controller" pkg="bwi_web" type="experiment.py">
+    <param name="graph_file" value="$(find bwi_web)/config/graph.yaml" />
+    <param name="experiment_file" value="$(find bwi_web)/config/experiment.yaml" />
+  </node>
+
 </launch>

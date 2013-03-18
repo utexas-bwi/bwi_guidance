@@ -1,0 +1,15 @@
+person_id: person
+robots: 
+  - id: robot1
+    default_loc: [500, 500]
+  - id: robot2
+    default_loc: [502, 500]
+ball_id: goal
+experiments:
+  - start_id: 61
+    start_yaw: 0
+    robots:
+      - id: 44
+        yaw: 0
+      - id: 24
+        yaw: -1.5707963268 #-M_PI/2
