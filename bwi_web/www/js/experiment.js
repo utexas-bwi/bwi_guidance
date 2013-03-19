@@ -83,10 +83,24 @@ function start() {
     return false;
   };
 
+  var instructions = document.getElementById( 'instructions' );
+
+  // Create a handle for the topic '/chatter' of type std_msgs/String.
+  var user_text_subscriber = new ros.Topic({
+    name        : '/experiment/user_text',
+    messageType : 'std_msgs/String'
+  });
+
+  // Any time a message is published to the /chatter topic,
+  // the callback will fire.
+  user_text_subscriber.subscribe(function(message) {
+    // message is an instance of ros.Message.
+    instructions.innerHTML = message.data;
+  });
+
   // http://www.html5rocks.ccuom/en/tutorials/pointerlock/intro/
   // http://mrdoob.github.com/three.js/examples/misc_controls_pointerlock.html
   
-  var instructions = document.getElementById( 'instructions' );
 
   var havePointerLock = 
     'pointerLockElement' in document || 
@@ -117,7 +131,6 @@ function start() {
     }
 
     var pointerlockerror = function ( event ) {
-      instructions.style.display = '';
     }
 
     // Hook pointer lock state change events

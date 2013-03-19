@@ -61,6 +61,8 @@ class ExperimentController:
             rospy.wait_for_service(robot_id + '/teleport')
             self.teleport_robot[i] = rospy.ServiceProxy(robot_id + '/teleport', Teleport)
 
+        # Get the b
+
         # Setup the odometry subscriber
         sub = rospy.Subscriber(self.person_id + '/odom', Odometry, self.odometryCallback)
         #self.text_pub = rospy.Publisher('/experiment/user_text', String)
@@ -79,6 +81,9 @@ class ExperimentController:
         start_pose = getPoseMsgFrom2dData(*start_loc, yaw=start_yaw)
         self.teleport_person(start_pose)
 
+        # compute location/orientation from path?
+        # will require saving the 2 parameters in the graph itself
+
         # Teleport all the robots to their respective positions
         robots_in_experiment = experiment_data['robots']
         for i, robot in enumerate(self.robots):
@@ -91,6 +96,9 @@ class ExperimentController:
                 robot_yaw = 0
             robot_pose = getPoseMsgFrom2dData(*robot_loc, yaw=robot_yaw)
             self.teleport_robot[i](robot_pose)
+
+        # Teleport the goal ball to its correct position
+
 
     def odometryCallback(self, data):
         pass

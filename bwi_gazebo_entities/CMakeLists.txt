@@ -33,3 +33,5 @@ rosbuild_add_boost_directories()
 
 rosbuild_add_library(object_controller_plugin src/object_controller_plugin.cc)
 rosbuild_link_boost(object_controller_plugin thread)
+
+rosbuild_add_library(gazebo_ros_video src/gazebo_ros_video.cc)
