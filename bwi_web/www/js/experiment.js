@@ -16,7 +16,7 @@ function start() {
   var cmd_vel = null;
   ros.on('connection', function() {
     cmd_vel = new ros.Topic({
-      name        : '/cmd_vel',
+      name        : '/person/cmd_vel',
       messageType : 'geometry_msgs/Twist'
     });
   });

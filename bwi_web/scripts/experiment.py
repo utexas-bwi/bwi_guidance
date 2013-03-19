@@ -49,6 +49,7 @@ class ExperimentController:
         self.ball_id = self.experiment['ball_id']
 
         # Get the person teleporter service
+        rospy.logerr("Waiting for service: %s"%self.person_id+'/teleport')
         rospy.wait_for_service(self.person_id + '/teleport')
         self.teleport_person = rospy.ServiceProxy(self.person_id + '/teleport', Teleport)
 
@@ -56,6 +57,7 @@ class ExperimentController:
         self.teleport_robot = [None] * len(self.robots)
         for i, robot in enumerate(self.robots):
             robot_id = robot['id']
+            rospy.logerr("Waiting for service: %s"%robot_id+'/teleport')
             rospy.wait_for_service(robot_id + '/teleport')
             self.teleport_robot[i] = rospy.ServiceProxy(robot_id + '/teleport', Teleport)
 
