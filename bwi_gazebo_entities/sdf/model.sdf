@@ -16,13 +16,11 @@
             <size>1 1 1</size>
           </box>
         </geometry>
-        <material>
-          <script>
-            <uri>file://media/materials/scripts/gazebo.material</uri>
-            <name>Gazebo/Green</name>
-          </script>
-        </material>
-        <plugin name="model_test" filename="libgazebo_ros_video.so"/>
+        <plugin name="model_test" filename="libgazebo_ros_video.so">
+          <height>480</height>
+          <width>640</width>
+          <imageTopic>/usb_cam/image_raw</imageTopic>
+        </plugin>
       </visual>
     </link>
   </model>        

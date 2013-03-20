@@ -29,7 +29,10 @@
 
 #include <ros/ros.h>
 #include <opencv/cv.h>
+#include <cv_bridge/cv_bridge.h>
+#include <image_transport/image_transport.h>
 #include <boost/thread/mutex.hpp>
+#include <sensor_msgs/Image.h>
 
 #include "rendering/rendering.hh"
 #include "transport/TransportTypes.hh"
@@ -71,16 +74,16 @@ namespace gazebo
           mo.begin(_name + "__VideoMaterial__",
               Ogre::RenderOperation::OT_TRIANGLE_LIST);
 
-          mo.position(0, factor * ratio, factor);
+          mo.position(-factor * ratio / 2, factor / 2, 0.51);
           mo.textureCoord(0, 0);
 
-          mo.position(0, 0, factor);
+          mo.position(factor * ratio / 2, factor / 2, 0.51);
           mo.textureCoord(1, 0);
 
-          mo.position(0, 0, 0);
+          mo.position(factor * ratio / 2, -factor / 2, 0.51);
           mo.textureCoord(1, 1);
 
-          mo.position(0, ratio * factor, 0);
+          mo.position(-factor * ratio / 2, -factor / 2, 0.51);
           mo.textureCoord(0, 1);
 
           mo.triangle(0, 3, 2);
@@ -128,9 +131,9 @@ namespace gazebo
             for (int i = 0; i < this->width; ++i)
             {
               index = j*(this->width*3) + (i*3);
-              *pDest++ = image.data[index + 2];  // B
+              *pDest++ = image.data[index + 0];  // B
               *pDest++ = image.data[index + 1];  // G
-              *pDest++ = image.data[index + 0];  // R
+              *pDest++ = image.data[index + 2];  // R
               *pDest++ = 255;  // Alpha
             }
           }
@@ -162,6 +165,8 @@ namespace gazebo
       /// \brief Load the controller
       void Load(rendering::VisualPtr _parent, sdf::ElementPtr _sdf );
 
+      void processImage(const sensor_msgs::ImageConstPtr &msg);
+
     protected:
 
       /// \brief Update the controller
@@ -173,6 +178,22 @@ namespace gazebo
       event::ConnectionPtr updateConnection;
 
       boost::shared_ptr<VideoVisual> video_visual_;
+
+      cv_bridge::CvImagePtr image_;
+      boost::mutex m_image_;
+      bool new_image_available_;
+
+      // ROS Stuff
+      boost::shared_ptr<ros::NodeHandle> rosnode_;
+      boost::shared_ptr<image_transport::ImageTransport> it_;
+      image_transport::Subscriber camera_subscriber_;
+      int height;
+      int width;
+      std::string modelNamespace;
+      std::string topicName;
+
+      void QueueThread();
+      boost::thread callback_queue_thread_;
 
   };
 
