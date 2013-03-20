@@ -47,14 +47,19 @@ GazeboRosVideo::~GazeboRosVideo()
 // Load the controller
 void GazeboRosVideo::Load(rendering::VisualPtr _parent, sdf::ElementPtr _sdf )
 {
-  std::cout << "\n\nHELLO!!!\n\n" << std::endl;
+  this->model = _parent;
+  this->updateConnection = event::Events::ConnectPreRender(boost::bind(&GazeboRosVideo::UpdateChild, this));
+
+  std::string _name = "laptop_visual";
+  video_visual_.reset(new VideoVisual(_name, _parent, 50, 50));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Update the controller
 void GazeboRosVideo::UpdateChild()
 {
-  std::cout << "\n\nupdate!!!\n\n" << std::endl;
+  cv::Mat image(50,50,CV_8UC3);
+  video_visual_->render(image);
 }
 
 GZ_REGISTER_VISUAL_PLUGIN(GazeboRosVideo);
