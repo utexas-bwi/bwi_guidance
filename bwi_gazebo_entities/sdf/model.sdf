@@ -19,7 +19,7 @@
         <plugin name="model_test" filename="libgazebo_ros_video.so">
           <height>480</height>
           <width>640</width>
-          <imageTopic>/usb_cam/image_raw</imageTopic>
+          <topicName>/usb_cam/image_raw</topicName>
         </plugin>
       </visual>
     </link>
