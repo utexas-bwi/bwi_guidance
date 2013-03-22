@@ -1,0 +1,9 @@
+<launch>
+
+  <!-- launch the experiment controller node -->
+  <node name="experiment_controller" pkg="bwi_web" type="experiment.py">
+    <param name="graph_file" value="$(find bwi_web)/config/graph.yaml" />
+    <param name="experiment_file" value="$(find bwi_web)/config/experiment.yaml" />
+  </node>
+
+</launch>
