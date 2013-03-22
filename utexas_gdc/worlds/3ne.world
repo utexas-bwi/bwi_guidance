@@ -5,6 +5,7 @@
     <ambient>0.500000 0.500000 0.500000 1.000000</ambient>
     <background>0.500000 0.500000 0.500000 1.000000</background>
     <shadows>0</shadows>
+    <grid>false</grid>
   </scene>
   <physics type='ode'>
     <gravity>0.000000 0.000000 -9.800000</gravity>
