@@ -51,8 +51,6 @@ void GazeboRosVideo::Load(rendering::VisualPtr _parent, sdf::ElementPtr _sdf )
   this->model = _parent;
   this->updateConnection = event::Events::ConnectPreRender(boost::bind(&GazeboRosVideo::UpdateChild, this));
 
-  ROS_INFO("SDF Received[%s]", _sdf->ToString("").c_str());
-
   if (!_sdf->HasElement("robotNamespace")) {
     ROS_WARN("Gazebo ROS Video plugin missing <robotNamespace>, defaults to \"\"");
     this->modelNamespace = "";
