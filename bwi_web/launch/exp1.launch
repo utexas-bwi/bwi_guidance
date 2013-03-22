@@ -1,6 +1,6 @@
 <launch>
 
-  <!-- <include file="$(find bwi_web)/launch/webserver.launch" /> -->
+  <include file="$(find bwi_web)/launch/webserver.launch" />
   <include file="$(find utexas_gdc)/launch/3ne.launch">
     <!-- <arg name="gui" value="false" /> -->
     <!-- <arg name="debug" value="true" /> -->
@@ -40,10 +40,16 @@
     <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
   </group>
 
-  launch the experiment controller node
-  <node name="experiment_controller" pkg="bwi_web" type="experiment.py">
-    <param name="graph_file" value="$(find bwi_web)/config/graph.yaml" />
-    <param name="experiment_file" value="$(find bwi_web)/config/experiment.yaml" />
-  </node>
+  <!-- launch the ball -->
+  <group ns="ball">
+    <include file="$(find utexas_gdc)/launch/ball.launch" />
+    <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
+  </group>
+
+  <!-- launch the experiment controller node -->
+  <!-- <node name="experiment_controller" pkg="bwi_web" type="experiment.py"> -->
+  <!--   <param name="graph_file" value="$(find bwi_web)/config/graph.yaml" /> -->
+  <!--   <param name="experiment_file" value="$(find bwi_web)/config/experiment.yaml" /> -->
+  <!-- </node> -->
 
 </launch>

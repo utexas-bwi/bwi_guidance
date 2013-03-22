@@ -4,12 +4,18 @@ robots:
     default_loc: [500, 500]
   - id: robot2
     default_loc: [502, 500]
-ball_id: goal
+ball_id: ball
 experiments:
-  - start_id: 61
+  - start_x: -4
+    start_y: 8
     start_yaw: 0
-    robots:
-      - id: 44
-        yaw: 0
+    path:
       - id: 24
-        yaw: -1.5707963268 #-M_PI/2
+        robot: yes
+      - id: 44
+        robot: no
+      - id: 51
+        robot: yes
+    ball_x: -2
+    ball_y: 8
+    max_duration: 60 #seconds
