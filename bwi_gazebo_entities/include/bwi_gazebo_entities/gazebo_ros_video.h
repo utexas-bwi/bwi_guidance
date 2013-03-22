@@ -51,7 +51,6 @@ namespace gazebo
       VideoVisual(const std::string &_name, rendering::VisualPtr _parent, int h, int w) :
         rendering::Visual(_name, _parent), height(h), width(w) {
 
-          double ratio = this->width / static_cast<double>(this->height);
           this->texture = Ogre::TextureManager::getSingleton().createManual(
               _name + "__VideoTexture__",
               Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
@@ -74,16 +73,16 @@ namespace gazebo
           mo.begin(_name + "__VideoMaterial__",
               Ogre::RenderOperation::OT_TRIANGLE_LIST);
 
-          mo.position(-factor * ratio / 2, factor / 2, 0.51);
+          mo.position(-factor / 2, factor / 2, 0.51);
           mo.textureCoord(0, 0);
 
-          mo.position(factor * ratio / 2, factor / 2, 0.51);
+          mo.position(factor / 2, factor / 2, 0.51);
           mo.textureCoord(1, 0);
 
-          mo.position(factor * ratio / 2, -factor / 2, 0.51);
+          mo.position(factor / 2, -factor / 2, 0.51);
           mo.textureCoord(1, 1);
 
-          mo.position(-factor * ratio / 2, -factor / 2, 0.51);
+          mo.position(-factor / 2, -factor / 2, 0.51);
           mo.textureCoord(0, 1);
 
           mo.triangle(0, 3, 2);

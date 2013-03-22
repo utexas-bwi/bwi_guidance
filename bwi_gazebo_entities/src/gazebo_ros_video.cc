@@ -26,6 +26,7 @@
  */
 
 #include <bwi_gazebo_entities/gazebo_ros_video.h>
+#include <boost/lexical_cast.hpp>
 
 namespace gazebo
 {
@@ -53,34 +54,48 @@ void GazeboRosVideo::Load(rendering::VisualPtr _parent, sdf::ElementPtr _sdf )
   ROS_INFO("SDF Received[%s]", _sdf->ToString("").c_str());
 
   if (!_sdf->HasElement("robotNamespace")) {
-    ROS_WARN("Object controller plugin missing <robotNamespace>, defaults to \"\"");
+    ROS_WARN("Gazebo ROS Video plugin missing <robotNamespace>, defaults to \"\"");
     this->modelNamespace = "";
   } else {
     this->modelNamespace = _sdf->GetElement("robotNamespace")->GetValueString();
   }
 
   if (!_sdf->HasElement("topicName")) {
-    ROS_WARN("Object controller plugin missing <topicName>, defaults to image_raw");
+    ROS_WARN("Gazebo ROS Video plugin missing <topicName>, defaults to image_raw");
     this->topicName = "image_raw";
   } else {
     this->topicName = _sdf->GetElement("topicName")->GetValueString();
   }
 
   if (!_sdf->HasElement("height")) {
-    ROS_WARN("Object controller plugin missing <height>, defaults to 480");
+    ROS_WARN("Gazebo ROS Video plugin missing <height>, defaults to 240");
     this->height = 240;
   } else {
-    this->height = _sdf->GetElement("height")->GetValueInt();
+    sdf::ParamPtr heightParam = _sdf->GetElement("height")->GetValue();
+    if (heightParam->IsInt()) {
+      heightParam->Get(this->height);
+    } else {
+      std::string heightStr;
+      heightParam->Get(heightStr);
+      this->height = boost::lexical_cast<int>(heightStr);
+    }
   }
 
   if (!_sdf->HasElement("width")) {
-    ROS_WARN("Object controller plugin missing <width>, defaults to 640");
+    ROS_WARN("Gazebo ROS Video plugin missing <width>, defaults to 320");
     this->width = 320;
   } else {
-    this->width = _sdf->GetElement("width")->GetValueInt();
+    sdf::ParamPtr widthParam = _sdf->GetElement("width")->GetValue();
+    if (widthParam->IsInt()) {
+      widthParam->Get(this->width);
+    } else {
+      std::string widthStr;
+      widthParam->Get(widthStr);
+      this->width = boost::lexical_cast<int>(widthStr);
+    }
   }
 
-  std::string _name = "laptop_visual";
+  std::string _name = this->modelNamespace + "_laptop_visual";
   video_visual_.reset(new VideoVisual(_name, _parent, this->height, this->width));
 
   //TODO: Do not use global queue. Remove Image Transport usage here
