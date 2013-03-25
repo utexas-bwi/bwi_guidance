@@ -35,6 +35,9 @@
  *
  **/
 
+#ifndef GRAPH_E8QGZKSM
+#define GRAPH_E8QGZKSM
+
 #include <boost/lexical_cast.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/labeled_graph.hpp>
@@ -64,7 +67,7 @@ namespace topological_mapper {
    *          (orig_x, orig_y)
    */
   void drawGraph(cv::Mat &image, const Graph& graph,
-      uint32_t orig_x, uint32_t orig_y) {
+      uint32_t orig_x = 0, uint32_t orig_y = 0) {
 
     Graph::vertex_iterator vi, vend;
     size_t count = 0;
@@ -191,3 +194,4 @@ namespace topological_mapper {
 
 } /* topological_mapper */
 
+#endif /* end of include guard: GRAPH_E8QGZKSM */

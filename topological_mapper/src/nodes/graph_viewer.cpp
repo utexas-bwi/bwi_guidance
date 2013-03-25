@@ -38,6 +38,8 @@
 
 #include <topological_mapper/topological_mapper.h>
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 int main(int argc, char** argv) {
 
@@ -48,5 +50,23 @@ int main(int argc, char** argv) {
   }
 
   topological_mapper::TopologicalMapper mapper(argv[1]);
+  topological_mapper::Graph graph;
+  nav_msgs::MapMetaData info;
+  mapper.getMapInfo(info);
+  topological_mapper::readGraphFromFile(argv[2], info, graph);
+
+  cv::Mat image;
+  mapper.drawMap(image);
+  topological_mapper::drawGraph(image, graph);
+
+  cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
+  cv::imshow("Display window", image);                
+
+  cv::waitKey(0); // Wait for a keystroke in the window
+  return 0;
+}
+
+
+
 
   
