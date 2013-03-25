@@ -1,8 +1,10 @@
 function start() {
 
-  // initialize the stream on the canvas 
+  // initialize the stream on the canvas
+  /* var host = 'zoidberg.csres.utexas.edu' */
+  var host = 'localhost'
   var mjpeg = new MjpegCanvas({
-    host : 'zoidberg.csres.utexas.edu',
+    host : host,
       /* topic : '/l_forearm_cam/image_color', */
       topic : '/camera/rgb/image_raw',
       canvasID : 'my-mjpeg',
@@ -12,7 +14,7 @@ function start() {
       height : 240
   });
 
-  var ros = new ROS('ws://zoidberg.csres.utexas.edu:9090');
+  var ros = new ROS('ws://' + host +':9090'); 
   var cmd_vel = null;
   ros.on('connection', function() {
     cmd_vel = new ros.Topic({
@@ -116,7 +118,7 @@ function start() {
       if (vela > -0.25 && vela < 0.25) {
         vela = 0;
       }
-      publishVelocity({vela: vela});
+      publishVelocity({vela: -vela});
     }
 
     var pointerlockchange = function ( event ) {

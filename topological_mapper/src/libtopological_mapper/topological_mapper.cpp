@@ -36,8 +36,6 @@
  **/
 
 #include <boost/lexical_cast.hpp>
-#include <yaml-cpp/yaml.h>
-#include <fstream>
 
 #include <topological_mapper/topological_mapper.h>
 #include <topological_mapper/connected_components.h>
@@ -109,39 +107,6 @@ namespace topological_mapper {
     }
   }
 
-  void TopologicalMapper::drawGraph(cv::Mat &image, const Graph& graph,
-      uint32_t orig_x, uint32_t orig_y) {
-
-    Graph::vertex_iterator vi, vend;
-    size_t count = 0;
-    for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
-
-      // Draw this vertex
-      Point2f location = graph[*vi].location;
-      size_t vertex_size = 3; // + graph[*vi].pixels / 10;
-      cv::Point vertex_loc(orig_x + (uint32_t)location.x, 
-            orig_y + (uint32_t)location.y);
-      cv::Point text_loc = vertex_loc + cv::Point(4,4);
-      cv::circle(image, vertex_loc, vertex_size, cv::Scalar(0,0,255), -1);
-      cv::putText(image, boost::lexical_cast<std::string>(count), text_loc,
-        cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cvScalar(0,0,255), 1, CV_AA);
-
-      // Draw the edges from this vertex
-      Graph::adjacency_iterator ai, aend;
-      for (boost::tie(ai, aend) = boost::adjacent_vertices(
-            (Graph::vertex_descriptor)*vi, graph.graph()); 
-          ai != aend; ++ai) {
-        Point2f location2 = graph[*ai].location;
-        cv::line(image, 
-            cv::Point(orig_x + location.x, orig_y + location.y),
-            cv::Point(orig_x + location2.x, orig_y + location2.y),
-            cv::Scalar(0, 0, 255),
-            1, 4); // draw a 4 connected line
-      }
-
-      count++;
-    }
-  }
 
   void TopologicalMapper::drawRegionGraph(cv::Mat &image,
       uint32_t orig_x, uint32_t orig_y) {
@@ -153,48 +118,6 @@ namespace topological_mapper {
     drawGraph(image, point_graph_, orig_x, orig_y);
   }
 
-  void TopologicalMapper::writeGraphToFile(std::string &filename, 
-      const Graph& graph) {
-
-    std::map<Graph::vertex_descriptor, size_t> vertex_map;
-    size_t count = 0;
-    Graph::vertex_iterator vi, vend;
-    for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
-      vertex_map[*vi] = count;
-      count++;
-    }
-
-    count = 0;
-    YAML::Emitter out;
-    out << YAML::BeginSeq;
-    for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
-      out << YAML::BeginMap;
-      Point2f pxl_loc = graph[*vi].location;
-      Point2f real_loc;
-      real_loc.x = map_resp_.map.info.origin.position.x + 
-          map_resp_.map.info.resolution * pxl_loc.x;
-      real_loc.y = map_resp_.map.info.origin.position.y + 
-          map_resp_.map.info.resolution * pxl_loc.y;
-      out << YAML::Key << "id" << YAML::Value << count;
-      out << YAML::Key << "x" << YAML::Value << real_loc.x;
-      out << YAML::Key << "y" << YAML::Value << real_loc.y;
-      out << YAML::Key << "edges" << YAML::Value << YAML::BeginSeq;
-      Graph::adjacency_iterator ai, aend;
-      for (boost::tie(ai, aend) = boost::adjacent_vertices(
-            (Graph::vertex_descriptor)*vi, graph.graph()); 
-          ai != aend; ++ai) {
-        out << vertex_map[*ai];
-      }
-      out << YAML::EndSeq;
-      out << YAML::EndMap;
-      count++;
-    }
-    out << YAML::EndSeq;
-
-    std::ofstream fout(filename.c_str());
-    fout << out.c_str();
-    fout.close();
-  }
 
   void TopologicalMapper::writeRegionGraphToFile(std::string &filename) {
     writeGraphToFile(filename, region_graph_);

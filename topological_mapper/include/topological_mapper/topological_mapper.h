@@ -88,18 +88,11 @@ namespace topological_mapper {
       void drawConnectedComponents(cv::Mat &image,
           uint32_t orig_x = 0, uint32_t orig_y = 0); 
 
-      /**
-       * \brief   draws the given graph onto an image starting at 
-       *          (orig_x, orig_y)
-       */
-      void drawGraph(cv::Mat &image, const Graph& graph, 
-          uint32_t orig_x = 0, uint32_t orig_y = 0);
       void drawRegionGraph(cv::Mat &image, 
           uint32_t orig_x = 0, uint32_t orig_y = 0);
       void drawPointGraph(cv::Mat &image, 
           uint32_t orig_x = 0, uint32_t orig_y = 0);
 
-      void writeGraphToFile(std::string &filename, const Graph& graph);
       void writeRegionGraphToFile(std::string &filename);
       void writePointGraphToFile(std::string &filename);
 
