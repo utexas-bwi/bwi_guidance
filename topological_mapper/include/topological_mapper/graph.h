@@ -55,11 +55,14 @@ namespace topological_mapper {
     double pixels;
   };
 
+  // Edge
+  struct Edge {
+    double weight;
+  };
+
   //Define the graph using those classes
-  typedef boost::labeled_graph <
-    boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, Vertex, 
-                          boost::no_property>,
-    size_t
+  typedef boost::adjacency_list<
+    boost::vecS, boost::vecS, boost::undirectedS, Vertex, Edge
   > Graph;
 
   /**
@@ -86,7 +89,7 @@ namespace topological_mapper {
       // Draw the edges from this vertex
       Graph::adjacency_iterator ai, aend;
       for (boost::tie(ai, aend) = boost::adjacent_vertices(
-            (Graph::vertex_descriptor)*vi, graph.graph()); 
+            (Graph::vertex_descriptor)*vi, graph); 
           ai != aend; ++ai) {
         Point2f location2 = graph[*ai].location;
         cv::line(image, 
@@ -128,7 +131,7 @@ namespace topological_mapper {
       out << YAML::Key << "edges" << YAML::Value << YAML::BeginSeq;
       Graph::adjacency_iterator ai, aend;
       for (boost::tie(ai, aend) = boost::adjacent_vertices(
-            (Graph::vertex_descriptor)*vi, graph.graph()); 
+            (Graph::vertex_descriptor)*vi, graph); 
           ai != aend; ++ai) {
         out << vertex_map[*ai];
       }
@@ -173,7 +176,7 @@ namespace topological_mapper {
 
     // Construct the graph object
     for (size_t i = 0; i < vertices.size(); ++i) {
-      boost::add_vertex(i, graph);
+      Graph::vertex_descriptor vi = boost::add_vertex(graph);
       Point2f real_loc, pxl_loc;
       real_loc.x = vertices[i].first;
       real_loc.y = vertices[i].second;
@@ -181,13 +184,20 @@ namespace topological_mapper {
           info.resolution;
       pxl_loc.y = (real_loc.y - info.origin.position.y) / 
           info.resolution;
-      graph[i].location = pxl_loc;
-      graph[i].pixels = 0; // Not saved to file as of yet
+      graph[vi].location = pxl_loc;
+      graph[vi].pixels = 0; // Not saved to file as of yet
     }
 
     for (size_t i = 0; i < edges.size(); ++i) {
       for (size_t j = 0; j < edges[i].size(); ++j) {
-        boost::add_edge_by_label(i, edges[i][j], graph);
+        Graph::vertex_descriptor vi,vj;
+        vi = boost::vertex(i, graph);
+        vj = boost::vertex(edges[i][j], graph);
+        Graph::edge_descriptor e; bool b;
+        boost::tie(e,b) = boost::add_edge(vi, vj, graph);
+        graph[e].weight = 
+            sqrt(pow(graph[vi].location.x - graph[vj].location.x, 2) +
+                 pow(graph[vi].location.y - graph[vj].location.y, 2));
       }
     }
   }

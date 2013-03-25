@@ -341,10 +341,10 @@ namespace topological_mapper {
     
     // Create the point graph first
     for (size_t i = 0; i < critical_points_.size(); ++i) {
-      boost::add_vertex(i, point_graph_);
-      point_graph_[i].location.x = critical_points_[i].x;
-      point_graph_[i].location.y = critical_points_[i].y;
-      point_graph_[i].pixels = critical_points_[i].average_clearance;
+      Graph::vertex_descriptor vi = boost::add_vertex(point_graph_);
+      point_graph_[vi].location.x = critical_points_[i].x;
+      point_graph_[vi].location.y = critical_points_[i].y;
+      point_graph_[vi].pixels = critical_points_[i].average_clearance;
     }
     // Construct the edges in this graph
     for (size_t i = 0; i < critical_points_.size(); ++i) {
@@ -355,7 +355,14 @@ namespace topological_mapper {
             if (i == j)
               continue;
             if (point_neighbours[j].count(*it)) {
-              boost::add_edge_by_label(i, j, point_graph_);
+              Graph::vertex_descriptor vi,vj;
+              vi = boost::vertex(i, point_graph_);
+              vj = boost::vertex(j, point_graph_);
+              Graph::edge_descriptor e; bool b;
+              boost::tie(e,b) = boost::add_edge(vi, vj, point_graph_);
+              point_graph_[e].weight = 
+                sqrt(pow(point_graph_[vi].location.x - point_graph_[vj].location.x, 2) +
+                    pow(point_graph_[vi].location.y - point_graph_[vj].location.y, 2));
             }
           }
         }
@@ -364,7 +371,7 @@ namespace topological_mapper {
 
     // Create the region graph next
     for (size_t r = 0; r < num_components_; ++r) { 
-      boost::add_vertex(r, region_graph_);
+      Graph::vertex_descriptor vi = boost::add_vertex(region_graph_);
 
       // Calculate the centroid
       uint32_t avg_i = 0, avg_j = 0, count = 0;
@@ -379,9 +386,9 @@ namespace topological_mapper {
         }
       }
 
-      region_graph_[r].location.x = ((float) avg_i) / count;
-      region_graph_[r].location.y = ((float) avg_j) / count;
-      region_graph_[r].pixels = floor(sqrt(count)/2);
+      region_graph_[vi].location.x = ((float) avg_i) / count;
+      region_graph_[vi].location.y = ((float) avg_j) / count;
+      region_graph_[vi].pixels = floor(sqrt(count)/2);
     }
     // Create 1 edge per critical point
     for (size_t i = 0; i < critical_points_.size(); ++i) {
@@ -392,7 +399,14 @@ namespace topological_mapper {
             it != point_neighbours[i].end(); ++it, ++count) {
           v[count] = *it;
         }
-        boost::add_edge_by_label(v[0], v[1], region_graph_);
+        Graph::vertex_descriptor vi,vj;
+        vi = boost::vertex(v[0], region_graph_);
+        vj = boost::vertex(v[1], region_graph_);
+        Graph::edge_descriptor e; bool b;
+        boost::tie(e,b) = boost::add_edge(vi, vj, region_graph_);
+        region_graph_[e].weight = 
+          sqrt(pow(region_graph_[vi].location.x - region_graph_[vj].location.x, 2) +
+              pow(region_graph_[vi].location.y - region_graph_[vj].location.y, 2));
       }
     }
 
