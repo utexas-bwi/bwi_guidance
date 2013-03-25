@@ -138,7 +138,11 @@ namespace topological_mapper {
    */
   void MapLoader::drawMap(cv::Mat &image, uint32_t orig_x, uint32_t orig_y) {
     drawMap(image, map_resp_.map, orig_x, orig_y);
-  } 
+  }
+
+  void MapLoader::getMapInfo(nav_msgs::MapMetaData& map) {
+    map = map_resp_.map.info;
+  }
 
   /**
    * \brief   Draw map onto image starting at (orig_x, orig_y)

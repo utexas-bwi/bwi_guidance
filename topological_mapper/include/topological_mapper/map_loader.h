@@ -75,6 +75,8 @@ namespace topological_mapper {
        */
       void drawMap(cv::Mat &image, uint32_t orig_x = 0, uint32_t orig_y = 0);
 
+      void getMapInfo(nav_msgs::MapMetaData& info);
+
     protected:
 
       /**

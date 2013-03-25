@@ -35,6 +35,7 @@
  *
  **/
 
+#include <boost/lexical_cast.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/labeled_graph.hpp>
 #include <topological_mapper/structures/point.h>
@@ -97,7 +98,7 @@ namespace topological_mapper {
   }
 
   void writeGraphToFile(const std::string &filename, 
-      const Graph& graph) {
+      const Graph& graph, const nav_msgs::MapMetaData& info) {
 
     std::map<Graph::vertex_descriptor, size_t> vertex_map;
     size_t count = 0;
@@ -114,10 +115,10 @@ namespace topological_mapper {
       out << YAML::BeginMap;
       Point2f pxl_loc = graph[*vi].location;
       Point2f real_loc;
-      real_loc.x = map_resp_.map.info.origin.position.x + 
-          map_resp_.map.info.resolution * pxl_loc.x;
-      real_loc.y = map_resp_.map.info.origin.position.y + 
-          map_resp_.map.info.resolution * pxl_loc.y;
+      real_loc.x = info.origin.position.x + 
+          info.resolution * pxl_loc.x;
+      real_loc.y = info.origin.position.y + 
+          info.resolution * pxl_loc.y;
       out << YAML::Key << "id" << YAML::Value << count;
       out << YAML::Key << "x" << YAML::Value << real_loc.x;
       out << YAML::Key << "y" << YAML::Value << real_loc.y;
@@ -139,9 +140,53 @@ namespace topological_mapper {
     fout.close();
   }
 
-  void readGraphFromFile(const std::string &filename, Graph& graph) {
+  void readGraphFromFile(const std::string &filename, 
+      const nav_msgs::MapMetaData& info, Graph& graph) {
 
+    std::vector<std::pair<float, float> > vertices;
+    std::vector<std::vector<size_t> > edges;
 
+    std::ifstream fin(filename.c_str());
+    YAML::Parser parser(fin);
+    YAML::Node doc;
+    parser.GetNextDocument(doc);
+    for (size_t i = 0; i < doc.size(); ++i) {
+      float x, y;
+      doc[i]["x"] >> x;
+      doc[i]["y"] >> y;
+      vertices.push_back(std::make_pair(x, y));
+      std::vector<size_t> v_edges;
+      const YAML::Node& edges_node = doc[i]["edges"];
+      for (size_t j = 0; j < edges_node.size(); ++j) {
+        size_t t;
+        edges_node[j] >> t;
+        if (t > j) {
+          v_edges.push_back(t);
+        }
+      }
+      edges.push_back(v_edges);
+    }
+    fin.close();
+
+    // Construct the graph object
+    for (size_t i = 0; i < vertices.size(); ++i) {
+      boost::add_vertex(i, graph);
+      Point2f real_loc, pxl_loc;
+      real_loc.x = vertices[i].first;
+      real_loc.y = vertices[i].second;
+      pxl_loc.x = (real_loc.x - info.origin.position.x) / 
+          info.resolution;
+      pxl_loc.y = (real_loc.y - info.origin.position.y) / 
+          info.resolution;
+      graph[i].location = pxl_loc;
+      graph[i].pixels = 0; // Not saved to file as of yet
+    }
+
+    for (size_t i = 0; i < edges.size(); ++i) {
+      for (size_t j = 0; j < edges[i].size(); ++j) {
+        boost::add_edge_by_label(i, edges[i][j], graph);
+      }
+    }
   }
 
 } /* topological_mapper */

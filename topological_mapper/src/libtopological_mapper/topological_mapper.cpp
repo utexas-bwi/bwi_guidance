@@ -35,8 +35,6 @@
  *
  **/
 
-#include <boost/lexical_cast.hpp>
-
 #include <topological_mapper/topological_mapper.h>
 #include <topological_mapper/connected_components.h>
 
@@ -118,13 +116,12 @@ namespace topological_mapper {
     drawGraph(image, point_graph_, orig_x, orig_y);
   }
 
-
   void TopologicalMapper::writeRegionGraphToFile(std::string &filename) {
-    writeGraphToFile(filename, region_graph_);
+    writeGraphToFile(filename, region_graph_, map_resp_.map.info);
   }
 
   void TopologicalMapper::writePointGraphToFile(std::string &filename) {
-    writeGraphToFile(filename, point_graph_);
+    writeGraphToFile(filename, point_graph_, map_resp_.map.info);
   }
 
   /**
