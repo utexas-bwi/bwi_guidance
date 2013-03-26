@@ -175,6 +175,9 @@ int main(int argc, char** argv) {
   size_t start_idx = 0, goal_idx = 0;
   std::vector<size_t> path_idx;
   std::vector<size_t> robot_idx;
+  std::vector<cv::Point> robot_pxls;
+  std::vector<topological_mapper::Point2f> robot_locations;
+  std::vector<float> robot_yaw;
 
   std::stringstream ss;
   while (true) {
@@ -205,14 +208,35 @@ int main(int argc, char** argv) {
       for (size_t t = 0; t < robot_idx.size(); ++t) {
         circleIdx(image, graph, robot_idx[t], cv::Scalar(0, 0, 255));
       }
+      for (size_t t = 0; t < robot_pxls.size(); ++t) {
+        cv::Point &robot = robot_pxls[t];
+        cv::circle(image, robot, 10, cv::Scalar(0,0,255), 2);
+      }
+      for (size_t t = 0; t < robot_yaw.size(); ++t) {
+        cv::Point &robot = robot_pxls[t];
+        float r_yaw = robot_yaw[t];
+        cv::line(image, robot, 
+            robot + cv::Point(20 * cosf(r_yaw), 20 * sinf(r_yaw)),
+            cv::Scalar(0,0,255), 1, 4);
+      }
     }
 
     // Highlight
     if (global_state == START_IDX || global_state == GOAL_IDX || 
         global_state == ROBOTS) {
-      size_t highlight_idx = getClosestIdOnGraph(mouseover_pt, graph);
-      if (highlight_idx != (size_t) -1) {
-        highlightIdx(image, graph, highlight_idx); 
+      if (robot_pxls.size() != robot_idx.size()) {
+        cv::circle(image, mouseover_pt, 10, cv::Scalar(0,255,0), 2);
+      } else if (robot_yaw.size() != robot_locations.size()) {
+        cv::Point &robot = robot_pxls[robot_pxls.size() - 1];
+        float r_yaw = atan2(mouseover_pt.y - robot.y, mouseover_pt.x - robot.x);
+        cv::line(image, robot, 
+            robot + cv::Point(20 * cosf(r_yaw), 20 * sinf(r_yaw)),
+            cv::Scalar(0,255,0), 1, 4);
+      } else {
+        size_t highlight_idx = getClosestIdOnGraph(mouseover_pt, graph);
+        if (highlight_idx != (size_t) -1) {
+          highlightIdx(image, graph, highlight_idx); 
+        }
       }
     }
 
@@ -262,19 +286,27 @@ int main(int argc, char** argv) {
           break;
         case ROBOTS: {
           // Push out the path array
-          ss << "    path:" << std::endl;
-          for (size_t i = path_idx.size() - 1; i < path_idx.size(); --i) {
-            ss << "      - id: " << path_idx[i] << std::endl;
-            if (std::find(robot_idx.begin(), robot_idx.end(), path_idx[i]) != 
-                robot_idx.end()) {
-              ss << "        robot: yes" << std::endl;
-            } else {
-              ss << "        robot: no" << std::endl;
+          if (robot_locations.size() == robot_idx.size() && 
+              robot_yaw.size() == robot_locations.size()) {
+            ss << "    path:" << std::endl;
+            for (size_t i = path_idx.size() - 1; i < path_idx.size(); --i) {
+              ss << "      - id: " << path_idx[i] << std::endl;
+              std::vector<size_t>::iterator robot_it =
+                  std::find(robot_idx.begin(), robot_idx.end(), path_idx[i]);
+              if (robot_it != robot_idx.end()) {
+                ss << "        robot: yes" << std::endl;
+                size_t distance = std::distance(robot_idx.begin(), robot_it);
+                ss << "        robot_location: [" << robot_locations[distance].x
+                   << ", " << robot_locations[distance].y << "]" << std::endl;
+                ss << "        robot_yaw: " << robot_yaw[distance] << std::endl;
+              } else {
+                ss << "        robot: no" << std::endl;
+              }
             }
+            ss << "    max_duration: 120 #seconds" << std::endl;
+            std::cout << ss.str();
+            global_state = STOP;
           }
-          ss << "    max_duration: 120 #seconds" << std::endl;
-          std::cout << ss.str();
-          global_state = STOP;
           break;
         }
         default:
@@ -282,10 +314,20 @@ int main(int argc, char** argv) {
       }
       increment_state = false;
     } else if (new_robot_available) {
-      size_t idx = getClosestIdOnGraph(mouseover_pt, graph);
-      if (idx != (size_t)-1) {
-        if (std::find(path_idx.begin(), path_idx.end(), idx) != path_idx.end()) {
-          robot_idx.push_back(idx);
+      if (robot_locations.size() != robot_idx.size()) {
+        topological_mapper::Point2f map_pt = toMap(clicked_pt, info);
+        robot_locations.push_back(map_pt);
+        robot_pxls.push_back(clicked_pt);
+      } else if (robot_yaw.size() != robot_locations.size()) {
+        cv::Point &robot = robot_pxls[robot_pxls.size() - 1];
+        float r_yaw = atan2(mouseover_pt.y - robot.y, mouseover_pt.x - robot.x);
+        robot_yaw.push_back(r_yaw);
+      } else {
+        size_t idx = getClosestIdOnGraph(mouseover_pt, graph);
+        if (idx != (size_t)-1) {
+          if (std::find(path_idx.begin(), path_idx.end(), idx) != path_idx.end()) {
+            robot_idx.push_back(idx);
+          }
         }
       }
       new_robot_available = false;
