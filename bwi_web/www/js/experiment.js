@@ -118,7 +118,7 @@ function start() {
       if (vela > -0.25 && vela < 0.25) {
         vela = 0;
       }
-      publishVelocity({vela: -vela});
+      publishVelocity({vela: vela});
     }
 
     var pointerlockchange = function ( event ) {
