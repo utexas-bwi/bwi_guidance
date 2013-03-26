@@ -218,6 +218,8 @@ bool ObjectControllerPlugin::teleport(bwi_msgs::Teleport::Request &req,
       y_pxl < 0 || y_pxl >= (int)map_.info.height ||
       (map_.data[y_pxl * map_.info.width + x_pxl] < 50)) {
     this->parent->SetWorldPose(new_pose);
+    ROS_INFO("%s: Location changed to %f, %f", this->modelNamespace.c_str(), 
+        new_pose.pos.x, new_pose.pos.y);
     resp.success = true;
   } else {
     resp.success = false;
