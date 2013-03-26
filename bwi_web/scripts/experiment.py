@@ -34,13 +34,20 @@ def getPoseMsgFrom2dData(x, y, yaw):
     return pose
 
 def readImage(location):
-    image_from_file = cv2.imread(location)
-    height, width, channels = image_from_file.shape
+    return cv2.imread(location)
+
+def produceDirectedArrow(up_arrow, yaw):
+    height, width, channels = up_arrow.shape
+    center = (width / 2, height / 2)
+    rotation_matrix = cv2.getRotationMatrix2D(center, yaw * 180 / math.pi, 1.0)
+    rotated_image = cv2.warpAffine(up_arrow, rotation_matrix, (width, height))
+
+
     height_ratio = 119.0 / height
     width_ratio = 159.0 / width
     min_ratio = min(height_ratio, width_ratio)
 
-    resized_image = cv2.resize(image_from_file, (0,0), fx=min_ratio, fy=min_ratio)
+    resized_image = cv2.resize(rotated_image, (0,0), fx=min_ratio, fy=min_ratio)
     image = numpy.empty((120,160,3), numpy.uint8)
     top = (image.shape[0] - resized_image.shape[0]) / 2
     bottom = image.shape[0] - resized_image.shape[0] - top
@@ -49,6 +56,7 @@ def readImage(location):
 
     image = cv2.copyMakeBorder(resized_image, top, bottom, left, right, cv2.BORDER_CONSTANT, image, (0,0,0))
     return image
+  
 
 class RobotScreenPublisher(threading.Thread):
 
@@ -108,11 +116,8 @@ class ExperimentController:
 
         # Read the arrows
         images_dir = roslib.packages.get_pkg_dir("bwi_web") + "/images"
-        self.arrow_up = readImage(images_dir + "/Up.png")
-        self.arrow_down = readImage(images_dir + "/Down.png")
-        self.arrow_left = readImage(images_dir + "/Left.png")
-        self.arrow_right = readImage(images_dir + "/Right.png")
-        self.arrow_none = numpy.zeros((120,160,3), numpy.uint8)
+        self.arrow = readImage(images_dir + "/Up.png")
+        self.image_none = numpy.zeros((120,160,3), numpy.uint8)
 
         # Setup the Robot image publisher
         self.robot_image_publisher = RobotScreenPublisher()
@@ -200,14 +205,15 @@ class ExperimentController:
                 change_in_yaw = destination_yaw - robot_yaw
                 #normalize angle
                 change_in_yaw = math.atan2(math.sin(change_in_yaw), math.cos(change_in_yaw))
-                if change_in_yaw > 0.75 * math.pi or change_in_yaw <= -0.75 * math.pi:
-                    robot_image = self.arrow_down
-                elif change_in_yaw > 0.25 * math.pi and change_in_yaw <= 0.75 * math.pi:
-                    robot_image = self.arrow_left
-                elif change_in_yaw > -0.25 * math.pi and change_in_yaw <= 0.25 * math.pi:
-                    robot_image = self.arrow_up
-                else:
-                    robot_image = self.arrow_right
+                robot_image = produceDirectedArrow(self.arrow, change_in_yaw)
+                # if change_in_yaw > 0.75 * math.pi or change_in_yaw <= -0.75 * math.pi:
+                #     robot_image = self.arrow_down
+                # elif change_in_yaw > 0.25 * math.pi and change_in_yaw <= 0.75 * math.pi:
+                #     robot_image = self.arrow_left
+                # elif change_in_yaw > -0.25 * math.pi and change_in_yaw <= 0.25 * math.pi:
+                #     robot_image = self.arrow_up
+                # else:
+                #     robot_image = self.arrow_right
                 #move the robot so that it does not block the path anymore
                 # to_pt = [math.cos(destination_yaw), math.sin(destination_yaw)]
                 # from_pt = [math.cos(robot_yaw + math.pi), math.sin(robot_yaw + math.pi)]
@@ -224,7 +230,7 @@ class ExperimentController:
             else:
                 robot_loc = self.robots[i]['default_loc']
                 robot_yaw = 0
-                robot_image = self.arrow_none
+                robot_image = self.image_none
             robot_pose = getPoseMsgFrom2dData(*robot_loc, yaw=robot_yaw)
             result = self.teleport_robot[i](robot_pose)
             print result
@@ -261,7 +267,7 @@ class ExperimentController:
                 if distance_sqr < 3.0 * 3.0:
                     self.robot_image_publisher.updateImage(robot['id'], self.robot_images[i])
                 else:
-                    self.robot_image_publisher.updateImage(robot['id'], self.arrow_none)
+                    self.robot_image_publisher.updateImage(robot['id'], self.image_none)
 
     def start(self):
         self.robot_image_publisher.start()
