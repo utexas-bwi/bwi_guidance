@@ -42,6 +42,71 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 
+enum state {
+  START_LOC,
+  START_YAW,
+  GOAL_LOC,
+  ROBOTS,
+  PRINT
+} global_state = START_LOC;
+
+cv::Point clicked_pt;
+bool increment_state = false;
+bool new_robot_available = false;
+
+topological_mapper::Point2f toMap(const cv::Point &pt, 
+    const nav_msgs::MapMetaData& info) {
+
+  topological_mapper::Point2f real_loc;
+  real_loc.x = info.origin.position.x + info.resolution * pt.x;
+  real_loc.y = info.origin.position.y + info.resolution * pt.y;
+  return real_loc;
+}
+
+void mouseCallback(int event, int x, int y, int, void*) {
+  if (event == cv::EVENT_LBUTTONDOWN) {
+    clicked_pt = cv::Point(x, y);
+    if (global_state != ROBOTS) {
+      increment_state = true;
+    } else {
+      new_robot_available = true;
+    }
+  }
+}
+
+void getShortestPath(topological_mapper::Graph &graph, size_t start_idx,
+    size_t goal_idx, std::vector<size_t> &path_from_goal) {
+
+  // Perform Dijakstra from start_idx
+  std::vector<topological_mapper::Graph::vertex_descriptor> 
+    p(boost::num_vertices(graph));
+  std::vector<double> d(boost::num_vertices(graph));
+  topological_mapper::Graph::vertex_descriptor s = 
+    boost::vertex(start_idx, graph);
+
+  boost::property_map<topological_mapper::Graph, boost::vertex_index_t>::type 
+      indexmap = boost::get(boost::vertex_index, graph);
+  boost::property_map<
+    topological_mapper::Graph, 
+    double topological_mapper::Edge::*
+  >::type weightmap = boost::get(&topological_mapper::Edge::weight, graph);
+  boost::dijkstra_shortest_paths(graph, s, &p[0], &d[0], weightmap, indexmap, 
+                            std::less<double>(), boost::closed_plus<double>(), 
+                            (std::numeric_limits<double>::max)(), 0,
+                            boost::default_dijkstra_visitor());
+
+  // Look up the parent chain from the goal vertex to the start vertex
+  path_from_goal.clear();
+
+  topological_mapper::Graph::vertex_descriptor g = 
+    boost::vertex(goal_idx, graph);
+  while (indexmap[p[g]] != start_idx) {
+    path_from_goal.push_back(indexmap[p[g]]);
+    g = p[g];
+  }
+
+}
+
 int main(int argc, char** argv) {
 
   if (argc != 3) {
@@ -60,32 +125,68 @@ int main(int argc, char** argv) {
   mapper.drawMap(image);
   topological_mapper::drawGraph(image, graph);
 
-  cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
-  cv::imshow("Display window", image);                
+  cv::namedWindow("Display", CV_WINDOW_AUTOSIZE);
+  cv::setMouseCallback("Display", mouseCallback, 0);
 
+  std::stringstream ss;
+  topological_mapper::Point2f start_pt;
+  cv::Point start_image;
+  start_pt.x = 0; start_pt.y = 0;
+  std::vector<size_t> robot_idx;
+  double yaw;
 
-  std::vector<topological_mapper::Graph::vertex_descriptor> p(boost::num_vertices(graph));
-  std::vector<int> d(boost::num_vertices(graph));
-  topological_mapper::Graph::vertex_descriptor s = boost::vertex(0, graph);
+  while (true) {
+    cv::imshow("Display", image);
+    unsigned char c = cv::waitKey(10);
+    if (c == 27) {
+      return 0;
+    } else if (c == 'p' && global_state == ROBOTS) {
+      increment_state = true;
+    }
 
-  boost::property_map<topological_mapper::Graph, boost::vertex_index_t>::type 
-      indexmap = boost::get(boost::vertex_index, graph);
-  boost::property_map<topological_mapper::Graph, double topological_mapper::Edge::*>::type 
-      weightmap = boost::get(&topological_mapper::Edge::weight, graph);
-  boost::dijkstra_shortest_paths(graph, s, &p[0], &d[0], weightmap, indexmap, 
-                            std::less<double>(), boost::closed_plus<double>(), 
-                            (std::numeric_limits<double>::max)(), 0,
-                            boost::default_dijkstra_visitor());
+    if (increment_state) {
+      topological_mapper::Point2f map_pt = toMap(clicked_pt, info);
+      switch(global_state) {
+        case START_LOC:
+          start_pt = map_pt; start_image = clicked_pt;
+          ss << "  - start_x: " << map_pt.x << std::endl;
+          ss << "    start_y: " << map_pt.y << std::endl;
+          cv::circle(image, clicked_pt, 10, cv::Scalar(255,0,0), 2);
+          global_state = START_YAW;
+          break;
+        case START_YAW:
+          yaw = atan2(map_pt.y - start_pt.y, map_pt.x - start_pt.x);
+          ss << "    start_yaw: " 
+             << yaw
+             << std::endl;
+          cv::line(image, start_image, 
+              start_image + cv::Point(20 * cosf(yaw), 20 * sinf(yaw)),
+              cv::Scalar(255,0,0), 1, 4);
+          global_state = GOAL_LOC;
+          break;
+        case GOAL_LOC:
+          ss << "    ball_x: " << map_pt.x << std::endl;
+          ss << "    ball_y: " << map_pt.y << std::endl;
+          cv::circle(image, clicked_pt, 10, cv::Scalar(0,255,0), 2);
+          global_state = ROBOTS;
+          break;
+        case ROBOTS: {
+          ss << "    path: blah" << std::endl;
+          std::cout << ss.str();
+          global_state = PRINT;
+          break;
+        }
+        default:
+          return 0;
+      }
+      increment_state = false;
+    } else if (new_robot_available) {
+      // figure out how to push to robot_idx here;
+      std::cout << "new robot here" << std::endl;
+      new_robot_available = false;
+    }
+  }
 
-  cv::waitKey(0); // Wait for a keystroke in the window
-
-  // 1. start_location
-  // 2. start_yaw
-  // 3. goal location
-  
-
-  
-  // At this time, select path based 
   return 0;
 }
 
