@@ -161,13 +161,15 @@ class ExperimentController:
         start_y = experiment_data['start_y']
         start_yaw = experiment_data['start_yaw']
         start_pose = getPoseMsgFrom2dData(start_x, start_y, yaw=start_yaw)
-        self.teleport_person(start_pose)
+        result = self.teleport_person(start_pose)
+        print result
 
         # Teleport the goal ball to its correct position
         ball_x = experiment_data['ball_x']
         ball_y = experiment_data['ball_y']
         ball_pose = getPoseMsgFrom2dData(ball_x, ball_y, 0)
-        self.teleport_ball(ball_pose)
+        result = self.teleport_ball(ball_pose)
+        print result
         self.goal_location = [ball_x, ball_y]
 
         # compute location/orientation from path?
@@ -175,24 +177,20 @@ class ExperimentController:
 
         # Teleport all the robots to their respective positions
         self.path = experiment_data['path']
-        self.robots_in_experiment = [{'id': p['id'], 'path_position': i} for i, p in enumerate(self.path) if p['robot']]
-        print 
+        self.robots_in_experiment = [{'location': p['robot_location'], 'yaw': p['robot_yaw'], 'path_position': i} for i, p in enumerate(self.path) if p['robot']]
         self.robot_locations = [None] * len(self.robots)
         self.robot_images = [None] * len(self.robots)
         for i, robot in enumerate(self.robots):
             if i < len(self.robots_in_experiment):
-                graph_id = self.robots_in_experiment[i]['id']
-                robot_loc = self.getGraphLocation(graph_id)
-                # compute yaw
+                robot_yaw = self.robots_in_experiment[i]['yaw']
+                robot_loc = self.robots_in_experiment[i]['location']
                 path_position = self.robots_in_experiment[i]['path_position']
-                if path_position != 0:
-                    arriving_from = self.getGraphLocation(self.path[path_position - 1]['id'])
-                else:
-                    arriving_from = [start_x, start_y]
-                robot_yaw = math.atan2(robot_loc[1] - arriving_from[1], robot_loc[0] - arriving_from[0])
-                # TODO this is not perfect when going straight
-                robot_loc[0] = robot_loc[0] + 0.25 * math.cos(robot_yaw)
-                robot_loc[1] = robot_loc[1] + 0.25 * math.sin(robot_yaw)
+                # compute yaw
+                # if path_position != 0:
+                #     arriving_from = self.getGraphLocation(self.path[path_position - 1]['id'])
+                # else:
+                #     arriving_from = [start_x, start_y]
+                # robot_yaw = math.atan2(robot_loc[1] - arriving_from[1], robot_loc[0] - arriving_from[0]
                 # compute image
                 if path_position != len(self.path) - 1:
                     going_to = self.getGraphLocation(self.path[path_position + 1]['id'])
@@ -203,19 +201,33 @@ class ExperimentController:
                 #normalize angle
                 change_in_yaw = math.atan2(math.sin(change_in_yaw), math.cos(change_in_yaw))
                 if change_in_yaw > 0.75 * math.pi or change_in_yaw <= -0.75 * math.pi:
-                    robot_image = self.arrow_left
-                elif change_in_yaw > 0.25 * math.pi and change_in_yaw <= 0.75 * math.pi:
-                    robot_image = self.arrow_up
-                elif change_in_yaw > -0.25 * math.pi and change_in_yaw <= 0.25 * math.pi:
-                    robot_image = self.arrow_right
-                else:
                     robot_image = self.arrow_down
+                elif change_in_yaw > 0.25 * math.pi and change_in_yaw <= 0.75 * math.pi:
+                    robot_image = self.arrow_left
+                elif change_in_yaw > -0.25 * math.pi and change_in_yaw <= 0.25 * math.pi:
+                    robot_image = self.arrow_up
+                else:
+                    robot_image = self.arrow_right
+                #move the robot so that it does not block the path anymore
+                # to_pt = [math.cos(destination_yaw), math.sin(destination_yaw)]
+                # from_pt = [math.cos(robot_yaw + math.pi), math.sin(robot_yaw + math.pi)]
+                # outer_pt = [-(qi + qj)/2.0 for qi, qj in zip(to_pt, from_pt)]
+                # print to_pt, from_pt, outer_pt
+                # if max([math.fabs(pt) for pt in outer_pt]) < 0.1: # the 2 vectors are cancelling each other
+                #     move_yaw = destination_yaw + math.pi/2.0
+                # else:
+                #     move_yaw = math.atan2(outer_pt[1], outer_pt[0])
+                # print move_yaw
+                # robot_loc[0] = robot_loc[0] + 0.2 * math.cos(move_yaw)
+                # robot_loc[1] = robot_loc[1] + 0.2 * math.sin(move_yaw)
+                # print robot_loc
             else:
                 robot_loc = self.robots[i]['default_loc']
                 robot_yaw = 0
                 robot_image = self.arrow_none
             robot_pose = getPoseMsgFrom2dData(*robot_loc, yaw=robot_yaw)
-            self.teleport_robot[i](robot_pose)
+            result = self.teleport_robot[i](robot_pose)
+            print result
             self.robot_images[i] = robot_image
             self.robot_locations[i] = robot_loc
 
@@ -244,8 +256,7 @@ class ExperimentController:
         # check if the person is near a robot
         for i, robot in enumerate(self.robots):
             if i < len(self.robots_in_experiment):
-                graph_id = self.robots_in_experiment[i]['id']
-                robot_loc = self.getGraphLocation(graph_id)
+                robot_loc = self.robots_in_experiment[i]['location']
                 distance_sqr = (loc[0] - robot_loc[0]) * (loc[0] - robot_loc[0]) + (loc[1] - robot_loc[1]) * (loc[1] - robot_loc[1])
                 if distance_sqr < 3.0 * 3.0:
                     self.robot_image_publisher.updateImage(robot['id'], self.robot_images[i])
