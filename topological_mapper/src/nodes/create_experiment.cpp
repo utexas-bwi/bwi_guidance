@@ -45,14 +45,18 @@
 enum state {
   START_LOC,
   START_YAW,
+  START_IDX,
   GOAL_LOC,
+  GOAL_IDX,
   ROBOTS,
-  PRINT
+  STOP
 } global_state = START_LOC;
 
 cv::Point clicked_pt;
+cv::Point mouseover_pt;
 bool increment_state = false;
 bool new_robot_available = false;
+int highlight_idx = -1;
 
 topological_mapper::Point2f toMap(const cv::Point &pt, 
     const nav_msgs::MapMetaData& info) {
@@ -63,6 +67,24 @@ topological_mapper::Point2f toMap(const cv::Point &pt,
   return real_loc;
 }
 
+void circleIdx(cv::Mat& image, topological_mapper::Graph& graph, 
+    size_t idx, cv::Scalar color = cv::Scalar(0, 0, 255)) {
+
+  topological_mapper::Graph::vertex_descriptor vd = boost::vertex(idx, graph);
+  topological_mapper::Point2f &location = graph[vd].location;
+  cv::circle(image, cv::Point(location.x, location.y), 7, color, 2); 
+  
+}
+
+void highlightIdx(cv::Mat& image, topological_mapper::Graph& graph, 
+    size_t idx, cv::Scalar color = cv::Scalar(0, 255, 0)) {
+
+  topological_mapper::Graph::vertex_descriptor vd = boost::vertex(idx, graph);
+  topological_mapper::Point2f &location = graph[vd].location;
+  cv::circle(image, cv::Point(location.x, location.y), 5, color, -1); 
+  
+}
+
 void mouseCallback(int event, int x, int y, int, void*) {
   if (event == cv::EVENT_LBUTTONDOWN) {
     clicked_pt = cv::Point(x, y);
@@ -71,7 +93,24 @@ void mouseCallback(int event, int x, int y, int, void*) {
     } else {
       new_robot_available = true;
     }
+  } else if (event == cv::EVENT_MOUSEMOVE) {
+    mouseover_pt = cv::Point(x, y);
   }
+}
+
+size_t getClosestIdOnGraph(const cv::Point &point, 
+    topological_mapper::Graph &graph) {
+
+  topological_mapper::Graph::vertex_iterator vi, vend;
+  int count = 0;
+  for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
+    topological_mapper::Point2f location = graph[*vi].location;
+    if (fabs(point.x - location.x) <= 5 && fabs(point.y - location.y) <=5) {
+      return count;
+    }
+    count++;
+  }
+  return -1;
 }
 
 void getShortestPath(topological_mapper::Graph &graph, size_t start_idx,
@@ -97,6 +136,7 @@ void getShortestPath(topological_mapper::Graph &graph, size_t start_idx,
 
   // Look up the parent chain from the goal vertex to the start vertex
   path_from_goal.clear();
+  path_from_goal.push_back(goal_idx);
 
   topological_mapper::Graph::vertex_descriptor g = 
     boost::vertex(goal_idx, graph);
@@ -104,6 +144,7 @@ void getShortestPath(topological_mapper::Graph &graph, size_t start_idx,
     path_from_goal.push_back(indexmap[p[g]]);
     g = p[g];
   }
+  path_from_goal.push_back(start_idx);
 
 }
 
@@ -122,21 +163,61 @@ int main(int argc, char** argv) {
   topological_mapper::readGraphFromFile(argv[2], info, graph);
 
   cv::Mat image;
-  mapper.drawMap(image);
-  topological_mapper::drawGraph(image, graph);
 
   cv::namedWindow("Display", CV_WINDOW_AUTOSIZE);
   cv::setMouseCallback("Display", mouseCallback, 0);
 
-  std::stringstream ss;
-  topological_mapper::Point2f start_pt;
-  cv::Point start_image;
-  start_pt.x = 0; start_pt.y = 0;
+  topological_mapper::Point2f map_start, map_goal;
+  double yaw = 0;
+  map_start.x = 0; map_start.y = 0;
+  map_goal.x = 0; map_goal.y = 0;
+  cv::Point pxl_start, pxl_goal;
+  size_t start_idx = 0, goal_idx = 0;
+  std::vector<size_t> path_idx;
   std::vector<size_t> robot_idx;
-  double yaw;
 
+  std::stringstream ss;
   while (true) {
+
+    mapper.drawMap(image,0,0);
+    topological_mapper::drawGraph(image, graph, 0, 0, false);
+
+    // Clicks
+    if (global_state > START_LOC) {
+      cv::circle(image, pxl_start, 10, cv::Scalar(255,0,0), 2);
+    }
+    if (global_state > START_YAW) {
+      cv::line(image, pxl_start, 
+          pxl_start + cv::Point(20 * cosf(yaw), 20 * sinf(yaw)),
+          cv::Scalar(0,0,0), 1, 4);
+    }
+    if (global_state > START_IDX) {
+      highlightIdx(image, graph, start_idx, cv::Scalar(255, 0, 0));
+    }
+    if (global_state > GOAL_LOC) {
+      cv::circle(image, pxl_goal, 10, cv::Scalar(0,255,0), 2);
+    }
+    if (global_state > GOAL_IDX) {
+      for (size_t t = 0; t < path_idx.size(); ++t) {
+        highlightIdx(image, graph, path_idx[t], cv::Scalar(255, 0, 0));
+      }
+      highlightIdx(image, graph, goal_idx, cv::Scalar(0, 255, 0));
+      for (size_t t = 0; t < robot_idx.size(); ++t) {
+        circleIdx(image, graph, robot_idx[t], cv::Scalar(0, 0, 255));
+      }
+    }
+
+    // Highlight
+    if (global_state == START_IDX || global_state == GOAL_IDX || 
+        global_state == ROBOTS) {
+      size_t highlight_idx = getClosestIdOnGraph(mouseover_pt, graph);
+      if (highlight_idx != (size_t) -1) {
+        highlightIdx(image, graph, highlight_idx); 
+      }
+    }
+
     cv::imshow("Display", image);
+
     unsigned char c = cv::waitKey(10);
     if (c == 27) {
       return 0;
@@ -148,32 +229,52 @@ int main(int argc, char** argv) {
       topological_mapper::Point2f map_pt = toMap(clicked_pt, info);
       switch(global_state) {
         case START_LOC:
-          start_pt = map_pt; start_image = clicked_pt;
+          map_start = map_pt; pxl_start = clicked_pt;
           ss << "  - start_x: " << map_pt.x << std::endl;
           ss << "    start_y: " << map_pt.y << std::endl;
-          cv::circle(image, clicked_pt, 10, cv::Scalar(255,0,0), 2);
           global_state = START_YAW;
           break;
         case START_YAW:
-          yaw = atan2(map_pt.y - start_pt.y, map_pt.x - start_pt.x);
+          yaw = atan2(map_pt.y - map_start.y, map_pt.x - map_start.x);
           ss << "    start_yaw: " 
              << yaw
              << std::endl;
-          cv::line(image, start_image, 
-              start_image + cv::Point(20 * cosf(yaw), 20 * sinf(yaw)),
-              cv::Scalar(255,0,0), 1, 4);
-          global_state = GOAL_LOC;
+          global_state = START_IDX;
+          break;
+        case START_IDX:
+          start_idx = getClosestIdOnGraph(mouseover_pt, graph);
+          if (start_idx != (size_t) -1) {
+            global_state = GOAL_LOC;
+          }
           break;
         case GOAL_LOC:
+          map_goal = map_pt; pxl_goal = clicked_pt; 
           ss << "    ball_x: " << map_pt.x << std::endl;
           ss << "    ball_y: " << map_pt.y << std::endl;
-          cv::circle(image, clicked_pt, 10, cv::Scalar(0,255,0), 2);
-          global_state = ROBOTS;
+          global_state = GOAL_IDX;
+          break;
+        case GOAL_IDX:
+          goal_idx = getClosestIdOnGraph(mouseover_pt, graph);
+          if (goal_idx != (size_t) -1) {
+            getShortestPath(graph, start_idx, goal_idx, path_idx);
+            global_state = ROBOTS;
+          }
           break;
         case ROBOTS: {
-          ss << "    path: blah" << std::endl;
+          // Push out the path array
+          ss << "    path:" << std::endl;
+          for (size_t i = path_idx.size() - 1; i < path_idx.size(); --i) {
+            ss << "      - id: " << path_idx[i] << std::endl;
+            if (std::find(robot_idx.begin(), robot_idx.end(), path_idx[i]) != 
+                robot_idx.end()) {
+              ss << "        robot: yes" << std::endl;
+            } else {
+              ss << "        robot: no" << std::endl;
+            }
+          }
+          ss << "    max_duration: 120 #seconds" << std::endl;
           std::cout << ss.str();
-          global_state = PRINT;
+          global_state = STOP;
           break;
         }
         default:
@@ -181,8 +282,12 @@ int main(int argc, char** argv) {
       }
       increment_state = false;
     } else if (new_robot_available) {
-      // figure out how to push to robot_idx here;
-      std::cout << "new robot here" << std::endl;
+      size_t idx = getClosestIdOnGraph(mouseover_pt, graph);
+      if (idx != (size_t)-1) {
+        if (std::find(path_idx.begin(), path_idx.end(), idx) != path_idx.end()) {
+          robot_idx.push_back(idx);
+        }
+      }
       new_robot_available = false;
     }
   }

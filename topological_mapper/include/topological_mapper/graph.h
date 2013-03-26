@@ -70,7 +70,7 @@ namespace topological_mapper {
    *          (orig_x, orig_y)
    */
   void drawGraph(cv::Mat &image, const Graph& graph,
-      uint32_t orig_x = 0, uint32_t orig_y = 0) {
+      uint32_t orig_x = 0, uint32_t orig_y = 0, bool put_text = true) {
 
     Graph::vertex_iterator vi, vend;
     size_t count = 0;
@@ -81,10 +81,12 @@ namespace topological_mapper {
       size_t vertex_size = 3; // + graph[*vi].pixels / 10;
       cv::Point vertex_loc(orig_x + (uint32_t)location.x, 
           orig_y + (uint32_t)location.y);
-      cv::Point text_loc = vertex_loc + cv::Point(4,4);
       cv::circle(image, vertex_loc, vertex_size, cv::Scalar(0,0,255), -1);
-      cv::putText(image, boost::lexical_cast<std::string>(count), text_loc,
-          cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cvScalar(0,0,255), 1, CV_AA);
+      if (put_text) {
+        cv::Point text_loc = vertex_loc + cv::Point(4,4);
+        cv::putText(image, boost::lexical_cast<std::string>(count), text_loc,
+            cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cvScalar(0,0,255), 1, CV_AA);
+      }
 
       // Draw the edges from this vertex
       Graph::adjacency_iterator ai, aend;

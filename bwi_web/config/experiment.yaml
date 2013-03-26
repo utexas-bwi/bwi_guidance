@@ -4,18 +4,52 @@ robots:
     default_loc: [500, 500]
   - id: robot2
     default_loc: [502, 500]
+  - id: robot3
+    default_loc: [504, 500]
+  - id: robot4
+    default_loc: [506, 500]
+  - id: robot5
+    default_loc: [508, 500]
 ball_id: ball
 experiments:
-  - start_x: -4
-    start_y: 8
-    start_yaw: 0
+  - start_x: -10.4
+    start_y: 15.3
+    start_yaw: 0.00400797
+    ball_x: 38.1
+    ball_y: 9.25
     path:
-      - id: 24
+      - id: 45
         robot: yes
-      - id: 44
+      - id: 54
         robot: no
-      - id: 51
+      - id: 61
+        robot: no
+      - id: 58
+        robot: no
+      - id: 46
         robot: yes
-    ball_x: -2
-    ball_y: 8
-    max_duration: 60 #seconds
+      - id: 39
+        robot: no
+      - id: 32
+        robot: yes
+      - id: 36
+        robot: no
+      - id: 37
+        robot: no
+      - id: 33
+        robot: no
+      - id: 34
+        robot: yes
+      - id: 27
+        robot: no
+      - id: 20
+        robot: yes
+      - id: 21
+        robot: no
+      - id: 12
+        robot: no
+      - id: 13
+        robot: no
+      - id: 22
+        robot: no
+    max_duration: 120 #seconds
