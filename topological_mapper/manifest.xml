@@ -16,6 +16,10 @@
   <rosdep name="opencv2" />
   <rosdep name="yaml-cpp" />
 
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,-L${prefix}lib -ltopological_mapper `pkg-config --libs opencv` `pkg-config --libs yaml-cpp`"/>
+  </export>
+
 </package>
 
 

@@ -65,9 +65,6 @@ target_link_libraries(generate_graph topological_mapper)
 rosbuild_add_executable(view_graph src/nodes/view_graph.cpp)
 target_link_libraries(view_graph topological_mapper)
 
-rosbuild_add_executable(create_experiment src/nodes/create_experiment.cpp)
-target_link_libraries(create_experiment topological_mapper)
-
 #test binaries
 rosbuild_add_executable(test_circle test/test_circle.cpp)
 target_link_libraries(test_circle topological_mapper)
