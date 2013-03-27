@@ -1,0 +1,14 @@
+<package>
+  <description brief="bwi_exp1">
+
+     bwi_exp1
+
+  </description>
+  <author>Piyush Khandelwal</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/bwi_exp1</url>
+
+</package>
+
+
