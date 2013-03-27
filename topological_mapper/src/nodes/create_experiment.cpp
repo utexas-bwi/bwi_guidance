@@ -45,9 +45,7 @@
 enum state {
   START_LOC,
   START_YAW,
-  START_IDX,
   GOAL_LOC,
-  GOAL_IDX,
   ROBOTS,
   STOP
 } global_state = START_LOC;
@@ -65,6 +63,71 @@ topological_mapper::Point2f toMap(const cv::Point &pt,
   real_loc.x = info.origin.position.x + info.resolution * pt.x;
   real_loc.y = info.origin.position.y + info.resolution * pt.y;
   return real_loc;
+}
+
+float minimumDistanceToLineSegment(cv::Vec2f v, cv::Vec2f w, cv::Vec2f p) {
+  // Return minimum distance between line segment vw and point p
+  const float l2 = cv::norm(w-v);  // i.e. |w-v| -  avoid a sqrt
+  if (l2 == 0.0) return cv::norm(p-v);   // v == w case
+  // Consider the line extending the segment, parameterized as v + t (w - v).
+  // We find projection of point p onto the line. 
+  // It falls where t = [(p-v) . (w-v)] / |w-v|^2
+  const float t = (p - v).dot(w - v) / (l2 * l2);
+  if (t < 0.0) return cv::norm(p - v);       // Beyond the 'v' end of the segment
+  else if (t > 1.0) return cv::norm(p - w);  // Beyond the 'w' end of the segment
+  const cv::Vec2f projection = v + t * (w - v);  // Projection falls on the segment
+  return cv::norm(p - projection);
+}
+
+void findStartAndGoalIdx(cv::Point start_pxl, cv::Point goal_pxl, 
+    topological_mapper::Graph &graph, size_t &start_idx, size_t &goal_idx) {
+
+  cv::Vec2f start(start_pxl.x, start_pxl.y);
+  cv::Vec2f goal(goal_pxl.x, goal_pxl.y);
+
+  boost::property_map<topological_mapper::Graph, boost::vertex_index_t>::type 
+      indexmap = boost::get(boost::vertex_index, graph);
+
+  float start_fitness = std::numeric_limits<float>::max();
+  float goal_fitness = std::numeric_limits<float>::max();
+
+  topological_mapper::Graph::vertex_iterator vi, vend;
+  for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
+    cv::Vec2f loc(graph[*vi].location.x, graph[*vi].location.y);
+    topological_mapper::Graph::adjacency_iterator ai, aend;
+    for (boost::tie(ai, aend) = boost::adjacent_vertices(
+          (topological_mapper::Graph::vertex_descriptor)*vi, graph); 
+        ai != aend; ++ai) {
+      cv::Vec2f loc2(graph[*ai].location.x, graph[*ai].location.y);
+
+      // Improve start idx as necessary
+      float start_distance = minimumDistanceToLineSegment(loc, loc2, start);
+      std::cout << "For location: " << start << ", ls: " << loc << " " << loc2 
+                << " distance is: " << start_distance << std::endl;
+      if (start_distance < start_fitness) {
+        start_fitness = start_distance;
+        std::cout << loc << " " << cv::norm(loc - goal) << " " << loc2 << " " << cv::norm(loc2 - goal) << " " << goal << std::endl;
+        if (cv::norm(loc - goal) < cv::norm(loc2 - goal)) {
+          start_idx = indexmap[*vi];
+        } else {
+          start_idx = indexmap[*ai];
+        }
+      }
+
+      // Improve goal idx as necessary
+      float goal_distance = minimumDistanceToLineSegment(loc, loc2, goal);
+      if (goal_distance < goal_fitness) {
+        goal_fitness = goal_distance;
+        if (cv::norm(loc - start) < cv::norm(loc2 - start)) {
+          goal_idx = indexmap[*vi];
+        } else {
+          goal_idx = indexmap[*ai];
+        }
+      }
+
+    }
+  }
+
 }
 
 void circleIdx(cv::Mat& image, topological_mapper::Graph& graph, 
@@ -194,13 +257,9 @@ int main(int argc, char** argv) {
           pxl_start + cv::Point(20 * cosf(yaw), 20 * sinf(yaw)),
           cv::Scalar(0,0,0), 1, 4);
     }
-    if (global_state > START_IDX) {
-      highlightIdx(image, graph, start_idx, cv::Scalar(255, 0, 0));
-    }
     if (global_state > GOAL_LOC) {
       cv::circle(image, pxl_goal, 10, cv::Scalar(0,255,0), 2);
-    }
-    if (global_state > GOAL_IDX) {
+      highlightIdx(image, graph, start_idx, cv::Scalar(255, 0, 0));
       for (size_t t = 0; t < path_idx.size(); ++t) {
         highlightIdx(image, graph, path_idx[t], cv::Scalar(255, 0, 0));
       }
@@ -222,8 +281,7 @@ int main(int argc, char** argv) {
     }
 
     // Highlight
-    if (global_state == START_IDX || global_state == GOAL_IDX || 
-        global_state == ROBOTS) {
+    if (global_state == ROBOTS) {
       if (robot_pxls.size() != robot_idx.size()) {
         cv::circle(image, mouseover_pt, 10, cv::Scalar(0,255,0), 2);
       } else if (robot_yaw.size() != robot_locations.size()) {
@@ -263,26 +321,15 @@ int main(int argc, char** argv) {
           ss << "    start_yaw: " 
              << yaw
              << std::endl;
-          global_state = START_IDX;
-          break;
-        case START_IDX:
-          start_idx = getClosestIdOnGraph(mouseover_pt, graph);
-          if (start_idx != (size_t) -1) {
-            global_state = GOAL_LOC;
-          }
+          global_state = GOAL_LOC;
           break;
         case GOAL_LOC:
           map_goal = map_pt; pxl_goal = clicked_pt; 
           ss << "    ball_x: " << map_pt.x << std::endl;
           ss << "    ball_y: " << map_pt.y << std::endl;
-          global_state = GOAL_IDX;
-          break;
-        case GOAL_IDX:
-          goal_idx = getClosestIdOnGraph(mouseover_pt, graph);
-          if (goal_idx != (size_t) -1) {
-            getShortestPath(graph, start_idx, goal_idx, path_idx);
-            global_state = ROBOTS;
-          }
+          findStartAndGoalIdx(pxl_start, pxl_goal, graph, start_idx, goal_idx);
+          getShortestPath(graph, start_idx, goal_idx, path_idx);
+          global_state = ROBOTS;
           break;
         case ROBOTS: {
           // Push out the path array
