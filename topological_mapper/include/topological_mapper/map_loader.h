@@ -75,7 +75,8 @@ namespace topological_mapper {
        */
       void drawMap(cv::Mat &image, uint32_t orig_x = 0, uint32_t orig_y = 0);
 
-      void getMapInfo(nav_msgs::MapMetaData& info);
+      void getMapInfo(nav_msgs::MapMetaData& info) const;
+      void getMap(nav_msgs::OccupancyGrid& map) const;
 
     protected:
 

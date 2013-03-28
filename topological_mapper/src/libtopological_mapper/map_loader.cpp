@@ -140,8 +140,12 @@ namespace topological_mapper {
     drawMap(image, map_resp_.map, orig_x, orig_y);
   }
 
-  void MapLoader::getMapInfo(nav_msgs::MapMetaData& map) {
+  void MapLoader::getMapInfo(nav_msgs::MapMetaData& map) const {
     map = map_resp_.map.info;
+  }
+
+  void MapLoader::getMap(nav_msgs::OccupancyGrid &map) const {
+    map = map_resp_.map;
   }
 
   /**

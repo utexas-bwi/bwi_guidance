@@ -16,7 +16,7 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Pose, Quaternion
 from tf.transformations import quaternion_from_euler
 from nav_msgs.msg import Odometry
-from bwi_msgs.srv import Teleport
+from bwi_msgs.srv import Teleport, PositionRobot, PositionRobotRequest
 
 import cv, cv2, numpy
 from sensor_msgs.msg import Image
@@ -132,6 +132,12 @@ class ExperimentController:
         self.teleport_person = rospy.ServiceProxy(self.person_id + '/teleport', Teleport)
         rospy.loginfo("Service acquired: %s"%self.person_id+'/teleport')
 
+        # Get the robot positioner service
+        rospy.loginfo("Waiting for service: position")
+        rospy.wait_for_service("position")
+        self.position_robot = rospy.ServiceProxy('position', PositionRobot)
+        rospy.loginfo("Service acquired: position")
+
         # Get the robot teleporter service
         self.teleport_robot = [None] * len(self.robots)
         for i, robot in enumerate(self.robots):
@@ -167,14 +173,14 @@ class ExperimentController:
         start_yaw = experiment_data['start_yaw']
         start_pose = getPoseMsgFrom2dData(start_x, start_y, yaw=start_yaw)
         result = self.teleport_person(start_pose)
-        print result
+        # print result
 
         # Teleport the goal ball to its correct position
         ball_x = experiment_data['ball_x']
         ball_y = experiment_data['ball_y']
         ball_pose = getPoseMsgFrom2dData(ball_x, ball_y, 0)
         result = self.teleport_ball(ball_pose)
-        print result
+        # print result
         self.goal_location = [ball_x, ball_y]
 
         # compute location/orientation from path?
@@ -182,30 +188,37 @@ class ExperimentController:
 
         # Teleport all the robots to their respective positions
         self.path = experiment_data['path']
-        self.robots_in_experiment = [{'location': p['robot_location'], 'yaw': p['robot_yaw'], 'path_position': i} for i, p in enumerate(self.path) if p['robot']]
+        self.robots_in_experiment = [{'id': p['id'], 'location': p['robot_location'], 'yaw': p['robot_yaw'], 'path_position': i} for i, p in enumerate(self.path) if p['robot']]
         self.robot_locations = [None] * len(self.robots)
         self.robot_images = [None] * len(self.robots)
         for i, robot in enumerate(self.robots):
             if i < len(self.robots_in_experiment):
-                robot_yaw = self.robots_in_experiment[i]['yaw']
-                robot_loc = self.robots_in_experiment[i]['location']
                 path_position = self.robots_in_experiment[i]['path_position']
-                # compute yaw
-                # if path_position != 0:
-                #     arriving_from = self.getGraphLocation(self.path[path_position - 1]['id'])
-                # else:
-                #     arriving_from = [start_x, start_y]
-                # robot_yaw = math.atan2(robot_loc[1] - arriving_from[1], robot_loc[0] - arriving_from[0]
-                # compute image
-                if path_position != len(self.path) - 1:
-                    going_to = self.getGraphLocation(self.path[path_position + 1]['id'])
+
+                #get position of robot from service
+                req = PositionRobotRequest()
+                req.from_id = -1
+                req.to_id = -1
+                req.at_id = self.robots_in_experiment[i]['id']
+                if path_position != 0:
+                    req.from_id = self.path[path_position - 1]['id']
                 else:
-                    going_to = [ball_x, ball_y]
-                destination_yaw = math.atan2(going_to[1] - robot_loc[1], going_to[0] - robot_loc[0])
-                change_in_yaw = destination_yaw - robot_yaw
+                    req.from_pt = [ball_x, ball_y, 0]
+                if path_position != len(self.path) - 1:
+                    req.to_id = self.path[path_position + 1]['id']
+                else:
+                    req.to_pt = [ball_x, ball_y, 0]
+                print req
+                resp = self.position_robot(req)
+                robot_loc = [resp.loc.x, resp.loc.y]
+                robot_yaw = resp.yaw
+                print robot_loc, robot_yaw
+                
+                # destination_yaw = math.atan2(going_to[1] - robot_loc[1], going_to[0] - robot_loc[0])
+                # change_in_yaw = destination_yaw - robot_yaw
                 #normalize angle
-                change_in_yaw = math.atan2(math.sin(change_in_yaw), math.cos(change_in_yaw))
-                robot_image = produceDirectedArrow(self.arrow, change_in_yaw)
+                # change_in_yaw = math.atan2(math.sin(change_in_yaw), math.cos(change_in_yaw))
+                robot_image = produceDirectedArrow(self.arrow, 0)
                 # if change_in_yaw > 0.75 * math.pi or change_in_yaw <= -0.75 * math.pi:
                 #     robot_image = self.arrow_down
                 # elif change_in_yaw > 0.25 * math.pi and change_in_yaw <= 0.75 * math.pi:
@@ -233,7 +246,7 @@ class ExperimentController:
                 robot_image = self.image_none
             robot_pose = getPoseMsgFrom2dData(*robot_loc, yaw=robot_yaw)
             result = self.teleport_robot[i](robot_pose)
-            print result
+            # print result
             self.robot_images[i] = robot_image
             self.robot_locations[i] = robot_loc
 
