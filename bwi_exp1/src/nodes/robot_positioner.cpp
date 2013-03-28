@@ -39,15 +39,22 @@
 
 #include <ros/ros.h>
 #include <topological_mapper/map_loader.h>
+#include <topological_mapper/map_inflator.h>
 #include <topological_mapper/graph.h>
 
 #include <bwi_msgs/PositionRobot.h>
+
+#include <opencv2/highgui/highgui.hpp>
 
 ros::ServiceServer position_server;
 std::string map_file, graph_file;
 topological_mapper::Graph graph;
 nav_msgs::MapMetaData info;
 nav_msgs::OccupancyGrid map;
+bool debug = false;
+double robot_radius;
+double robot_padding;
+boost::shared_ptr<topological_mapper::MapLoader> mapper;
 
 cv::Vec2f toPxl(const cv::Vec2f &pt) {
   return cv::Vec2f(
@@ -105,7 +112,9 @@ bool position(bwi_msgs::PositionRobot::Request &req,
   }
 
   float y_test = at[1] - 1.0 / info.resolution;
-  float location_fitness = std::numeric_limits<float>::max();
+  float location_fitness = -1;
+  cv::Vec2f test_coords;
+  cv::Vec2f map_coords;
 
   while(y_test < at[1] + 1.0 / info.resolution) {
     float x_test = at[0] - 1.0 / info.resolution;
@@ -122,13 +131,15 @@ bool position(bwi_msgs::PositionRobot::Request &req,
 
       float dist1 = minimumDistanceToLineSegment(from, at, test_loc);
       float dist2 = minimumDistanceToLineSegment(at, to, test_loc);
-      float fitness = std::max(dist1, dist2);
+      std::cout << x_test << " " << y_test << " " << dist1 << " " << dist2 << std::endl;
+      float fitness = std::min(dist1, dist2);
 
-      if (fitness < location_fitness) {
-        cv::Vec2f map_coords = toMap(test_loc);
+      if (fitness > location_fitness) {
+        test_coords = test_loc;
+        map_coords = toMap(test_loc);
         resp.loc.x = map_coords[0];
         resp.loc.y = map_coords[1];
-        fitness = location_fitness;
+        location_fitness = fitness;
       }
 
       x_test++; 
@@ -149,6 +160,20 @@ bool position(bwi_msgs::PositionRobot::Request &req,
     resp.yaw = yaw2;
   } else {
     resp.yaw = atan2f(yawmid_pt[1], yawmid_pt[0]); 
+  }
+
+  if (debug) {
+    cv::Mat image;
+    mapper->drawMap(image, map);
+
+    cv::circle(image, cv::Point(from[0],from[1]), 5, cv::Scalar(255, 0, 0), -1);
+    cv::circle(image, cv::Point(at[0],at[1]), 5, cv::Scalar(255, 0, 255), 2);
+    cv::circle(image, cv::Point(to[0],to[1]), 5, cv::Scalar(0, 0, 255), -1);
+    cv::circle(image, cv::Point(test_coords[0],test_coords[1]), 5, cv::Scalar(0, 255, 0), 2);
+
+    cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
+    cv::imshow("Display window", image);
+    cv::waitKey(0);
   }
 
   return true;
@@ -172,9 +197,18 @@ int main(int argc, char *argv[]) {
   }
   ros::param::get("~graph_file", graph_file);
 
-  topological_mapper::MapLoader mapper(map_file);
-  mapper.getMapInfo(info);
-  mapper.getMap(map);
+  ros::param::param<bool>("~debug", debug, false);
+  ros::param::param<double>("~robot_radius", robot_radius, 0.3);
+  ros::param::param<double>("~robot_padding", robot_padding, 0.075);
+  ROS_INFO("Inflating map by %f.", robot_radius + robot_padding);
+
+  nav_msgs::OccupancyGrid uninflated_map;
+  mapper.reset(new topological_mapper::MapLoader(map_file));
+  mapper->getMapInfo(info);
+  mapper->getMap(uninflated_map);
+ 
+  topological_mapper::inflateMap(robot_radius + robot_padding, 
+      uninflated_map, map);
   topological_mapper::readGraphFromFile(graph_file, info, graph);
 
   position_server = node.advertiseService("position", position);

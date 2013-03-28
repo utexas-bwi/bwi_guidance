@@ -208,11 +208,11 @@ class ExperimentController:
                     req.to_id = self.path[path_position + 1]['id']
                 else:
                     req.to_pt = [ball_x, ball_y, 0]
-                print req
+                #print req
                 resp = self.position_robot(req)
                 robot_loc = [resp.loc.x, resp.loc.y]
                 robot_yaw = resp.yaw
-                print robot_loc, robot_yaw
+                #print robot_loc, robot_yaw
                 
                 # destination_yaw = math.atan2(going_to[1] - robot_loc[1], going_to[0] - robot_loc[0])
                 # change_in_yaw = destination_yaw - robot_yaw
@@ -246,7 +246,7 @@ class ExperimentController:
                 robot_image = self.image_none
             robot_pose = getPoseMsgFrom2dData(*robot_loc, yaw=robot_yaw)
             result = self.teleport_robot[i](robot_pose)
-            # print result
+            #print result
             self.robot_images[i] = robot_image
             self.robot_locations[i] = robot_loc
 

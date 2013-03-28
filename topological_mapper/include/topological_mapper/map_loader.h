@@ -78,14 +78,14 @@ namespace topological_mapper {
       void getMapInfo(nav_msgs::MapMetaData& info) const;
       void getMap(nav_msgs::OccupancyGrid& map) const;
 
-    protected:
-
       /**
        * \brief   Draw map onto image starting at (orig_x, orig_y)
        * \param   image OpenCV image we are writing the map onto
        */
       void drawMap(cv::Mat &image, const nav_msgs::OccupancyGrid& map, 
           uint32_t orig_x = 0, uint32_t orig_y = 0);
+
+    protected:
 
       /** /brief The base map being loaded by MapLoader. GetMap::Response is
        * used to reuse code from map_server */

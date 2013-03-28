@@ -9,6 +9,7 @@
   <node name="robot_positioner" pkg="bwi_exp1" type="robot_positioner">
     <param name="map_file" value="$(find utexas_gdc)/maps/3ne.yaml" />
     <param name="graph_file" value="$(find bwi_exp1)/config/graph.yaml" />
+    <param name="debug" value="true" />
   </node>
 
 </launch>
