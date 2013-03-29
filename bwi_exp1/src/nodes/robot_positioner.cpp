@@ -111,6 +111,19 @@ bool position(bwi_msgs::PositionRobot::Request &req,
     to = getLocationFromMapPose(req.to_pt);
   }
 
+  // Figure out if you want to stay on the outside angle or not
+  bool use_outside_angle = true;
+  float yaw1 = -atan2(to[1] - at[1], to[0] - at[0]);
+  float yaw2 = -atan2(from[1] - at[1], from[0] - at[0]);
+
+  cv::Vec2f yaw1_pt(cosf(yaw1),sinf(yaw1));
+  cv::Vec2f yaw2_pt(cosf(yaw2),sinf(yaw2));
+  cv::Vec2f yawmid_pt = (yaw1_pt + yaw2_pt) / 2;
+
+  if (cv::norm(yawmid_pt) < 0.1) {
+    use_outside_angle = false;
+  }
+
   float y_test = at[1] - 1.0 / info.resolution;
   float location_fitness = -1;
   cv::Vec2f test_coords;
@@ -125,6 +138,14 @@ bool position(bwi_msgs::PositionRobot::Request &req,
       if (map.data[map_idx] != 0) {
         x_test++;
         continue;
+      }
+
+      // Check if it is on the outside or not
+      if (use_outside_angle) {
+        if ((from + to - 2*at).dot(cv::Vec2f(x_test, y_test) - at) > 0) {
+          x_test++;
+          continue;
+        }
       }
 
       cv::Vec2f test_loc(x_test, y_test);
@@ -148,19 +169,18 @@ bool position(bwi_msgs::PositionRobot::Request &req,
   }
 
   // Calculate yaw
-  float yaw1 = -atan2(resp.loc.y - at_map[1], resp.loc.x - at_map[0]); 
-  float yaw2 = -atan2(resp.loc.y - from_map[1], resp.loc.x - from_map[0]);
+  yaw1 = atan2(resp.loc.y - at_map[1], resp.loc.x - at_map[0]); 
+  yaw2 = atan2(resp.loc.y - from_map[1], resp.loc.x - from_map[0]);
 
-  cv::Vec2f yaw1_pt(cosf(yaw1),sinf(yaw1));
-  cv::Vec2f yaw2_pt(cosf(yaw2),sinf(yaw2));
-  cv::Vec2f yawmid_pt = (yaw1_pt + yaw2_pt) / 2;
+  yaw1_pt = cv::Vec2f(cosf(yaw1),sinf(yaw1));
+  yaw2_pt = cv::Vec2f(cosf(yaw2),sinf(yaw2));
+  yawmid_pt = (yaw1_pt + yaw2_pt) / 2;
 
-  if (cv::norm(yawmid_pt) < 0.1) {
-    ROS_ERROR("Mid yaw seems to be misbehaving");
-    resp.yaw = yaw2;
-  } else {
+  /* if (cv::norm(yawmid_pt) < 0.1) { */
     resp.yaw = atan2f(yawmid_pt[1], yawmid_pt[0]); 
-  }
+  // } else {
+  //   resp.yaw = yaw1;
+  // }
 
   if (debug) {
     cv::Mat image;
@@ -170,6 +190,8 @@ bool position(bwi_msgs::PositionRobot::Request &req,
     cv::circle(image, cv::Point(at[0],at[1]), 5, cv::Scalar(255, 0, 255), 2);
     cv::circle(image, cv::Point(to[0],to[1]), 5, cv::Scalar(0, 0, 255), -1);
     cv::circle(image, cv::Point(test_coords[0],test_coords[1]), 5, cv::Scalar(0, 255, 0), 2);
+
+    cv::circle(image, cv::Point(test_coords[0],test_coords[1]) + cv::Point(20*cosf(resp.yaw),20*sinf(resp.yaw)), 3, cv::Scalar(0, 255, 0), -1);
 
     cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
     cv::imshow("Display window", image);
@@ -199,7 +221,7 @@ int main(int argc, char *argv[]) {
 
   ros::param::param<bool>("~debug", debug, false);
   ros::param::param<double>("~robot_radius", robot_radius, 0.3);
-  ros::param::param<double>("~robot_padding", robot_padding, 0.075);
+  ros::param::param<double>("~robot_padding", robot_padding, 0.05);
   ROS_INFO("Inflating map by %f.", robot_radius + robot_padding);
 
   nav_msgs::OccupancyGrid uninflated_map;
