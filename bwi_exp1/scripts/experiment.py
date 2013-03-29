@@ -203,22 +203,25 @@ class ExperimentController:
                 if path_position != 0:
                     req.from_id = self.path[path_position - 1]['id']
                 else:
-                    req.from_pt = [ball_x, ball_y, 0]
+                    req.from_pt = [start_x, start_y, 0]
                 if path_position != len(self.path) - 1:
                     req.to_id = self.path[path_position + 1]['id']
+                    going_to = self.getGraphLocation(req.to_id)
                 else:
                     req.to_pt = [ball_x, ball_y, 0]
+                    going_to = req.to_pt
+
                 #print req
                 resp = self.position_robot(req)
                 robot_loc = [resp.loc.x, resp.loc.y]
                 robot_yaw = resp.yaw
                 #print robot_loc, robot_yaw
                 
-                # destination_yaw = math.atan2(going_to[1] - robot_loc[1], going_to[0] - robot_loc[0])
-                # change_in_yaw = destination_yaw - robot_yaw
+                destination_yaw = math.atan2(going_to[1] - robot_loc[1], going_to[0] - robot_loc[0])
+                change_in_yaw = destination_yaw - robot_yaw
                 #normalize angle
-                # change_in_yaw = math.atan2(math.sin(change_in_yaw), math.cos(change_in_yaw))
-                robot_image = produceDirectedArrow(self.arrow, 0)
+                change_in_yaw = math.atan2(math.sin(change_in_yaw), math.cos(change_in_yaw))
+                robot_image = produceDirectedArrow(self.arrow, change_in_yaw)
                 # if change_in_yaw > 0.75 * math.pi or change_in_yaw <= -0.75 * math.pi:
                 #     robot_image = self.arrow_down
                 # elif change_in_yaw > 0.25 * math.pi and change_in_yaw <= 0.75 * math.pi:

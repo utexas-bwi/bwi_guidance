@@ -220,8 +220,8 @@ int main(int argc, char *argv[]) {
   ros::param::get("~graph_file", graph_file);
 
   ros::param::param<bool>("~debug", debug, false);
-  ros::param::param<double>("~robot_radius", robot_radius, 0.3);
-  ros::param::param<double>("~robot_padding", robot_padding, 0.05);
+  ros::param::param<double>("~robot_radius", robot_radius, 0.25);
+  ros::param::param<double>("~robot_padding", robot_padding, 0.1);
   ROS_INFO("Inflating map by %f.", robot_radius + robot_padding);
 
   nav_msgs::OccupancyGrid uninflated_map;
