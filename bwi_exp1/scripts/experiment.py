@@ -126,6 +126,7 @@ class ExperimentController:
         self.robots_in_experiment = []
         self.robot_locations = []
         self.robot_images = []
+        self.experiment_initialized = False
 
         rospy.loginfo("Waiting for service: %s"%self.person_id+'/teleport')
         rospy.wait_for_service(self.person_id + '/teleport')
@@ -188,7 +189,8 @@ class ExperimentController:
 
         # Teleport all the robots to their respective positions
         self.path = experiment_data['path']
-        self.robots_in_experiment = [{'id': p['id'], 'location': p['robot_location'], 'yaw': p['robot_yaw'], 'path_position': i} for i, p in enumerate(self.path) if p['robot']]
+        self.robots_in_experiment = [{'id': p['id'], 'path_position': i} for i, p in enumerate(self.path) if p['robot']]
+        self.extra_robots = experiment_data['extra_robots']
         self.robot_locations = [None] * len(self.robots)
         self.robot_images = [None] * len(self.robots)
         for i, robot in enumerate(self.robots):
@@ -203,12 +205,16 @@ class ExperimentController:
                 if path_position != 0:
                     req.from_id = self.path[path_position - 1]['id']
                 else:
-                    req.from_pt = [start_x, start_y, 0]
+                    req.from_pt.x = start_x
+                    req.from_pt.y = start_y
+                    req.from_pt.z = 0
                 if path_position != len(self.path) - 1:
                     req.to_id = self.path[path_position + 1]['id']
                     going_to = self.getGraphLocation(req.to_id)
                 else:
-                    req.to_pt = [ball_x, ball_y, 0]
+                    req.to_pt.x = ball_x
+                    req.to_pt.y = ball_y
+                    req.to_pt.z = 0
                     going_to = req.to_pt
 
                 #print req
@@ -243,18 +249,23 @@ class ExperimentController:
                 # robot_loc[0] = robot_loc[0] + 0.2 * math.cos(move_yaw)
                 # robot_loc[1] = robot_loc[1] + 0.2 * math.sin(move_yaw)
                 # print robot_loc
+            elif i - len(self.robots_in_experiment) < len(self.extra_robots):
+                robot_loc = [self.extra_robots[i - len(self.robots_in_experiment)]['loc_x'], self.extra_robots[i - len(self.robots_in_experiment)]['loc_y']]
+                robot_yaw = self.extra_robots[i - len(self.robots_in_experiment)]['yaw']
+                robot_image = self.image_none
             else:
                 robot_loc = self.robots[i]['default_loc']
                 robot_yaw = 0
                 robot_image = self.image_none
             robot_pose = getPoseMsgFrom2dData(*robot_loc, yaw=robot_yaw)
             result = self.teleport_robot[i](robot_pose)
-            #print result
             self.robot_images[i] = robot_image
             self.robot_locations[i] = robot_loc
 
         # Publish message to the user
         self.text_pub.publish("Experiment #" + str(experiment_number + 1) + " has started!");
+
+        self.experiment_initialized = True
 
         # TODO Start recording odometry
 
@@ -263,6 +274,7 @@ class ExperimentController:
         self.experiment_max_duration = experiment_data['max_duration']
 
     def stopCurrentExperiment(self, success):
+        self.experiment_initialized = False
         # Send message to user
         if (success):
             self.text_pub.publish("It looks like you've found the goal. Let's proceed to the next experiment!")
@@ -273,12 +285,15 @@ class ExperimentController:
 
     def odometryCallback(self, odom):
 
+        if (not self.experiment_initialized):
+            return
+
         loc = [odom.pose.pose.position.x, odom.pose.pose.position.y]
 
         # check if the person is near a robot
         for i, robot in enumerate(self.robots):
             if i < len(self.robots_in_experiment):
-                robot_loc = self.robots_in_experiment[i]['location']
+                robot_loc = self.robot_locations[i]
                 distance_sqr = (loc[0] - robot_loc[0]) * (loc[0] - robot_loc[0]) + (loc[1] - robot_loc[1]) * (loc[1] - robot_loc[1])
                 if distance_sqr < 3.0 * 3.0:
                     self.robot_image_publisher.updateImage(robot['id'], self.robot_images[i])

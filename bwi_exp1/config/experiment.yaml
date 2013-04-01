@@ -10,34 +10,36 @@ robots:
     default_loc: [506, 500]
   - id: robot5
     default_loc: [508, 500]
+  - id: robot6
+    default_loc: [510, 500]
+  - id: robot7
+    default_loc: [512, 500]
+  - id: robot8
+    default_loc: [514, 500]
+  - id: robot9
+    default_loc: [516, 500]
+  - id: robot10
+    default_loc: [518, 500]
 ball_id: ball
 experiments:
-  - start_x: -10.7
-    start_y: 15.4
-    start_yaw: -0.135527
-    ball_x: 38.15
-    ball_y: 9.25
+  - start_x: -10.1
+    start_y: 15.35
+    start_yaw: -0.0499576
+    ball_x: 37.9
+    ball_y: 10.15
     path:
-      - id: 45
-        robot: no
       - id: 54
-        robot: no
-      - id: 61
         robot: yes
-        robot_location: [-2.55, 15.8]
-        robot_yaw: 0.0129863
+      - id: 61
+        robot: no
       - id: 58
         robot: no
       - id: 46
         robot: yes
-        robot_location: [7.2, 15.25]
-        robot_yaw: 0.0434509
       - id: 39
         robot: no
       - id: 32
         robot: yes
-        robot_location: [8.75, 10.6]
-        robot_yaw: -1.5458
       - id: 36
         robot: no
       - id: 37
@@ -46,12 +48,8 @@ experiments:
         robot: no
       - id: 34
         robot: yes
-        robot_location: [23.4, 11.8]
-        robot_yaw: 0.26791
       - id: 27
         robot: yes
-        robot_location: [24.4, 8]
-        robot_yaw: -1.71269
       - id: 20
         robot: no
       - id: 21
@@ -62,4 +60,14 @@ experiments:
         robot: no
       - id: 22
         robot: no
-    max_duration: 120 #secondsrobot_yaw = self.robots_in_experiment
+    extra_robots:
+      - loc_x: -5.55
+        loc_y: 13.35
+        yaw: -1.63736
+      - loc_x: 15.3
+        loc_y: 12.25
+        yaw: -1.54139
+      - loc_x: 14.75
+        loc_y: 15.3
+        yaw: -1.63322
+    max_duration: 120 #seconds

@@ -152,7 +152,7 @@ bool position(bwi_msgs::PositionRobot::Request &req,
 
       float dist1 = minimumDistanceToLineSegment(from, at, test_loc);
       float dist2 = minimumDistanceToLineSegment(at, to, test_loc);
-      std::cout << x_test << " " << y_test << " " << dist1 << " " << dist2 << std::endl;
+      //std::cout << x_test << " " << y_test << " " << dist1 << " " << dist2 << std::endl;
       float fitness = std::min(dist1, dist2);
 
       if (fitness > location_fitness) {
