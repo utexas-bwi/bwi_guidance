@@ -43,12 +43,14 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 
-enum state {
-  START_LOC,
-  START_YAW,
-  GOAL_LOC,
-  ROBOTS,
-  STOP
+enum State {
+  START_LOC = 0,
+  START_YAW = 1,
+  GOAL_LOC = 2,
+  ROBOTS = 3,
+  EXTRA_ROBOT_LOC = 4,
+  EXTRA_ROBOT_YAW = 5,
+  STOP = 6
 } global_state = START_LOC;
 
 cv::Point clicked_pt;
@@ -103,8 +105,8 @@ void findStartAndGoalIdx(cv::Point start_pxl, cv::Point goal_pxl,
 
       // Improve start idx as necessary
       float start_distance = minimumDistanceToLineSegment(loc, loc2, start);
-      std::cout << "For location: " << start << ", ls: " << loc << " " << loc2 
-                << " distance is: " << start_distance << std::endl;
+      // std::cout << "For location: " << start << ", ls: " << loc << " " << loc2 
+      //           << " distance is: " << start_distance << std::endl;
       if (start_distance < start_fitness) {
         start_fitness = start_distance;
         std::cout << loc << " " << cv::norm(loc - goal) << " " << loc2 << " " << cv::norm(loc2 - goal) << " " << goal << std::endl;
@@ -152,7 +154,7 @@ void highlightIdx(cv::Mat& image, topological_mapper::Graph& graph,
 void mouseCallback(int event, int x, int y, int, void*) {
   if (event == cv::EVENT_LBUTTONDOWN) {
     clicked_pt = cv::Point(x, y);
-    if (global_state != ROBOTS) {
+    if (global_state < ROBOTS) {
       increment_state = true;
     } else {
       new_robot_available = true;
@@ -240,8 +242,9 @@ int main(int argc, char** argv) {
   std::vector<size_t> path_idx;
   std::vector<size_t> robot_idx;
   std::vector<cv::Point> robot_pxls;
-  std::vector<topological_mapper::Point2f> robot_locations;
-  std::vector<float> robot_yaw;
+  std::vector<cv::Point> extra_robot_pxls;
+  std::vector<topological_mapper::Point2f> extra_robot_locations;
+  std::vector<float> extra_robot_yaw;
 
   std::stringstream ss;
   while (true) {
@@ -256,7 +259,7 @@ int main(int argc, char** argv) {
     if (global_state > START_YAW) {
       cv::line(image, pxl_start, 
           pxl_start + cv::Point(20 * cosf(yaw), 20 * sinf(yaw)),
-          cv::Scalar(0,0,0), 1, 4);
+          cv::Scalar(255,0,0), 1, 4);
     }
     if (global_state > GOAL_LOC) {
       cv::circle(image, pxl_goal, 10, cv::Scalar(0,255,0), 2);
@@ -272,31 +275,33 @@ int main(int argc, char** argv) {
         cv::Point &robot = robot_pxls[t];
         cv::circle(image, robot, 10, cv::Scalar(0,0,255), 2);
       }
-      for (size_t t = 0; t < robot_yaw.size(); ++t) {
-        cv::Point &robot = robot_pxls[t];
-        float r_yaw = robot_yaw[t];
+      for (size_t t = 0; t < extra_robot_pxls.size(); ++t) {
+        cv::Point &robot = extra_robot_pxls[t];
+        cv::circle(image, robot, 10, cv::Scalar(0,0,255), 2);
+      }
+      for (size_t t = 0; t < extra_robot_yaw.size(); ++t) {
+        cv::Point &robot = extra_robot_pxls[t];
+        float yaw = -extra_robot_yaw[t];
         cv::line(image, robot, 
-            robot + cv::Point(20 * cosf(r_yaw), 20 * sinf(r_yaw)),
+            robot + cv::Point(20 * cosf(yaw), 20 * sinf(yaw)),
             cv::Scalar(0,0,255), 1, 4);
       }
     }
 
     // Highlight
     if (global_state == ROBOTS) {
-      if (robot_pxls.size() != robot_idx.size()) {
-        cv::circle(image, mouseover_pt, 10, cv::Scalar(0,255,0), 2);
-      } else if (robot_yaw.size() != robot_locations.size()) {
-        cv::Point &robot = robot_pxls[robot_pxls.size() - 1];
-        float r_yaw = atan2(mouseover_pt.y - robot.y, mouseover_pt.x - robot.x);
-        cv::line(image, robot, 
-            robot + cv::Point(20 * cosf(r_yaw), 20 * sinf(r_yaw)),
-            cv::Scalar(0,255,0), 1, 4);
-      } else {
-        size_t highlight_idx = getClosestIdOnGraph(mouseover_pt, graph);
-        if (highlight_idx != (size_t) -1) {
-          highlightIdx(image, graph, highlight_idx); 
-        }
+      size_t highlight_idx = getClosestIdOnGraph(mouseover_pt, graph);
+      if (highlight_idx != (size_t) -1) {
+        highlightIdx(image, graph, highlight_idx); 
       }
+    } else if (global_state == EXTRA_ROBOT_LOC) {
+      cv::circle(image, mouseover_pt, 10, cv::Scalar(0,255, 0), 2);
+    } else if (global_state == EXTRA_ROBOT_YAW) {
+      cv::Point &prev_pt = extra_robot_pxls[extra_robot_pxls.size() - 1];
+      float yaw = atan2(mouseover_pt.y - prev_pt.y, mouseover_pt.x - prev_pt.x);
+      cv::line(image, prev_pt, 
+          prev_pt + cv::Point(20 * cosf(yaw), 20 * sinf(yaw)),
+          cv::Scalar(0,255,0), 1, 4);
     }
 
     cv::imshow("Display", image);
@@ -304,7 +309,7 @@ int main(int argc, char** argv) {
     unsigned char c = cv::waitKey(10);
     if (c == 27) {
       return 0;
-    } else if (c == 'p' && global_state == ROBOTS) {
+    } else if (c == 'n' && global_state >= ROBOTS) {
       increment_state = true;
     }
 
@@ -332,51 +337,55 @@ int main(int argc, char** argv) {
           getShortestPath(graph, start_idx, goal_idx, path_idx);
           global_state = ROBOTS;
           break;
-        case ROBOTS: {
-          // Push out the path array
-          if (robot_locations.size() == robot_idx.size() && 
-              robot_yaw.size() == robot_locations.size()) {
-            ss << "    path:" << std::endl;
-            for (size_t i = path_idx.size() - 1; i < path_idx.size(); --i) {
-              ss << "      - id: " << path_idx[i] << std::endl;
-              std::vector<size_t>::iterator robot_it =
-                  std::find(robot_idx.begin(), robot_idx.end(), path_idx[i]);
-              if (robot_it != robot_idx.end()) {
-                ss << "        robot: yes" << std::endl;
-                size_t distance = std::distance(robot_idx.begin(), robot_it);
-                ss << "        robot_location: [" << robot_locations[distance].x
-                   << ", " << robot_locations[distance].y << "]" << std::endl;
-                ss << "        robot_yaw: " << robot_yaw[distance] << std::endl;
-              } else {
-                ss << "        robot: no" << std::endl;
-              }
+        case ROBOTS: 
+          ss << "    path:" << std::endl;
+          for (size_t i = path_idx.size() - 1; i < path_idx.size(); --i) {
+            ss << "      - id: " << path_idx[i] << std::endl;
+            std::vector<size_t>::iterator robot_it =
+              std::find(robot_idx.begin(), robot_idx.end(), path_idx[i]);
+            if (robot_it != robot_idx.end()) {
+              ss << "        robot: yes" << std::endl;
+            } else {
+              ss << "        robot: no" << std::endl;
             }
-            ss << "    max_duration: 120 #seconds" << std::endl;
-            std::cout << ss.str();
-            global_state = STOP;
           }
+          global_state = EXTRA_ROBOT_LOC;
           break;
-        }
+        case EXTRA_ROBOT_LOC:
+        case EXTRA_ROBOT_YAW:
+          // Push out the path array
+          ss << "    extra_robots:" << std::endl;
+          for (size_t i = 0; i < extra_robot_locations.size(); ++i) {
+            ss << "      - loc_x: " << extra_robot_locations[i].x << std::endl;
+            ss << "        loc_y: " << extra_robot_locations[i].y << std::endl;
+            ss << "        yaw: " << extra_robot_yaw[i] << std::endl;
+          }
+          ss << "    max_duration: 120 #seconds" << std::endl;
+          std::cout << ss.str();
+          global_state = STOP;
+          break;
         default:
           return 0;
       }
       increment_state = false;
     } else if (new_robot_available) {
-      if (robot_locations.size() != robot_idx.size()) {
-        topological_mapper::Point2f map_pt = toMap(clicked_pt, info);
-        robot_locations.push_back(map_pt);
-        robot_pxls.push_back(clicked_pt);
-      } else if (robot_yaw.size() != robot_locations.size()) {
-        cv::Point &robot = robot_pxls[robot_pxls.size() - 1];
-        float r_yaw = atan2(mouseover_pt.y - robot.y, mouseover_pt.x - robot.x);
-        robot_yaw.push_back(r_yaw);
-      } else {
+      if (global_state == ROBOTS) {
         size_t idx = getClosestIdOnGraph(mouseover_pt, graph);
         if (idx != (size_t)-1) {
           if (std::find(path_idx.begin(), path_idx.end(), idx) != path_idx.end()) {
             robot_idx.push_back(idx);
           }
         }
+      } else if (global_state == EXTRA_ROBOT_LOC) {
+        topological_mapper::Point2f map_pt = toMap(clicked_pt, info);
+        extra_robot_pxls.push_back(clicked_pt);
+        extra_robot_locations.push_back(map_pt);
+        global_state = EXTRA_ROBOT_YAW;
+      } else if (global_state == EXTRA_ROBOT_YAW) {
+        cv::Point &prev_pt = extra_robot_pxls[extra_robot_pxls.size() - 1];
+        float yaw = -atan2(clicked_pt.y - prev_pt.y, clicked_pt.x - prev_pt.x);
+        extra_robot_yaw.push_back(yaw);
+        global_state = EXTRA_ROBOT_LOC;
       }
       new_robot_available = false;
     }
