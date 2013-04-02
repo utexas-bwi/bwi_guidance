@@ -8,7 +8,7 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Pose, Quaternion
 from tf.transformations import quaternion_from_euler
 from nav_msgs.msg import Odometry
-from bwi_msgs.srv import PositionRobot, PositionRobotRequest
+from bwi_msgs.srv import PositionRobot, PositionRobotRequest, UpdatePluginState
 from gazebo_msgs.srv import SetModelState, SetModelStateRequest
 
 import cv, cv2, numpy
@@ -132,6 +132,12 @@ class ExperimentController:
         self.teleport = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
         rospy.loginfo("Service acquired: /gazebo/set_model_state")
 
+        # Get the person pause service
+        rospy.loginfo("Waiting for service: " + self.person_id + "/update_state")
+        rospy.wait_for_service(self.person_id + "/update_state")
+        self.pause_person_plugin = rospy.ServiceProxy(self.person_id + "/update_state", UpdatePluginState)
+        rospy.loginfo("Service acquired: " + self.person_id + "/update_state")
+
         for i, robot in enumerate(self.robots):
             robot_id = robot['id']
             self.robot_image_publisher.addRobot(robot_id)
@@ -149,12 +155,16 @@ class ExperimentController:
         self.experiment_number = experiment_number
         experiment_data = self.experiment['experiments'][experiment_number]
 
-        # Teleport person to correct place
+        # Teleport person to correct place, however pause and unpause
+        rospy.loginfo("Pausing person plugin")
+        self.pause_person_plugin(True)
         start_x = experiment_data['start_x']
         start_y = experiment_data['start_y']
         start_yaw = experiment_data['start_yaw']
         start_pose = getPoseMsgFrom2dData(start_x, start_y, yaw=start_yaw)
         result = self.teleportEntity(self.person_id, start_pose)
+        rospy.loginfo("Unpause person plugin")
+        self.pause_person_plugin(False)
 
         # Teleport the goal ball to its correct position
         ball_x = experiment_data['ball_x']
