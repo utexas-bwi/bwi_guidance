@@ -79,6 +79,70 @@
     <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
   </group>
 
+  <group ns="robot6">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="510" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot6" />
+      <arg name="tf_prefix" value="robot6" />
+      <arg name="has_tf_prefix" value="true" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+    <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
+  </group>
+
+  <group ns="robot7">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="512" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot7" />
+      <arg name="tf_prefix" value="robot7" />
+      <arg name="has_tf_prefix" value="true" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+    <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
+  </group>
+
+  <group ns="robot8">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="514" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot8" />
+      <arg name="tf_prefix" value="robot8" />
+      <arg name="has_tf_prefix" value="true" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+    <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
+  </group>
+
+  <group ns="robot9">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="516" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot9" />
+      <arg name="tf_prefix" value="robot9" />
+      <arg name="has_tf_prefix" value="true" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+    <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
+  </group>
+
+  <group ns="robot10">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="518" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot10" />
+      <arg name="tf_prefix" value="robot10" />
+      <arg name="has_tf_prefix" value="true" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+    <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
+  </group>
   <!-- launch the ball -->
   <group ns="ball">
     <include file="$(find utexas_gdc)/launch/ball.launch" />
