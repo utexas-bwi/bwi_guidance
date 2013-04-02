@@ -93,6 +93,9 @@ private:
 
   bool pause_;
 
+  double timeout_period_;
+  common::Time time_of_last_message_;
+
   std::string modelNamespace;
   std::string topicName;
 
