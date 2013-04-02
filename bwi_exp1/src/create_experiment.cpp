@@ -355,10 +355,14 @@ int main(int argc, char** argv) {
         case EXTRA_ROBOT_YAW:
           // Push out the path array
           ss << "    extra_robots:" << std::endl;
-          for (size_t i = 0; i < extra_robot_locations.size(); ++i) {
-            ss << "      - loc_x: " << extra_robot_locations[i].x << std::endl;
-            ss << "        loc_y: " << extra_robot_locations[i].y << std::endl;
-            ss << "        yaw: " << extra_robot_yaw[i] << std::endl;
+          if (extra_robot_locations.size() == 0) {
+            ss << " []" << std::endl;
+          } else {
+            for (size_t i = 0; i < extra_robot_locations.size(); ++i) {
+              ss << "      - loc_x: " << extra_robot_locations[i].x << std::endl;
+              ss << "        loc_y: " << extra_robot_locations[i].y << std::endl;
+              ss << "        yaw: " << extra_robot_yaw[i] << std::endl;
+            }
           }
           ss << "    max_duration: 120 #seconds" << std::endl;
           std::cout << ss.str();
