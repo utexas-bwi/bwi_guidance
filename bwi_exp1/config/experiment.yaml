@@ -22,52 +22,35 @@ robots:
     default_loc: [518, 500]
 ball_id: ball
 experiments:
-  - start_x: -10.1
-    start_y: 15.35
-    start_yaw: -0.0499576
-    ball_x: 37.9
-    ball_y: 10.15
+  - start_x: 3.9
+    start_y: 38.05
+    start_yaw: -0.174674
+    ball_x: 40.6
+    ball_y: 8.45
     path:
-      - id: 54
+      - id: 124
         robot: yes
-      - id: 61
+      - id: 93
         robot: no
-      - id: 58
-        robot: no
-      - id: 46
+      - id: 90
         robot: yes
-      - id: 39
+      - id: 91
         robot: no
-      - id: 32
+      - id: 92
         robot: yes
-      - id: 36
+      - id: 69
         robot: no
-      - id: 37
+      - id: 64
         robot: no
-      - id: 33
+      - id: 55
         robot: no
-      - id: 34
-        robot: yes
-      - id: 27
-        robot: yes
-      - id: 20
-        robot: no
-      - id: 21
-        robot: no
-      - id: 12
-        robot: no
-      - id: 13
-        robot: no
-      - id: 22
+      - id: 45
         robot: no
     extra_robots:
-      - loc_x: -5.55
-        loc_y: 13.35
-        yaw: -1.63736
-      - loc_x: 15.3
-        loc_y: 12.25
-        yaw: -1.54139
-      - loc_x: 14.75
-        loc_y: 15.3
-        yaw: -1.63322
+      - loc_x: 14.25
+        loc_y: 27.65
+        yaw: -1.5708
+      - loc_x: 42.65
+        loc_y: 19.6
+        yaw: 2.55359
     max_duration: 120 #seconds
