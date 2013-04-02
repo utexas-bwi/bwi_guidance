@@ -10,6 +10,8 @@
   <url>http://ros.org/wiki/bwi_exp1</url>
 
   <depend package="gazebo" />
+  <depend package="gazebo_msgs" />
+
   <depend package="bwi_msgs" />
   <depend package="bwi_web" />
   <depend package="topological_mapper" />

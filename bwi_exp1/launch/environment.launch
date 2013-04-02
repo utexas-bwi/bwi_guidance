@@ -24,7 +24,7 @@
       <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
       <arg name="use_full_gazebo_model" value="false" />
     </include>
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
+    <!-- <include file="$(find bwi_exp1)/launch/exp1_map.launch" /> -->
   </group>
 
   <group ns="robot2">
@@ -37,7 +37,7 @@
       <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
       <arg name="use_full_gazebo_model" value="false" />
     </include>
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
+    <!-- <include file="$(find bwi_exp1)/launch/exp1_map.launch" /> -->
   </group>
 
   <group ns="robot3">
@@ -50,7 +50,7 @@
       <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
       <arg name="use_full_gazebo_model" value="false" />
     </include>
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
+    <!-- <include file="$(find bwi_exp1)/launch/exp1_map.launch" /> -->
   </group>
 
   <group ns="robot4">
@@ -63,7 +63,7 @@
       <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
       <arg name="use_full_gazebo_model" value="false" />
     </include>
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
+    <!-- <include file="$(find bwi_exp1)/launch/exp1_map.launch" /> -->
   </group>
 
   <group ns="robot5">
@@ -76,7 +76,7 @@
       <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
       <arg name="use_full_gazebo_model" value="false" />
     </include>
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
+    <!-- <include file="$(find bwi_exp1)/launch/exp1_map.launch" /> -->
   </group>
 
   <group ns="robot6">
@@ -89,7 +89,7 @@
       <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
       <arg name="use_full_gazebo_model" value="false" />
     </include>
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
+    <!-- <include file="$(find bwi_exp1)/launch/exp1_map.launch" /> -->
   </group>
 
   <group ns="robot7">
@@ -102,7 +102,7 @@
       <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
       <arg name="use_full_gazebo_model" value="false" />
     </include>
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
+    <!-- <include file="$(find bwi_exp1)/launch/exp1_map.launch" /> -->
   </group>
 
   <group ns="robot8">
@@ -115,7 +115,7 @@
       <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
       <arg name="use_full_gazebo_model" value="false" />
     </include>
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
+    <!-- <include file="$(find bwi_exp1)/launch/exp1_map.launch" /> -->
   </group>
 
   <group ns="robot9">
@@ -128,7 +128,7 @@
       <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
       <arg name="use_full_gazebo_model" value="false" />
     </include>
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
+    <!-- <include file="$(find bwi_exp1)/launch/exp1_map.launch" /> -->
   </group>
 
   <group ns="robot10">
@@ -141,12 +141,12 @@
       <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot.auxilliary.launch" />
       <arg name="use_full_gazebo_model" value="false" />
     </include>
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
+    <!-- <include file="$(find bwi_exp1)/launch/exp1_map.launch" /> -->
   </group>
   <!-- launch the ball -->
   <group ns="ball">
     <include file="$(find bwi_exp1)/launch/ball.launch" />
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
+    <!-- <include file="$(find bwi_exp1)/launch/exp1_map.launch" /> -->
   </group>
 
 </launch>

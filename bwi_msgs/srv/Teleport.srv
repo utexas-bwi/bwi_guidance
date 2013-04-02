@@ -1,4 +1,0 @@
-geometry_msgs/Pose location
----
-bool success
-string error_msg

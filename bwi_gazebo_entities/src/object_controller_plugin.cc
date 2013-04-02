@@ -161,8 +161,12 @@ void ObjectControllerPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sd
   pub_ = rosnode_->advertise<nav_msgs::Odometry>("odom", 1);
   pub2_ = rosnode_->advertise<nav_msgs::OccupancyGrid>("expanded_map", 1, true);
 
-  teleport_service_server_ = rosnode_->advertiseService("teleport", 
-      &ObjectControllerPlugin::teleport, this);
+  ros::AdvertiseServiceOptions so3 = 
+    ros::AdvertiseServiceOptions::create<bwi_msgs::UpdatePluginState>
+    ("update_state", boost::bind(&ObjectControllerPlugin::updateState, this, _1, _2), ros::VoidPtr(), &queue_);
+
+  update_state_service_server_ = rosnode_->advertiseService(so3);
+  pause_ = false;
 
   // start custom queue for diff drive
   this->callback_queue_thread_ = boost::thread(boost::bind(&ObjectControllerPlugin::QueueThread, this));
@@ -180,8 +184,11 @@ void ObjectControllerPlugin::UpdateChild()
   double seconds_since_last_update = (current_time - last_update_time_).Double();
   if (seconds_since_last_update > update_period_) {
 
-    writePositionData(seconds_since_last_update);
-    publishOdometry(seconds_since_last_update);
+    boost::mutex::scoped_lock scoped_lock(state_lock_);
+    if (!pause_) {
+      writePositionData(seconds_since_last_update);
+      publishOdometry(seconds_since_last_update);
+    }
 
     last_update_time_+= common::Time(update_period_);
 
@@ -198,34 +205,12 @@ void ObjectControllerPlugin::FiniChild()
   callback_queue_thread_.join();
 }
 
-bool ObjectControllerPlugin::teleport(bwi_msgs::Teleport::Request &req,
-    bwi_msgs::Teleport::Response &resp) {
+bool ObjectControllerPlugin::updateState(bwi_msgs::UpdatePluginState::Request &req,
+    bwi_msgs::UpdatePluginState::Response &resp) {
 
-  // TODO probably need a transformation here
-  geometry_msgs::Pose &pose = req.location;
-  math::Vector3 new_vec(pose.position.x, pose.position.y, pose.position.z);
-  math::Quaternion new_quat(pose.orientation.w, pose.orientation.x, 
-      pose.orientation.y, pose.orientation.z);
-  math::Pose new_pose(new_vec, new_quat);
+  boost::mutex::scoped_lock scoped_lock(state_lock_);
+  pause_ = req.pause;
 
-  // Check if the new pose can be allowed
-  int x_pxl = 
-    (new_pose.pos.x - map_.info.origin.position.x) / map_.info.resolution;
-  int y_pxl = 
-    (new_pose.pos.y - map_.info.origin.position.y) / map_.info.resolution;
-
-  if (x_pxl < 0 || x_pxl >= (int)map_.info.width ||
-      y_pxl < 0 || y_pxl >= (int)map_.info.height ||
-      (map_.data[y_pxl * map_.info.width + x_pxl] < 50)) {
-    this->parent->SetWorldPose(new_pose);
-    ROS_INFO("%s: Location changed to %f, %f", this->modelNamespace.c_str(), 
-        new_pose.pos.x, new_pose.pos.y);
-    resp.success = true;
-  } else {
-    resp.success = false;
-    resp.error_msg = "Given location inside obstacle space.";
-  } 
-  
   return true;
 }
 
@@ -381,6 +366,12 @@ void ObjectControllerPlugin::writePositionData(double step_time)
     float dr = x_ * step_time;
     float dy = y_ * step_time;
     float da = rot_ * step_time;
+
+    if (fabs(dr) < 1e-3 && fabs(dy) < 1e-3 && fabs(da) < 1e-3) {
+      // Don't keep overwriting as the simulator may not have had time to update
+      // pose
+      return;
+    }
 
     //ROS_INFO_THROTTLE(1.0,"%f %f %f", dr, dy, da);
 

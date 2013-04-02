@@ -8,7 +8,7 @@
 # How do we want the robot to communicate with the human??
 # have a service to aquire a lock onto this experiment
 
-import roslib; roslib.load_manifest('bwi_web')
+import roslib; roslib.load_manifest('bwi_exp1')
 import rospy
 
 import yaml
@@ -16,7 +16,8 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Pose, Quaternion
 from tf.transformations import quaternion_from_euler
 from nav_msgs.msg import Odometry
-from bwi_msgs.srv import Teleport, PositionRobot, PositionRobotRequest
+from bwi_msgs.srv import PositionRobot, PositionRobotRequest
+from gazebo_msgs.srv import SetModelState, SetModelStateRequest
 
 import cv, cv2, numpy
 from sensor_msgs.msg import Image
@@ -128,32 +129,21 @@ class ExperimentController:
         self.robot_images = []
         self.experiment_initialized = False
 
-        rospy.loginfo("Waiting for service: %s"%self.person_id+'/teleport')
-        rospy.wait_for_service(self.person_id + '/teleport')
-        self.teleport_person = rospy.ServiceProxy(self.person_id + '/teleport', Teleport)
-        rospy.loginfo("Service acquired: %s"%self.person_id+'/teleport')
-
         # Get the robot positioner service
         rospy.loginfo("Waiting for service: position")
         rospy.wait_for_service("position")
         self.position_robot = rospy.ServiceProxy('position', PositionRobot)
         rospy.loginfo("Service acquired: position")
 
-        # Get the robot teleporter service
-        self.teleport_robot = [None] * len(self.robots)
+        # Get the teleporter server
+        rospy.loginfo("Waiting for service: /gazebo/set_model_state")
+        rospy.wait_for_service("/gazebo/set_model_state")
+        self.teleport = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
+        rospy.loginfo("Service acquired: /gazebo/set_model_state")
+
         for i, robot in enumerate(self.robots):
             robot_id = robot['id']
-            rospy.loginfo("Waiting for service: %s"%robot_id+'/teleport')
-            rospy.wait_for_service(robot_id + '/teleport')
-            self.teleport_robot[i] = rospy.ServiceProxy(robot_id + '/teleport', Teleport)
-            rospy.loginfo("Service acquired: %s"%robot_id+'/teleport')
             self.robot_image_publisher.addRobot(robot_id)
-
-        # Get the goal teleporter service
-        rospy.loginfo("Waiting for service: %s"%self.ball_id+'/teleport')
-        rospy.wait_for_service(self.ball_id + '/teleport')
-        self.teleport_ball = rospy.ServiceProxy(self.ball_id + '/teleport', Teleport)
-        rospy.loginfo("Service acquired: %s"%self.ball_id+'/teleport')
 
         # Setup the odometry subscriber
         sub = rospy.Subscriber(self.person_id + '/odom', Odometry, self.odometryCallback)
@@ -173,14 +163,14 @@ class ExperimentController:
         start_y = experiment_data['start_y']
         start_yaw = experiment_data['start_yaw']
         start_pose = getPoseMsgFrom2dData(start_x, start_y, yaw=start_yaw)
-        result = self.teleport_person(start_pose)
+        result = self.teleportEntity(self.person_id, start_pose)
         # print result
 
         # Teleport the goal ball to its correct position
         ball_x = experiment_data['ball_x']
         ball_y = experiment_data['ball_y']
         ball_pose = getPoseMsgFrom2dData(ball_x, ball_y, 0)
-        result = self.teleport_ball(ball_pose)
+        result = self.teleportEntity(self.ball_id, ball_pose)
         # print result
         self.goal_location = [ball_x, ball_y]
 
@@ -258,7 +248,7 @@ class ExperimentController:
                 robot_yaw = 0
                 robot_image = self.image_none
             robot_pose = getPoseMsgFrom2dData(*robot_loc, yaw=robot_yaw)
-            result = self.teleport_robot[i](robot_pose)
+            result = self.teleportEntity(self.robots[i]['id'], robot_pose)
             self.robot_images[i] = robot_image
             self.robot_locations[i] = robot_loc
 
@@ -310,6 +300,14 @@ class ExperimentController:
             if entry['id'] == id:
                 return [entry['x'], entry['y']]
         raise IndexError, "Graph id %d does not exist in graph: %s"%(id, self.graph_file)
+
+    def teleportEntity(self, entity, pose):
+        set_state = SetModelStateRequest()
+        set_state.model_state.model_name = entity
+        set_state.model_state.pose = pose
+        resp = self.teleport(set_state)
+        if not resp.success:
+            rospy.logerr(resp.status_message)
 
 if __name__ == '__main__':
     try:

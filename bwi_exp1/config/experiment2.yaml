@@ -1,0 +1,56 @@
+person_id: person
+robots: 
+  - id: robot1
+    default_loc: [500, 500]
+  - id: robot2
+    default_loc: [502, 500]
+  - id: robot3
+    default_loc: [504, 500]
+  - id: robot4
+    default_loc: [506, 500]
+  - id: robot5
+    default_loc: [508, 500]
+  - id: robot6
+    default_loc: [510, 500]
+  - id: robot7
+    default_loc: [512, 500]
+  - id: robot8
+    default_loc: [514, 500]
+  - id: robot9
+    default_loc: [516, 500]
+  - id: robot10
+    default_loc: [518, 500]
+ball_id: ball
+experiments:
+  - start_x: 31.05
+    start_y: 38.55
+    start_yaw: -1.50838
+    ball_x: 23.3
+    ball_y: 1.65
+    path:
+      - id: 127
+        robot: no
+      - id: 121
+        robot: no
+      - id: 111
+        robot: yes
+      - id: 107
+        robot: no
+      - id: 104
+        robot: yes
+      - id: 84
+        robot: yes
+      - id: 57
+        robot: yes
+      - id: 48
+        robot: no
+      - id: 40
+        robot: no
+      - id: 29
+        robot: no
+      - id: 20
+        robot: no
+      - id: 15
+        robot: no
+    extra_robots: []
+    max_duration: 120 #seconds

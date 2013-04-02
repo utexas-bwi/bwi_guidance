@@ -45,7 +45,7 @@
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <bwi_msgs/Teleport.h>
+#include <bwi_msgs/UpdatePluginState.h>
 
 // Custom Callback Queue
 #include <ros/callback_queue.h>
@@ -86,9 +86,12 @@ private:
   tf::TransformBroadcaster *transform_broadcaster_;
   nav_msgs::Odometry odom_;
   std::string tf_prefix_;
-  ros::ServiceServer teleport_service_server_;
+  ros::ServiceServer update_state_service_server_;
 
   boost::mutex lock;
+  boost::mutex state_lock_;
+
+  bool pause_;
 
   std::string modelNamespace;
   std::string topicName;
@@ -100,8 +103,8 @@ private:
 
   // DiffDrive stuff
   void cmdVelCallback(const geometry_msgs::Twist::ConstPtr& cmd_msg);
-  bool teleport(bwi_msgs::Teleport::Request &req,
-    bwi_msgs::Teleport::Response &resp);
+  bool updateState(bwi_msgs::UpdatePluginState::Request &req,
+    bwi_msgs::UpdatePluginState::Response &resp);
 
   double x_;
   double y_;
