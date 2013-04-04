@@ -66,7 +66,7 @@ namespace topological_mapper {
        * \return  bool true if path found within depth, false otherwise
        */
       bool searchForPath(const Point2d &start, const Point2d &goal, 
-          uint32_t depth);
+          uint32_t depth, bool in_obstacle_space = true);
 
     private:
 
@@ -79,7 +79,8 @@ namespace topological_mapper {
        * \return  bool true if path found within depth, false otherwise
        */
       bool searchForPath(const Point2d &start, const Point2d &goal, 
-          uint32_t depth, std::vector<bool> &visited);
+          uint32_t depth, std::vector<bool> &visited, 
+          bool in_obstacle_space = true);
 
       /**
        * \brief   Gets neighbours for a given node iff they are also obstacles 
@@ -89,7 +90,8 @@ namespace topological_mapper {
        * \param   neighbours returned neighbours 
        */
       void getOrderedNeighbours(const Point2d &from, const Point2d &goal, 
-          const std::vector<bool> &visited, std::vector<Point2d> &neighbours);
+          const std::vector<bool> &visited, std::vector<Point2d> &neighbours,
+          bool in_obstacle_space = true);
 
       /** /brief the underlying map over which DFS is performed */
       const nav_msgs::OccupancyGrid& map_;

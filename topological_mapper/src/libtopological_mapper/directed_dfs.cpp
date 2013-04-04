@@ -44,17 +44,17 @@ namespace topological_mapper {
    * \brief   Non-recusrive start point for performing DFS
    */
   bool DirectedDFS::searchForPath(const Point2d &start, const Point2d &goal,
-      uint32_t depth) {
+      uint32_t depth, bool in_obstacle_space) {
 
     std::vector<bool> visited(map_.info.height * map_.info.width, false);
-    return searchForPath(start, goal, depth, visited);
+    return searchForPath(start, goal, depth, visited, in_obstacle_space);
   }
 
   /**
    * \brief   Recusrive function performing DFS
    */
   bool DirectedDFS::searchForPath(const Point2d &start, const Point2d &goal, 
-      uint32_t depth, std::vector<bool> &visited) {
+      uint32_t depth, std::vector<bool> &visited, bool in_obstacle_space) {
 
     //std::cout << start.x << " " << start.y << std::endl;
 
@@ -70,7 +70,7 @@ namespace topological_mapper {
     visited[start_idx] = true;
 
     std::vector<Point2d> neighbours;
-    getOrderedNeighbours(start, goal, visited, neighbours);
+    getOrderedNeighbours(start, goal, visited, neighbours, in_obstacle_space);
     for (size_t i = 0; i < neighbours.size(); ++i) {
       Point2d& n = neighbours[i];
       // Check if it has been visited again - quite likely that one of the 
@@ -94,7 +94,7 @@ namespace topological_mapper {
    */
   void DirectedDFS::getOrderedNeighbours(const Point2d &from, 
       const Point2d &goal, const std::vector<bool> &visited, 
-      std::vector<Point2d> &neighbours) {
+      std::vector<Point2d> &neighbours, bool in_obstacle_space) {
 
     size_t neighbour_count = 8;
     int32_t x_offset[] = {-1, 0, 1, -1, 1, -1, 0, 1};
@@ -110,7 +110,8 @@ namespace topological_mapper {
         continue;
       }
       uint32_t map_idx = MAP_IDX(map_.info.width, p.x, p.y);
-      if (visited[map_idx] || map_.data[map_idx] == 0) {
+      if (visited[map_idx] || (in_obstacle_space && map_.data[map_idx] == 0) ||
+          (!in_obstacle_space && map_.data[map_idx] != 0)) {
         continue;
       }
       p.distance_from_ref = 
