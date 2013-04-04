@@ -17,6 +17,8 @@ from cv_bridge import CvBridge
 
 import threading
 import math
+import random,string
+import copy
 
 def getPoseMsgFrom2dData(x, y, yaw):
     pose = Pose()
@@ -49,6 +51,9 @@ def produceDirectedArrow(up_arrow, yaw):
 
     image = cv2.copyMakeBorder(resized_image, top, bottom, left, right, cv2.BORDER_CONSTANT, image, (0,0,0))
     return image
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for x in range(size))
 
 class RobotScreenPublisher(threading.Thread):
 
@@ -100,11 +105,20 @@ class ExperimentController:
             self.experiment = yaml.load(open(self.experiment_file,'r'))
         except Exception as e:
             rospy.logerr("Unable to open experiment file: %s"%e.what())
-        self.num_experiments = len(self.experiment['experiments'])
 
         self.person_id = self.experiment['person_id']
         self.robots = self.experiment['robots']
         self.ball_id = self.experiment['ball_id']
+
+        self.control_experiments_file = rospy.get_param("~control_experiments_file")
+        self.test_experiments_file = rospy.get_param("~test_experiments_file")
+        try:
+            self.control_experiments = yaml.load(open(self.control_experiments_file,'r'))
+            self.test_experiments = yaml.load(open(self.test_experiments_file,'r'))
+        except Exception as e:
+            rospy.logerr("Unable to open experiment file: %s"%str(e))
+
+        self.data_directory = rospy.get_param("~data_dir")
 
         # Read the arrows
         images_dir = roslib.packages.get_pkg_dir("bwi_web") + "/images"
@@ -119,6 +133,7 @@ class ExperimentController:
         self.robot_locations = []
         self.robot_images = []
         self.experiment_initialized = False
+        self.experiment_success = False
 
         # Get the robot positioner service
         rospy.loginfo("Waiting for service: position")
@@ -148,12 +163,10 @@ class ExperimentController:
         # Setup the experiment instructions publisher
         self.text_pub = rospy.Publisher('~user_text', String)
 
-    def reset(self):
-        self.startExperiment(0)
+        # Log file lock
+        self.log_lock = threading.Lock()
 
-    def startExperiment(self, experiment_number):
-        self.experiment_number = experiment_number
-        experiment_data = self.experiment['experiments'][experiment_number]
+    def startExperiment(self, log_file_name, experiment_data, experiment_number):
 
         # Teleport person to correct place, however pause and unpause
         rospy.loginfo("Pausing person plugin")
@@ -232,23 +245,37 @@ class ExperimentController:
         # Publish message to the user
         self.text_pub.publish("Experiment #" + str(experiment_number + 1) + " has started!");
 
-        self.experiment_initialized = True
 
-        # TODO Start recording odometry
+        # setup odometry thread to write out odometry values
+        self.log_lock.acquire()
+        self.record_odometry = True
+        self.log_file = open(log_file_name, 'w')
+        self.log_file.write("odometry: \n")
+        self.log_lock.release()
 
         # Save experiment start time
         self.experiment_start_time = rospy.get_time()
         self.experiment_max_duration = experiment_data['max_duration']
 
+        self.experiment_initialized = True
+        self.experiment_success = False
+
     def stopCurrentExperiment(self, success):
+
         self.experiment_initialized = False
+
         # Send message to user
         if (success):
             self.text_pub.publish("It looks like you've found the goal. Let's proceed to the next experiment!")
         else:
             self.text_pub.publish("The experiment has timed out. Let's proceed to the next experiment.")
         
-        # TODO Close the odometry write here 
+        # setup odometry thread to stop writing out odometry values
+        self.log_lock.acquire()
+        self.record_odometry = False
+        self.log_file.write("success: " + str(success))
+        self.log_file.close()
+        self.log_lock.release()
 
     def odometryCallback(self, odom):
 
@@ -257,20 +284,75 @@ class ExperimentController:
 
         loc = [odom.pose.pose.position.x, odom.pose.pose.position.y]
 
+        # record position
+        self.log_lock.acquire()
+        self.log_file.write("  - [" + str(odom.pose.pose.position.x) + ", " + str(odom.pose.pose.position.y) + ", " + str(odom.header.stamp.to_sec()) + "]\n")
+        self.log_lock.release()
+
         # check if the person is near a robot
         for i, robot in enumerate(self.robots):
             if i < len(self.robots_in_experiment):
                 robot_loc = self.robot_locations[i]
+                #print i, robot_loc, loc
                 distance_sqr = (loc[0] - robot_loc[0]) * (loc[0] - robot_loc[0]) + (loc[1] - robot_loc[1]) * (loc[1] - robot_loc[1])
                 if distance_sqr < 3.0 * 3.0:
                     self.robot_image_publisher.updateImage(robot['id'], self.robot_images[i])
                 else:
                     self.robot_image_publisher.updateImage(robot['id'], self.image_none)
 
+        # check if the person is close to the ball
+        distance_sqr = (loc[0] - self.goal_location[0]) * (loc[0] - self.goal_location[0]) + (loc[1] - self.goal_location[1]) * (loc[1] - self.goal_location[1])
+        if distance_sqr < 1.0 * 1.0:
+            self.experiment_success = True
+
     def start(self):
         self.robot_image_publisher.start()
-        self.reset()
-        rospy.spin()
+        control_first = random.choice([True, False])
+        if control_first:
+            experiment_names = ["control_" + str(i) for i in range(len(self.control_experiments))]
+            experiments = copy.deepcopy(self.control_experiments)
+            experiment_names.extend(["test_" + str(i) for i in range(len(self.test_experiments))])
+            experiments.extend(self.test_experiments)
+        else:
+            experiment_names = ["test_" + str(i) for i in range(len(self.test_experiments))]
+            experiments = copy.deepcopy(self.test_experiments)
+            experiment_names.extend(["control_" + str(i) for i in range(len(self.control_experiments))])
+            experiments.extend(self.control_experiments)
+        experiment_number = 0
+
+        r = rospy.Rate(10) # 10hz
+
+        start_experiment = False
+
+        zero_time = rospy.get_time()
+
+        once = True
+
+        while not rospy.is_shutdown():
+
+            time = rospy.get_time()
+
+            # TODO wait for signal from web interface here (web interface lock)
+            if once and (time - zero_time > 5.0):
+                start_experiment = True
+                uid = id_generator()
+                rospy.loginfo("Starting experiments for user: " + uid)
+                log_file_prefix = uid + "_"
+                once = False
+
+            if start_experiment:
+                self.startExperiment(self.data_directory + "/" + log_file_prefix + experiment_names[experiment_number], experiments[experiment_number], experiment_number)
+                start_experiment = False
+            elif self.experiment_initialized and self.experiment_success:
+                self.stopCurrentExperiment(True)
+                experiment_number = (experiment_number + 1) % len(experiments)
+                start_experiment = experiment_number != 0
+            elif self.experiment_initialized and (time - self.experiment_start_time) > self.experiment_max_duration:
+                self.stopCurrentExperiment(False)
+                experiment_number = (experiment_number + 1) % len(experiments)
+                start_experiment = experiment_number != 0
+
+            r.sleep()
 
     def getGraphLocation(self, id):
         for entry in self.graph:

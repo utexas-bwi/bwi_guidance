@@ -4,6 +4,9 @@
   <node name="experiment_controller" pkg="bwi_exp1" type="experiment.py">
     <param name="graph_file" value="$(find bwi_exp1)/config/graph.yaml" />
     <param name="experiment_file" value="$(find bwi_exp1)/config/experiment.yaml" />
+    <param name="control_experiments_file" value="$(find bwi_exp1)/config/control_experiments.yaml" />
+    <param name="test_experiments_file" value="$(find bwi_exp1)/config/test_experiments.yaml" />
+    <param name="data_dir" value="$(find bwi_exp1)/data" />
   </node>
 
   <node name="robot_positioner" pkg="bwi_exp1" type="robot_positioner">

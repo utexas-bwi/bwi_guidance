@@ -1,0 +1,128 @@
+- start_x: 12.2
+  start_y: 1.25
+  start_yaw: 0
+  ball_x: 30.85
+  ball_y: 10.95
+  path:
+    - id: 3
+      robot: yes
+    - id: 4
+      robot: no
+    - id: 5
+      robot: yes
+    - id: 15
+      robot: no
+    - id: 20
+      robot: no
+    - id: 29
+      robot: yes
+    - id: 41
+      robot: no
+    - id: 49
+      robot: no
+    - id: 50
+      robot: no
+    - id: 42
+      robot: yes
+    - id: 54
+      robot: no
+  extra_robots: []
+  max_duration: 120 #seconds
+- start_x: 38.1
+  start_y: 43.15
+  start_yaw: -1.64535
+  ball_x: 35.65
+  ball_y: 10.5
+  path:
+    - id: 146
+      robot: yes
+    - id: 136
+      robot: no
+    - id: 119
+      robot: no
+    - id: 114
+      robot: no
+    - id: 112
+      robot: no
+    - id: 100
+      robot: yes
+    - id: 69
+      robot: yes
+    - id: 64
+      robot: yes
+    - id: 62
+      robot: no
+  extra_robots:
+    - loc_x: 45.85
+      loc_y: 14.95
+      yaw: -1.90286
+    - loc_x: 30.4
+      loc_y: 14.95
+      yaw: -1.17601
+  max_duration: 120 #seconds
+- start_x: 11.8
+  start_y: 45.6
+  start_yaw: 0
+  ball_x: 30.8
+  ball_y: 2.85
+  path:
+    - id: 157
+      robot: yes
+    - id: 149
+      robot: no
+    - id: 133
+      robot: yes
+    - id: 84
+      robot: yes
+    - id: 58
+      robot: yes
+    - id: 50
+      robot: no
+    - id: 42
+      robot: yes
+    - id: 33
+      robot: no
+  extra_robots:
+    - loc_x: 15.4
+      loc_y: 22.1
+      yaw: -1.52735
+    - loc_x: 24.15
+      loc_y: 22.85
+      yaw: -2.08039
+    - loc_x: 29.55
+      loc_y: 16.35
+      yaw: -2.57967
+    - loc_x: 19.7
+      loc_y: 10.4
+      yaw: -1.48014
+  max_duration: 120 #seconds
+- start_x: 1.15
+  start_y: 27.5
+  start_yaw: 1.52537
+  ball_x: 38.1
+  ball_y: 33.35
+  path:
+    - id: 101
+      robot: yes
+    - id: 102
+      robot: no
+    - id: 103
+      robot: no
+    - id: 104
+      robot: yes
+    - id: 107
+      robot: no
+    - id: 108
+      robot: no
+    - id: 105
+      robot: yes
+    - id: 112
+      robot: no
+  extra_robots:
+    - loc_x: 24.45
+      loc_y: 38.6
+      yaw: 2.67795
+    - loc_x: 24.4
+      loc_y: 22.85
+      yaw: -2.5861
+  max_duration: 120 #seconds

@@ -250,7 +250,7 @@ int main(int argc, char** argv) {
   while (true) {
 
     mapper.drawMap(image,0,0);
-    topological_mapper::drawGraph(image, graph, 0, 0, false);
+    topological_mapper::drawGraph(image, graph, 0, 0, true);
 
     // Clicks
     if (global_state > START_LOC) {
