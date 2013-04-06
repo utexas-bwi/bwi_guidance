@@ -50,7 +50,7 @@ function start() {
     }
   }
 
-  var arrow  = { left: 65, up: 87, right: 68, down: 83};
+  var arrow  = { turn_left: 37, left: 65, up: 87, turn_right: 39, right: 68, down: 83};
   document.onkeydown = function(event) {
     var keyCode = event.keyCode || event.which;
     if (keyCode === arrow.up) {
@@ -64,6 +64,12 @@ function start() {
     }
     else if (keyCode === arrow.right) {
       publishVelocity({vely: -1.5});
+    }
+    else if (keyCode === arrow.turn_left) {
+      publishVelocity({vela: 1.5});
+    }
+    else if (keyCode === arrow.turn_right) {
+      publishVelocity({vela: -1.5});
     }
     return false;
   };
@@ -82,14 +88,21 @@ function start() {
     else if (keyCode === arrow.right) {
       publishVelocity({vely: 0});
     }
+    else if (keyCode === arrow.turn_left) {
+      publishVelocity({vela: 0});
+    }
+    else if (keyCode === arrow.turn_right) {
+      publishVelocity({vela: 0});
+    }
     return false;
   };
 
   var instructions = document.getElementById( 'instructions' );
+  var mouse_button = document.getElementById( 'mouse_button' );
 
   // Create a handle for the topic '/chatter' of type std_msgs/String.
   var user_text_subscriber = new ros.Topic({
-    name        : '/experiment/user_text',
+    name        : '/experiment_controller/user_text',
     messageType : 'std_msgs/String'
   });
 
@@ -102,7 +115,6 @@ function start() {
 
   // http://www.html5rocks.ccuom/en/tutorials/pointerlock/intro/
   // http://mrdoob.github.com/three.js/examples/misc_controls_pointerlock.html
-  
 
   var havePointerLock = 
     'pointerLockElement' in document || 
@@ -144,7 +156,7 @@ function start() {
     document.addEventListener( 'mozpointerlockerror', pointerlockerror, false );
     document.addEventListener( 'webkitpointerlockerror', pointerlockerror, false );
 
-    instructions.addEventListener( 'click', function ( event ) {
+    mouse_button.addEventListener( 'click', function ( event ) {
 
       // Ask the browser to lock the pointer
       element.requestPointerLock = 
@@ -182,7 +194,7 @@ function start() {
     }, false );
 
   } else {
-    instructions.innerHTML = 'Your browser cannot run this experiment.';
+    instructions.innerHTML = 'Your browser does not support mouse usage';
   }
 
 };

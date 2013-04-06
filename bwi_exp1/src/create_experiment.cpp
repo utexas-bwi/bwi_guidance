@@ -318,35 +318,35 @@ int main(int argc, char** argv) {
       switch(global_state) {
         case START_LOC:
           map_start = map_pt; pxl_start = clicked_pt;
-          ss << "  - start_x: " << map_pt.x << std::endl;
-          ss << "    start_y: " << map_pt.y << std::endl;
+          ss << "- start_x: " << map_pt.x << std::endl;
+          ss << "  start_y: " << map_pt.y << std::endl;
           global_state = START_YAW;
           break;
         case START_YAW:
           yaw = atan2(map_pt.y - map_start.y, map_pt.x - map_start.x);
-          ss << "    start_yaw: " 
+          ss << "  start_yaw: " 
              << yaw
              << std::endl;
           global_state = GOAL_LOC;
           break;
         case GOAL_LOC:
           map_goal = map_pt; pxl_goal = clicked_pt; 
-          ss << "    ball_x: " << map_pt.x << std::endl;
-          ss << "    ball_y: " << map_pt.y << std::endl;
+          ss << "  ball_x: " << map_pt.x << std::endl;
+          ss << "  ball_y: " << map_pt.y << std::endl;
           findStartAndGoalIdx(pxl_start, pxl_goal, graph, start_idx, goal_idx);
           getShortestPath(graph, start_idx, goal_idx, path_idx);
           global_state = ROBOTS;
           break;
         case ROBOTS: 
-          ss << "    path:" << std::endl;
+          ss << "  path:" << std::endl;
           for (size_t i = path_idx.size() - 1; i < path_idx.size(); --i) {
-            ss << "      - id: " << path_idx[i] << std::endl;
+            ss << "    - id: " << path_idx[i] << std::endl;
             std::vector<size_t>::iterator robot_it =
               std::find(robot_idx.begin(), robot_idx.end(), path_idx[i]);
             if (robot_it != robot_idx.end()) {
-              ss << "        robot: yes" << std::endl;
+              ss << "      robot: yes" << std::endl;
             } else {
-              ss << "        robot: no" << std::endl;
+              ss << "      robot: no" << std::endl;
             }
           }
           global_state = EXTRA_ROBOT_LOC;
@@ -354,17 +354,18 @@ int main(int argc, char** argv) {
         case EXTRA_ROBOT_LOC:
         case EXTRA_ROBOT_YAW:
           // Push out the path array
-          ss << "    extra_robots:" << std::endl;
+          ss << "  extra_robots:";
           if (extra_robot_locations.size() == 0) {
             ss << " []" << std::endl;
           } else {
+            ss << std::endl;
             for (size_t i = 0; i < extra_robot_locations.size(); ++i) {
-              ss << "      - loc_x: " << extra_robot_locations[i].x << std::endl;
-              ss << "        loc_y: " << extra_robot_locations[i].y << std::endl;
-              ss << "        yaw: " << extra_robot_yaw[i] << std::endl;
+              ss << "    - loc_x: " << extra_robot_locations[i].x << std::endl;
+              ss << "      loc_y: " << extra_robot_locations[i].y << std::endl;
+              ss << "      yaw: " << extra_robot_yaw[i] << std::endl;
             }
           }
-          ss << "    max_duration: 120 #seconds" << std::endl;
+          ss << "  max_duration: 300 #seconds" << std::endl;
           std::cout << ss.str();
           global_state = STOP;
           break;

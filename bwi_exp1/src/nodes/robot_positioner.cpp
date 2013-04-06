@@ -124,14 +124,14 @@ bool position(bwi_msgs::PositionRobot::Request &req,
     use_outside_angle = false;
   }
 
-  float y_test = at[1] - 1.0 / info.resolution;
+  float y_test = at[1] - 0.75 / info.resolution;
   float location_fitness = -1;
   cv::Vec2f test_coords;
   cv::Vec2f map_coords;
 
-  while(y_test < at[1] + 1.0 / info.resolution) {
-    float x_test = at[0] - 1.0 / info.resolution;
-    while (x_test < at[0] + 1.0 / info.resolution) {
+  while(y_test < at[1] + 0.75 / info.resolution) {
+    float x_test = at[0] - 0.75 / info.resolution;
+    while (x_test < at[0] + 0.75 / info.resolution) {
       
       // Check if x_test, y_test is free.
       size_t map_idx = MAP_IDX(info.width, x_test, y_test);

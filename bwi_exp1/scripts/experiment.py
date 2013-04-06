@@ -8,6 +8,7 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Pose, Quaternion
 from tf.transformations import quaternion_from_euler
 from nav_msgs.msg import Odometry
+from std_srvs.srv import Empty
 from bwi_msgs.srv import PositionRobot, PositionRobotRequest, UpdatePluginState
 from gazebo_msgs.srv import SetModelState, SetModelStateRequest
 
@@ -54,6 +55,27 @@ def produceDirectedArrow(up_arrow, yaw):
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for x in range(size))
+
+class ExperimentTextPublisher(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.experiment_text = ""
+        self.experiment_text_lock = threading.Lock()
+        self.experiment_text_publisher = rospy.Publisher('~user_text', String)
+
+    def updateText(self, text):
+        self.experiment_text_lock.acquire()
+        self.experiment_text = text
+        self.experiment_text_lock.release()
+
+    def run(self):
+        r = rospy.Rate(10) # 10hz
+        try:
+            while not rospy.is_shutdown():
+                self.experiment_text_publisher.publish(self.experiment_text)
+                r.sleep()
+        except rospy.ROSInterruptException:
+            pass
 
 class RobotScreenPublisher(threading.Thread):
 
@@ -128,6 +150,9 @@ class ExperimentController:
         # Setup the Robot image publisher
         self.robot_image_publisher = RobotScreenPublisher()
 
+        # Setup the experiment text publisher
+        self.experiment_text_publisher = ExperimentTextPublisher()
+
         # Setup some experiment defaults
         self.robots_in_experiment = []
         self.robot_locations = []
@@ -147,11 +172,22 @@ class ExperimentController:
         self.teleport = rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
         rospy.loginfo("Service acquired: /gazebo/set_model_state")
 
+        rospy.loginfo("Waiting for service: /gazebo/pause_physics")
+        rospy.wait_for_service("/gazebo/pause_physics")
+        self.pause_gazebo = rospy.ServiceProxy("/gazebo/pause_physics", Empty)
+        rospy.loginfo("Service acquired: /gazebo/pause_physics")
+
+        rospy.loginfo("Waiting for service: /gazebo/unpause_physics")
+        rospy.wait_for_service("/gazebo/unpause_physics")
+        self.unpause_gazebo = rospy.ServiceProxy("/gazebo/unpause_physics", Empty)
+        rospy.loginfo("Service acquired: /gazebo/unpause_physics")
+
         # Get the person pause service
         rospy.loginfo("Waiting for service: " + self.person_id + "/update_state")
         rospy.wait_for_service(self.person_id + "/update_state")
         self.pause_person_plugin = rospy.ServiceProxy(self.person_id + "/update_state", UpdatePluginState)
         rospy.loginfo("Service acquired: " + self.person_id + "/update_state")
+        self.pause_person_plugin(True)
 
         for i, robot in enumerate(self.robots):
             robot_id = robot['id']
@@ -160,24 +196,21 @@ class ExperimentController:
         # Setup the odometry subscriber
         sub = rospy.Subscriber(self.person_id + '/odom', Odometry, self.odometryCallback)
 
-        # Setup the experiment instructions publisher
-        self.text_pub = rospy.Publisher('~user_text', String)
 
         # Log file lock
         self.log_lock = threading.Lock()
 
     def startExperiment(self, log_file_name, experiment_data, experiment_number):
 
+        # Pause gazebo during teleportation
+        self.pause_gazebo() # time also stops
+
         # Teleport person to correct place, however pause and unpause
-        rospy.loginfo("Pausing person plugin")
-        self.pause_person_plugin(True)
         start_x = experiment_data['start_x']
         start_y = experiment_data['start_y']
         start_yaw = experiment_data['start_yaw']
         start_pose = getPoseMsgFrom2dData(start_x, start_y, yaw=start_yaw)
         result = self.teleportEntity(self.person_id, start_pose)
-        rospy.loginfo("Unpause person plugin")
-        self.pause_person_plugin(False)
 
         # Teleport the goal ball to its correct position
         ball_x = experiment_data['ball_x']
@@ -214,13 +247,24 @@ class ExperimentController:
                     req.to_pt.x = ball_x
                     req.to_pt.y = ball_y
                     req.to_pt.z = 0
-                    going_to = req.to_pt
+                    going_to = [ball_x, ball_y]
 
                 resp = self.position_robot(req)
                 robot_loc = [resp.loc.x, resp.loc.y]
                 robot_yaw = resp.yaw
 
                 #get orientation of the arrow on the screen
+                #check if the next point is too close
+                destination_distance = math.sqrt((going_to[1] - robot_loc[1])*(going_to[1] - robot_loc[1]) + (going_to[0] - robot_loc[0])*(going_to[0] - robot_loc[0]))
+                path_position = path_position + 1
+                while destination_distance < 1.25:
+                    if path_position != len(self.path) - 1:
+                        going_to = self.getGraphLocation(self.path[path_position + 1])
+                    else:
+                        going_to = [ball_x, ball_y]
+                    destination_distance = math.sqrt((going_to[1] - robot_loc[1])*(going_to[1] - robot_loc[1]) + (going_to[0] - robot_loc[0])*(going_to[0] - robot_loc[0]))
+                    path_position = path_position + 1
+
                 destination_yaw = math.atan2(going_to[1] - robot_loc[1], going_to[0] - robot_loc[0])
                 change_in_yaw = destination_yaw - robot_yaw
                 change_in_yaw = math.atan2(math.sin(change_in_yaw), math.cos(change_in_yaw)) #normalize angle
@@ -242,9 +286,11 @@ class ExperimentController:
             self.robot_images[i] = robot_image
             self.robot_locations[i] = robot_loc
 
-        # Publish message to the user
-        self.text_pub.publish("Experiment #" + str(experiment_number + 1) + " has started!");
+        # Unpause gazebo
+        self.unpause_gazebo()
 
+        # Publish message to the user
+        self.experiment_text_publisher.updateText("Experiment #" + str(experiment_number + 1) + " has started! Find the red ball.");
 
         # setup odometry thread to write out odometry values
         self.log_lock.acquire()
@@ -259,16 +305,18 @@ class ExperimentController:
 
         self.experiment_initialized = True
         self.experiment_success = False
+        self.pause_person_plugin(False)
 
     def stopCurrentExperiment(self, success):
 
         self.experiment_initialized = False
+        self.pause_person_plugin(True)
 
         # Send message to user
         if (success):
-            self.text_pub.publish("It looks like you've found the goal. Let's proceed to the next experiment!")
+            self.experiment_text_publisher.updateText("It looks like you've found the goal. Let's proceed to the next experiment!")
         else:
-            self.text_pub.publish("The experiment has timed out. Let's proceed to the next experiment.")
+            self.experiment_text_publisher.updateText("Oh no! It looks like you ran out of time with this experiment. Let's proceed to the next experiment.")
         
         # setup odometry thread to stop writing out odometry values
         self.log_lock.acquire()
@@ -306,7 +354,10 @@ class ExperimentController:
             self.experiment_success = True
 
     def start(self):
+
         self.robot_image_publisher.start()
+        self.experiment_text_publisher.start()
+
         control_first = random.choice([True, False])
         if control_first:
             experiment_names = ["control_" + str(i) for i in range(len(self.control_experiments))]
@@ -321,36 +372,31 @@ class ExperimentController:
         experiment_number = 0
 
         r = rospy.Rate(10) # 10hz
+        start_experiment_countdown = True
+        countdown_start_time = rospy.get_time()
 
-        start_experiment = False
-
-        zero_time = rospy.get_time()
-
-        once = True
+        # TODO do something for experiment start/finish
+        uid = id_generator()
+        rospy.loginfo("Starting experiments for user: " + uid)
+        log_file_prefix = uid + "_"
 
         while not rospy.is_shutdown():
 
             time = rospy.get_time()
 
-            # TODO wait for signal from web interface here (web interface lock)
-            if once and (time - zero_time > 5.0):
-                start_experiment = True
-                uid = id_generator()
-                rospy.loginfo("Starting experiments for user: " + uid)
-                log_file_prefix = uid + "_"
-                once = False
-
-            if start_experiment:
+            if start_experiment_countdown and (time - countdown_start_time > 5.0):
                 self.startExperiment(self.data_directory + "/" + log_file_prefix + experiment_names[experiment_number], experiments[experiment_number], experiment_number)
-                start_experiment = False
+                start_experiment_countdown = False
             elif self.experiment_initialized and self.experiment_success:
                 self.stopCurrentExperiment(True)
                 experiment_number = (experiment_number + 1) % len(experiments)
-                start_experiment = experiment_number != 0
+                start_experiment_countdown = experiment_number != 0
+                countdown_start_time = rospy.get_time()
             elif self.experiment_initialized and (time - self.experiment_start_time) > self.experiment_max_duration:
                 self.stopCurrentExperiment(False)
                 experiment_number = (experiment_number + 1) % len(experiments)
-                start_experiment = experiment_number != 0
+                start_experiment_countdown = experiment_number != 0
+                countdown_start_time = rospy.get_time()
 
             r.sleep()
 

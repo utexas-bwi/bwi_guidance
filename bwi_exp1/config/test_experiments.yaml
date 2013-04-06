@@ -27,7 +27,7 @@
     - id: 54
       robot: no
   extra_robots: []
-  max_duration: 120 #seconds
+  max_duration: 300 #seconds
 - start_x: 38.1
   start_y: 43.15
   start_yaw: -1.64535
@@ -59,7 +59,7 @@
     - loc_x: 30.4
       loc_y: 14.95
       yaw: -1.17601
-  max_duration: 120 #seconds
+  max_duration: 300 #seconds
 - start_x: 11.8
   start_y: 45.6
   start_yaw: 0
@@ -95,34 +95,4 @@
     - loc_x: 19.7
       loc_y: 10.4
       yaw: -1.48014
-  max_duration: 120 #seconds
-- start_x: 1.15
-  start_y: 27.5
-  start_yaw: 1.52537
-  ball_x: 38.1
-  ball_y: 33.35
-  path:
-    - id: 101
-      robot: yes
-    - id: 102
-      robot: no
-    - id: 103
-      robot: no
-    - id: 104
-      robot: yes
-    - id: 107
-      robot: no
-    - id: 108
-      robot: no
-    - id: 105
-      robot: yes
-    - id: 112
-      robot: no
-  extra_robots:
-    - loc_x: 24.45
-      loc_y: 38.6
-      yaw: 2.67795
-    - loc_x: 24.4
-      loc_y: 22.85
-      yaw: -2.5861
-  max_duration: 120 #seconds
+  max_duration: 300 #seconds

@@ -13,9 +13,18 @@
   <body onload="start()">
 
     <canvas id="my-mjpeg" width="640" height="480"></canvas>
-    <div style="font-size:40px" id="instructions">
-      Click to start
-    </div>
-    (W, A, S, D = Move, MOUSE = Turn left and right, ESC = Exit)
+
+    <p>
+    <div style="font-family: Arial; font-size: 24px; font-weight: bold;" id="instructions"></div>
+    </p>
+
+    <p>
+    <button id="mouse_button" type="button">Use Mouse!</button>
+    <!-- <button id="invert_mouse_button" type="button">Invert Mouse</button> -->
+    <br/>
+
+    <span style="font-family: arial;"><b>Controls: W, A, S, D = Move, <arrow-left> + <arrow-right> OR Mouse = Turn left and right, ESC = Release mouse control</b></span>
+    </p>
+
   </body>
 </html>
