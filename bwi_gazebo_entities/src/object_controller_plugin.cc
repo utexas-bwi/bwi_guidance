@@ -115,7 +115,7 @@ void ObjectControllerPlugin::Load(physics::ModelPtr _parent, sdf::ElementPtr _sd
   }
   this->circumscribed_model_distance_ = this->modelPadding + this->modelRadius;
 
-  timeout_period_ = 0.1;
+  timeout_period_ = 0.0;
 
   // Initialize update rate stuff
   if (this->updateRate > 0.0) {
@@ -186,16 +186,18 @@ void ObjectControllerPlugin::UpdateChild()
   double seconds_since_last_update = (current_time - last_update_time_).Double();
   if (seconds_since_last_update > update_period_) {
 
-    if ((current_time - time_of_last_message_).Double() > timeout_period_) {
-      boost::mutex::scoped_lock scoped_lock(lock);
-      x_ = y_ = rot_ = 0;
+    if (timeout_period_ != 0.0) {
+      if ((current_time - time_of_last_message_).Double() > timeout_period_) {
+        boost::mutex::scoped_lock scoped_lock(lock);
+        x_ = y_ = rot_ = 0;
+      }
     }
 
     boost::mutex::scoped_lock scoped_lock(state_lock_);
     if (!pause_) {
       writePositionData(seconds_since_last_update);
-      publishOdometry(seconds_since_last_update);
     }
+    publishOdometry(seconds_since_last_update);
 
     last_update_time_+= common::Time(update_period_);
 
