@@ -259,7 +259,7 @@ class ExperimentController:
                 path_position = path_position + 1
                 while destination_distance < 1.25:
                     if path_position != len(self.path) - 1:
-                        going_to = self.getGraphLocation(self.path[path_position + 1])
+                        going_to = self.getGraphLocation(self.path[path_position + 1]['id'])
                     else:
                         going_to = [ball_x, ball_y]
                     destination_distance = math.sqrt((going_to[1] - robot_loc[1])*(going_to[1] - robot_loc[1]) + (going_to[0] - robot_loc[0])*(going_to[0] - robot_loc[0]))
