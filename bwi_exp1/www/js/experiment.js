@@ -99,6 +99,7 @@ function start() {
 
   var instructions = document.getElementById( 'instructions' );
   var mouse_button = document.getElementById( 'mouse_button' );
+  var pause_button = document.getElementById( 'pause_button' );
 
   // Create a handle for the topic '/chatter' of type std_msgs/String.
   var user_text_subscriber = new ros.Topic({
@@ -112,6 +113,30 @@ function start() {
     // message is an instance of ros.Message.
     instructions.innerHTML = message.data;
   });
+
+  var pause_gazebo = new ros.Service({
+      name        : '/gazebo/pause_physics',
+      serviceType : 'std_srvs/Empty'
+  });
+  var unpause_gazebo = new ros.Service({
+      name        : '/gazebo/unpause_physics',
+      serviceType : 'std_srvs/Empty'
+  });
+
+  pause_button.addEventListener('click', function (event) {
+    if (pause_button.innerHTML == 'Pause') {
+      var request = new ros.ServiceRequest();
+      pause_gazebo.callService(request, function (result) {
+        pause_button.innerHTML = 'Unpause';
+      });
+      pause_button.value = 'Unpause';
+    } else {
+      var request = new ros.ServiceRequest();
+      unpause_gazebo.callService(request, function (result) {
+        pause_button.innerHTML = 'Pause';
+      });
+    }
+  }, false);
 
   // http://www.html5rocks.ccuom/en/tutorials/pointerlock/intro/
   // http://mrdoob.github.com/three.js/examples/misc_controls_pointerlock.html
