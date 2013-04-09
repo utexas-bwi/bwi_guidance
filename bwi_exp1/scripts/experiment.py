@@ -364,7 +364,9 @@ class ExperimentController:
                 else:
                     self.experiment_text_publisher.updateText("Awesome! That's it for the tutorial! Hit the enter key or press the continue button to proceed to the real experiments!")
             else:
-                self.experiment_text_publisher.updateText("Oh no! You were unable to find the ball quickly enough. Let's try the tutorial again. You need to find the ball in " + str(self.experiment_tutorial_duration) + " seconds.") 
+                current_time = rospy.get_time()
+                time_diff = current_time - self.experiment_start_time
+                self.experiment_text_publisher.updateText("Oh no! You were unable to find the ball quickly enough (" + str(time_diff) + " seconds). You need to find the ball in " + str(self.experiment_tutorial_duration) + " seconds. Hit the enter key or press the continue button to try the tutorial again!") 
 
     def odometryCallback(self, odom):
 
