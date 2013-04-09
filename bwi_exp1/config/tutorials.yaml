@@ -11,7 +11,8 @@
     - id: 19
       robot: yes
   extra_robots: []
-  max_duration: 60 #seconds
+  max_duration: 300 #seconds
+  tutorial_duration: 30 #seconds
 - start_x: 27.1
   start_y: 45.5
   start_yaw: 0.0767736
@@ -39,4 +40,5 @@
     - id: 109
       robot: no
   extra_robots: []
-  max_duration: 120 #seconds
+  max_duration: 300 #seconds
+  tutorial_duration: 45 #seconds

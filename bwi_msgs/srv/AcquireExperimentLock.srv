@@ -1,3 +1,5 @@
+string name
+string email
 ---
 string uid
 bool result

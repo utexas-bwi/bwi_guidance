@@ -1,8 +1,33 @@
+function finish() {
+
+  var score_text = document.getElementById( 'score' );
+
+  var prmstr = window.location.search.substr(1);
+  var prmarr = prmstr.split ("&");
+  var params = {};
+
+  for ( var i = 0; i < prmarr.length; i++) {
+    var tmparr = prmarr[i].split("=");
+    params[tmparr[0]] = tmparr[1];
+  }
+
+  var score;
+  if (typeof params.score === 'undefined') {
+    score = 0;
+  } else {
+    score = params.score;
+  }
+
+  score_text.innerHTML = params.score;
+
+}
 
 function instructions() {
 
   var instructions = document.getElementById( 'instructions' );
   var continue_button = document.getElementById( 'continue_button' );
+  var continue_instructions = document.getElementById( 'continue_instructions' );
+  var name_field = document.getElementById( 'name' );
 
   var host = 'localhost'
   var ros = new ROS('ws://' + host +':9090'); 
@@ -31,14 +56,19 @@ function instructions() {
   });
 
   continue_button.addEventListener('click', function (event) {
-    var request = new ros.ServiceRequest();
-    experiment_lock_service.callService(request, function (result) {
-      if (result.result) {
-        window.location.href="experiment.html?uid=" + result.uid;
-      } else {
-        alert("Unable to get experiment lock. This can happen if someone tried to enter the experiment the same time as you. Once you close the alert box, the text over the Continue button should change in the next 10 seconds to show the experiment server is in use. If the text still shows the experiment server is in use, please send an email to piyushk@cs.utexas.edu with the text of this alert box. Thanks!!");
-      }
-    });
+    if (name_field.value == "") {
+      continue_instructions.innerHTML = "Please enter your name!"
+    } else {
+      var request = new ros.ServiceRequest({'name': name_field.value});
+      experiment_lock_service.callService(request, function (result) {
+        if (result.result) {
+          alert
+          window.location.href="experiment.html?uid=" + result.uid;
+        } else {
+          continue_instructions.innerHTML = "It looks like sombody else started the experiment at the same time. Please try again later!";
+        }
+      });
+    }
   }, false);
 
 }
@@ -46,6 +76,7 @@ function instructions() {
 function start() {
 
   var score = document.getElementById( 'score' );
+  var continue_button = document.getElementById( 'continue_button' );
 
   var prmstr = window.location.search.substr(1);
   var prmarr = prmstr.split ("&");
@@ -79,22 +110,16 @@ function start() {
     });
   });
 
+  var startNextExperiment = function (r) {
+    var request = new ros.ServiceRequest();
+    start_next_experiment_service.callService(request, function (result) {
+      continue_button.disabled = true;
+    });
+  }
+
   var experiment_status_subscriber = new ros.Topic({
     name        : '/experiment_controller/experiment_status',
     messageType : 'bwi_msgs/ExperimentStatus'
-  });
-
-  // Any time a message is published to the /chatter topic,
-  // the callback will fire.
-  experiment_status_subscriber.subscribe(function(message) {
-    if (message.locked == true) {
-      if (params.uid != message.uid) {
-        window.location.href = "index.html";
-      }
-      score.innerHTML = "Score: " + message.reward;
-    } else {
-      window.location.href="index.html";
-    }
   });
 
   var prev_velx = 0;
@@ -124,6 +149,28 @@ function start() {
     }
   }
 
+  // Any time a message is published to the /chatter topic,
+  // the callback will fire.
+  experiment_status_subscriber.subscribe(function(message) {
+    if (typeof params.uid === 'undefined' || message.uid == "" || params.uid != message.uid) {
+      window.location.href = "index.html";
+    } else {
+      if (!message.experiment_in_progress) {
+        if (message.locked == true) {
+          score.innerHTML = "Score: " + message.reward;
+          continue_button.disabled = false;
+        } else {
+          publishVelocity({velx: 0, vely: 0, vela: 0});
+          window.setTimeout(function() {
+            window.location.href = "end.html?score=" + message.reward;
+          }, 2000); 
+        }
+      } else {
+        continue_button.disabled = true;
+      }
+    }
+  });
+
   var pauseToggle = function (event) {
     if (pause_button.innerHTML == 'Pause') {
       var request = new ros.ServiceRequest();
@@ -139,7 +186,7 @@ function start() {
     }
   }
 
-  var arrow  = { turn_left: 37, left: 65, up: 87, turn_right: 39, right: 68, down: 83, pause: 80};
+  var arrow  = { turn_left: 37, left: 65, up: 87, turn_right: 39, right: 68, down: 83, pause: 80, enter:13};
   document.onkeydown = function(event) {
     var keyCode = event.keyCode || event.which;
     if (keyCode === arrow.up) {
@@ -162,6 +209,11 @@ function start() {
     }
     else if (keyCode === arrow.pause) {
       pauseToggle(event);
+    }
+    else if (keyCode === arrow.enter) {
+      if (continue_button.disabled == false) {
+        startNextExperiment(event);
+      }
     }
     return false;
   };
@@ -214,8 +266,13 @@ function start() {
       name        : '/gazebo/unpause_physics',
       serviceType : 'std_srvs/Empty'
   });
+  var start_next_experiment_service = new ros.Service({
+      name        : '/experiment_controller/start_next_experiment',
+      serviceType : 'std_srvs/Empty'
+  });
 
   pause_button.addEventListener('click', pauseToggle, false);
+  continue_button.addEventListener('click', startNextExperiment, false);
 
   // http://www.html5rocks.ccuom/en/tutorials/pointerlock/intro/
   // http://mrdoob.github.com/three.js/examples/misc_controls_pointerlock.html
