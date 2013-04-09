@@ -2,7 +2,7 @@
   start_y: 1.25
   start_yaw: 0
   ball_x: 30.85
-  ball_y: 10.95
+  ball_y: 10.35
   path:
     - id: 3
       robot: yes
@@ -15,7 +15,7 @@
     - id: 20
       robot: no
     - id: 29
-      robot: yes
+      robot: no
     - id: 41
       robot: no
     - id: 49
@@ -23,7 +23,7 @@
     - id: 50
       robot: no
     - id: 42
-      robot: yes
+      robot: no
     - id: 54
       robot: no
   extra_robots: []
@@ -45,9 +45,9 @@
     - id: 112
       robot: no
     - id: 100
-      robot: yes
+      robot: no
     - id: 69
-      robot: yes
+      robot: no
     - id: 64
       robot: yes
     - id: 62
@@ -73,26 +73,14 @@
     - id: 133
       robot: yes
     - id: 84
-      robot: yes
+      robot: no
     - id: 58
-      robot: yes
+      robot: no
     - id: 50
       robot: no
     - id: 42
       robot: yes
     - id: 33
       robot: no
-  extra_robots:
-    - loc_x: 15.4
-      loc_y: 22.1
-      yaw: -1.52735
-    - loc_x: 24.15
-      loc_y: 22.85
-      yaw: -2.08039
-    - loc_x: 29.55
-      loc_y: 16.35
-      yaw: -2.57967
-    - loc_x: 19.7
-      loc_y: 10.4
-      yaw: -1.48014
+  extra_robots: []
   max_duration: 300 #seconds

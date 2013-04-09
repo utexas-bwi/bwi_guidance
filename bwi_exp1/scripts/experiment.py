@@ -323,7 +323,7 @@ class ExperimentController:
         self.pause_person_plugin(True)
 
         current_time = rospy.get_time()
-        time_diff = current_time - self.experiment_start_time
+        time_diff = self.experiment_max_duration - (current_time - self.experiment_start_time)
 
         # Send message to user
         if (success):
@@ -391,6 +391,7 @@ class ExperimentController:
         self.start_experiment_countdown = True
 
         rospy.loginfo("Starting experiments for user: " + uid)
+        self.experiment_text_publisher.updateText("The experiment will start in 5 seconds!")
         self.log_file_prefix = uid + "_"
 
     def start(self):
