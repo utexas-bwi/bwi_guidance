@@ -124,7 +124,22 @@ function start() {
     }
   }
 
-  var arrow  = { turn_left: 37, left: 65, up: 87, turn_right: 39, right: 68, down: 83};
+  var pauseToggle = function (event) {
+    if (pause_button.innerHTML == 'Pause') {
+      var request = new ros.ServiceRequest();
+      pause_gazebo.callService(request, function (result) {
+        pause_button.innerHTML = 'Unpause';
+      });
+      pause_button.value = 'Unpause';
+    } else {
+      var request = new ros.ServiceRequest();
+      unpause_gazebo.callService(request, function (result) {
+        pause_button.innerHTML = 'Pause';
+      });
+    }
+  }
+
+  var arrow  = { turn_left: 37, left: 65, up: 87, turn_right: 39, right: 68, down: 83, pause: 80};
   document.onkeydown = function(event) {
     var keyCode = event.keyCode || event.which;
     if (keyCode === arrow.up) {
@@ -144,6 +159,9 @@ function start() {
     }
     else if (keyCode === arrow.turn_right) {
       publishVelocity({vela: -1.5});
+    }
+    else if (keyCode === arrow.pause) {
+      pauseToggle(event);
     }
     return false;
   };
@@ -197,20 +215,7 @@ function start() {
       serviceType : 'std_srvs/Empty'
   });
 
-  pause_button.addEventListener('click', function (event) {
-    if (pause_button.innerHTML == 'Pause') {
-      var request = new ros.ServiceRequest();
-      pause_gazebo.callService(request, function (result) {
-        pause_button.innerHTML = 'Unpause';
-      });
-      pause_button.value = 'Unpause';
-    } else {
-      var request = new ros.ServiceRequest();
-      unpause_gazebo.callService(request, function (result) {
-        pause_button.innerHTML = 'Pause';
-      });
-    }
-  }, false);
+  pause_button.addEventListener('click', pauseToggle, false);
 
   // http://www.html5rocks.ccuom/en/tutorials/pointerlock/intro/
   // http://mrdoob.github.com/three.js/examples/misc_controls_pointerlock.html
