@@ -29,7 +29,8 @@ function instructions() {
   var continue_instructions = document.getElementById( 'continue_instructions' );
   var name_field = document.getElementById( 'name' );
 
-  var host = 'localhost'
+  /* var host = 'localhost' */
+  var host = 'zoidberg.csres.utexas.edu'
   var ros = new ROS('ws://' + host +':9090'); 
   var cmd_vel = null;
 
@@ -88,8 +89,8 @@ function start() {
   }
 
   // initialize the stream on the canvas
-  /* var host = 'zoidberg.csres.utexas.edu' */
-  var host = 'localhost'
+  var host = 'zoidberg.csres.utexas.edu'
+  /* var host = 'localhost' */
   var mjpeg = new MjpegCanvas({
     host : host,
       /* topic : '/l_forearm_cam/image_color', */
