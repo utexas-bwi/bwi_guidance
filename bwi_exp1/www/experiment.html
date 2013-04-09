@@ -10,21 +10,30 @@
     <script type="text/javascript" src="js/experiment.js"></script>
   </head>
 
-  <body onload="start()">
+  <body onload="start()" style="font-family: arial;">
 
     <canvas id="my-mjpeg" width="640" height="480"></canvas> <span id="score" style="font-family: Arial; font-size: 32px; font-weight: bold;"></span>
 
     <p>
-    <div style="font-family: Arial; font-size: 24px; font-weight: bold; " id="instructions">The experiment will start in 5 seconds!</div>
+    <div style="font-family: Arial; font-size: 24px; font-weight: bold; " id="instructions">Tutorial 1 will begin shortly!</div>
     </p>
 
     <p>
     <button id="mouse_button" type="button">Use Mouse!</button>
     <button id="pause_button" type="button">Pause</button>
-    <!-- <button id="invert_mouse_button" type="button">Invert Mouse</button> -->
-    <br/>
+    <button id="continue_button" type="button" disabled>Continue</button>
+    </p>
 
-    <span style="font-family: arial;"><b>Controls: W, A, S, D = Move, &larr; + &rarr; OR Mouse = Turn left and right, ESC = Release mouse control, P = Pause</b></span>
+    <p>
+    <b>Controls:</b><br />
+    Move Forward = W<br />
+    Move Backward = S<br />
+    Strafe Left = A<br />
+    Strage Right = D<br />
+    Turn Left = &larr; OR Move Mouse Left (Hit the "Use Mouse!" button to use the mouse)<br />
+    Turn Right =  &rarr; OR Move Mouse Right (Hit the "Use Mouse!" button to use the mouse)<br />
+    ESC = Get Mouse Back<br />
+    P = Pause<br />
     </p>
 
   </body>
