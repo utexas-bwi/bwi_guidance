@@ -135,7 +135,9 @@ class ExperimentController:
 
         self.control_experiments_file = rospy.get_param("~control_experiments_file")
         self.test_experiments_file = rospy.get_param("~test_experiments_file")
+        self.tutorials_file = rospy.get_param("~tutorials_file")
         try:
+            self.tutorials = yaml.load(open(self.tutorials_file, 'r'))
             self.control_experiments = yaml.load(open(self.control_experiments_file,'r'))
             self.test_experiments = yaml.load(open(self.test_experiments_file,'r'))
         except Exception as e:
@@ -164,6 +166,7 @@ class ExperimentController:
         self.experiment_lock = False
         self.experiment_lock_mutex = threading.Lock()
         self.experiment_uid = ""
+        self.reward = 0
         self.experiment_lock_service_server = rospy.Service('~experiment_lock', AcquireExperimentLock, self.acquireExperimentLock)
         self.experiment_status_publisher = rospy.Publisher('~experiment_status', ExperimentStatus)
         self.start_experiment_countdown = False
@@ -297,7 +300,7 @@ class ExperimentController:
         self.unpause_gazebo()
 
         # Publish message to the user
-        self.experiment_text_publisher.updateText("Experiment #" + str(experiment_number + 1) + " has started! Find the red ball.");
+        self.experiment_text_publisher.updateText("Experiment #" + str(experiment_number + 1) + " has started! Find the red ball in under " + str(experiment_data['max_duration']) + " seconds.");
 
         # setup odometry thread to write out odometry values
         self.log_lock.acquire()
@@ -319,11 +322,17 @@ class ExperimentController:
         self.experiment_initialized = False
         self.pause_person_plugin(True)
 
+        current_time = rospy.get_time()
+        time_diff = current_time - self.experiment_start_time
+
         # Send message to user
         if (success):
-            self.experiment_text_publisher.updateText("It looks like you've found the goal. Let's proceed to the next experiment!")
+            reward = int(time_diff) + 50
+            self.experiment_text_publisher.updateText("You've found the goal. You earned " + str(reward) + " points!. The next experiment will start in 5 seconds!")
         else:
-            self.experiment_text_publisher.updateText("Oh no! It looks like you ran out of time with this experiment. Let's proceed to the next experiment.")
+            reward = 25
+            self.experiment_text_publisher.updateText("Oh no! It looks like you ran out of time with this experiment. We've awarded you " + str(reward) + " points. The next experiment will start in 5 seconds!")
+        self.reward = self.reward + reward
         
         # setup odometry thread to stop writing out odometry values
         self.log_lock.acquire()
@@ -361,18 +370,21 @@ class ExperimentController:
             self.experiment_success = True
 
     def startExperimentsForNewUser(self, uid):
+        self.experiment_names = ["tutorial_" + str(i) for i in range(len(self.tutorials))]
+        self.experiments = copy.deepcopy(self.tutorials) 
         control_first = random.choice([True, False])
         if control_first:
-            self.experiment_names = ["control_" + str(i) for i in range(len(self.control_experiments))]
-            self.experiments = copy.deepcopy(self.control_experiments)
+            self.experiment_names.extend(["control_" + str(i) for i in range(len(self.control_experiments))])
+            self.experiments.extend(self.control_experiments)
             self.experiment_names.extend(["test_" + str(i) for i in range(len(self.test_experiments))])
             self.experiments.extend(self.test_experiments)
         else:
-            self.experiment_names = ["test_" + str(i) for i in range(len(self.test_experiments))]
-            self.experiments = copy.deepcopy(self.test_experiments)
+            self.experiment_names.extend(["test_" + str(i) for i in range(len(self.test_experiments))])
+            self.experiments.extend(self.test_experiments)
             self.experiment_names.extend(["control_" + str(i) for i in range(len(self.control_experiments))])
             self.experiments.extend(self.control_experiments)
         self.experiment_number = 0
+        self.reward = 0
 
         self.experiment_uid = uid
         self.countdown_start_time = rospy.get_time()
@@ -414,6 +426,7 @@ class ExperimentController:
             status = ExperimentStatus()
             status.locked = self.experiment_lock
             status.uid = self.experiment_uid
+            status.reward = self.reward
             self.experiment_status_publisher.publish(status)
             self.experiment_lock_mutex.release()
 

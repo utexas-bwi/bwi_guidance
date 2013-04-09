@@ -33,7 +33,6 @@ function instructions() {
   continue_button.addEventListener('click', function (event) {
     var request = new ros.ServiceRequest();
     experiment_lock_service.callService(request, function (result) {
-      alert(result);
       if (result.result) {
         window.location.href="experiment.html?uid=" + result.uid;
       } else {
@@ -45,6 +44,8 @@ function instructions() {
 }
 
 function start() {
+
+  var score = document.getElementById( 'score' );
 
   var prmstr = window.location.search.substr(1);
   var prmarr = prmstr.split ("&");
@@ -90,6 +91,7 @@ function start() {
       if (params.uid != message.uid) {
         window.location.href = "index.html";
       }
+      score.innerHTML = "Score: " + message.reward;
     } else {
       window.location.href="index.html";
     }

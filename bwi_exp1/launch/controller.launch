@@ -6,6 +6,7 @@
     <param name="experiment_file" value="$(find bwi_exp1)/config/experiment.yaml" />
     <param name="control_experiments_file" value="$(find bwi_exp1)/config/control_experiments.yaml" />
     <param name="test_experiments_file" value="$(find bwi_exp1)/config/test_experiments.yaml" />
+    <param name="tutorials_file" value="$(find bwi_exp1)/config/tutorials.yaml" />
     <param name="data_dir" value="$(find bwi_exp1)/data" />
   </node>
 
