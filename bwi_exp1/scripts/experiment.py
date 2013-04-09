@@ -9,7 +9,8 @@ from geometry_msgs.msg import Pose, Quaternion
 from tf.transformations import quaternion_from_euler
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
-from bwi_msgs.srv import PositionRobot, PositionRobotRequest, UpdatePluginState
+from bwi_msgs.msg import ExperimentStatus
+from bwi_msgs.srv import PositionRobot, PositionRobotRequest, UpdatePluginState, AcquireExperimentLock, AcquireExperimentLockResponse
 from gazebo_msgs.srv import SetModelState, SetModelStateRequest
 
 import cv, cv2, numpy
@@ -160,6 +161,13 @@ class ExperimentController:
         self.experiment_initialized = False
         self.experiment_success = False
 
+        self.experiment_lock = False
+        self.experiment_lock_mutex = threading.Lock()
+        self.experiment_uid = ""
+        self.experiment_lock_service_server = rospy.Service('~experiment_lock', AcquireExperimentLock, self.acquireExperimentLock)
+        self.experiment_status_publisher = rospy.Publisher('~experiment_status', ExperimentStatus)
+        self.start_experiment_countdown = False
+
         # Get the robot positioner service
         rospy.loginfo("Waiting for service: position")
         rospy.wait_for_service("position")
@@ -195,7 +203,6 @@ class ExperimentController:
 
         # Setup the odometry subscriber
         sub = rospy.Subscriber(self.person_id + '/odom', Odometry, self.odometryCallback)
-
 
         # Log file lock
         self.log_lock = threading.Lock()
@@ -353,50 +360,62 @@ class ExperimentController:
         if distance_sqr < 1.0 * 1.0:
             self.experiment_success = True
 
+    def startExperimentsForNewUser(self, uid):
+        control_first = random.choice([True, False])
+        if control_first:
+            self.experiment_names = ["control_" + str(i) for i in range(len(self.control_experiments))]
+            self.experiments = copy.deepcopy(self.control_experiments)
+            self.experiment_names.extend(["test_" + str(i) for i in range(len(self.test_experiments))])
+            self.experiments.extend(self.test_experiments)
+        else:
+            self.experiment_names = ["test_" + str(i) for i in range(len(self.test_experiments))]
+            self.experiments = copy.deepcopy(self.test_experiments)
+            self.experiment_names.extend(["control_" + str(i) for i in range(len(self.control_experiments))])
+            self.experiments.extend(self.control_experiments)
+        self.experiment_number = 0
+
+        self.experiment_uid = uid
+        self.countdown_start_time = rospy.get_time()
+        self.start_experiment_countdown = True
+
+        rospy.loginfo("Starting experiments for user: " + uid)
+        self.log_file_prefix = uid + "_"
+
     def start(self):
 
         self.robot_image_publisher.start()
         self.experiment_text_publisher.start()
 
-        control_first = random.choice([True, False])
-        if control_first:
-            experiment_names = ["control_" + str(i) for i in range(len(self.control_experiments))]
-            experiments = copy.deepcopy(self.control_experiments)
-            experiment_names.extend(["test_" + str(i) for i in range(len(self.test_experiments))])
-            experiments.extend(self.test_experiments)
-        else:
-            experiment_names = ["test_" + str(i) for i in range(len(self.test_experiments))]
-            experiments = copy.deepcopy(self.test_experiments)
-            experiment_names.extend(["control_" + str(i) for i in range(len(self.control_experiments))])
-            experiments.extend(self.control_experiments)
-        experiment_number = 0
-
         r = rospy.Rate(10) # 10hz
-        start_experiment_countdown = True
-        countdown_start_time = rospy.get_time()
-
-        # TODO do something for experiment start/finish
-        uid = id_generator()
-        rospy.loginfo("Starting experiments for user: " + uid)
-        log_file_prefix = uid + "_"
 
         while not rospy.is_shutdown():
 
             time = rospy.get_time()
 
-            if start_experiment_countdown and (time - countdown_start_time > 5.0):
-                self.startExperiment(self.data_directory + "/" + log_file_prefix + experiment_names[experiment_number], experiments[experiment_number], experiment_number)
-                start_experiment_countdown = False
+            self.experiment_lock_mutex.acquire()
+
+            if self.start_experiment_countdown and (time - self.countdown_start_time > 5.0):
+                self.startExperiment(self.data_directory + "/" + self.log_file_prefix + self.experiment_names[self.experiment_number], self.experiments[self.experiment_number], self.experiment_number)
+                self.start_experiment_countdown = False
             elif self.experiment_initialized and self.experiment_success:
                 self.stopCurrentExperiment(True)
-                experiment_number = (experiment_number + 1) % len(experiments)
-                start_experiment_countdown = experiment_number != 0
-                countdown_start_time = rospy.get_time()
+                self.experiment_number = (self.experiment_number + 1) % len(self.experiments)
+                self.start_experiment_countdown = self.experiment_number != 0
+                self.experiment_lock = self.start_experiment_countdown
+                self.countdown_start_time = rospy.get_time()
             elif self.experiment_initialized and (time - self.experiment_start_time) > self.experiment_max_duration:
                 self.stopCurrentExperiment(False)
-                experiment_number = (experiment_number + 1) % len(experiments)
-                start_experiment_countdown = experiment_number != 0
-                countdown_start_time = rospy.get_time()
+                self.experiment_number = (self.experiment_number + 1) % len(self.experiments)
+                self.start_experiment_countdown = self.experiment_number != 0
+                self.experiment_lock = self.start_experiment_countdown
+                self.countdown_start_time = rospy.get_time()
+
+            #publish the experiment status
+            status = ExperimentStatus()
+            status.locked = self.experiment_lock
+            status.uid = self.experiment_uid
+            self.experiment_status_publisher.publish(status)
+            self.experiment_lock_mutex.release()
 
             r.sleep()
 
@@ -413,6 +432,19 @@ class ExperimentController:
         resp = self.teleport(set_state)
         if not resp.success:
             rospy.logerr(resp.status_message)
+
+    def acquireExperimentLock(self, req):
+        resp = AcquireExperimentLockResponse();
+        self.experiment_lock_mutex.acquire()
+        if not self.experiment_lock:
+            self.experiment_lock = True
+            resp.uid = id_generator()
+            self.startExperimentsForNewUser(resp.uid)
+            resp.result = True
+        else:
+            resp.result = False
+        self.experiment_lock_mutex.release()
+        return resp
 
 if __name__ == '__main__':
     try:

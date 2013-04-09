@@ -1,4 +1,59 @@
+
+function instructions() {
+
+  var instructions = document.getElementById( 'instructions' );
+  var continue_button = document.getElementById( 'continue_button' );
+
+  var host = 'localhost'
+  var ros = new ROS('ws://' + host +':9090'); 
+  var cmd_vel = null;
+
+  var experiment_lock_service = new ros.Service({
+      name        : '/experiment_controller/experiment_lock',
+      serviceType : 'bwi_msgs/AcquireExperimentLock'
+  });
+
+  var experiment_status_subscriber = new ros.Topic({
+    name        : '/experiment_controller/experiment_status',
+    messageType : 'bwi_msgs/ExperimentStatus'
+  });
+
+  // Any time a message is published to the /chatter topic,
+  // the callback will fire.
+  experiment_status_subscriber.subscribe(function(message) {
+    if (message.locked == true) {
+      instructions.innerHTML = "The experiment server is in use!";
+      continue_button.disabled = true;
+    } else {
+      instructions.innerHTML = "The experiment server is free!";
+      continue_button.disabled = false;
+    }
+  });
+
+  continue_button.addEventListener('click', function (event) {
+    var request = new ros.ServiceRequest();
+    experiment_lock_service.callService(request, function (result) {
+      alert(result);
+      if (result.result) {
+        window.location.href="experiment.html?uid=" + result.uid;
+      } else {
+        alert("Unable to get experiment lock. This can happen if someone tried to enter the experiment the same time as you. Once you close the alert box, the text over the Continue button should change in the next 10 seconds to show the experiment server is in use. If the text still shows the experiment server is in use, please send an email to piyushk@cs.utexas.edu with the text of this alert box. Thanks!!");
+      }
+    });
+  }, false);
+
+}
+
 function start() {
+
+  var prmstr = window.location.search.substr(1);
+  var prmarr = prmstr.split ("&");
+  var params = {};
+
+  for ( var i = 0; i < prmarr.length; i++) {
+    var tmparr = prmarr[i].split("=");
+    params[tmparr[0]] = tmparr[1];
+  }
 
   // initialize the stream on the canvas
   /* var host = 'zoidberg.csres.utexas.edu' */
@@ -21,6 +76,23 @@ function start() {
       name        : '/person/cmd_vel',
       messageType : 'geometry_msgs/Twist'
     });
+  });
+
+  var experiment_status_subscriber = new ros.Topic({
+    name        : '/experiment_controller/experiment_status',
+    messageType : 'bwi_msgs/ExperimentStatus'
+  });
+
+  // Any time a message is published to the /chatter topic,
+  // the callback will fire.
+  experiment_status_subscriber.subscribe(function(message) {
+    if (message.locked == true) {
+      if (params.uid != message.uid) {
+        window.location.href = "index.html";
+      }
+    } else {
+      window.location.href="index.html";
+    }
   });
 
   var prev_velx = 0;
@@ -173,7 +245,7 @@ function start() {
     }
 
     // Hook pointer lock state change events
-    document.addEventListener( 'pointerlockchange', pointerlockchange, false );
+    document.addEventListener( 'pointerlockchangewindow.location.href=”login.jsp?backurl', pointerlockchange, false );
     document.addEventListener( 'mozpointerlockchange', pointerlockchange, false );
     document.addEventListener( 'webkitpointerlockchange', pointerlockchange, false );
 

@@ -1,0 +1,2 @@
+bool locked
+string uid
