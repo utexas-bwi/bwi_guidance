@@ -66,9 +66,11 @@
     It will take you between 15-30 minutes to complete the entire set of
     experiments, so make sure you have enough time to proceed. <br/>
     <div id="instructions">The experiment server is in use!</div>
-    Enter full name here: <input id="name" type="text" name="name" />
-    <button id="continue_button" type="button" disabled>Continue</button>
-    <span id="continue_instructions"></span>
+    <form onSubmit="attemptExperimentLock(); return false;">
+      Enter full name here: <input id="name" type="text" name="name" />
+      <button id="continue_button" type="submit" disabled>Continue</button>
+      <span id="continue_instructions"></span>
+    </form>
     </p>
   </body>
 </html>

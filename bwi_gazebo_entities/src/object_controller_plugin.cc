@@ -403,6 +403,11 @@ void ObjectControllerPlugin::writePositionData(double step_time)
         y_pxl < 0 || y_pxl >= (int)map_.info.height ||
         (map_.data[y_pxl * map_.info.width + x_pxl] < 50)) {
       this->parent->SetWorldPose(new_pose);
+      math::Vector3 zeros(0,0,0);
+      this->parent->SetLinearVel(zeros);
+      this->parent->SetLinearAccel(zeros);
+      this->parent->SetAngularVel(zeros);
+      this->parent->SetAngularAccel(zeros);
     } else {
       ROS_DEBUG_THROTTLE(2.0,"Simple Segbot plugin is preventing running into a wall. If you think this is an error, then check the map");
     } 
