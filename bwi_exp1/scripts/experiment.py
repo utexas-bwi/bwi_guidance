@@ -8,9 +8,9 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Pose, Quaternion
 from tf.transformations import quaternion_from_euler
 from nav_msgs.msg import Odometry
-from std_srvs.srv import Empty
+from std_srvs.srv import Empty, EmptyResponse
 from bwi_msgs.msg import ExperimentStatus
-from bwi_msgs.srv import PositionRobot, PositionRobotRequest, UpdatePluginState, AcquireExperimentLock, AcquireExperimentLockResponse
+from bwi_msgs.srv import PositionRobot, PositionRobotRequest, UpdatePluginState, AcquireExperimentLock, AcquireExperimentLockResponse, ResetExperiment, ResetExperimentResponse
 from gazebo_msgs.srv import SetModelState, SetModelStateRequest
 
 import cv, cv2, numpy
@@ -173,6 +173,7 @@ class ExperimentController:
         self.experiment_lock_mutex = threading.Lock()
         self.experiment_uid = ""
         self.reward = 0
+        self.reset_experiment_service_server = rospy.Service('~reset_experiment', ResetExperiment, self.handleResetExperimentRequest)
         self.experiment_lock_service_server = rospy.Service('~experiment_lock', AcquireExperimentLock, self.acquireExperimentLock)
         self.next_experiment_service_server = rospy.Service('~start_next_experiment', Empty, self.startNextExperiment)
         self.experiment_status_publisher = rospy.Publisher('~experiment_status', ExperimentStatus)
@@ -345,10 +346,10 @@ class ExperimentController:
             # Send message to user
             if (success):
                 reward = int(reward_time) + 50
-                self.experiment_text_publisher.updateText("You found the goal in " + str(time_diff) + " seconds and earned " + str(reward) + " points! Hit the enter key or press the continue button to proceed!")
+                self.experiment_text_publisher.updateText("You found the goal in " + str(time_diff) + " seconds and earned " + str(reward) + " points! Hit the enter key or press the continue button to proceed! You need to hit the continue button in the next 10 minutes or the experiment will time out.")
             else:
                 reward = 25
-                self.experiment_text_publisher.updateText("Oh no! It looks like you ran out of time with this experiment. We've awarded you " + str(reward) + " points. Hit the enter key or press the continue button to proceed!")
+                self.experiment_text_publisher.updateText("Oh no! It looks like you ran out of time with this experiment. We've awarded you " + str(reward) + " points. Hit the enter key or press the continue button to proceed! You need to hit the continue button in the next 10 minutes or the experiment will time out.")
             self.reward = self.reward + reward
             
             # setup odometry thread to stop writing out odometry values
@@ -360,13 +361,21 @@ class ExperimentController:
         else:
             if (success):
                 if self.experiments[self.experiment_number + 1]['is_tutorial']:
-                    self.experiment_text_publisher.updateText("Awesome! You found the goal! Hit the enter key or press the continue button to proceed to the next tutorial!")
+                    self.experiment_text_publisher.updateText("Awesome! You found the goal! Hit the enter key or press the continue button to proceed to the next tutorial! You need to hit the continue button in the next 10 minutes or the experiment will time out.")
                 else:
-                    self.experiment_text_publisher.updateText("Awesome! That's it for the tutorial! Hit the enter key or press the continue button to proceed to the real experiments!")
+                    self.experiment_text_publisher.updateText("Awesome! That's it for the tutorial! Hit the enter key or press the continue button to proceed to the real experiments! You need to hit the continue button in the next 10 minutes or the experiment will time out.")
+                self.reward += 50
             else:
                 current_time = rospy.get_time()
                 time_diff = current_time - self.experiment_start_time
-                self.experiment_text_publisher.updateText("Oh no! You were unable to find the ball quickly enough (" + str(time_diff) + " seconds). You need to find the ball in " + str(self.experiment_tutorial_duration) + " seconds. Hit the enter key or press the continue button to try the tutorial again!") 
+                self.experiment_text_publisher.updateText("Oh no! You were unable to find the ball quickly enough (" + str(time_diff) + " seconds). You need to find the ball in " + str(self.experiment_tutorial_duration) + " seconds. Hit the enter key or press the continue button to try the tutorial again! You need to hit the continue button in the next 10 minutes or the experiment will time out.")
+
+        #teleport all the robots to correct positions
+        self.pause_gazebo()
+        for robot in self.robots:
+            robot_pose = getPoseMsgFrom2dData(*robot['default_loc'], yaw=0)
+            self.teleportEntity(robot['id'], robot_pose) 
+        self.unpause_gazebo() 
 
     def odometryCallback(self, odom):
 
@@ -495,10 +504,42 @@ class ExperimentController:
         self.experiment_lock_mutex.release()
         return resp
 
+    def resetExperiment(self, time):
+        self.experiment_lock_mutex.acquire()
+        if self.experiment_lock:
+            if self.experiment_initialized:
+                self.stopCurrentExperiment(False)
+            self.reward = -1
+            rospy.loginfo("RESET(" + str(time) + ")! Experiments for user: " + self.experiment_uid)
+            self.experiment_text_publisher.updateText("Oh no! You timed out in the pause or continue mode. We have had to reset the experiment. Please try again!")
+            self.experiment_lock = False
+            self.experiment_number = len(self.experiments)
+            self.unpause_gazebo()
+        self.experiment_lock_mutex.release()
+
+    def handleResetExperimentRequest(self, req):
+        if not req.cancel:
+            self.reset_timer = threading.Timer(req.time, self.resetExperiment, [req.time])
+            self.reset_timer.start()
+            rospy.loginfo("START_TIMER(" + str(req.time) + ")! Experiments for user: " + self.experiment_uid)
+        else:
+            try:
+                rospy.loginfo("CANCEL_TIMER! Experiments for user: " + self.experiment_uid)
+                self.reset_timer.cancel()
+            except NameError:
+                pass
+        return ResetExperimentResponse()
+
     def startNextExperiment(self, req):
         self.experiment_lock_mutex.acquire()
         self.start_next_experiment = True
         self.experiment_lock_mutex.release()
+        try:
+            rospy.loginfo("CANCEL_TIMER! Experiments for user: " + self.experiment_uid)
+            self.reset_timer.cancel()
+        except NameError:
+            pass
+        return EmptyResponse() 
 
 if __name__ == '__main__':
     try:

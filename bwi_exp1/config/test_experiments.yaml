@@ -1,8 +1,8 @@
 - start_x: 12.2
   start_y: 1.25
   start_yaw: 0
-  ball_x: 30.85
-  ball_y: 10.35
+  ball_x: 26.45
+  ball_y: 10.7
   path:
     - id: 3
       robot: yes
@@ -31,8 +31,8 @@
 - start_x: 38.1
   start_y: 43.15
   start_yaw: -1.64535
-  ball_x: 35.65
-  ball_y: 10.5
+  ball_x: 36.4
+  ball_y: 1.3
   path:
     - id: 146
       robot: yes
@@ -49,8 +49,16 @@
     - id: 69
       robot: no
     - id: 64
+      robot: no
+    - id: 55
+      robot: no
+    - id: 30
+      robot: no
+    - id: 21
+      robot: no
+    - id: 17
       robot: yes
-    - id: 62
+    - id: 9
       robot: no
   extra_robots:
     - loc_x: 45.85

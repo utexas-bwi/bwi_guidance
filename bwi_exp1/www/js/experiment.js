@@ -78,6 +78,7 @@ function start() {
 
   var score = document.getElementById( 'score' );
   var continue_button = document.getElementById( 'continue_button' );
+  var instructions = document.getElementById( 'instructions' );
 
   var prmstr = window.location.search.substr(1);
   var prmarr = prmstr.split ("&");
@@ -152,6 +153,7 @@ function start() {
 
   // Any time a message is published to the /chatter topic,
   // the callback will fire.
+  var first_continue_enable = false;
   experiment_status_subscriber.subscribe(function(message) {
     if (typeof params.uid === 'undefined' || message.uid == "" || params.uid != message.uid) {
       window.location.href = "index.html";
@@ -160,6 +162,11 @@ function start() {
         if (message.locked == true) {
           score.innerHTML = "Score: " + message.reward;
           continue_button.disabled = false;
+          if (first_continue_enable) {
+            var request = new ros.ServiceRequest({'cancel': false, 'time': 600.0});
+            reset_experiment.callService(request);
+            first_continue_enable = false;
+          }
         } else {
           publishVelocity({velx: 0, vely: 0, vela: 0});
           window.setTimeout(function() {
@@ -168,6 +175,7 @@ function start() {
         }
       } else {
         continue_button.disabled = true;
+        first_continue_enable = true;
       }
     }
   });
@@ -176,12 +184,17 @@ function start() {
     if (pause_button.innerHTML == 'Pause') {
       var request = new ros.ServiceRequest();
       pause_gazebo.callService(request, function (result) {
+        var request = new ros.ServiceRequest({'cancel': false, 'time': 600.0});
+        reset_experiment.callService(request);
+        instructions.innerHTML="You have hit the pause button. Please be sure to hit unpause within the next 10 mintues, or the experiment will time out and data collected from you won't be accepted.";
         pause_button.innerHTML = 'Unpause';
       });
       pause_button.value = 'Unpause';
     } else {
       var request = new ros.ServiceRequest();
       unpause_gazebo.callService(request, function (result) {
+        var request = new ros.ServiceRequest({'cancel': true, 'time': 0.0});
+        reset_experiment.callService(request);
         pause_button.innerHTML = 'Pause';
       });
     }
@@ -242,7 +255,6 @@ function start() {
     return false;
   };
 
-  var instructions = document.getElementById( 'instructions' );
   var mouse_button = document.getElementById( 'mouse_button' );
   var pause_button = document.getElementById( 'pause_button' );
 
@@ -271,6 +283,11 @@ function start() {
       name        : '/experiment_controller/start_next_experiment',
       serviceType : 'std_srvs/Empty'
   });
+  var reset_experiment = new ros.Service({
+      name        : '/experiment_controller/reset_experiment',
+      serviceType : 'bwi_msgs/ResetExperiment'
+  });
+
 
   pause_button.addEventListener('click', pauseToggle, false);
   continue_button.addEventListener('click', startNextExperiment, false);
