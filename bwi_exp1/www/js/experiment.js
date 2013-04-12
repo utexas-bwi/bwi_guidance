@@ -207,7 +207,9 @@ function start() {
       publishVelocity({vela: -1.5});
     }
     else if (keyCode === keycode.pause) {
-      pauseToggle(event);
+      if (pause_button.disabled == false) { 
+        pauseToggle(event);
+      }
     }
     else if (keyCode === keycode.enter) {
       if (continue_button.disabled == false) {
@@ -241,6 +243,7 @@ function start() {
   };
 
   /* Handle experiment status callback */
+  var first_continue_enable = false;
   experiment_status_subscriber.subscribe(function(message) {
     if (typeof params.uid === 'undefined' || message.uid == "" || 
         params.uid != message.uid) { // user should not be in experiment page
@@ -250,6 +253,7 @@ function start() {
         if (message.locked == true) {
           score.innerHTML = "Score: " + message.reward;
           continue_button.disabled = false;
+          pause_button.disabled = true;
           if (first_continue_enable) {
             var request = new ros.ServiceRequest({'cancel': false, 
                 'time': 600.0});
@@ -264,6 +268,7 @@ function start() {
         }
       } else {
         continue_button.disabled = true;
+        pause_button.disabled = false;
         first_continue_enable = true;
       }
     }
@@ -274,8 +279,15 @@ function start() {
     instructions.innerHTML = message.data;
   });
 
+  /* Start Next Experiment - Convenience function */
+  var startNextExperiment = function (r) {
+    var request = new ros.ServiceRequest();
+    start_next_experiment.callService(request, function (result) {
+      continue_button.disabled = true;
+    });
+  }
+
   /* Handle continue button */
-  var first_continue_enable = false;
   continue_button.addEventListener('click', startNextExperiment, false);
 
   /* Handle pause button */
@@ -303,13 +315,6 @@ function start() {
   }
   pause_button.addEventListener('click', pauseToggle, false);
 
-  /* Start Next Experiment - Convenience function */
-  var startNextExperiment = function (r) {
-    var request = new ros.ServiceRequest();
-    start_next_experiment.callService(request, function (result) {
-      continue_button.disabled = true;
-    });
-  }
 
   /* Handle mouse movement based velocity control */
 

@@ -178,6 +178,8 @@ class ExperimentController:
         self.next_experiment_service_server = rospy.Service('~start_next_experiment', Empty, self.startNextExperiment)
         self.experiment_status_publisher = rospy.Publisher('~experiment_status', ExperimentStatus)
         self.start_next_experiment = False
+        self.reset_timer = None
+        self.reset_timer_lock = threading.Lock()
 
         # Get the robot positioner service
         rospy.loginfo("Waiting for service: position")
@@ -518,27 +520,30 @@ class ExperimentController:
         self.experiment_lock_mutex.release()
 
     def handleResetExperimentRequest(self, req):
+        self.reset_timer_lock.acquire()
         if not req.cancel:
-            self.reset_timer = threading.Timer(req.time, self.resetExperiment, [req.time])
-            self.reset_timer.start()
-            rospy.loginfo("START_TIMER(" + str(req.time) + ")! Experiments for user: " + self.experiment_uid)
+            if not self.reset_timer:
+                self.reset_timer = threading.Timer(req.time, self.resetExperiment, [req.time])
+                self.reset_timer.start()
+                rospy.loginfo("START_TIMER(" + str(req.time) + ")! Experiments for user: " + self.experiment_uid)
         else:
-            try:
+            if self.reset_timer:
                 rospy.loginfo("CANCEL_TIMER! Experiments for user: " + self.experiment_uid)
                 self.reset_timer.cancel()
-            except NameError:
-                pass
+                self.reset_timer = None
+        self.reset_timer_lock.release()
         return ResetExperimentResponse()
 
     def startNextExperiment(self, req):
         self.experiment_lock_mutex.acquire()
         self.start_next_experiment = True
         self.experiment_lock_mutex.release()
-        try:
+        self.reset_timer_lock.acquire()
+        if self.reset_timer:
             rospy.loginfo("CANCEL_TIMER! Experiments for user: " + self.experiment_uid)
             self.reset_timer.cancel()
-        except NameError:
-            pass
+            self.reset_timer = None
+        self.reset_timer_lock.release()
         return EmptyResponse() 
 
 if __name__ == '__main__':
