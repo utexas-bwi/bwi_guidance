@@ -39,7 +39,7 @@ namespace bwi_exp1_visualizer {
       virtual ~QNode();
       bool init();
       void run();
-      void updateFrameInfo(double time_step);
+      void updateFrameInfo(double time_step, bool force_update = false);
 
       std::vector<QString> experiment_box_strings_;
       std::vector<QString> user_box_strings_;
@@ -62,9 +62,20 @@ namespace bwi_exp1_visualizer {
       void rosShutdown();
 
     private:
+
+      /* UI Elements */
       bool autoplay;
+
+      /* ROS Elements */
       int init_argc;
       char** init_argv;
+      std::string map_file_;
+      std::string graph_file_;
+      std::string experiment_file_;
+      std::string data_directory_;
+      std::string users_file_;
+      boost::shared_ptr<topological_mapper::MapLoader> mapper_;
+      topological_mapper::Graph graph_;
 
   };
 

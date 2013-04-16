@@ -57,9 +57,6 @@ namespace bwi_exp1_visualizer {
       ui.userBox->insertItem(i, qnode.user_box_strings_[i]);
     }
     ui.userBox->setCurrentIndex(0);
-
-    /* Update the frame */
-    qnode.updateFrameInfo(0);
   }
 
   MainWindow::~MainWindow() {}

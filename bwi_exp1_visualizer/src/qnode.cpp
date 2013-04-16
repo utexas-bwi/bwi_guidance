@@ -17,6 +17,8 @@
 #include <sstream>
 #include "../include/bwi_exp1_visualizer/qnode.hpp"
 
+#include <topological_mapper/map_loader.h>
+
 /*****************************************************************************
  ** Namespaces
  *****************************************************************************/
@@ -42,13 +44,34 @@ namespace bwi_exp1_visualizer {
 
   bool QNode::init() {
     ros::init(init_argc,init_argv,"bwi_exp1_visualizer");
-    if ( ! ros::master::check() ) {
+    if (!ros::master::check()) {
       return false;
     }
-    ros::start(); // explicitly needed since our nodehandle is going out of scope.
-    ros::NodeHandle n;
-    // Add your ros communications here.
-    chatter_publisher = n.advertise<std_msgs::String>("chatter", 1000);
+    ros::start(); // explicitly needed since nodehandle going out of scope
+
+    // Get the robot positioner service
+    ros::NodeHandle nh;
+    robot_positioner_ = nh.serviceClient<bwi_msgs::PositionRobot>("position");
+    ROS_INFO_STREAM("Waiting for service: /position");
+    robot_positioner_->waitForExistence();
+    ROS_INFO_STREAM("Service Acquired: /position");
+
+    // Get parameters to understand image generation
+    ros::param::get("~map_file", map_file_);
+    ros::param::get("~graph_file", graph_file_);
+    ros::param::get("~experiment_file", experiment_file_);
+    ros::param::get("~data_directory", data_directory_);
+    ros::param::get("~users_file", users_file_);
+
+    /* Initialize the map and associated data now the we know where the map 
+       file is */
+    mapper_.reset(new topological_mapper::MapLoader(map_file_));
+    nav_msgs::MapMetaData info;
+    mapper_->getMapInfo(info);
+    topological_mapper::readGraphFromFile(graph_file_, info, graph_);
+
+    /* Process experiment data */
+    /* Process user data */
     start();
     return true;
   }
