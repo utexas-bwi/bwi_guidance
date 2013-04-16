@@ -49,8 +49,7 @@ int main(int argc, const char *argv[]) {
 
   ros::param::get("~map_file", map_file);
   ros::param::get("~graph_file", graph_file);
-  ros::param::get("~control_experiments_file", control_experiments_file);
-  ros::param::get("~test_experiments_file", test_experiments_file);
+  ros::param::get("~experiment_file", experiment_file);
   ros::param::get("~data_directory", data_directory);
 
   // Read in everything here
