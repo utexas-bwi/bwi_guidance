@@ -1,0 +1,23 @@
+<package>
+  <description brief="bwi_exp1_visualizer">
+
+     bwi_exp1_visualizer
+
+  </description>
+  <author>Piyush Khandelwal</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/bwi_exp1_visualizer</url>
+
+  <rosdep name="qt4"/>
+
+  <!-- rosbuild1 -->
+  <depend package="qt_build"/>
+  <depend package="roscpp"/>
+  
+  <rosbuild2>
+    <depend package="qt_build"/>
+    <depend package="roscpp"/>
+  </rosbuild2>
+  
+</package>
