@@ -15,9 +15,10 @@
 #include <string>
 #include <std_msgs/String.h>
 #include <sstream>
-#include "../include/bwi_exp1_visualizer/qnode.hpp"
+#include <bwi_exp1_visualizer/qnode.hpp>
 
-#include <topological_mapper/map_loader.h>
+#include <boost/algorithm/string/join.hpp>
+#include <cstdlib>
 
 /*****************************************************************************
  ** Namespaces
@@ -71,7 +72,42 @@ namespace bwi_exp1_visualizer {
     topological_mapper::readGraphFromFile(graph_file_, info, graph_);
 
     /* Process experiment data */
+    bwi_exp1::readExperimentCollectionFromFile(experiment_file_, experiments_);
+    bwi_exp1::getExperimentNames(experiments_, experiment_box_strings_);
+    
     /* Process user data */
+    bwi_exp1::readUserDataFromFile(users_file_, users_);
+
+    /* 1st entry is all */
+    user_box_strings_.push_back("All");
+    user_box_to_idx_map_.push_back(getAllUserIds(users_));
+
+    /* next are the various orderings */
+    std::vector< std::vector<std::string> > orderings;
+    bwi_exp1::computeOrderings(experiments_, orderings);
+    for (size_t i = 0; i < orderings.size(); ++i) {
+      user_box_strings_.push_back(boost::algorithm::join(orderings[i], ","));
+      user_box_to_idx_map_.push_back(
+          getUserIdsForOrdering(users_, orderings[i]));
+    }
+
+    /* next add individual users */
+    for (size_t i = 0; i < users_.size(); ++i) {
+      user_box_strings_.push_back("User: " + users_[i].id);
+      std::vector<size_t> user_idx(1, i);
+      user_box_to_idx_map_.push_back(user_idx);
+    }
+
+    /* select a color for each user */
+    for (size_t i = 0; i < users_.size(); ++i) {
+      users_[i].color[0] = 64 + rand() % 128;
+      users_[i].color[1] = 64 + rand() % 128;
+      users_[i].color[2] = 64 + rand() % 128;
+    }
+
+    /* Process odometry data */
+
+
     start();
     return true;
   }

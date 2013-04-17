@@ -21,6 +21,11 @@
 #include <QThread>
 #include <QStringListModel>
 
+#include <topological_mapper/map_loader.h>
+#include <bwi_exp1/experiment.h>
+#include <bwi_exp1/users.h>
+#include <bwi_exp1/odometry.h>
+
 /*****************************************************************************
 ** Namespaces
 *****************************************************************************/
@@ -66,7 +71,7 @@ namespace bwi_exp1_visualizer {
       /* UI Elements */
       bool autoplay;
 
-      /* ROS Elements */
+      /* ROS Elements and paramters*/
       int init_argc;
       char** init_argv;
       std::string map_file_;
@@ -74,8 +79,13 @@ namespace bwi_exp1_visualizer {
       std::string experiment_file_;
       std::string data_directory_;
       std::string users_file_;
+
+      /* Experiment and graph information */
       boost::shared_ptr<topological_mapper::MapLoader> mapper_;
       topological_mapper::Graph graph_;
+      bwi_exp1::ExperimentCollection experiments_;
+      std::vector<bwi_exp1::User> users_;
+      std::vector< std::vector<size_t> > user_box_to_idx_map_;
 
   };
 
