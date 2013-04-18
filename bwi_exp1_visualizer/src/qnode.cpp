@@ -106,7 +106,18 @@ namespace bwi_exp1_visualizer {
     }
 
     /* Process odometry data */
-
+    for (size_t exp = 0; exp < experiment_box_strings_.size(); ++i) {
+      std::vector< std::vector<bwi_exp1::ExperimentLocationStamped> >
+        all_paths_for_experiment;
+      for (size_t u = 0; u < users_.size(); ++u) {
+        std::vector<bwi_exp1::ExperimentLocationStamped> path;
+        std::string file = data_directory_ + "/" + users_[u].id + "_" + 
+          experiments_[exp].prefix;
+        bool bwi_exp1::readOdometry(file, path);
+        all_paths_for_experiment.push_back(path);
+      }
+      odometry_.push_back(all_paths_for_experiment);
+    }
 
     start();
     return true;
