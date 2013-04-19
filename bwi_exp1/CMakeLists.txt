@@ -16,6 +16,12 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
 set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
+# find yaml lib definitions
+include($ENV{ROS_ROOT}/core/rosbuild/FindPkgConfig.cmake)
+pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
+include_directories(${YAML_CPP_INCLUDE_DIRS})
+link_directories(${YAML_CPP_LIBRARY_DIRS})
+
 #uncomment if you have defined messages
 #rosbuild_genmsg()
 #uncomment if you have defined services
@@ -28,6 +34,13 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
+
+rosbuild_add_library(bwi_exp1
+  src/libbwi_exp1/users.cpp
+  src/libbwi_exp1/odometry.cpp
+  src/libbwi_exp1/experiment.cpp
+  )
+target_link_libraries(bwi_exp1 ${YAML_CPP_LIBRARIES})
 
 rosbuild_add_executable(create_experiment src/create_experiment.cpp)
 rosbuild_add_executable(robot_positioner src/nodes/robot_positioner.cpp)

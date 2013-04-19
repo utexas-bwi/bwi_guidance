@@ -17,6 +17,7 @@
   <depend package="topological_mapper" />
 
   <export>
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -Wl,-rpath,-L${prefix}lib -lbwi_exp1 `pkg-config --libs yaml-cpp`"/>
     <gazebo gazebo_media_path="${prefix}" />
   </export>
 

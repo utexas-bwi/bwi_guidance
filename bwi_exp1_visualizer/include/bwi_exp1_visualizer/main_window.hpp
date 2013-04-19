@@ -38,8 +38,8 @@ namespace bwi_exp1_visualizer {
     public slots:
 
       /* Manually triggered slots (from qnode) */
-      void on_updateFrameInfo();
-      void on_incrementTime();
+      void updateFrameInfo();
+      void incrementTime();
 
     private:
       Ui::MainWindow ui;

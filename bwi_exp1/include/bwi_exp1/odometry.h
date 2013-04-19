@@ -48,42 +48,7 @@ namespace bwi_exp1 {
   };
 
   bool readOdometry(const std::string& file, 
-      std::vector<ExperimentLocationStamped>& path) {
-
-    std::ifstream fin(file);
-    if (!file) {
-      path.clear();
-      return false;
-    }
-    YAML::Parser parser(fin);
-
-    YAML::Node doc;
-    parser.GetNextDocument(doc);
-
-    float start_time = 0;
-
-    path.clear();
-    for (size_t i = 0; i < doc["odometry"].size(); ++i) {
-      const YAML::Node& stamped_location = doc["odometry"][i];
-      ExperimentLocation location;
-      location.location.x = stamped_location[0];
-      location.location.y = stamped_location[1];
-      int stamp_idx = 2;
-      if (stamped_location.size() == 4) {
-        location.location.yaw = stamped_location[2];
-        stamp_idx = 3;
-      } else {
-        location.location.yaw = 0;
-      }
-      if (i == 0) {
-        start_time = stamped_location[stamp_idx];
-      }
-      location.seconds_since_start = stamped_location[stamp_idx] - start_time;
-      path.push_back(location);
-    }
-
-    return doc["success"];
-  }
+      std::vector<ExperimentLocationStamped>& path);
   
 } /* bwi_exp1 */
 

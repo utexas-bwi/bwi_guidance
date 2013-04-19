@@ -14,10 +14,7 @@
   <!-- rosbuild1 -->
   <depend package="qt_build"/>
   <depend package="roscpp"/>
-  
-  <rosbuild2>
-    <depend package="qt_build"/>
-    <depend package="roscpp"/>
-  </rosbuild2>
+  <depend package="topological_mapper"/>
+  <depend package="bwi_exp1"/>
   
 </package>

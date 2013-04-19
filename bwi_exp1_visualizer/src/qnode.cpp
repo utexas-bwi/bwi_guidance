@@ -45,17 +45,14 @@ namespace bwi_exp1_visualizer {
 
   bool QNode::init() {
     ros::init(init_argc,init_argv,"bwi_exp1_visualizer");
-    if (!ros::master::check()) {
-      return false;
-    }
     ros::start(); // explicitly needed since nodehandle going out of scope
 
     // Get the robot positioner service
     ros::NodeHandle nh;
-    robot_positioner_ = nh.serviceClient<bwi_msgs::PositionRobot>("position");
-    ROS_INFO_STREAM("Waiting for service: /position");
-    robot_positioner_->waitForExistence();
-    ROS_INFO_STREAM("Service Acquired: /position");
+    // robot_positioner_ = nh.serviceClient<bwi_msgs::PositionRobot>("position");
+    // ROS_INFO_STREAM("Waiting for service: /position");
+    // robot_positioner_->waitForExistence();
+    // ROS_INFO_STREAM("Service Acquired: /position");
 
     // Get parameters to understand image generation
     ros::param::get("~map_file", map_file_);
@@ -106,18 +103,26 @@ namespace bwi_exp1_visualizer {
     }
 
     /* Process odometry data */
-    for (size_t exp = 0; exp < experiment_box_strings_.size(); ++i) {
+    for (size_t exp = 0; exp < experiment_box_strings_.size(); ++exp) {
       std::vector< std::vector<bwi_exp1::ExperimentLocationStamped> >
         all_paths_for_experiment;
       for (size_t u = 0; u < users_.size(); ++u) {
         std::vector<bwi_exp1::ExperimentLocationStamped> path;
         std::string file = data_directory_ + "/" + users_[u].id + "_" + 
-          experiments_[exp].prefix;
-        bool bwi_exp1::readOdometry(file, path);
+          experiment_box_strings_[exp];
+        bwi_exp1::readOdometry(file, path);
         all_paths_for_experiment.push_back(path);
       }
       odometry_.push_back(all_paths_for_experiment);
     }
+
+    /* default values for data */
+    time_step_ = 0.1;
+    max_experiment_time_ = 0.0;
+    max_time_steps_ = 0;
+    current_experiment_time_ = 0;
+    current_time_step_ = 0;
+    autoplay = false;
 
     start();
     return true;
@@ -125,12 +130,67 @@ namespace bwi_exp1_visualizer {
 
   void QNode::on_timeSlider_valueChanged(int value) {
     if (current_time_step_ != value) {
-      updateFrameInfo(time);
+      updateFrame(value);
     }
   }
 
   void QNode::on_autoPlayBox_toggled(bool checked) {
     autoplay = checked;
+  }
+
+  void QNode::on_experimentBox_currentIndexChanged(int index) {
+    current_experiment_index_ = index;
+    updateFrame(current_time_step_);
+  }
+
+  void QNode::on_userBox_currentIndexChanged(int index) {
+    current_user_index_ = index;
+    updateFrame(current_time_step_);
+  }
+
+  void QNode::updateFrame(int current_time_step) {
+
+    // Draw image
+    mapper_->drawMap(generated_image_);
+    current_experiment_time_ = current_time_step * time_step_;
+    std::vector<size_t>& users_in_frame = 
+        user_box_to_idx_map_[current_user_index_];
+    max_experiment_time_ = 0.0;
+    for (size_t u = 0; u < users_in_frame.size(); ++u) {
+      std::vector<bwi_exp1::ExperimentLocationStamped>& path = 
+        odometry_[current_experiment_index_][users_in_frame[u]];
+      for (size_t t = 1; t < path.size(); ++t) {
+        if (path[t].seconds_since_start < 0.1)
+          continue;
+        if (path[t].seconds_since_start > current_experiment_time_)
+          break;
+        cv::Vec2f prev_pt(path[t-1].location.x, path[t-1].location.y); 
+        cv::Vec2f curr_pt(path[t].location.x, path[t].location.y); 
+        cv::line(generated_image_,
+            toImage(prev_pt),
+            toImage(curr_pt),
+            cv::Scalar(users_[u].color[0], users_[u].color[1], users_[u].color[2]),
+            3);
+      }
+      if (path.size() != 0) { // Data did not load properly
+        max_experiment_time_ = std::max(max_experiment_time_, path[path.size() - 1].seconds_since_start);
+      }
+    }
+
+    current_time_step_ = current_time_step;
+    max_time_steps_ = ceil(max_experiment_time_ / time_step_);
+
+    emit updateFrameInfo();
+  }
+
+  cv::Point QNode::toImage(const cv::Vec2f& pt) {
+    nav_msgs::MapMetaData info;
+    mapper_->getMapInfo(info);
+
+    cv::Point image_loc;
+    image_loc.x = (pt[0] - info.origin.position.x) / info.resolution;
+    image_loc.y = (pt[1] - info.origin.position.y) / info.resolution;
+    return image_loc;
   }
 
   void QNode::run() {
