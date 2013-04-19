@@ -89,6 +89,8 @@ namespace bwi_exp1 {
 
   void computeOrderings(const ExperimentCollection& ec,
       std::vector< std::vector<std::string> >& orderings); 
+
+  Experiment& getExperiment(ExperimentCollection& ec, size_t idx);
   
 } /* bwi_exp1 */
 

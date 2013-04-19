@@ -59,7 +59,7 @@ namespace bwi_exp1_visualizer {
           QString(qnode.experiment_box_strings_[i].c_str()));
     }
     ui.experimentBox->setCurrentIndex(0);
-    for (size_t i = 0; i < qnode.experiment_box_strings_.size(); ++i) {
+    for (size_t i = 0; i < qnode.user_box_strings_.size(); ++i) {
       ui.userBox->insertItem(i, 
           QString(qnode.user_box_strings_[i].c_str()));
     }

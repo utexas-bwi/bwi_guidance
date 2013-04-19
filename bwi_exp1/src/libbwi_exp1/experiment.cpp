@@ -23,6 +23,13 @@ namespace bwi_exp1 {
       node["path"][i] >> path_point;
       exp.path.push_back(path_point);
     }
+    exp.extra_robots.clear();
+    for (size_t i = 0; i < node["extra_robots"].size(); ++i) {
+      ExperimentLocation extra_robot;
+      node["extra_robots"][i]["loc_x"] >> extra_robot.x;
+      node["extra_robots"][i]["loc_y"] >> extra_robot.y;
+      exp.extra_robots.push_back(extra_robot);
+    }
   }
 
   void operator >> (const YAML::Node& node, ExperimentGroup& eg) {
@@ -115,6 +122,21 @@ namespace bwi_exp1 {
     } while (std::next_permutation(randomly_ordered_groups.begin(), 
           randomly_ordered_groups.end()));
 
+  }
+
+  Experiment& getExperiment(ExperimentCollection& ec, size_t idx) {
+    size_t count = 0;
+    for (size_t i = 0; i < ec.experiments.size(); ++i) {
+      ExperimentGroup& eg = ec.experiments[i];
+      for (size_t j = 0; j < eg.experiments.size(); ++j) {
+        if (count == idx) {
+          return eg.experiments[j];
+        }
+        count++;
+      }
+    }
+    // Should not get here
+    return ec.experiments[0].experiments[0];
   }
 
 } /* bwi_exp1 */

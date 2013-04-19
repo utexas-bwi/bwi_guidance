@@ -140,6 +140,7 @@ namespace bwi_exp1_visualizer {
 
   void QNode::on_experimentBox_currentIndexChanged(int index) {
     current_experiment_index_ = index;
+    current_time_step_ = 0;
     updateFrame(current_time_step_);
   }
 
@@ -152,6 +153,48 @@ namespace bwi_exp1_visualizer {
 
     // Draw image
     mapper_->drawMap(generated_image_);
+    
+    // mark the start and goal locations
+    bwi_exp1::Experiment& exp = 
+      bwi_exp1::getExperiment(experiments_, current_experiment_index_);
+    cv::Vec2f start_loc(exp.start_loc.x, exp.start_loc.y);
+    cv::Vec2f goal_loc(exp.ball_loc.x, exp.ball_loc.y);
+    cv::circle(generated_image_, toImage(start_loc), 5, cv::Scalar(0,0,255),3);
+    cv::circle(generated_image_, toImage(goal_loc), 5, cv::Scalar(128,255,128),3);
+
+    // mark the path
+    cv::Point prev_point_loc;
+    //std::cout << exp.path.size() << std::endl;
+    for (size_t i = 0; i < exp.path.size(); ++i) {
+      //std::cout << "in here";
+      topological_mapper::Graph::vertex_descriptor vd = 
+          boost::vertex(exp.path[i].graph_id, graph_);
+      cv::Point point_loc(graph_[vd].location.x, graph_[vd].location.y);
+      if (i > 0) {
+        cv::line(generated_image_,
+            point_loc,
+            prev_point_loc,
+            cv::Scalar(0,0,0),
+            2);
+      }
+      if (exp.path[i].robot_present) {
+        cv::circle(generated_image_, point_loc, 5, cv::Scalar(128,255,128),-1);
+        cv::circle(generated_image_, point_loc, 7, cv::Scalar(255,0,0),3);
+      } else {
+        cv::circle(generated_image_, point_loc, 5, cv::Scalar(0,0,0),-1);
+      }
+      prev_point_loc = point_loc;
+    }
+
+    // mark the extra robots
+    for (size_t i = 0; i < exp.extra_robots.size(); ++i) {
+      cv::Vec2f point_loc(exp.extra_robots[i].x, exp.extra_robots[i].y);
+      cv::circle(generated_image_, 
+          toImage(point_loc), 5, cv::Scalar(128,255,128),-1);
+      cv::circle(generated_image_, 
+          toImage(point_loc), 7, cv::Scalar(255,0,0),3);
+    }
+
     current_experiment_time_ = current_time_step * time_step_;
     std::vector<size_t>& users_in_frame = 
         user_box_to_idx_map_[current_user_index_];
@@ -169,11 +212,24 @@ namespace bwi_exp1_visualizer {
         cv::line(generated_image_,
             toImage(prev_pt),
             toImage(curr_pt),
-            cv::Scalar(users_[u].color[0], users_[u].color[1], users_[u].color[2]),
+            cv::Scalar(
+                users_[users_in_frame[u]].color[0], 
+                users_[users_in_frame[u]].color[1], 
+                users_[users_in_frame[u]].color[2]),
             3);
       }
       if (path.size() != 0) { // Data did not load properly
         max_experiment_time_ = std::max(max_experiment_time_, path[path.size() - 1].seconds_since_start);
+        if (path[path.size() - 1].seconds_since_start <= current_experiment_time_) {
+          cv::Vec2f curr_pt(path[path.size() - 1].location.x, path[path.size() - 1].location.y); 
+          cv::circle(generated_image_,
+              toImage(curr_pt), 10,
+              cv::Scalar(
+                  users_[users_in_frame[u]].color[0], 
+                  users_[users_in_frame[u]].color[1], 
+                  users_[users_in_frame[u]].color[2]),
+              -1);
+        }
       }
     }
 
