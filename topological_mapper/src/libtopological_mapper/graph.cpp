@@ -35,9 +35,11 @@
  *
  **/
 
-#include <topological_mapper/graph.h>
 #include <yaml-cpp/yaml.h>
 #include <fstream>
+
+#include <topological_mapper/graph.h>
+#include <topological_mapper/map_utils.h>
 
 namespace topological_mapper {
 
@@ -98,11 +100,7 @@ namespace topological_mapper {
     for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
       out << YAML::BeginMap;
       Point2f pxl_loc = graph[*vi].location;
-      Point2f real_loc;
-      real_loc.x = info.origin.position.x + 
-          info.resolution * pxl_loc.x;
-      real_loc.y = info.origin.position.y + 
-          info.resolution * pxl_loc.y;
+      Point2f real_loc = toMap(pxl_loc, info);
       out << YAML::Key << "id" << YAML::Value << count;
       out << YAML::Key << "x" << YAML::Value << real_loc.x;
       out << YAML::Key << "y" << YAML::Value << real_loc.y;
@@ -158,10 +156,7 @@ namespace topological_mapper {
       Point2f real_loc, pxl_loc;
       real_loc.x = vertices[i].first;
       real_loc.y = vertices[i].second;
-      pxl_loc.x = (real_loc.x - info.origin.position.x) / 
-          info.resolution;
-      pxl_loc.y = (real_loc.y - info.origin.position.y) / 
-          info.resolution;
+      pxl_loc = toGrid(real_loc, info);
       graph[vi].location = pxl_loc;
       graph[vi].pixels = 0; // Not saved to file as of yet
     }
