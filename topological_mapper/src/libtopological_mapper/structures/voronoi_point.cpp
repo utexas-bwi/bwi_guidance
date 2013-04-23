@@ -80,8 +80,6 @@ namespace topological_mapper {
         break;
       }
 
-      uint32_t xi = basis_points[i].x;
-      uint32_t yi = basis_points[i].y;
       std::vector<size_t>::iterator erase_iterator = 
         elements_to_erase.begin();
 
@@ -98,9 +96,7 @@ namespace topological_mapper {
         }
 
         // See if basis point i is too close to basis point j. retain j
-        uint32_t xj = basis_points[j].x;
-        uint32_t yj = basis_points[j].y;
-        float distance = sqrt((xi - xj)*(xi - xj) + (yi - yj) *(yi - yj));
+        float distance = cv::norm(basis_points[i] - basis_points[j]);
         if (distance < 2 * threshold) {
           elements_to_erase.push_back(i); // does not affect erase_iterator
           break;

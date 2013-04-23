@@ -48,6 +48,10 @@ namespace topological_mapper {
   class VoronoiPoint : public Point2d {
 
     public:
+      VoronoiPoint() : Point2d() {}
+      VoronoiPoint(int x, int y) : Point2d(x, y) {}
+      VoronoiPoint(const Point2d& pt) : Point2d(pt) {}
+
       std::vector<Point2d> basis_points;
 
       /** /brief minimum clearance to a basis point - used while computing 

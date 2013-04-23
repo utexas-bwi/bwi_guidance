@@ -38,6 +38,7 @@
 #ifndef POINT_71CJ9X0J
 #define POINT_71CJ9X0J
 
+#include <opencv/cv.h>
 #include <stdint.h>
 
 namespace topological_mapper {
@@ -47,12 +48,17 @@ namespace topological_mapper {
    * \brief A simple class to hold a 2D pixel point along with distance to a 
    *        reference position
    */
-  struct Point2d {
-    uint32_t x;
-    uint32_t y;
-    float distance_from_ref;
+  class Point2d : public cv::Point {
+    public:
+      Point2d() : cv::Point() {}
+      Point2d(int x, int y) : cv::Point(x, y) {}
+      Point2d(const Point2d& pt) : cv::Point(pt.x, pt.y), 
+          distance_from_ref(pt.distance_from_ref) {}
+      Point2d(const cv::Point& pt) : cv::Point(pt) {}
+      /* Variables */
+      float distance_from_ref;
+      
   }; /* Point2d */
-  
 
   /**
    * \class Point2dDistanceComp
@@ -73,11 +79,7 @@ namespace topological_mapper {
    * \class Point2f
    * \brief A floating point 2D point
    */
-  struct Point2f {
-    float x;
-    float y;
-  }; /* Point2f */
-
+  typedef cv::Point2f Point2f;
   
 } /* topological_mapper */
 

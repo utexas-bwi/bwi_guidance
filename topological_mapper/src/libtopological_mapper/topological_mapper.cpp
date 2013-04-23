@@ -184,9 +184,7 @@ namespace topological_mapper {
         // Compute distance of jth point to ith point - 
         // don't compare if too far away
         VoronoiPoint &vpj = voronoi_points_[j];
-        float distance = 
-          sqrt((vpj.x - vpi.x) * (vpj.x - vpi.x) + 
-              (vpj.y - vpi.y) * (vpj.y - vpi.y));
+        float distance = cv::norm(vpj - vpi); 
         if (distance > pixel_critical_epsilon) {
           continue;
         }
@@ -222,9 +220,7 @@ namespace topological_mapper {
 
         // Check if in same neighbourhood
         VoronoiPoint &vpj = critical_points_[j];
-        float distance = 
-          sqrt((vpj.x - vpi.x) * (vpj.x - vpi.x) + 
-              (vpj.y - vpi.y) * (vpj.y - vpi.y));
+        float distance = norm(vpj - vpi); 
         if (distance > pixel_critical_epsilon) {
           continue;
         }
@@ -256,11 +252,11 @@ namespace topological_mapper {
     for (size_t i = 0; i < critical_points_.size(); ++i) {
       VoronoiPoint &cp = critical_points_[i];
       float theta0 = 
-        atan2((int32_t)cp.basis_points[0].y - (int32_t)cp.y, 
-              (int32_t)cp.basis_points[0].x - (int32_t)cp.x);
+        atan2((cp.basis_points[0] - cp).y,
+              (cp.basis_points[0] - cp).x);
       float theta1 = 
-        atan2((int32_t)cp.basis_points[1].y - (int32_t)cp.y, 
-              (int32_t)cp.basis_points[1].x - (int32_t)cp.x);
+        atan2((cp.basis_points[1] - cp).y,
+              (cp.basis_points[1] - cp).x);
       float thetadiff = fabs(theta1 - theta0);
 
       // We don't need to worry about wrapping here due known range of atan2
@@ -360,9 +356,8 @@ namespace topological_mapper {
               vj = boost::vertex(j, point_graph_);
               Graph::edge_descriptor e; bool b;
               boost::tie(e,b) = boost::add_edge(vi, vj, point_graph_);
-              point_graph_[e].weight = 
-                sqrt(pow(point_graph_[vi].location.x - point_graph_[vj].location.x, 2) +
-                    pow(point_graph_[vi].location.y - point_graph_[vj].location.y, 2));
+              point_graph_[e].weight =
+                cv::norm(point_graph_[vi].location - point_graph_[vj].location);
             }
           }
         }
@@ -405,8 +400,7 @@ namespace topological_mapper {
         Graph::edge_descriptor e; bool b;
         boost::tie(e,b) = boost::add_edge(vi, vj, region_graph_);
         region_graph_[e].weight = 
-          sqrt(pow(region_graph_[vi].location.x - region_graph_[vj].location.x, 2) +
-              pow(region_graph_[vi].location.y - region_graph_[vj].location.y, 2));
+            cv::norm(region_graph_[vi].location - region_graph_[vj].location);
       }
     }
 

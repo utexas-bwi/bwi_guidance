@@ -59,7 +59,7 @@ namespace topological_mapper {
     //std::cout << start.x << " " << start.y << std::endl;
 
     // Termination crit
-    if (start.x == goal.x && start.y == goal.y) {
+    if (start == goal) {
       return true;
     }
     if (depth == 0) {
@@ -97,16 +97,15 @@ namespace topological_mapper {
       std::vector<Point2d> &neighbours, bool in_obstacle_space) {
 
     size_t neighbour_count = 8;
-    int32_t x_offset[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-    int32_t y_offset[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+    uint32_t x_offset[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+    uint32_t y_offset[] = {-1, -1, -1, 0, 0, 1, 1, 1};
     neighbours.clear();
     for (size_t i = 0; i < neighbour_count; ++i) {
       // Check if neighbours are still on map
-      Point2d p;
-      p.x = (int)from.x + x_offset[i];
-      p.y = (int)from.y + y_offset[i];
+      Point2d p = from + Point2d(x_offset[i],y_offset[i]);
       // covers negative case as well (unsigned)
-      if (p.x >= map_.info.width || p.y >= map_.info.height) { 
+      if (p.x >= (int) map_.info.width || p.y >= (int) map_.info.height ||
+          p.x <= 0 || p.y <= 0) { 
         continue;
       }
       uint32_t map_idx = MAP_IDX(map_.info.width, p.x, p.y);
@@ -114,8 +113,7 @@ namespace topological_mapper {
           (!in_obstacle_space && map_.data[map_idx] != 0)) {
         continue;
       }
-      p.distance_from_ref = 
-        sqrt((p.x - goal.x)*(p.x - goal.x) + (p.y - goal.y)*(p.y - goal.y));
+      p.distance_from_ref = norm(p - goal); 
       neighbours.push_back(p);
     }
     std::sort(neighbours.begin(), neighbours.end(), Point2dDistanceComp());

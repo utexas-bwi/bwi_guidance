@@ -66,15 +66,15 @@ namespace topological_mapper {
     for (uint32_t j = 0; j < inflated_map_.info.height; j++) {
       for (uint32_t i = 0; i < inflated_map_.info.width; i++) {
 
+        Point2d center_pt(i, j);
+
         // Check if this location is too close to a given obstacle
         uint32_t map_idx = MAP_IDX(inflated_map_.info.width, i, j);
         if (inflated_map_.data[map_idx] != 0) {
           continue;
         }
 
-        VoronoiPoint vp;
-        vp.x = i;
-        vp.y = j;
+        VoronoiPoint vp(i, j);
 
         // Use the boxes to find obstacles
         for (uint32_t box = pixel_threshold; box < max_dimension; ++box) {
@@ -100,14 +100,8 @@ namespace topological_mapper {
               uint32_t map_idx_box = 
                 MAP_IDX(inflated_map_.info.width, i_box, j_box);
               if (map_resp_.map.data[map_idx_box] != 0) {
-                Point2d p;
-                p.x = i_box;
-                p.y = j_box;
-                p.distance_from_ref = 
-                  sqrt(
-                      ((int32_t)j_box - j) * ((int32_t)j_box - j) +
-                      ((int32_t)i_box - i) * ((int32_t)i_box - i)
-                      );
+                Point2d p(i_box, j_box);
+                p.distance_from_ref = cv::norm(p - center_pt);
                 obstacles.push_back(p);
               }
             }
@@ -120,14 +114,8 @@ namespace topological_mapper {
               uint32_t map_idx_box = 
                 MAP_IDX(inflated_map_.info.width, i_box, j_box);
               if (map_resp_.map.data[map_idx_box] != 0) {
-                Point2d p;
-                p.x = i_box;
-                p.y = j_box;
-                p.distance_from_ref = 
-                  sqrt(
-                      ((int32_t)j_box - j) * ((int32_t)j_box - j) +
-                      ((int32_t)i_box - i) * ((int32_t)i_box - i)
-                      );
+                Point2d p(i_box, j_box);
+                p.distance_from_ref = cv::norm(p - center_pt);
                 obstacles.push_back(p);
               }
             }

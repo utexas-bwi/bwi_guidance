@@ -174,8 +174,7 @@ namespace topological_mapper {
         Graph::edge_descriptor e; bool b;
         boost::tie(e,b) = boost::add_edge(vi, vj, graph);
         graph[e].weight = 
-            sqrt(pow(graph[vi].location.x - graph[vj].location.x, 2) +
-                 pow(graph[vi].location.y - graph[vj].location.y, 2));
+          cv::norm(graph[vi].location - graph[vj].location);
       }
     }
   }
