@@ -40,7 +40,9 @@
 #include <ros/ros.h>
 #include <topological_mapper/map_loader.h>
 #include <topological_mapper/map_inflator.h>
+#include <topological_mapper/map_utils.h>
 #include <topological_mapper/graph.h>
+#include <topological_mapper/point_utils.h>
 
 #include <bwi_msgs/PositionRobot.h>
 
@@ -48,6 +50,7 @@
 
 ros::ServiceServer position_server;
 std::string map_file, graph_file;
+double search_distance;
 topological_mapper::Graph graph;
 nav_msgs::MapMetaData info;
 nav_msgs::OccupancyGrid map;
@@ -56,82 +59,57 @@ double robot_radius;
 double robot_padding;
 boost::shared_ptr<topological_mapper::MapLoader> mapper;
 
-cv::Vec2f toPxl(const cv::Vec2f &pt) {
-  return cv::Vec2f(
-      (pt[0] - info.origin.position.x) / info.resolution, 
-      (pt[1] - info.origin.position.y) / info.resolution);
-}
-
-cv::Vec2f toMap(const cv::Vec2f &pt) { 
-  return cv::Vec2f(
-      info.origin.position.x + info.resolution * pt[0], 
-      info.origin.position.y + info.resolution * pt[1]);
-}
-
-cv::Vec2f getLocationFromGraphId(int idx) {
-  topological_mapper::Graph::vertex_descriptor i = boost::vertex(idx, graph);
-  return cv::Vec2f(graph[i].location.x, graph[i].location.y);
-}
-
-cv::Vec2f getLocationFromMapPose(const geometry_msgs::Point32 &pt) {
-  return toPxl(cv::Vec2f(pt.x, pt.y)); 
-}
-
-float minimumDistanceToLineSegment(cv::Vec2f v, cv::Vec2f w, cv::Vec2f p) {
-  // Return minimum distance between line segment vw and point p
-  const float l2 = cv::norm(w-v);  // i.e. |w-v| -  avoid a sqrt
-  if (l2 == 0.0) return cv::norm(p-v);   // v == w case
-  // Consider the line extending the segment, parameterized as v + t (w - v).
-  // We find projection of point p onto the line. 
-  // It falls where t = [(p-v) . (w-v)] / |w-v|^2
-  const float t = (p - v).dot(w - v) / (l2 * l2);
-  if (t < 0.0) return cv::norm(p - v);       // Beyond the 'v' end of the segment
-  else if (t > 1.0) return cv::norm(p - w);  // Beyond the 'w' end of the segment
-  const cv::Vec2f projection = v + t * (w - v);  // Projection falls on the segment
-  return cv::norm(p - projection);
+topological_mapper::Point2f getLocationFromMapPose(
+    const geometry_msgs::Point32 &pt) {
+  return topological_mapper::toGrid(topological_mapper::Point2f(pt.x, pt.y), 
+      info); 
 }
 
 bool position(bwi_msgs::PositionRobot::Request &req,
     bwi_msgs::PositionRobot::Response &resp) {
 
-  cv::Vec2f from(0,0), at(0,0), to(0,0);
+  topological_mapper::Point2f from(0,0), at(0,0), to(0,0);
   if (req.from_id != -1) {
-    from = getLocationFromGraphId(req.from_id);
+    from = topological_mapper::getLocationFromGraphId(req.from_id, graph);
   } else {
     from = getLocationFromMapPose(req.from_pt);
   }
-  cv::Vec2f from_map = toMap(from);
+  topological_mapper::Point2f from_map = 
+    topological_mapper::toMap(from, info);
 
-  at = getLocationFromGraphId(req.at_id);
-  cv::Vec2f at_map = toMap(at);
+  at = topological_mapper::getLocationFromGraphId(req.at_id, graph);
+  topological_mapper::Point2f at_map = 
+    topological_mapper::toMap(at, info);
 
   if (req.to_id != -1) {
-    to = getLocationFromGraphId(req.to_id);
+    to = topological_mapper::getLocationFromGraphId(req.to_id, graph);
   } else {
     to = getLocationFromMapPose(req.to_pt);
   }
 
   // Figure out if you want to stay on the outside angle or not
   bool use_outside_angle = true;
-  float yaw1 = -atan2(to[1] - at[1], to[0] - at[0]);
-  float yaw2 = -atan2(from[1] - at[1], from[0] - at[0]);
+  float yaw1 = -atan2((to - at).y, (to - at).x);
+  float yaw2 = -atan2((from - at).y, (from - at).x);
 
-  cv::Vec2f yaw1_pt(cosf(yaw1),sinf(yaw1));
-  cv::Vec2f yaw2_pt(cosf(yaw2),sinf(yaw2));
-  cv::Vec2f yawmid_pt = (yaw1_pt + yaw2_pt) / 2;
+  topological_mapper::Point2f yaw1_pt(cosf(yaw1),sinf(yaw1));
+  topological_mapper::Point2f yaw2_pt(cosf(yaw2),sinf(yaw2));
+  topological_mapper::Point2f yawmid_pt = 0.5 * (yaw1_pt + yaw2_pt);
 
   if (cv::norm(yawmid_pt) < 0.1) {
     use_outside_angle = false;
   }
 
-  float y_test = at[1] - 0.75 / info.resolution;
+  float y_test = at.y - search_distance / info.resolution;
   float location_fitness = -1;
-  cv::Vec2f test_coords;
-  cv::Vec2f map_coords;
+  topological_mapper::Point2f test_coords;
+  topological_mapper::Point2f map_coords;
 
-  while(y_test < at[1] + 0.75 / info.resolution) {
-    float x_test = at[0] - 0.75 / info.resolution;
-    while (x_test < at[0] + 0.75 / info.resolution) {
+  while(y_test < at.y + search_distance / info.resolution) {
+    float x_test = at.x - search_distance / info.resolution;
+    while (x_test < at.x + search_distance / info.resolution) {
+
+      topological_mapper::Point2f test(x_test, y_test);
       
       // Check if x_test, y_test is free.
       size_t map_idx = MAP_IDX(info.width, x_test, y_test);
@@ -142,24 +120,25 @@ bool position(bwi_msgs::PositionRobot::Request &req,
 
       // Check if it is on the outside or not
       if (use_outside_angle) {
-        if ((from + to - 2*at).dot(cv::Vec2f(x_test, y_test) - at) > 0) {
+        if ((from + to - 2 * at).dot(test - at) > 0) {
           x_test++;
           continue;
         }
       }
 
-      cv::Vec2f test_loc(x_test, y_test);
+      topological_mapper::Point2f test_loc(x_test, y_test);
 
-      float dist1 = minimumDistanceToLineSegment(from, at, test_loc);
-      float dist2 = minimumDistanceToLineSegment(at, to, test_loc);
-      //std::cout << x_test << " " << y_test << " " << dist1 << " " << dist2 << std::endl;
+      float dist1 = 
+        topological_mapper::minimumDistanceToLineSegment(from, at, test_loc);
+      float dist2 = 
+        topological_mapper::minimumDistanceToLineSegment(at, to, test_loc);
       float fitness = std::min(dist1, dist2);
 
       if (fitness > location_fitness) {
         test_coords = test_loc;
-        map_coords = toMap(test_loc);
-        resp.loc.x = map_coords[0];
-        resp.loc.y = map_coords[1];
+        map_coords = topological_mapper::toMap(test_loc, info);
+        resp.loc.x = map_coords.x;
+        resp.loc.y = map_coords.y;
         location_fitness = fitness;
       }
 
@@ -169,29 +148,27 @@ bool position(bwi_msgs::PositionRobot::Request &req,
   }
 
   // Calculate yaw
-  yaw1 = atan2(resp.loc.y - at_map[1], resp.loc.x - at_map[0]); 
-  yaw2 = atan2(resp.loc.y - from_map[1], resp.loc.x - from_map[0]);
+  yaw1 = atan2(resp.loc.y - at_map.y, resp.loc.x - at_map.x); 
+  yaw2 = atan2(resp.loc.y - from_map.y, resp.loc.x - from_map.x);
 
-  yaw1_pt = cv::Vec2f(cosf(yaw1),sinf(yaw1));
-  yaw2_pt = cv::Vec2f(cosf(yaw2),sinf(yaw2));
-  yawmid_pt = (yaw1_pt + yaw2_pt) / 2;
+  yaw1_pt = topological_mapper::Point2f(cosf(yaw1),sinf(yaw1));
+  yaw2_pt = topological_mapper::Point2f(cosf(yaw2),sinf(yaw2));
+  yawmid_pt = 0.5 * (yaw1_pt + yaw2_pt);
 
-  /* if (cv::norm(yawmid_pt) < 0.1) { */
-    resp.yaw = atan2f(yawmid_pt[1], yawmid_pt[0]); 
-  // } else {
-  //   resp.yaw = yaw1;
-  // }
+  resp.yaw = atan2f(yawmid_pt.y, yawmid_pt.x); 
 
   if (debug) {
     cv::Mat image;
     mapper->drawMap(image, map);
 
-    cv::circle(image, cv::Point(from[0],from[1]), 5, cv::Scalar(255, 0, 0), -1);
-    cv::circle(image, cv::Point(at[0],at[1]), 5, cv::Scalar(255, 0, 255), 2);
-    cv::circle(image, cv::Point(to[0],to[1]), 5, cv::Scalar(0, 0, 255), -1);
-    cv::circle(image, cv::Point(test_coords[0],test_coords[1]), 5, cv::Scalar(0, 255, 0), 2);
+    cv::circle(image, from, 5, cv::Scalar(255, 0, 0), -1);
+    cv::circle(image, at, 5, cv::Scalar(255, 0, 255), 2);
+    cv::circle(image, to, 5, cv::Scalar(0, 0, 255), -1);
+    cv::circle(image, test_coords, 5, cv::Scalar(0, 255, 0), 2);
 
-    cv::circle(image, cv::Point(test_coords[0],test_coords[1]) + cv::Point(20*cosf(resp.yaw),20*sinf(resp.yaw)), 3, cv::Scalar(0, 255, 0), -1);
+    cv::circle(image, test_coords + 
+        topological_mapper::Point2f(20 * cosf(resp.yaw), 20 * sinf(resp.yaw)), 
+        3, cv::Scalar(0, 255, 0), -1);
 
     cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
     cv::imshow("Display window", image);
@@ -222,6 +199,7 @@ int main(int argc, char *argv[]) {
   ros::param::param<bool>("~debug", debug, false);
   ros::param::param<double>("~robot_radius", robot_radius, 0.25);
   ros::param::param<double>("~robot_padding", robot_padding, 0.1);
+  ros::param::param<double>("~search_distance", search_distance, 0.75);
   ROS_INFO("Inflating map by %f.", robot_radius + robot_padding);
 
   nav_msgs::OccupancyGrid uninflated_map;

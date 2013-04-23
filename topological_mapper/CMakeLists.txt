@@ -52,6 +52,7 @@ rosbuild_add_library(topological_mapper
   src/libtopological_mapper/voronoi_approximator.cpp
   src/libtopological_mapper/topological_mapper.cpp
   src/libtopological_mapper/graph.cpp
+  src/libtopological_mapper/point_utils.cpp
   src/libtopological_mapper/structures/point.cpp
   src/libtopological_mapper/structures/voronoi_point.cpp
   )

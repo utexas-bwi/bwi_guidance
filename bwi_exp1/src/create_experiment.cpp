@@ -38,6 +38,8 @@
 
 #include <topological_mapper/topological_mapper.h>
 #include <topological_mapper/map_inflator.h>
+#include <topological_mapper/map_utils.h>
+#include <topological_mapper/point_utils.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -58,29 +60,6 @@ cv::Point mouseover_pt;
 bool increment_state = false;
 bool new_robot_available = false;
 int highlight_idx = -1;
-
-topological_mapper::Point2f toMap(const cv::Point &pt, 
-    const nav_msgs::MapMetaData& info) {
-
-  topological_mapper::Point2f real_loc;
-  real_loc.x = info.origin.position.x + info.resolution * pt.x;
-  real_loc.y = info.origin.position.y + info.resolution * pt.y;
-  return real_loc;
-}
-
-float minimumDistanceToLineSegment(cv::Vec2f v, cv::Vec2f w, cv::Vec2f p) {
-  // Return minimum distance between line segment vw and point p
-  const float l2 = cv::norm(w-v);  // i.e. |w-v| -  avoid a sqrt
-  if (l2 == 0.0) return cv::norm(p-v);   // v == w case
-  // Consider the line extending the segment, parameterized as v + t (w - v).
-  // We find projection of point p onto the line. 
-  // It falls where t = [(p-v) . (w-v)] / |w-v|^2
-  const float t = (p - v).dot(w - v) / (l2 * l2);
-  if (t < 0.0) return cv::norm(p - v);       // Beyond the 'v' end of the segment
-  else if (t > 1.0) return cv::norm(p - w);  // Beyond the 'w' end of the segment
-  const cv::Vec2f projection = v + t * (w - v);  // Projection falls on the segment
-  return cv::norm(p - projection);
-}
 
 void findStartAndGoalIdx(cv::Point start_pxl, cv::Point goal_pxl, 
     topological_mapper::Graph &graph, size_t &start_idx, size_t &goal_idx) {
@@ -104,7 +83,8 @@ void findStartAndGoalIdx(cv::Point start_pxl, cv::Point goal_pxl,
       cv::Vec2f loc2(graph[*ai].location.x, graph[*ai].location.y);
 
       // Improve start idx as necessary
-      float start_distance = minimumDistanceToLineSegment(loc, loc2, start);
+      float start_distance = 
+          topological_mapper::minimumDistanceToLineSegment(loc, loc2, start);
       if (start_distance < start_fitness) {
         start_fitness = start_distance;
         if (cv::norm(loc - goal) < cv::norm(loc2 - goal)) {
@@ -115,7 +95,8 @@ void findStartAndGoalIdx(cv::Point start_pxl, cv::Point goal_pxl,
       }
 
       // Improve goal idx as necessary
-      float goal_distance = minimumDistanceToLineSegment(loc, loc2, goal);
+      float goal_distance = 
+          topological_mapper::minimumDistanceToLineSegment(loc, loc2, goal);
       if (goal_distance < goal_fitness) {
         goal_fitness = goal_distance;
         if (cv::norm(loc - start) < cv::norm(loc2 - start)) {
@@ -311,7 +292,8 @@ int main(int argc, char** argv) {
     }
 
     if (increment_state) {
-      topological_mapper::Point2f map_pt = toMap(clicked_pt, info);
+      topological_mapper::Point2f map_pt = 
+          topological_mapper::toMap(clicked_pt, info);
       switch(global_state) {
         case START_LOC:
           map_start = map_pt; pxl_start = clicked_pt;
@@ -379,7 +361,8 @@ int main(int argc, char** argv) {
           }
         }
       } else if (global_state == EXTRA_ROBOT_LOC) {
-        topological_mapper::Point2f map_pt = toMap(clicked_pt, info);
+        topological_mapper::Point2f map_pt = 
+            topological_mapper::toMap(clicked_pt, info);
         extra_robot_pxls.push_back(clicked_pt);
         extra_robot_locations.push_back(map_pt);
         global_state = EXTRA_ROBOT_YAW;

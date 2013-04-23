@@ -1,6 +1,6 @@
 /**
- * \file  graph.h
- * \brief  Contains some simple data structures for holding the graph
+ * \file  point_utils.h
+ * \brief  Some helpful utilities while dealing with points
  *
  * \author  Piyush Khandelwal (piyushk@cs.utexas.edu)
  *
@@ -31,54 +31,20 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  *
- * $ Id: 03/04/2013 04:15:26 PM piyushk $
+ * $ Id: 04/23/2013 04:28:04 PM piyushk $
  *
  **/
 
-#ifndef GRAPH_E8QGZKSM
-#define GRAPH_E8QGZKSM
+#ifndef POINT_UTILS_JIEAIBJ2
+#define POINT_UTILS_JIEAIBJ2
 
-#include <boost/lexical_cast.hpp>
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/labeled_graph.hpp>
 #include <topological_mapper/structures/point.h>
-
-#include <opencv/cv.h>
-#include <nav_msgs/MapMetaData.h>
 
 namespace topological_mapper {
 
-  // Graph
-  struct Vertex {
-    Point2f location;
-    double pixels;
-  };
-
-  // Edge
-  struct Edge {
-    double weight;
-  };
-
-  //Define the graph using those classes
-  typedef boost::adjacency_list<
-    boost::vecS, boost::vecS, boost::undirectedS, Vertex, Edge
-  > Graph;
-
-  /**
-   * \brief   draws the given graph onto an image starting at 
-   *          (orig_x, orig_y)
-   */
-  void drawGraph(cv::Mat &image, const Graph& graph,
-      uint32_t orig_x = 0, uint32_t orig_y = 0, bool put_text = true);
-
-  void writeGraphToFile(const std::string &filename, 
-      const Graph& graph, const nav_msgs::MapMetaData& info); 
-
-  void readGraphFromFile(const std::string &filename, 
-      const nav_msgs::MapMetaData& info, Graph& graph); 
-
-  Point2f getLocationFromGraphId(int idx, const Graph& graph);
+  /* minimum distance for point p from line segment defined by v and w */
+  float minimumDistanceToLineSegment(Point2f v, Point2f w, Point2f p);
 
 } /* topological_mapper */
 
-#endif /* end of include guard: GRAPH_E8QGZKSM */
+#endif /* end of include guard: POINT_UTILS_JIEAIBJ2 */

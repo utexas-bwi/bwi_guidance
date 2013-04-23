@@ -1,6 +1,5 @@
 /**
- * \file  graph.h
- * \brief  Contains some simple data structures for holding the graph
+ * \file  point_utils.cpp
  *
  * \author  Piyush Khandelwal (piyushk@cs.utexas.edu)
  *
@@ -31,54 +30,27 @@
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  *
- * $ Id: 03/04/2013 04:15:26 PM piyushk $
+ * $ Id: 04/23/2013 04:32:54 PM piyushk $
  *
  **/
 
-#ifndef GRAPH_E8QGZKSM
-#define GRAPH_E8QGZKSM
-
-#include <boost/lexical_cast.hpp>
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/labeled_graph.hpp>
-#include <topological_mapper/structures/point.h>
-
-#include <opencv/cv.h>
-#include <nav_msgs/MapMetaData.h>
+#include <topological_mapper/point_utils.h>
 
 namespace topological_mapper {
 
-  // Graph
-  struct Vertex {
-    Point2f location;
-    double pixels;
-  };
-
-  // Edge
-  struct Edge {
-    double weight;
-  };
-
-  //Define the graph using those classes
-  typedef boost::adjacency_list<
-    boost::vecS, boost::vecS, boost::undirectedS, Vertex, Edge
-  > Graph;
-
-  /**
-   * \brief   draws the given graph onto an image starting at 
-   *          (orig_x, orig_y)
-   */
-  void drawGraph(cv::Mat &image, const Graph& graph,
-      uint32_t orig_x = 0, uint32_t orig_y = 0, bool put_text = true);
-
-  void writeGraphToFile(const std::string &filename, 
-      const Graph& graph, const nav_msgs::MapMetaData& info); 
-
-  void readGraphFromFile(const std::string &filename, 
-      const nav_msgs::MapMetaData& info, Graph& graph); 
-
-  Point2f getLocationFromGraphId(int idx, const Graph& graph);
-
+  /* http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment */
+  float minimumDistanceToLineSegment(Point2f v, Point2f w, Point2f p) {
+    // Return minimum distance between line segment vw and point p
+    const float l2 = cv::norm(w-v);  
+    if (l2 == 0.0) return cv::norm(p-v);   // v == w case
+    // Consider the line extending the segment, parameterized as v + t (w - v).
+    // We find projection of point p onto the line. 
+    // It falls where t = [(p-v) . (w-v)] / |w-v|^2
+    const float t = (p - v).dot(w - v) / (l2 * l2);
+    if (t < 0.0) return cv::norm(p - v);  // Beyond the 'v' end 
+    else if (t > 1.0) return cv::norm(p - w);  // Beyond the 'w' 
+    const topological_mapper::Point2f projection = v + t * (w - v); 
+    return cv::norm(p - projection);
+  }
+  
 } /* topological_mapper */
-
-#endif /* end of include guard: GRAPH_E8QGZKSM */
