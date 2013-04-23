@@ -36,7 +36,7 @@
  **/
 
 #include <topological_mapper/connected_components.h>
-#include <topological_mapper/map_loader.h> // for MAP_IDX
+#include <topological_mapper/map_utils.h>
 #include <cvblobs/BlobResult.h>
 
 namespace topological_mapper {

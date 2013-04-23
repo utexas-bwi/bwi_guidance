@@ -36,7 +36,7 @@
  **/
 
 #include <topological_mapper/directed_dfs.h>
-#include <topological_mapper/map_loader.h> // for MAP_IDX
+#include <topological_mapper/map_utils.h>
 
 namespace topological_mapper {
 

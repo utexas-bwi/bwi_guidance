@@ -38,7 +38,9 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+
 #include <topological_mapper/voronoi_approximator.h>
+#include <topological_mapper/map_utils.h>
 
 namespace topological_mapper {
 

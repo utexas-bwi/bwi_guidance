@@ -105,11 +105,8 @@ void findStartAndGoalIdx(cv::Point start_pxl, cv::Point goal_pxl,
 
       // Improve start idx as necessary
       float start_distance = minimumDistanceToLineSegment(loc, loc2, start);
-      // std::cout << "For location: " << start << ", ls: " << loc << " " << loc2 
-      //           << " distance is: " << start_distance << std::endl;
       if (start_distance < start_fitness) {
         start_fitness = start_distance;
-        std::cout << loc << " " << cv::norm(loc - goal) << " " << loc2 << " " << cv::norm(loc2 - goal) << " " << goal << std::endl;
         if (cv::norm(loc - goal) < cv::norm(loc2 - goal)) {
           start_idx = indexmap[*vi];
         } else {
@@ -171,7 +168,7 @@ size_t getClosestIdOnGraph(const cv::Point &point,
   int count = 0;
   for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
     topological_mapper::Point2f location = graph[*vi].location;
-    if (fabs(point.x - location.x) <= 5 && fabs(point.y - location.y) <=5) {
+    if (fabs(point.x - location.x) <= 5 && fabs(point.y - location.y) <= 5) {
       return count;
     }
     count++;

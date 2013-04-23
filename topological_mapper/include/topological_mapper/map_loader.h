@@ -47,9 +47,6 @@
 #include <yaml-cpp/yaml.h>
 #include <opencv/cv.h>
 
-// compute linear index for given map coords
-#define MAP_IDX(sx, i, j) ((sx) * (j) + (i))
-
 namespace topological_mapper {
 
   /**

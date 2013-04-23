@@ -42,6 +42,7 @@
 
 #include <map_server/image_loader.h>
 #include <topological_mapper/map_loader.h>
+#include <topological_mapper/map_utils.h>
 
 namespace topological_mapper {
 

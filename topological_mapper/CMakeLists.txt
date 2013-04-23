@@ -46,6 +46,7 @@ rosbuild_add_library(topological_mapper
   src/libtopological_mapper/circle_provider.cpp 
   src/libtopological_mapper/map_inflator.cpp 
   src/libtopological_mapper/map_loader.cpp
+  src/libtopological_mapper/map_utils.cpp
   src/libtopological_mapper/directed_dfs.cpp
   src/libtopological_mapper/connected_components.cpp
   src/libtopological_mapper/voronoi_approximator.cpp

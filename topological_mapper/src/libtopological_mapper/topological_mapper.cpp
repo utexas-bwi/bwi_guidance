@@ -37,6 +37,7 @@
 
 #include <topological_mapper/topological_mapper.h>
 #include <topological_mapper/connected_components.h>
+#include <topological_mapper/map_utils.h>
 
 namespace topological_mapper {
 
