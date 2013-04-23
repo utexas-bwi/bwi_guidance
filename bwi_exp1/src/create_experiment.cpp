@@ -40,10 +40,10 @@
 #include <topological_mapper/map_inflator.h>
 #include <topological_mapper/map_utils.h>
 #include <topological_mapper/point_utils.h>
+#include <topological_mapper/graph.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <boost/graph/dijkstra_shortest_paths.hpp>
 
 enum State {
   START_LOC = 0,
@@ -142,56 +142,6 @@ void mouseCallback(int event, int x, int y, int, void*) {
   }
 }
 
-size_t getClosestIdOnGraph(const cv::Point &point, 
-    topological_mapper::Graph &graph) {
-
-  topological_mapper::Graph::vertex_iterator vi, vend;
-  int count = 0;
-  for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
-    topological_mapper::Point2f location = graph[*vi].location;
-    if (fabs(point.x - location.x) <= 5 && fabs(point.y - location.y) <= 5) {
-      return count;
-    }
-    count++;
-  }
-  return -1;
-}
-
-void getShortestPath(topological_mapper::Graph &graph, size_t start_idx,
-    size_t goal_idx, std::vector<size_t> &path_from_goal) {
-
-  // Perform Dijakstra from start_idx
-  std::vector<topological_mapper::Graph::vertex_descriptor> 
-    p(boost::num_vertices(graph));
-  std::vector<double> d(boost::num_vertices(graph));
-  topological_mapper::Graph::vertex_descriptor s = 
-    boost::vertex(start_idx, graph);
-
-  boost::property_map<topological_mapper::Graph, boost::vertex_index_t>::type 
-      indexmap = boost::get(boost::vertex_index, graph);
-  boost::property_map<
-    topological_mapper::Graph, 
-    double topological_mapper::Edge::*
-  >::type weightmap = boost::get(&topological_mapper::Edge::weight, graph);
-  boost::dijkstra_shortest_paths(graph, s, &p[0], &d[0], weightmap, indexmap, 
-                            std::less<double>(), boost::closed_plus<double>(), 
-                            (std::numeric_limits<double>::max)(), 0,
-                            boost::default_dijkstra_visitor());
-
-  // Look up the parent chain from the goal vertex to the start vertex
-  path_from_goal.clear();
-  path_from_goal.push_back(goal_idx);
-
-  topological_mapper::Graph::vertex_descriptor g = 
-    boost::vertex(goal_idx, graph);
-  while (indexmap[p[g]] != start_idx) {
-    path_from_goal.push_back(indexmap[p[g]]);
-    g = p[g];
-  }
-  path_from_goal.push_back(start_idx);
-
-}
-
 int main(int argc, char** argv) {
 
   if (argc != 3) {
@@ -268,7 +218,8 @@ int main(int argc, char** argv) {
 
     // Highlight
     if (global_state == ROBOTS) {
-      size_t highlight_idx = getClosestIdOnGraph(mouseover_pt, graph);
+      size_t highlight_idx = 
+          topological_mapper::getClosestIdOnGraph(mouseover_pt, graph);
       if (highlight_idx != (size_t) -1) {
         highlightIdx(image, graph, highlight_idx); 
       }
@@ -313,7 +264,7 @@ int main(int argc, char** argv) {
           ss << "  ball_x: " << map_pt.x << std::endl;
           ss << "  ball_y: " << map_pt.y << std::endl;
           findStartAndGoalIdx(pxl_start, pxl_goal, graph, start_idx, goal_idx);
-          getShortestPath(graph, start_idx, goal_idx, path_idx);
+          topological_mapper::getShortestPath(graph, start_idx, goal_idx, path_idx);
           global_state = ROBOTS;
           break;
         case ROBOTS: 
@@ -354,7 +305,8 @@ int main(int argc, char** argv) {
       increment_state = false;
     } else if (new_robot_available) {
       if (global_state == ROBOTS) {
-        size_t idx = getClosestIdOnGraph(mouseover_pt, graph);
+        size_t idx = 
+            topological_mapper::getClosestIdOnGraph(mouseover_pt, graph);
         if (idx != (size_t)-1) {
           if (std::find(path_idx.begin(), path_idx.end(), idx) != path_idx.end()) {
             robot_idx.push_back(idx);

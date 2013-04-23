@@ -37,6 +37,7 @@
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>
+#include <boost/graph/dijkstra_shortest_paths.hpp>
 
 #include <topological_mapper/graph.h>
 #include <topological_mapper/map_utils.h>
@@ -177,6 +178,56 @@ namespace topological_mapper {
   Point2f getLocationFromGraphId(int idx, const Graph& graph) {
     Graph::vertex_descriptor i = boost::vertex(idx, graph);
     return Point2f(graph[i].location.x, graph[i].location.y);
+  }
+
+  size_t getClosestIdOnGraph(const Point2f &point, 
+      const Graph &graph, double threshold) {
+
+    Graph::vertex_iterator vi, vend;
+    int count = 0;
+    for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
+      Point2f location = graph[*vi].location;
+      if (cv::norm(point - location) <= threshold) {
+        return count;
+      }
+      count++;
+    }
+    return -1;
+  }
+
+  void getShortestPath(Graph &graph, size_t start_idx,
+      size_t goal_idx, std::vector<size_t> &path_from_goal) {
+
+    // Perform Dijakstra from start_idx
+    std::vector<Graph::vertex_descriptor> 
+      p(boost::num_vertices(graph));
+    std::vector<double> d(boost::num_vertices(graph));
+    Graph::vertex_descriptor s = 
+      boost::vertex(start_idx, graph);
+
+    boost::property_map<Graph, boost::vertex_index_t>::type 
+        indexmap = boost::get(boost::vertex_index, graph);
+    boost::property_map<
+      Graph, 
+      double Edge::*
+    >::type weightmap = boost::get(&Edge::weight, graph);
+    boost::dijkstra_shortest_paths(graph, s, &p[0], &d[0], weightmap, indexmap, 
+                              std::less<double>(), boost::closed_plus<double>(), 
+                              (std::numeric_limits<double>::max)(), 0,
+                              boost::default_dijkstra_visitor());
+
+    // Look up the parent chain from the goal vertex to the start vertex
+    path_from_goal.clear();
+    path_from_goal.push_back(goal_idx);
+
+    Graph::vertex_descriptor g = 
+      boost::vertex(goal_idx, graph);
+    while (indexmap[p[g]] != start_idx) {
+      path_from_goal.push_back(indexmap[p[g]]);
+      g = p[g];
+    }
+    path_from_goal.push_back(start_idx);
+
   }
   
 } /* topological_mapper */
