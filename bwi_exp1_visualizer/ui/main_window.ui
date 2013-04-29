@@ -90,7 +90,7 @@
     <widget class="QLabel" name="currentTimeStaticText">
      <property name="geometry">
       <rect>
-       <x>100</x>
+       <x>190</x>
        <y>20</y>
        <width>91</width>
        <height>16</height>
@@ -103,9 +103,9 @@
     <widget class="QLabel" name="currentTimeLabel">
      <property name="geometry">
       <rect>
-       <x>190</x>
+       <x>278</x>
        <y>20</y>
-       <width>31</width>
+       <width>30</width>
        <height>16</height>
       </rect>
      </property>
@@ -132,14 +132,49 @@
     <widget class="QLabel" name="secondsStaticText">
      <property name="geometry">
       <rect>
-       <x>230</x>
+       <x>310</x>
        <y>20</y>
-       <width>91</width>
+       <width>51</width>
        <height>16</height>
       </rect>
      </property>
      <property name="text">
       <string>seconds</string>
+     </property>
+    </widget>
+    <widget class="QDoubleSpinBox" name="doubleSpinBox">
+     <property name="geometry">
+      <rect>
+       <x>90</x>
+       <y>20</y>
+       <width>62</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="minimum">
+      <double>0.100000000000000</double>
+     </property>
+     <property name="maximum">
+      <double>5.000000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>0.100000000000000</double>
+     </property>
+     <property name="value">
+      <double>1.000000000000000</double>
+     </property>
+    </widget>
+    <widget class="QLabel" name="xLabel">
+     <property name="geometry">
+      <rect>
+       <x>156</x>
+       <y>21</y>
+       <width>20</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>X</string>
      </property>
     </widget>
    </widget>
@@ -158,7 +193,7 @@
     <widget class="QComboBox" name="experimentBox">
      <property name="geometry">
       <rect>
-       <x>120</x>
+       <x>90</x>
        <y>20</y>
        <width>141</width>
        <height>22</height>
@@ -168,17 +203,17 @@
     <widget class="QComboBox" name="userBox">
      <property name="geometry">
       <rect>
-       <x>120</x>
+       <x>90</x>
        <y>50</y>
        <width>141</width>
        <height>22</height>
       </rect>
      </property>
     </widget>
-    <widget class="QLabel" name="label_2">
+    <widget class="QLabel" name="experimentLabel">
      <property name="geometry">
       <rect>
-       <x>40</x>
+       <x>10</x>
        <y>20</y>
        <width>71</width>
        <height>21</height>
@@ -191,10 +226,10 @@
       <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
      </property>
     </widget>
-    <widget class="QLabel" name="label_5">
+    <widget class="QLabel" name="userLabel">
      <property name="geometry">
       <rect>
-       <x>40</x>
+       <x>10</x>
        <y>50</y>
        <width>71</width>
        <height>21</height>

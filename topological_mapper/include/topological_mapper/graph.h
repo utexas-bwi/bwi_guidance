@@ -79,7 +79,7 @@ namespace topological_mapper {
 
   Point2f getLocationFromGraphId(int idx, const Graph& graph);
 
-  size_t getClosestIdOnGraph(const cv::Point &point, 
+  size_t getClosestIdOnGraph(const Point2f &point, 
       const Graph &graph, double threshold = 5.0);
 
   void getShortestPath(Graph &graph, size_t start_idx,

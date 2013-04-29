@@ -49,16 +49,18 @@ enum State {
   START_LOC = 0,
   START_YAW = 1,
   GOAL_LOC = 2,
-  ROBOTS = 3,
-  EXTRA_ROBOT_LOC = 4,
-  EXTRA_ROBOT_YAW = 5,
-  STOP = 6
+  GOAL_PATH = 3,
+  ROBOTS = 4,
+  EXTRA_ROBOT_LOC = 5,
+  EXTRA_ROBOT_YAW = 6,
+  STOP = 7
 } global_state = START_LOC;
 
 cv::Point clicked_pt;
 cv::Point mouseover_pt;
 bool increment_state = false;
 bool new_robot_available = false;
+bool new_path_point_available = false;
 int highlight_idx = -1;
 
 void findStartAndGoalIdx(cv::Point start_pxl, cv::Point goal_pxl, 
@@ -132,8 +134,10 @@ void highlightIdx(cv::Mat& image, topological_mapper::Graph& graph,
 void mouseCallback(int event, int x, int y, int, void*) {
   if (event == cv::EVENT_LBUTTONDOWN) {
     clicked_pt = cv::Point(x, y);
-    if (global_state < ROBOTS) {
+    if (global_state < GOAL_PATH) {
       increment_state = true;
+    } else if (global_state == GOAL_PATH) {
+      new_path_point_available = true;
     } else {
       new_robot_available = true;
     }
@@ -191,10 +195,12 @@ int main(int argc, char** argv) {
     }
     if (global_state > GOAL_LOC) {
       cv::circle(image, pxl_goal, 10, cv::Scalar(0,255,0), 2);
-      highlightIdx(image, graph, start_idx, cv::Scalar(255, 0, 0));
       for (size_t t = 0; t < path_idx.size(); ++t) {
-        highlightIdx(image, graph, path_idx[t], cv::Scalar(255, 0, 0));
+        highlightIdx(image, graph, path_idx[t], cv::Scalar(0, 0, 0));
       }
+    }
+    if (global_state > GOAL_PATH) {
+      highlightIdx(image, graph, start_idx, cv::Scalar(255, 0, 0));
       highlightIdx(image, graph, goal_idx, cv::Scalar(0, 255, 0));
       for (size_t t = 0; t < robot_idx.size(); ++t) {
         circleIdx(image, graph, robot_idx[t], cv::Scalar(0, 0, 255));
@@ -217,7 +223,7 @@ int main(int argc, char** argv) {
     }
 
     // Highlight
-    if (global_state == ROBOTS) {
+    if (global_state == ROBOTS || global_state == GOAL_PATH) {
       size_t highlight_idx = 
           topological_mapper::getClosestIdOnGraph(mouseover_pt, graph);
       if (highlight_idx != (size_t) -1) {
@@ -238,7 +244,7 @@ int main(int argc, char** argv) {
     unsigned char c = cv::waitKey(10);
     if (c == 27) {
       return 0;
-    } else if (c == 'n' && global_state >= ROBOTS) {
+    } else if (c == 'n' && global_state >= GOAL_PATH) {
       increment_state = true;
     }
 
@@ -263,9 +269,16 @@ int main(int argc, char** argv) {
           map_goal = map_pt; pxl_goal = clicked_pt; 
           ss << "  ball_x: " << map_pt.x << std::endl;
           ss << "  ball_y: " << map_pt.y << std::endl;
-          findStartAndGoalIdx(pxl_start, pxl_goal, graph, start_idx, goal_idx);
-          topological_mapper::getShortestPath(graph, start_idx, goal_idx, path_idx);
-          global_state = ROBOTS;
+          // findStartAndGoalIdx(pxl_start, pxl_goal, graph, start_idx, goal_idx);
+          // topological_mapper::getShortestPath(graph, start_idx, goal_idx, path_idx);
+          global_state = GOAL_PATH;
+          break;
+        case GOAL_PATH:
+          if (path_idx.size() != 0) {
+            start_idx = path_idx[0];
+            goal_idx = path_idx[path_idx.size() - 1];
+            global_state = ROBOTS;
+          }
           break;
         case ROBOTS: 
           ss << "  path:" << std::endl;
@@ -303,10 +316,24 @@ int main(int argc, char** argv) {
           return 0;
       }
       increment_state = false;
+    } else if (new_path_point_available) {
+      size_t idx = topological_mapper::getClosestIdOnGraph(clicked_pt, graph);
+      if (idx != (size_t)-1) {
+        if (path_idx.size() == 0) {
+          path_idx.push_back(idx);
+        } else {
+          size_t prev_idx = path_idx[path_idx.size() - 1];
+          std::vector<size_t> path_from_prev_idx;
+          topological_mapper::getShortestPath(graph, idx, prev_idx, 
+              path_from_prev_idx);
+          path_idx.insert(path_idx.end(), path_from_prev_idx.begin(),
+              path_from_prev_idx.end());
+        }
+      }
+      new_path_point_available = false;
     } else if (new_robot_available) {
       if (global_state == ROBOTS) {
-        size_t idx = 
-            topological_mapper::getClosestIdOnGraph(mouseover_pt, graph);
+        size_t idx = topological_mapper::getClosestIdOnGraph(clicked_pt, graph);
         if (idx != (size_t)-1) {
           if (std::find(path_idx.begin(), path_idx.end(), idx) != path_idx.end()) {
             robot_idx.push_back(idx);

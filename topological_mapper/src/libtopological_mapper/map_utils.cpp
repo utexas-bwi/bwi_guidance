@@ -39,12 +39,12 @@
 
 namespace topological_mapper {
   
-  Point2f toMap(const Point2f& pt, const nav_msgs::MapMetaData& info) {
+  Point2f toGrid(const Point2f& pt, const nav_msgs::MapMetaData& info) {
     return (pt - Point2f(info.origin.position.x, info.origin.position.y)) * 
         (1.0 / info.resolution);
   }
 
-  Point2f toGrid(const Point2f& pt, const nav_msgs::MapMetaData& info) {
+  Point2f toMap(const Point2f& pt, const nav_msgs::MapMetaData& info) {
     return Point2f(info.origin.position.x, info.origin.position.y) + 
         info.resolution * pt;
   }

@@ -154,10 +154,8 @@ namespace topological_mapper {
     // Construct the graph object
     for (size_t i = 0; i < vertices.size(); ++i) {
       Graph::vertex_descriptor vi = boost::add_vertex(graph);
-      Point2f real_loc, pxl_loc;
-      real_loc.x = vertices[i].first;
-      real_loc.y = vertices[i].second;
-      pxl_loc = toGrid(real_loc, info);
+      Point2f real_loc (vertices[i].first, vertices[i].second);
+      Point2f pxl_loc (toGrid(real_loc, info));
       graph[vi].location = pxl_loc;
       graph[vi].pixels = 0; // Not saved to file as of yet
     }
@@ -218,7 +216,6 @@ namespace topological_mapper {
 
     // Look up the parent chain from the goal vertex to the start vertex
     path_from_goal.clear();
-    path_from_goal.push_back(goal_idx);
 
     Graph::vertex_descriptor g = 
       boost::vertex(goal_idx, graph);
