@@ -100,13 +100,13 @@ bool position(bwi_msgs::PositionRobot::Request &req,
     use_outside_angle = false;
   }
 
-  float y_test = at.y - search_distance / info.resolution;
+  size_t y_test = at.y - search_distance / info.resolution;
   float location_fitness = -1;
   topological_mapper::Point2f test_coords;
   topological_mapper::Point2f map_coords;
 
   while(y_test < at.y + search_distance / info.resolution) {
-    float x_test = at.x - search_distance / info.resolution;
+    size_t x_test = at.x - search_distance / info.resolution;
     while (x_test < at.x + search_distance / info.resolution) {
 
       topological_mapper::Point2f test(x_test, y_test);
