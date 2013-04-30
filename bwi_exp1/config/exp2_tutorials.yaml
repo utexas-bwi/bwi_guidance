@@ -1,0 +1,41 @@
+- start_x: 20.75
+  start_y: 1.35
+  start_yaw: 0
+  ball_x: 38.15
+  ball_y: 8.6
+  path:
+    - id: 3
+      robot: yes
+    - id: 4
+      robot: no
+    - id: 5
+      robot: yes
+    - id: 11
+      robot: no
+  extra_robots: []
+  max_duration: 300 #seconds
+  tutorial_duration: 30 #seconds
+- start_x: 26.1
+  start_y: 45.45
+  start_yaw: -0.0624178
+  ball_x: 45.7
+  ball_y: 30.85
+  path:
+    - id: 79
+      robot: yes
+    - id: 65
+      robot: yes
+    - id: 69
+      robot: yes
+    - id: 61
+      robot: no
+    - id: 59
+      robot: yes
+    - id: 56
+      robot: no
+    - id: 58
+      robot: no
+  extra_robots: []
+  max_duration: 300 #seconds
+  tutorial_duration: 45 #seconds
+

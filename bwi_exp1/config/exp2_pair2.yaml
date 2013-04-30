@@ -1,0 +1,75 @@
+# experiment 2 (paired) experiment for experiment 1 in opposite direction
+- start_x: 46.15
+  start_y: 45.6
+  start_yaw: 3.09617
+  ball_x: 15.95
+  ball_y: 23.35
+  path:
+    - id: 83
+      robot: yes
+    - id: 80
+      robot: no
+    - id: 79
+      robot: yes
+    - id: 65
+      robot: no
+    - id: 57
+      robot: no
+    - id: 54
+      robot: no
+    - id: 40
+      robot: no
+  extra_robots: []
+  max_duration: 300 #seconds
+#experiment 4 (paired with 3) attempts to show that directions in big room help
+- start_x: 1.35
+  start_y: 18.9
+  start_yaw: 1.5708
+  ball_x: 30.85
+  ball_y: 35.05
+  path:
+    - id: 39
+      robot: no
+    - id: 52
+      robot: yes
+    - id: 53
+      robot: yes
+    - id: 68
+      robot: no
+    - id: 65
+      robot: no
+  extra_robots: []
+  max_duration: 300 #seconds
+#experiment 6 (paired with 5) tests distraction in absense of robot
+- start_x: 34
+  start_y: 45.45
+  start_yaw: -0.0434503
+  ball_x: 34.7
+  ball_y: 1.4
+  path:
+    - id: 80
+      robot: yes
+    - id: 74
+      robot: no
+    - id: 61
+      robot: no
+    - id: 59
+      robot: no
+    - id: 51
+      robot: no
+    - id: 33
+      robot: no
+    - id: 26
+      robot: no
+    - id: 11
+      robot: no
+    - id: 5
+      robot: no
+  extra_robots:
+    - loc_x: 30.5
+      loc_y: 14.9
+      yaw: -1.05525
+    - loc_x: 45.8
+      loc_y: 14.8
+      yaw: -1.94607
+  max_duration: 300 #seconds

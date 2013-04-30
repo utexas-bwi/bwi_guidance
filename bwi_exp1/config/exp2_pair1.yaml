@@ -1,0 +1,75 @@
+# experiment 1 testing directional choices
+- start_x: 14.2
+  start_y: 45.4
+  start_yaw: -0.0525822
+  ball_x: 38.1
+  ball_y: 23.8
+  path:
+    - id: 77
+      robot: yes
+    - id: 78
+      robot: no
+    - id: 79
+      robot: yes
+    - id: 65
+      robot: no
+    - id: 57
+      robot: no
+    - id: 55
+      robot: no
+    - id: 51
+      robot: no
+  extra_robots: []
+  max_duration: 300 #seconds
+#experiment 3 tests navigating a big room without directional arrows
+- start_x: 1.35
+  start_y: 18.9
+  start_yaw: 1.5708
+  ball_x: 30.85
+  ball_y: 35.05
+  path:
+    - id: 39
+      robot: no
+    - id: 52
+      robot: yes
+    - id: 53
+      robot: no
+    - id: 68
+      robot: no
+    - id: 65
+      robot: no
+  extra_robots: []
+  max_duration: 300 #seconds
+#experiment 5 tests distraction in presence of a robot
+- start_x: 34
+  start_y: 45.45
+  start_yaw: -0.0434503
+  ball_x: 34.7
+  ball_y: 1.4
+  path:
+    - id: 80
+      robot: yes
+    - id: 74
+      robot: no
+    - id: 61
+      robot: no
+    - id: 59
+      robot: no
+    - id: 51
+      robot: yes
+    - id: 33
+      robot: no
+    - id: 26
+      robot: no
+    - id: 11
+      robot: no
+    - id: 5
+      robot: no
+  extra_robots:
+    - loc_x: 30.5
+      loc_y: 14.9
+      yaw: -1.05525
+    - loc_x: 45.8
+      loc_y: 14.8
+      yaw: -1.94607
+  max_duration: 300 #seconds

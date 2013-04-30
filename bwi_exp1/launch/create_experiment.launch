@@ -1,0 +1,6 @@
+<launch>
+  <arg name="map_file" default="$(find bwi_exp1)/maps/exp1.yaml" />
+  <arg name="graph_file" default="$(find bwi_exp1)/maps/graph2.yaml" />
+  <node name="create_experiment" pkg="bwi_exp1" type="create_experiment"
+    args="$(arg map_file) $(arg graph_file)" output="screen" />
+</launch>
