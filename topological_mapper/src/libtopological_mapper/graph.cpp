@@ -171,10 +171,13 @@ namespace topological_mapper {
           cv::norm(graph[vi].location - graph[vj].location);
       }
     }
+
+    std::cout << "Read graph with " << vertices.size() << " vertices." << std::endl;
   }
 
   Point2f getLocationFromGraphId(int idx, const Graph& graph) {
     Graph::vertex_descriptor i = boost::vertex(idx, graph);
+    
     return Point2f(graph[i].location.x, graph[i].location.y);
   }
 

@@ -12,7 +12,7 @@
 
   <node name="robot_positioner" pkg="bwi_exp1" type="robot_positioner">
     <param name="map_file" value="$(find bwi_exp1)/maps/exp1.yaml" />
-    <param name="graph_file" value="$(find bwi_exp1)/config/graph.yaml" />
+    <param name="graph_file" value="$(find bwi_exp1)/maps/graph.yaml" />
     <param name="robot_radius" value="0.25" />
     <param name="robot_padding" value="0.1" />
     <!-- <param name="debug" value="true" /> -->

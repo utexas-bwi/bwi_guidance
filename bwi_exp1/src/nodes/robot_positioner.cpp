@@ -195,6 +195,7 @@ int main(int argc, char *argv[]) {
     return -1;
   }
   ros::param::get("~graph_file", graph_file);
+  ROS_INFO_STREAM("Reading graph: " << graph_file);
 
   ros::param::param<bool>("~debug", debug, false);
   ros::param::param<double>("~robot_radius", robot_radius, 0.25);
