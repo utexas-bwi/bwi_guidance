@@ -148,7 +148,7 @@ void mouseCallback(int event, int x, int y, int, void*) {
 
 int main(int argc, char** argv) {
 
-  if (argc != 3) {
+  if (argc < 3) {
     std::cerr << "USAGE: " << argv[0] 
         << " <yaml-map-file> <yaml-graph-file>" << std::endl;
     return -1;
@@ -282,7 +282,7 @@ int main(int argc, char** argv) {
           break;
         case ROBOTS: 
           ss << "  path:" << std::endl;
-          for (size_t i = path_idx.size() - 1; i < path_idx.size(); --i) {
+          for (size_t i = 0; i < path_idx.size(); ++i) {
             ss << "    - id: " << path_idx[i] << std::endl;
             std::vector<size_t>::iterator robot_it =
               std::find(robot_idx.begin(), robot_idx.end(), path_idx[i]);
