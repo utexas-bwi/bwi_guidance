@@ -18,8 +18,8 @@ from cv_bridge import CvBridge
 
 import threading
 import math
-import random,string
-import copy
+import random
+import string
 
 def getPoseMsgFrom2dData(x, y, yaw):
     pose = Pose()
