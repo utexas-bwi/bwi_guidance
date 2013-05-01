@@ -143,8 +143,9 @@ namespace topological_mapper {
       for (size_t j = 0; j < edges_node.size(); ++j) {
         size_t t;
         edges_node[j] >> t;
-        if (t > j) {
+        if (t > i) { // Only add edge one way
           v_edges.push_back(t);
+          // std::cout << "Add edge: " << i << " -> " << t << std::endl;
         }
       }
       edges.push_back(v_edges);
