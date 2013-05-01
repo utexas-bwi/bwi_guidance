@@ -9,6 +9,7 @@ int32 total_experiments
 float32 reward_in_previous_experiment
 
 bool pause_enabled
+bool paused
 bool continue_enabled
 string reset_warning_text
 

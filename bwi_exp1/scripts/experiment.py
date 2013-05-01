@@ -139,6 +139,7 @@ class ExperimentInterface:
         msg.total_experiments = self.experiment_controller.num_experiments
         msg.reward_in_previous_experiment = self.reward_in_previous_experiment
         msg.pause_enabled = msg.locked and msg.experiment_in_progress
+        msg.paused = self.experiment_controller.paused
         msg.continue_enabled = msg.locked and (not msg.experiment_in_progress)
         msg.reset_warning_text = ""
         if self.experiment_controller.reset_timer:
@@ -276,6 +277,7 @@ class ExperimentController:
         # Setup some default values for modifying experiments 
         self.experiment_lock_mutex = threading.Lock()
         self.experiment_server_locked = False
+        self.paused = False
 
         # Setup some default values for a single experiment
         self.experiment_number = 0

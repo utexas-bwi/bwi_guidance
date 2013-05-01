@@ -17,9 +17,8 @@ function parseParameters() {
 var host = 'localhost'
 /* var host = 'zoidberg.csres.utexas.edu' */
 var ros;
-var experiment_status_subscriber, user_text_subscriber; // subs
-var lock_experiment, pause_gazebo, unpause_gazebo, start_next_experiment,
-    reset_experiment; // services
+var experiment_status_subscriber; // subs
+var update_experiment_service; // services
 
 function initializeROS() {
   /* Setup ROS */
@@ -28,38 +27,16 @@ function initializeROS() {
 
   /* Subscribed topics */
   experiment_status_subscriber = new ros.Topic({
-    name        : '/experiment_controller/experiment_status',
+    name        : '/experiment_controller/status',
     messageType : 'bwi_msgs/ExperimentStatus'
   });
 
   /* Service Proxies */
-  lock_experiment = new ros.Service({
-      name        : '/experiment_controller/experiment_lock',
-      serviceType : 'bwi_msgs/AcquireExperimentLock'
+  update_experiment_service = new ros.Service({
+      name        : '/experiment_controller/update_experiment',
+      serviceType : 'bwi_msgs/UpdateExperiment'
   });
 
-  // Create a handle for the topic '/chatter' of type std_msgs/String.
-  user_text_subscriber = new ros.Topic({
-    name        : '/experiment_controller/user_text',
-    messageType : 'std_msgs/String'
-  });
-
-  pause_gazebo = new ros.Service({
-      name        : '/gazebo/pause_physics',
-      serviceType : 'std_srvs/Empty'
-  });
-  unpause_gazebo = new ros.Service({
-      name        : '/gazebo/unpause_physics',
-      serviceType : 'std_srvs/Empty'
-  });
-  start_next_experiment = new ros.Service({
-      name        : '/experiment_controller/start_next_experiment',
-      serviceType : 'std_srvs/Empty'
-  });
-  reset_experiment = new ros.Service({
-      name        : '/experiment_controller/reset_experiment',
-      serviceType : 'bwi_msgs/ResetExperiment'
-  });
 }
 
 /* JS Stuff on the finish page */
@@ -83,8 +60,6 @@ function instructions() {
   /* Get DOM Elements */
   var instructions = document.getElementById('instructions');
   var continue_button = document.getElementById('continue_button');
-  var continue_instructions = 
-      document.getElementById('continue_instructions');
 
   initializeROS();
 
@@ -106,15 +81,18 @@ function instructions() {
 /* Instructions page - Continue to the experiment if you can obtain a lock on 
  * the experiment server */
 function attemptExperimentLock() {
+
+  var continue_instructions = 
+      document.getElementById('continue_instructions');
   var name_field = document.getElementById('name');
+
   if (name_field.value == "") {
     continue_instructions.innerHTML = "Please enter your name!"
   } else {
-    var request = new ros.ServiceRequest({'name': name_field.value});
-    lock_experiment.callService(request, function (result) {
+    var request = new ros.ServiceRequest({'lock_experiment': true, 'name': name_field.value});
+    update_experiment_service.callService(request, function (result) {
       if (result.result) {
-        alert
-      window.location.href="experiment.html?uid=" + result.uid;
+        window.location.href="experiment.html?uid=" + result.uid;
       } else {
         continue_instructions.innerHTML = "It looks like sombody else started"
             + " the experiment at the same time. Please try again later!";
@@ -126,11 +104,12 @@ function attemptExperimentLock() {
 function start() {
 
   /* Get DOM Elements */
-  var score = document.getElementById( 'score' );
-  var continue_button = document.getElementById( 'continue_button' );
-  var instructions = document.getElementById( 'instructions' );
-  var mouse_button = document.getElementById( 'mouse_button' );
-  var pause_button = document.getElementById( 'pause_button' );
+  var score = document.getElementById('score');
+  var continue_button = document.getElementById('continue_button');
+  var instructions = document.getElementById('instructions' );
+  var reset_instructions = document.getElementById('reset_instructions');
+  var mouse_button = document.getElementById('mouse_button');
+  var pause_button = document.getElementById('pause_button');
 
   params = parseParameters();
   initializeROS();
@@ -183,6 +162,7 @@ function start() {
       cmd_vel_publisher.publish(twist);
     }
   }
+
 
   /* Keyboard control (velocity + other shortcuts)*/
   var keycode  = { turn_left: 37, left: 65, up: 87, turn_right: 39, right: 68, 
@@ -244,74 +224,71 @@ function start() {
   };
 
   /* Handle experiment status callback */
-  var first_continue_enable = false;
   experiment_status_subscriber.subscribe(function(message) {
     if (typeof params.uid === 'undefined' || message.uid == "" || 
         params.uid != message.uid) { // user should not be in experiment page
       window.location.href = "index.html";
     } else {
-      if (!message.experiment_in_progress) {
-        if (message.locked == true) {
-          score.innerHTML = "Score: " + message.reward;
-          continue_button.disabled = false;
-          pause_button.disabled = true;
-          if (first_continue_enable) {
-            var request = new ros.ServiceRequest({'cancel': false, 
-                'time': 600.0});
-            reset_experiment.callService(request);
-            first_continue_enable = false;
-          }
-        } else {
+      if (!message.locked) {
+        if (message.previous_experiment_reset) {
           publishVelocity({velx: 0, vely: 0, vela: 0});
-          window.setTimeout(function() {
-            window.location.href = "end.html?score=" + message.reward;
-          }, 2000); 
+          window.location.href = "reset.html";
+        } else if (message.previous_experiment_successfully_finished) {
+          publishVelocity({velx: 0, vely: 0, vela: 0});
+          window.location.href = "end.html?score=" + message.total_reward;
         }
       } else {
-        continue_button.disabled = true;
-        pause_button.disabled = false;
-        first_continue_enable = true;
+        instructions.innerHTML = message.current_display_text;
+        if (message.pause_enabled) {
+          pause_button.disabled = false;
+          if (message.paused) {
+            pause_button.innerHTML = "Unpause";
+          } else {
+            pause_button.innerHTML = "Pause";
+          }
+        } else {
+          pause_button.disabled = true;
+        }
+        if (message.continue_enabled) {
+          continue_button.disabled = false;
+        } else {
+          continue_button.disabled = true;
+        }
+        reset_instructions.innerHTML = message.reset_warning_text;
       }
     }
   });
 
-  /* Handle experiment instructional text callback */
-  user_text_subscriber.subscribe(function(message) {
-    instructions.innerHTML = message.data;
-  });
-
-  /* Start Next Experiment - Convenience function */
-  var startNextExperiment = function (r) {
-    var request = new ros.ServiceRequest();
-    start_next_experiment.callService(request, function (result) {
-      continue_button.disabled = true;
+  /* Handle experiment service requests */
+  updateExperiment = function(options) {
+    var lock_experiment = (options.lock_experiment == null) ? false : options.lock_experiment;
+    var name = (options.name == null) ? "" : options.name;
+    var email = (options.email == null) ? "" : options.email;
+    var pause_experiment = (options.pause_experiment == null) ? false : options.pause_experiment;
+    var unpause_experiment = (options.unpause_experiment == null) ? false : options.unpause_experiment;
+    var continue_experiment = (options.continue_experiment == null) ? false : options.continue_experiment;
+    var request = new ros.ServiceRequest({
+        'lock_experiment': lock_experiment, 
+        'name': name, 
+        'email': email, 
+        'pause_experiment': pause_experiment, 
+        'unpause_experiment': unpause_experiment,
+        'continue_experiment': continue_experiment
     });
+    update_experiment_service.callService(request, function (result) {});
   }
-
   /* Handle continue button */
+  var startNextExperiment = function (event) {
+    updateExperiment({continue_experiment: true});
+  }
   continue_button.addEventListener('click', startNextExperiment, false);
 
   /* Handle pause button */
   var pauseToggle = function (event) {
     if (pause_button.innerHTML == 'Pause') {
-      var request = new ros.ServiceRequest();
-      pause_gazebo.callService(request, function (result) {
-        var request = new ros.ServiceRequest({'cancel': false, 'time': 600.0});
-        reset_experiment.callService(request);
-        instructions.innerHTML = "You have hit the pause button. Please be "
-            + "sure to hit unpause within the next 10 mintues, or the "
-            + "experiment will time out and data collected from you won't be "
-            + "accepted.";
-        pause_button.innerHTML = 'Unpause';
-      });
-      pause_button.value = 'Unpause';
+      updateExperiment({pause_experiment: true});
     } else {
-      var request = new ros.ServiceRequest();
-      unpause_gazebo.callService(request, function (result) {
-        var request = new ros.ServiceRequest({'cancel': true, 'time': 0.0});
-        reset_experiment.callService(request);
-        pause_button.innerHTML = 'Pause';
-      });
+      updateExperiment({unpause_experiment: true});
     }
   }
   pause_button.addEventListener('click', pauseToggle, false);
@@ -391,6 +368,7 @@ function start() {
     }, false );
 
   } else {
-    alert('Your browser does not support mouse usage');
+    mouse_button.disabled = true;
+    reset_instructions.innerHTML = "Your browser does not support mouse usage!";
   }
 };
