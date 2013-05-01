@@ -203,25 +203,11 @@ class ExperimentController:
         except Exception as e:
             rospy.logerr("Unable to open experiment file: %s"%e.what())
 
+        self.user_file = rospy.get_param("~user_file")
+
         self.person_id = self.experiment['person_id']
         self.robots = self.experiment['robots']
         self.ball_id = self.experiment['ball_id']
-
-        self.control_experiments_file = rospy.get_param("~control_experiments_file")
-        self.test_experiments_file = rospy.get_param("~test_experiments_file")
-        self.tutorials_file = rospy.get_param("~tutorials_file")
-        try:
-            self.tutorials = yaml.load(open(self.tutorials_file, 'r'))
-            for exp in self.tutorials:
-                exp['is_tutorial'] = True
-            self.control_experiments = yaml.load(open(self.control_experiments_file,'r'))
-            for exp in self.control_experiments:
-                exp['is_tutorial'] = False
-            self.test_experiments = yaml.load(open(self.test_experiments_file,'r'))
-            for exp in self.test_experiments:
-                exp['is_tutorial'] = False
-        except Exception as e:
-            rospy.logerr("Unable to open experiment file: %s"%str(e))
 
         self.data_directory = rospy.get_param("~data_dir")
 
@@ -474,11 +460,10 @@ class ExperimentController:
 
         loc = [odom.pose.pose.position.x, odom.pose.pose.position.y]
 
-        if not self.experiment_tutorial:
-            # record position
-            self.log_lock.acquire()
-            self.log_file.write("  - [" + str(odom.pose.pose.position.x) + ", " + str(odom.pose.pose.position.y) + ", " + str(odom.header.stamp.to_sec()) + "]\n")
-            self.log_lock.release()
+        # record position
+        self.log_lock.acquire()
+        self.log_file.write("  - [" + str(odom.pose.pose.position.x) + ", " + str(odom.pose.pose.position.y) + ", " + str(odom.header.stamp.to_sec()) + "]\n")
+        self.log_lock.release()
 
         # check if the person is near a robot
         for i, robot in enumerate(self.robots):
@@ -526,7 +511,7 @@ class ExperimentController:
                 if self.experiment_server_locked:
                     self.startResetTimer()
                 else:
-                    self.experiment_interface.stopExperiment()
+                    self.finalizeExperimentsForUser()
             elif self.experiment_in_progress and (time - self.experiment_start_time) > self.experiment_max_duration:
                 self.stopCurrentExperiment(False)
                 if not self.experiment_tutorial:
@@ -538,7 +523,7 @@ class ExperimentController:
                 if self.experiment_server_locked:
                     self.startResetTimer()
                 else:
-                    self.experiment_interface.stopExperiment()
+                    self.finalizeExperimentsForUser()
 
             #publish the experiment status
             self.experiment_interface.publishStatus()
@@ -614,19 +599,28 @@ class ExperimentController:
         self.experiment_lock_mutex.acquire()
         uid = id_generator()
         if not self.experiment_server_locked:
-            self.experiment_names = ["tutorial_" + str(i) for i in range(len(self.tutorials))]
-            self.experiments = copy.deepcopy(self.tutorials) 
-            control_first = random.choice([True, False])
-            if control_first:
-                self.experiment_names.extend(["control_" + str(i) for i in range(len(self.control_experiments))])
-                self.experiments.extend(self.control_experiments)
-                self.experiment_names.extend(["test_" + str(i) for i in range(len(self.test_experiments))])
-                self.experiments.extend(self.test_experiments)
-            else:
-                self.experiment_names.extend(["test_" + str(i) for i in range(len(self.test_experiments))])
-                self.experiments.extend(self.test_experiments)
-                self.experiment_names.extend(["control_" + str(i) for i in range(len(self.control_experiments))])
-                self.experiments.extend(self.control_experiments)
+            self.experiment_group_order = [None] * len(self.experiment['experiments'])
+            randomly_ordered_groups = []
+            highest_ordered_group = -1
+            for experiment_group in self.experiment['experiments']:
+                if experiment_group['order'] != -1:
+                    self.experiment_group_order[experiment_group['order']] = experiment_group['prefix']
+                    highest_ordered_group = max(highest_ordered_group, experiment_group['order'])
+                else:
+                    randomly_ordered_groups.append(experiment_group['prefix'])
+            random_groups_start = highest_ordered_group + 1
+            random.shuffle(randomly_ordered_groups)
+            self.experiment_group_order[random_groups_start:] = randomly_ordered_groups
+            self.experiment_names = []
+            self.experiments = []
+            self.experiment_group_count = []
+            for experiment_group_prefix in self.experiment_group_order:
+                for experiment_group in self.experiment['experiments']:
+                    if (experiment_group['prefix'] != experiment_group_prefix):
+                        continue
+                    self.experiment_names.extend([experiment_group_prefix + "_" + str(i) for i in range(len(experiment_group['experiments']))])
+                    self.experiments.extend(experiment_group['experiments'])
+                    self.experiment_group_count.append(len(experiment_group['experiments']))
             self.experiment_number = 0
             self.reward = 0
 
@@ -645,6 +639,18 @@ class ExperimentController:
             success = False
         self.experiment_lock_mutex.release()
         return success, uid
+
+    def finalizeExperimentsForUser(self):
+        self.experiment_interface.stopExperiment()
+        user_file = open(self.user_file, "a")
+        user_file.write("- user: " + self.experiment_uid + "\n")
+        user_file.write("  name: " + self.experiment_uname + "\n")
+        user_file.write("  experiment_order:\n")
+        for i in range(len(self.experiment_group_order)):
+            user_file.write("    - name: " + self.experiment_group_order[i] + "\n")
+            user_file.write("      num: " + str(self.experiment_group_count[i]) + "\n")
+        user_file.close()
+        rospy.loginfo("Finalized experiments for user: " + self.experiment_uid)
 
     def startNextExperiment(self):
         success = False

@@ -93,6 +93,7 @@ experiments:
             robot: no
         extra_robots: []
         max_duration: 300 #seconds
+        is_tutorial: false
       #experiment 3 tests navigating a big room without directional arrows
       - start_x: 1.35
         start_y: 18.9
@@ -112,6 +113,7 @@ experiments:
             robot: no
         extra_robots: []
         max_duration: 300 #seconds
+        is_tutorial: false
       #experiment 5 tests distraction in presence of a robot
       - start_x: 34
         start_y: 45.45
@@ -145,6 +147,7 @@ experiments:
             loc_y: 14.8
             yaw: -1.94607
         max_duration: 300 #seconds
+        is_tutorial: false
   - prefix: pair2
     order: -1
     experiments:
@@ -171,6 +174,7 @@ experiments:
             robot: no
         extra_robots: []
         max_duration: 300 #seconds
+        is_tutorial: false
       #experiment 4 (paired with 3) attempts to show that directions in big room help
       - start_x: 1.35
         start_y: 18.9
@@ -190,6 +194,7 @@ experiments:
             robot: no
         extra_robots: []
         max_duration: 300 #seconds
+        is_tutorial: false
       #experiment 6 (paired with 5) tests distraction in absense of robot
       - start_x: 34
         start_y: 45.45
@@ -223,4 +228,5 @@ experiments:
             loc_y: 14.8
             yaw: -1.94607
         max_duration: 300 #seconds
+        is_tutorial: false
 

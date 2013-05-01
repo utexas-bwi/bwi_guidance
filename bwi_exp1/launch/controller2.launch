@@ -1,12 +1,13 @@
 <launch>
 
   <!-- launch the experiment controller node -->
-  <node name="experiment_controller" pkg="bwi_exp1" type="experiment.py">
+  <node name="experiment_controller" pkg="bwi_exp1" type="experiment.py" output="screen">
     <param name="graph_file" value="$(find bwi_exp1)/maps/graph2.yaml" />
     <param name="experiment_file" value="$(find bwi_exp1)/config/experiment2.yaml" />
-    <param name="control_experiments_file" value="$(find bwi_exp1)/config/exp2_pair1.yaml" />
-    <param name="test_experiments_file" value="$(find bwi_exp1)/config/exp2_pair2.yaml" />
-    <param name="tutorials_file" value="$(find bwi_exp1)/config/exp2_tutorials.yaml" />
+    <param name="user_file" value="$(find bwi_exp1)/data/users.yaml" />
+    <!-- <param name="control_experiments_file" value="$(find bwi_exp1)/config/exp2_pair1.yaml" /> -->
+    <!-- <param name="test_experiments_file" value="$(find bwi_exp1)/config/exp2_pair2.yaml" /> -->
+    <!-- <param name="tutorials_file" value="$(find bwi_exp1)/config/exp2_tutorials.yaml" /> -->
     <param name="data_dir" value="$(find bwi_exp1)/data" />
   </node>
 
