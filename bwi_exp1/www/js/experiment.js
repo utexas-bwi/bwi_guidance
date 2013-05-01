@@ -239,6 +239,7 @@ function start() {
         }
       } else {
         instructions.innerHTML = message.current_display_text;
+        score.innerHTML = "Score: " + message.total_reward
         if (message.pause_enabled) {
           pause_button.disabled = false;
           if (message.paused) {
