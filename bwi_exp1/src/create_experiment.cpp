@@ -347,7 +347,7 @@ int main(int argc, char** argv) {
         global_state = EXTRA_ROBOT_YAW;
       } else if (global_state == EXTRA_ROBOT_YAW) {
         cv::Point &prev_pt = extra_robot_pxls[extra_robot_pxls.size() - 1];
-        float yaw = -atan2(clicked_pt.y - prev_pt.y, clicked_pt.x - prev_pt.x);
+        float yaw = atan2(prev_pt.y - clicked_pt.y, prev_pt.x - clicked_pt.x);
         extra_robot_yaw.push_back(yaw);
         global_state = EXTRA_ROBOT_LOC;
       }
