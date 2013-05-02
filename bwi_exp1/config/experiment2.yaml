@@ -118,7 +118,7 @@ experiments:
       - start_x: 34
         start_y: 45.45
         start_yaw: -0.0434503
-        ball_x: 34.7
+        ball_x: 40.5
         ball_y: 1.4
         path:
           - id: 80
@@ -142,10 +142,10 @@ experiments:
         extra_robots:
           - loc_x: 30.5
             loc_y: 14.9
-            yaw: -1.05525
+            yaw: -2.03444
           - loc_x: 45.8
             loc_y: 14.8
-            yaw: -1.94607
+            yaw: -1.0612
         max_duration: 300 #seconds
         is_tutorial: false
   - prefix: pair2
@@ -199,7 +199,7 @@ experiments:
       - start_x: 34
         start_y: 45.45
         start_yaw: -0.0434503
-        ball_x: 34.7
+        ball_x: 40.5
         ball_y: 1.4
         path:
           - id: 80
@@ -223,10 +223,10 @@ experiments:
         extra_robots:
           - loc_x: 30.5
             loc_y: 14.9
-            yaw: -1.05525
+            yaw: -2.03444
           - loc_x: 45.8
             loc_y: 14.8
-            yaw: -1.94607
+            yaw: -1.0612
         max_duration: 300 #seconds
         is_tutorial: false
 
