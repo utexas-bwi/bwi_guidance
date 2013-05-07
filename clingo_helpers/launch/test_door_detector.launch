@@ -1,0 +1,8 @@
+<launch>
+
+  <include file="$(find utexas_gdc)/launch/3ne.launch" />
+  <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
+  <include file="$(find utexas_gdc)/launch/segbot.launch" />
+  <include file="$(find segbot_navigation)/launch/amcl.launch" />
+
+</launch>

@@ -1,0 +1,21 @@
+<package>
+  <description brief="clingo_helpers">
+
+     clingo_helpers
+
+  </description>
+  <author>Piyush Khandelwal</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/clingo_helpers</url>
+
+  <depend package="navfn" />
+  <depend package="costmap_2d" />
+  <depend package="tf" />
+  <depend package="topological_mapper" />
+
+  <rosdep name="yaml-cpp" />
+
+</package>
+
+

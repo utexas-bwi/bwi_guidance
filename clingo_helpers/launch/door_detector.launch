@@ -1,0 +1,9 @@
+<launch>
+  <arg name="map_file" default="$(find utexas_gdc)/maps/3ne.yaml" />
+  <arg name="door_file" default="$(find clingo_helpers)/config/doors.yaml" />
+  <node name="door_detector" type="test_door_detector" pkg="clingo_helpers">
+    <rosparam file="$(find clingo_helpers)/config/costmap.yaml" command="load" />
+    <param name="map_file" value="$(arg map_file)" />
+    <param name="door_file" value="$(arg door_file)" />
+  </node>
+</launch>

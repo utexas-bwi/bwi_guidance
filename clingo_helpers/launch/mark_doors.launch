@@ -1,0 +1,5 @@
+<launch>
+  <arg name="map_file" default="$(find utexas_gdc)/maps/3ne.yaml" />
+  <node name="mark_doors" type="mark_doors" pkg="clingo_helpers" 
+    args="$(arg map_file)" output="screen" />
+</launch>
