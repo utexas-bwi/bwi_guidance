@@ -42,6 +42,7 @@
 int main(int argc, char *argv[]) {
   
   ros::init(argc, argv, "door_detector_test");
+  tf::TransformListener tf(ros::Duration(10));
 
   std::string map_file, door_file;
 
@@ -50,12 +51,13 @@ int main(int argc, char *argv[]) {
 
   boost::shared_ptr<topological_mapper::MapLoader> mapper;
   mapper.reset(new topological_mapper::MapLoader(map_file));
-  clingo_helpers::DoorDetector dd(mapper, door_file);
+  clingo_helpers::DoorDetector dd(mapper, door_file, tf);
 
   ros::Rate rate(10);
 
   while (ros::ok()) {
     std::cout << "Door 0 is open: " << dd.isDoorOpen(0) << std::endl;
+    ros::spinOnce();
     rate.sleep();
   }
 

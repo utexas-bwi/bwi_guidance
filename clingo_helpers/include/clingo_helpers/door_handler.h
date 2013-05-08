@@ -1,7 +1,8 @@
 /**
- * \file  door_detector.h
+ * \file  door_handler.h
  * \brief  A wrapper around navfn and costmap_2d that determines if a door is 
- *         open or not
+ *         open or not, and calculates navigation targets while approaching a 
+ *         door and going through a door
  *
  * \author  Piyush Khandelwal (piyushk@cs.utexas.edu)
  *
@@ -36,8 +37,8 @@
  *
  **/
 
-#ifndef DOOR_DETECTOR_WW75RJPS
-#define DOOR_DETECTOR_WW75RJPS
+#ifndef DOOR_HANDLER_WW75RJPS
+#define DOOR_HANDLER_WW75RJPS
 
 #include <fstream>
 #include <topological_mapper/structures/point.h>
@@ -50,14 +51,43 @@
 
 namespace clingo_helpers {
 
+  class Location {
+    public:
+      std::string name;
+      topological_mapper::Point2f loc;
+  };
+
+  void readLocationFile(const std::string& filename, 
+      std::vector<Location>& locations) {
+    std::ifstream fin(filename.c_str());
+    YAML::Parser parser(fin);
+
+    YAML::Node doc;
+    parser.GetNextDocument(doc);
+
+    locations.clear();
+    for (size_t i = 0; i < doc.size(); i++) {
+      Location location;
+      const YAML::Node &loc_node = doc[i]["loc"];
+      for (size_t j = 0; j < 2; ++j) {
+        loc_node[j][0] >> location.loc.x;
+        loc_node[j][1] >> location.loc.y;
+      }
+      doc[i]["name"] >> location.name;
+      locations.push_back(location);
+    }
+
+  }
+
   class Door {
     public:
+      std::string name;
       topological_mapper::Point2f approach_points[2];
       float approach_yaw[2];
       topological_mapper::Point2f corners[4];
   };
 
-  void readDoorFile (const std::string& filename, std::vector<Door>& doors) {
+  void readDoorFile(const std::string& filename, std::vector<Door>& doors) {
     std::ifstream fin(filename.c_str());
     YAML::Parser parser(fin);
 
@@ -78,23 +108,23 @@ namespace clingo_helpers {
         approach_node[j][1] >> door.approach_points[j].y; 
         approach_node[j][2] >> door.approach_yaw[j]; 
       }
+      doc[i]["name"] >> door.name;
       doors.push_back(door);
     }
   }
 
-  class DoorDetector {
+  class DoorHandler {
 
     public:
 
-      DoorDetector (boost::shared_ptr<topological_mapper::MapLoader> mapper, 
-          const std::string& door_yaml_file) : mapper_(mapper) {
+      DoorHandler (boost::shared_ptr<topological_mapper::MapLoader> mapper, 
+          const std::string& door_yaml_file, tf::TransformListener &tf) : mapper_(mapper) {
 
         /* Initialize costmap and planner */
-        tf_.reset(new tf::TransformListener());
-        costmap_.reset(new costmap_2d::Costmap2DROS("door_detector_costmap", 
-            *tf_));
-        navfn_.reset(new navfn::NavfnROS("door_detector_planner", 
-            costmap_.get()));
+        costmap_.reset(new costmap_2d::Costmap2DROS("door_handler_costmap", tf)); 
+        costmap_->pause();
+        ROS_INFO("Costmap size: %d, %d", costmap_->getSizeInCellsX(), costmap_->getSizeInCellsY());
+        navfn_.reset(new navfn::NavfnROS("door_handler_costmap", costmap_.get()));
 
         /* Initialize information about the doors */
         readDoorFile(door_yaml_file, doors_);
@@ -104,6 +134,14 @@ namespace clingo_helpers {
         info_ = grid.info;
         map_frame_id_ = "/map";
         //map_frame_id_ = grid.header.frame_id; //TODO
+
+        costmap_->start();
+
+        // Close all doors
+        for (size_t i = 0; i < doors_.size(); ++i) {
+          closeDoor(i);
+        }
+
       }
 
       bool isDoorOpen(size_t idx) {
@@ -133,6 +171,99 @@ namespace clingo_helpers {
         /* Finally, see if a plan is possible */
         std::vector<geometry_msgs::PoseStamped> plan; // Irrelevant
         return navfn_->makePlan(start_pose, goal_pose, plan);
+      }
+
+      bool getApproachPoint(size_t idx, 
+          const topological_mapper::Point2f& current_location,
+          topological_mapper::Point2f& point) {
+
+        /* Close all doors */
+        for (size_t i = 0; i < doors_.size(); ++i) {
+          closeDoor(i);
+        }
+
+        /* Setup variables */
+        geometry_msgs::PoseStamped start_pose, goal_pose;
+        start_pose.header.frame_id = goal_pose.header.frame_id = map_frame_id_;
+        start_pose.pose.position.x = current_location.x;
+        start_pose.pose.position.y = current_location.y;
+        start_pose.pose.position.z = goal_pose.pose.position.z = 0;
+        start_pose.pose.orientation.x = start_pose.pose.orientation.y = 
+          start_pose.pose.orientation.z = 0;
+        start_pose.pose.orientation.w = 1;
+        goal_pose.pose.orientation = start_pose.pose.orientation;
+        std::vector<geometry_msgs::PoseStamped> plan; // Irrelevant
+
+        /* Check against 1st approach point */
+        goal_pose.pose.position.x = doors_[idx].approach_points[0].x;
+        goal_pose.pose.position.y = doors_[idx].approach_points[0].y;
+        if (navfn_->makePlan(start_pose, goal_pose, plan)) {
+          point = doors_[idx].approach_points[0];
+          return true;
+        }
+
+        /* Otherwise check against 2nd approach point */
+        goal_pose.pose.position.x = doors_[idx].approach_points[1].x;
+        goal_pose.pose.position.y = doors_[idx].approach_points[1].y;
+        if (navfn_->makePlan(start_pose, goal_pose, plan)) {
+          point = doors_[idx].approach_points[1];
+          return true;
+        }
+
+        /* The door is not approachable from the current location */
+        return false;
+      }
+
+      bool getThroughDoorPoint(size_t idx, 
+          const topological_mapper::Point2f& current_location,
+          topological_mapper::Point2f& point) {
+
+        topological_mapper::Point2f approach_point;
+        bool point_available = 
+          getApproachPoint(idx, current_location, approach_point);
+
+        if (point_available) {
+          if (approach_point == doors_[idx].approach_point[0]) {
+            point = doors_[idx].approach_points[1];
+
+
+          }
+          return true;
+        }
+        return false;
+      }
+
+      size_t getLocationIdx(const topological_mapper::Point2f& current_location) {
+
+        /* Close all doors */
+        for (size_t i = 0; i < doors_.size(); ++i) {
+          closeDoor(i);
+        }
+
+        /* Setup variables */
+        geometry_msgs::PoseStamped start_pose, goal_pose;
+        start_pose.header.frame_id = goal_pose.header.frame_id = map_frame_id_;
+        start_pose.pose.position.x = current_location.x;
+        start_pose.pose.position.y = current_location.y;
+        start_pose.pose.position.z = goal_pose.pose.position.z = 0;
+        start_pose.pose.orientation.x = start_pose.pose.orientation.y = 
+          start_pose.pose.orientation.z = 0;
+        start_pose.pose.orientation.w = 1;
+        goal_pose.pose.orientation = start_pose.pose.orientation;
+        std::vector<geometry_msgs::PoseStamped> plan; // Irrelevant
+
+        /* Find a location that is still reachable. We are at that location */
+        for (size_t i = 0; i < locations_.size(); ++i) {
+          /* Check if we can reach this location. If so, then return this idx */
+          goal_pose.pose.position.x = locations_[idx].loc.x;
+          goal_pose.pose.position.y = locations_[idx].loc.y;
+          if (navfn_->makePlan(start_pose, goal_pose, plan)) {
+            return i;
+          }
+        }
+
+        return -1;
+
       }
 
       /* We need to close all other doors to figure out if a particular door 
@@ -192,6 +323,15 @@ namespace clingo_helpers {
             info_.origin.position.y + min_y * info_.resolution;
         new_grid.header.frame_id = map_frame_id_;
         new_grid.data.resize(height * width);
+        size_t count = 0;
+        for (size_t row = 0; row < height; ++row) {
+          const cv::Vec3b* row_ptr = sub_image.ptr<cv::Vec3b>(row);
+          for (size_t col = 0; col < width; ++col) {
+            unsigned char intensity = (row_ptr[col][0] + row_ptr[col][1] + row_ptr[col][2]) / 3;
+            new_grid.data[count] = (intensity < 128) ? 100 : 0;
+            count++;
+          }
+        }
 
         /* Update the map */
         costmap_->updateStaticMap(new_grid);
@@ -202,14 +342,14 @@ namespace clingo_helpers {
       boost::shared_ptr <topological_mapper::MapLoader> mapper_;
       boost::shared_ptr <navfn::NavfnROS> navfn_;
       boost::shared_ptr <costmap_2d::Costmap2DROS> costmap_;
-      boost::shared_ptr <tf::TransformListener> tf_;
 
       std::vector<Door> doors_;
+      std::vector<Location> locations_;
       nav_msgs::MapMetaData info_;
       std::string map_frame_id_;
 
-  }; /* DoorDetector */
+  }; /* DoorHandler */
   
 } /* clingo_helpers */
 
-#endif /* end of include guard: DOOR_DETECTOR_WW75RJPS */
+#endif /* end of include guard: DOOR_HANDLER_WW75RJPS */
