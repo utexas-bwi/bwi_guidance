@@ -38,7 +38,7 @@
 
 #include <topological_mapper/topological_mapper.h>
 #include <topological_mapper/map_utils.h>
-#include <clingo_helpers/door_detector.h>
+#include <clingo_helpers/door_handler.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -54,7 +54,8 @@ enum State {
   DOOR_APPROACH_0_YAW = 5,
   DOOR_APPROACH_1 = 6,
   DOOR_APPROACH_1_YAW = 7,
-  STOP = 8
+  MARK_LOCATION = 8,
+  STOP = 9
 } global_state = DOOR_PT_0;
 
 cv::Point clicked_pt, mouseover_pt;
@@ -88,12 +89,14 @@ int main(int argc, char** argv) {
 
   std::vector<clingo_helpers::Door> doors;
   clingo_helpers::Door current_door;
+  std::vector<clingo_helpers::Location> locations;
+  clingo_helpers::Location current_location;
 
   while (true) {
 
     mapper.drawMap(image,0,0);
 
-    // Clicks
+    /* Handle drawing door related information */
     if (global_state == DOOR_PT_1) {
       cv::circle(image, toGrid(current_door.corners[0], info), 
           2, cv::Scalar(0,0,255), -1);
@@ -110,7 +113,7 @@ int main(int argc, char** argv) {
           toGrid(current_door.corners[2], info),
           cv::Scalar(0,0,255), 2, 8);
     }
-    if (global_state > DOOR_PT_3) {
+    if (global_state > DOOR_PT_3 && global_state <= DOOR_APPROACH_1_YAW) {
       int num_points[1] = {4};
       const cv::Point points[4] = {
         toGrid(current_door.corners[0], info),
@@ -121,11 +124,11 @@ int main(int argc, char** argv) {
       const cv::Point* point_list[1] = {&points[0]};
       cv::fillPoly(image, point_list, num_points, 1, cv::Scalar(0,0,255));
     }
-    if (global_state > DOOR_APPROACH_0) {
+    if (global_state > DOOR_APPROACH_0 && global_state <= DOOR_APPROACH_1_YAW) {
       cv::circle(image, toGrid(current_door.approach_points[0], info), 
           3, cv::Scalar(0,0,255), -1);
     }
-    if (global_state > DOOR_APPROACH_0_YAW) {
+    if (global_state > DOOR_APPROACH_0_YAW && global_state <= DOOR_APPROACH_1_YAW) {
       topological_mapper::Point2f current_approach_pt = 
         toGrid(current_door.approach_points[0], info);
       float current_approach_yaw = current_door.approach_yaw[0];
@@ -134,12 +137,11 @@ int main(int argc, char** argv) {
       yaw_pt = current_approach_pt + yaw_pt;
       cv::line(image, current_approach_pt, yaw_pt, cv::Scalar(0,0,255), 2, -1);
     }
-    if (global_state > DOOR_APPROACH_1) {
+    if (global_state > DOOR_APPROACH_1 && global_state <= DOOR_APPROACH_1_YAW) {
       cv::circle(image, toGrid(current_door.approach_points[1], info), 
           3, cv::Scalar(0,0,255), -1);
     }
     for (size_t i = 0; i < doors.size(); ++i) {
-
       int num_points[1] = {4};
       const cv::Point points[4] = {
         toGrid(doors[i].corners[0], info),
@@ -171,7 +173,9 @@ int main(int argc, char** argv) {
       yaw_pt = 10 * yaw_pt;
       yaw_pt = current_approach_pt + yaw_pt;
       cv::line(image, current_approach_pt, yaw_pt, cv::Scalar(255,0,0), 2, -1);
-
+    }
+    for (size_t i = 0; i < locations.size(); ++i) {
+      cv::circle(image, toGrid(locations[i].loc, info), 3, cv::Scalar(128,255,128), -1);
     }
 
     cv::imshow("Display", image);
@@ -179,6 +183,8 @@ int main(int argc, char** argv) {
     unsigned char c = cv::waitKey(10);
     if (c == 27) {
       return 0;
+    } else if (c == 'n' && global_state < MARK_LOCATION) {
+      global_state = MARK_LOCATION;
     } else if (c == 'n') {
       global_state = STOP;
       increment_state = true;
@@ -222,13 +228,21 @@ int main(int argc, char** argv) {
           current_door.approach_yaw[1] = 
             atan2f((map_pt - current_door.approach_points[1]).y,
                    (map_pt - current_door.approach_points[1]).x);
+          std::cout << "Enter door name: ";
+          std::cin >> current_door.name;
           doors.push_back(current_door);
           global_state = DOOR_PT_0;
+          break;
+        case MARK_LOCATION:
+          current_location.loc = map_pt;
+          std::cout << "Enter location name: ";
+          std::cin >> current_location.name;
+          locations.push_back(current_location);
           break;
         case STOP:
           for (size_t i = 0; i < doors.size(); ++i) {
             clingo_helpers::Door &door = doors[i];
-            std::cout << " - corners: [";
+            std::cout << "- corners: [";
             for (size_t j = 0; j < 4; ++j) {
               std::cout << "[" << door.corners[j].x << ", " << 
                   door.corners[j].y << "]";
@@ -237,7 +251,7 @@ int main(int argc, char** argv) {
               }
             }
             std::cout << "]" << std::endl;
-            std::cout << "   approach: [";
+            std::cout << "  approach: [";
             for (size_t j = 0; j < 2; ++j) {
               std::cout << "[" << door.approach_points[j].x << ", " << 
                   door.approach_points[j].y << ", " << door.approach_yaw[j] 
@@ -247,8 +261,15 @@ int main(int argc, char** argv) {
               }
             }
             std::cout << "]" << std::endl;
+            std::cout << "  name: " << door.name << std::endl;
           }
-          break;
+          for (size_t i = 0; i < locations.size(); ++i) {
+            clingo_helpers::Location &loc = locations[i];
+            std::cout << "- loc: [" << loc.loc.x << ", " << loc.loc.y << "]";
+            std::cout << std::endl;
+            std::cout << "  name: " << loc.name << std::endl;
+          }
+          return 0;
       }
       increment_state = false;
     } 

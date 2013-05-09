@@ -118,7 +118,8 @@ namespace clingo_helpers {
     public:
 
       DoorHandler (boost::shared_ptr<topological_mapper::MapLoader> mapper, 
-          const std::string& door_yaml_file, tf::TransformListener &tf) : mapper_(mapper) {
+          const std::string& door_yaml_file, const std::string& location_file, 
+          tf::TransformListener &tf) : mapper_(mapper) {
 
         /* Initialize costmap and planner */
         costmap_.reset(new costmap_2d::Costmap2DROS("door_handler_costmap", tf)); 
@@ -128,6 +129,7 @@ namespace clingo_helpers {
 
         /* Initialize information about the doors */
         readDoorFile(door_yaml_file, doors_);
+        readLocationFile(location_file, locations_);
 
         nav_msgs::OccupancyGrid grid;
         mapper_->getMap(grid);
@@ -223,10 +225,10 @@ namespace clingo_helpers {
           getApproachPoint(idx, current_location, approach_point);
 
         if (point_available) {
-          if (approach_point == doors_[idx].approach_point[0]) {
+          if (approach_point == doors_[idx].approach_points[0]) {
             point = doors_[idx].approach_points[1];
-
-
+          } else {
+            point = doors_[idx].approach_points[0];
           }
           return true;
         }
@@ -255,8 +257,8 @@ namespace clingo_helpers {
         /* Find a location that is still reachable. We are at that location */
         for (size_t i = 0; i < locations_.size(); ++i) {
           /* Check if we can reach this location. If so, then return this idx */
-          goal_pose.pose.position.x = locations_[idx].loc.x;
-          goal_pose.pose.position.y = locations_[idx].loc.y;
+          goal_pose.pose.position.x = locations_[i].loc.x;
+          goal_pose.pose.position.y = locations_[i].loc.y;
           if (navfn_->makePlan(start_pose, goal_pose, plan)) {
             return i;
           }
@@ -335,6 +337,32 @@ namespace clingo_helpers {
 
         /* Update the map */
         costmap_->updateStaticMap(new_grid);
+      }
+
+      size_t getLocationIdx(const std::string& loc_str) {
+        for (size_t i = 0; i < locations_.size(); ++i) {
+          if (locations_[i].name == loc_str) {
+            return i;
+          }
+        }
+        return -1;
+      }
+
+      size_t getDoorIdx(const std::string& door_str) {
+        for (size_t i = 0; i < doors_.size(); ++i) {
+          if (doors_[i].name == door_str) {
+            return i;
+          }
+        }
+        return -1;
+      }
+
+      std::string getLocationString(size_t idx) {
+        return locations_[idx].name;
+      }
+
+      std::string getDoorString(size_t idx) {
+        return doors_[idx].name;
       }
 
     private:

@@ -37,21 +37,22 @@
 
 #include <ros/ros.h>
 #include <topological_mapper/map_loader.h>
-#include <clingo_helpers/door_detector.h>
+#include <clingo_helpers/door_handler.h>
 
 int main(int argc, char *argv[]) {
   
   ros::init(argc, argv, "door_detector_test");
   tf::TransformListener tf(ros::Duration(10));
 
-  std::string map_file, door_file;
+  std::string map_file, door_file, location_file;
 
   ros::param::get("~map_file", map_file);
   ros::param::get("~door_file", door_file);
+  ros::param::get("~location_file", location_file);
 
   boost::shared_ptr<topological_mapper::MapLoader> mapper;
   mapper.reset(new topological_mapper::MapLoader(map_file));
-  clingo_helpers::DoorDetector dd(mapper, door_file, tf);
+  clingo_helpers::DoorHandler dd(mapper, door_file, location_file, tf);
 
   ros::Rate rate(10);
 
