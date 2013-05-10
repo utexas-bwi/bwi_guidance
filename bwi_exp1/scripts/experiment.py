@@ -462,7 +462,11 @@ class ExperimentController:
 
         # record position
         self.log_lock.acquire()
-        self.log_file.write("  - [" + str(odom.pose.pose.position.x) + ", " + str(odom.pose.pose.position.y) + ", " + str(odom.header.stamp.to_sec()) + "]\n")
+        try:
+            self.log_file.write("  - [" + str(odom.pose.pose.position.x) + ", " + str(odom.pose.pose.position.y) + ", " + str(odom.header.stamp.to_sec()) + "]\n")
+        except ValueError as e:
+            rospy.logerr("Value error caught while writing odometry data. FIX THIS!!!")
+
         self.log_lock.release()
 
         # check if the person is near a robot

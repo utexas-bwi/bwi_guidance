@@ -14,8 +14,8 @@ function parseParameters() {
 }
 
 /* Global ROS parameters */
-var host = 'localhost'
-/* var host = 'zoidberg.csres.utexas.edu' */
+/* var host = 'localhost' */
+var host = 'zoidberg.csres.utexas.edu'
 var ros;
 var experiment_status_subscriber; // subs
 var update_experiment_service; // services

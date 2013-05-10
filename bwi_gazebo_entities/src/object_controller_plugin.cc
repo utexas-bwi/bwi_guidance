@@ -28,10 +28,8 @@
 
 #include <bwi_gazebo_entities/object_controller_plugin.h>
 
-#include <common/common.h>
-#include <math/gzmath.h>
-#include <physics/physics.h>
-#include <sdf/sdf.h>
+#include <math/gzmath.hh>
+#include <sdf/sdf.hh>
 
 #include <ros/ros.h>
 #include <tf/transform_broadcaster.h>

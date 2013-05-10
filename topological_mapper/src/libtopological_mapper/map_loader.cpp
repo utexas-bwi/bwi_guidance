@@ -161,7 +161,6 @@ namespace topological_mapper {
         (uint32_t) image.rows < orig_y + map.info.height) {
       cv::Mat old_mat = image.clone();
       image.create(orig_y + map.info.height, orig_x + map.info.width, CV_8UC3);
-      std::cout << "drawMap(): Resizing image to " << orig_y + map.info.height << "x" << orig_x + map.info.width << std::endl;
       for (uint32_t j = 0; j < (uint32_t) old_mat.rows; ++j) {
         const cv::Vec3b* old_row_j = old_mat.ptr<cv::Vec3b>(j);
         cv::Vec3b* row_j = image.ptr<cv::Vec3b>(j);

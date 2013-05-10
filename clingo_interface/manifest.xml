@@ -15,7 +15,6 @@
   <!-- rosbuild1 -->
   <depend package="qt_build"/>
   <depend package="roscpp"/>
-  <depend package="sound_play"/>
   
   <rosbuild2>
     <depend package="qt_build"/>
