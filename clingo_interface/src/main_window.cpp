@@ -80,8 +80,8 @@ namespace clingo_interface {
     /* Update image */
     float image_height = qnode.generated_image_.rows;
     float image_width = qnode.generated_image_.cols;
-    float screen_height = ui.label->frameRect().size().height();
-    float screen_width = ui.label->frameRect().size().width();
+    float screen_height = ui.localMap->frameRect().size().height();
+    float screen_width = ui.localMap->frameRect().size().width();
 
     float scale_height = screen_height / image_height;
     float scale_width = screen_width / image_width;

@@ -35,12 +35,12 @@ namespace clingo_interface {
       MainWindow(int argc, char** argv, QWidget *parent = 0);
       ~MainWindow();
 
-      void closeEvent(QCloseEvent *event); // Overloaded function
-
     public slots:
 
+      void updateFrameInfo();
+
     private:
-        Ui::MainWindowDesign ui;
+        Ui::MainWindow ui;
         QNode qnode;
   };
 

@@ -20,7 +20,9 @@
 #include <string>
 #include <QThread>
 #include <QStringListModel>
+#include <clingo_helpers/ClingoInterface.h>
 
+#include <opencv/cv.h>
 
 /*****************************************************************************
 ** Namespaces
@@ -39,6 +41,18 @@ namespace clingo_interface {
       virtual ~QNode();
       bool init();
       void run();
+
+      /* Service callback */
+      bool clingoInterfaceHandler(clingo_helpers::ClingoInterface::Request &req,
+          clingo_helpers::ClingoInterface::Response &resp);
+
+      /* Display stuff */
+      QString display_text_;
+      bool button1_enabled_;
+      QString button1_text_;
+      bool button2_enabled_;
+      QString button2_text_;
+      cv::Mat generated_image_;
 
     signals:
       void rosShutdown();

@@ -1,3 +1,7 @@
 bin
 build
 lib
+*.swp
+*.swo
+msg_gen
+srv_gen
