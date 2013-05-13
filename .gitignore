@@ -5,3 +5,4 @@ lib
 *.swo
 msg_gen
 srv_gen
+tags

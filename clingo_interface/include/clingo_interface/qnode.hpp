@@ -23,7 +23,7 @@
 
 #include <topological_mapper/map_loader.h>
 #include <tf/transform_listener.h>
-#include <clingo_helpers/ClingoInterface.h>
+#include <clingo_interface/ClingoInterfaceAction.h>
 #include <clingo_helpers/door_handler.h>
 #include <nav_msgs/Odometry.h>
 #include <opencv/cv.h>
@@ -47,9 +47,8 @@ namespace clingo_interface {
       void run();
 
       /* Service callback */
-      bool clingoInterfaceHandler(
-          clingo_helpers::ClingoInterface::Request &req,
-          clingo_helpers::ClingoInterface::Response &resp);
+      void clingoInterfaceHandler(
+          const clingo_interface::ClingoInterfaceGoalConstPtr &req);
 
       /* Get robot location */
       void odometryHandler(const nav_msgs::Odometry::ConstPtr &odom);
@@ -71,8 +70,11 @@ namespace clingo_interface {
       char** init_argv;
 
       /* Ros Stuff */
+      boost::shared_ptr<ros::NodeHandle> nh_;
       ros::Publisher robot_controller_;
       ros::Subscriber odom_subscriber_;
+      boost::shared_ptr<actionlib::SimpleActionServer<
+          clingo_interface::ClingoInterfaceAction> > as_;
 
       /* Robot Location */
       float robot_x_;
