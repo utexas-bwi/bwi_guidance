@@ -3,3 +3,6 @@ ClingoFluent command
 bool success
 string status
 ClingoFluent[] observable_fluents
+---
+string status
+ClingoFluent[] observable_fluents

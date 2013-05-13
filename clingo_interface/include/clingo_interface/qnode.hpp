@@ -17,6 +17,7 @@
 *****************************************************************************/
 
 #include <ros/ros.h>
+#include <actionlib/server/simple_action_server.h>
 #include <QThread>
 #include <QStringListModel>
 
@@ -69,9 +70,8 @@ namespace clingo_interface {
       int init_argc;
       char** init_argv;
 
-      /* Command Publisher */
+      /* Ros Stuff */
       ros::Publisher robot_controller_;
-      ros::ServiceServer service_;
       ros::Subscriber odom_subscriber_;
 
       /* Robot Location */
