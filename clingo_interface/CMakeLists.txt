@@ -39,6 +39,8 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 rosbuild_include(qt_build qt-ros)
 rosbuild_prepare_qt4(QtCore QtGui) # Add the appropriate components to the component list here
+#http://www.ros.org/wiki/qt_ros/Tutorials/Mixing%20Qt%20and%20Boost%20Signals
+ADD_DEFINITIONS(-DQT_NO_KEYWORDS)
 
 ##############################################################################
 # Sections

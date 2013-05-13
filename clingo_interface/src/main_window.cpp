@@ -58,11 +58,11 @@ namespace clingo_interface {
   void MainWindow::updateFrameInfo() {
 
     /* Update Text */
-    ui.textDisplay->setText(qnode.display_text_);
+    ui.textDisplay->setText(qnode.display_text_.c_str());
 
     /* Update Buttons */
     if (qnode.button1_enabled_) {
-      ui.button1->setText(qnode.button1_text_);
+      ui.button1->setText(qnode.button1_text_.c_str());
       ui.button1->setEnabled(true);
     } else {
       ui.button1->setText("(none)");
@@ -70,7 +70,7 @@ namespace clingo_interface {
     }
 
     if (qnode.button2_enabled_) {
-      ui.button2->setText(qnode.button2_text_);
+      ui.button2->setText(qnode.button2_text_.c_str());
       ui.button2->setEnabled(true);
     } else {
       ui.button2->setText("(none)");

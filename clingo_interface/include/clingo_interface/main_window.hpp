@@ -35,7 +35,7 @@ namespace clingo_interface {
       MainWindow(int argc, char** argv, QWidget *parent = 0);
       ~MainWindow();
 
-    public slots:
+    public Q_SLOTS:
 
       void updateFrameInfo();
 

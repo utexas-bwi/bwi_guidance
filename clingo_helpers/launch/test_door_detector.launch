@@ -8,5 +8,6 @@
     <arg name="y" value="8" />
     <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot_kinect.auxilliary.launch" />
   </include>
+  <include file="$(find segbot_navigation)/launch/move_base_eband.launch" />
 
 </launch>

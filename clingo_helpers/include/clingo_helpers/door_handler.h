@@ -57,7 +57,7 @@ namespace clingo_helpers {
       topological_mapper::Point2f loc;
   };
 
-  void readLocationFile(const std::string& filename, 
+  inline void readLocationFile(const std::string& filename, 
       std::vector<Location>& locations) {
     std::ifstream fin(filename.c_str());
     YAML::Parser parser(fin);
@@ -87,7 +87,7 @@ namespace clingo_helpers {
       topological_mapper::Point2f corners[4];
   };
 
-  void readDoorFile(const std::string& filename, std::vector<Door>& doors) {
+  inline void readDoorFile(const std::string& filename, std::vector<Door>& doors) {
     std::ifstream fin(filename.c_str());
     YAML::Parser parser(fin);
 
@@ -177,7 +177,7 @@ namespace clingo_helpers {
 
       bool getApproachPoint(size_t idx, 
           const topological_mapper::Point2f& current_location,
-          topological_mapper::Point2f& point) {
+          topological_mapper::Point2f& point, float &yaw) {
 
         /* Close all doors */
         for (size_t i = 0; i < doors_.size(); ++i) {
@@ -201,6 +201,7 @@ namespace clingo_helpers {
         goal_pose.pose.position.y = doors_[idx].approach_points[0].y;
         if (navfn_->makePlan(start_pose, goal_pose, plan)) {
           point = doors_[idx].approach_points[0];
+          yaw = doors_[idx].approach_yaw[0];
           return true;
         }
 
@@ -209,6 +210,7 @@ namespace clingo_helpers {
         goal_pose.pose.position.y = doors_[idx].approach_points[1].y;
         if (navfn_->makePlan(start_pose, goal_pose, plan)) {
           point = doors_[idx].approach_points[1];
+          yaw = doors_[idx].approach_yaw[1];
           return true;
         }
 
@@ -218,18 +220,22 @@ namespace clingo_helpers {
 
       bool getThroughDoorPoint(size_t idx, 
           const topological_mapper::Point2f& current_location,
-          topological_mapper::Point2f& point) {
+          topological_mapper::Point2f& point, float& yaw) {
 
         topological_mapper::Point2f approach_point;
+        float approach_yaw;
         bool point_available = 
-          getApproachPoint(idx, current_location, approach_point);
+          getApproachPoint(idx, current_location, approach_point, approach_yaw);
 
         if (point_available) {
           if (approach_point == doors_[idx].approach_points[0]) {
             point = doors_[idx].approach_points[1];
+            yaw = M_PI + doors_[idx].approach_yaw[1];
           } else {
             point = doors_[idx].approach_points[0];
+            yaw = M_PI + doors_[idx].approach_yaw[0];
           }
+          yaw = atan2f(sinf(yaw), cosf(yaw));
           return true;
         }
         return false;

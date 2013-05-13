@@ -15,5 +15,8 @@
   <depend package="qt_build"/>
   <depend package="roscpp"/>
   <depend package="clingo_helpers"/>
+  <depend package="geometry_msgs"/>
+  <depend package="nav_msgs"/>
+  <depend package="tf"/>
   
 </package>
