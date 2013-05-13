@@ -51,6 +51,21 @@
 
 namespace clingo_helpers {
 
+  class NavfnROS : public navfn::NavfnROS {
+    public:
+      NavfnROS() : navfn::NavfnROS() {}
+      NavfnROS(std::string name, costmap_2d::Costmap2DROS *costmap_ros) : 
+          navfn::NavfnROS(name, costmap_ros) {}
+      virtual void getCostmap(costmap_2d::Costmap2D& costmap) {
+        costmap = static_costmap_;
+      }
+      virtual void updateCostmap(costmap_2d::Costmap2D& costmap) {
+        static_costmap_ = costmap;
+      }
+    protected:
+      costmap_2d::Costmap2D static_costmap_;
+  };
+
   class Location {
     public:
       std::string name;
@@ -70,8 +85,8 @@ namespace clingo_helpers {
       Location location;
       const YAML::Node &loc_node = doc[i]["loc"];
       for (size_t j = 0; j < 2; ++j) {
-        loc_node[j][0] >> location.loc.x;
-        loc_node[j][1] >> location.loc.y;
+        loc_node[0] >> location.loc.x;
+        loc_node[1] >> location.loc.y;
       }
       doc[i]["name"] >> location.name;
       locations.push_back(location);
@@ -125,11 +140,12 @@ namespace clingo_helpers {
         costmap_.reset(new costmap_2d::Costmap2DROS("door_handler_costmap", tf)); 
         costmap_->pause();
         ROS_INFO("Costmap size: %d, %d", costmap_->getSizeInCellsX(), costmap_->getSizeInCellsY());
-        navfn_.reset(new navfn::NavfnROS("door_handler_costmap", costmap_.get()));
+        navfn_.reset(new NavfnROS("door_handler_costmap", costmap_.get()));
 
         /* Initialize information about the doors */
         readDoorFile(door_yaml_file, doors_);
         readLocationFile(location_file, locations_);
+        ROS_INFO("Read %u locations from %s", (unsigned int) locations_.size(), location_file.c_str());
 
         nav_msgs::OccupancyGrid grid;
         mapper_->getMap(grid);
@@ -139,14 +155,12 @@ namespace clingo_helpers {
 
         costmap_->start();
 
-        // Close all doors
-        for (size_t i = 0; i < doors_.size(); ++i) {
-          closeDoor(i);
-        }
-
       }
 
       bool isDoorOpen(size_t idx) {
+
+        /* Get latest copy of the costmap */
+        costmap_->getCostmapCopy(costmap_copy_);
 
         /* Close all other doors in the costmap. The current door should be 
          * getting updated through observations */
@@ -156,6 +170,9 @@ namespace clingo_helpers {
           }
           closeDoor(i);
         }
+
+        /* Update the planner's copy of the costmap */
+        navfn_->updateCostmap(costmap_copy_);
 
         /* Now get the start and goal locations for this door */
         geometry_msgs::PoseStamped start_pose, goal_pose;
@@ -179,10 +196,16 @@ namespace clingo_helpers {
           const topological_mapper::Point2f& current_location,
           topological_mapper::Point2f& point, float &yaw) {
 
+        /* Get latest copy of the costmap */
+        costmap_->getCostmapCopy(costmap_copy_);
+
         /* Close all doors */
         for (size_t i = 0; i < doors_.size(); ++i) {
           closeDoor(i);
         }
+
+        /* Update the planner's copy of the costmap */
+        navfn_->updateCostmap(costmap_copy_);
 
         /* Setup variables */
         geometry_msgs::PoseStamped start_pose, goal_pose;
@@ -243,10 +266,15 @@ namespace clingo_helpers {
 
       size_t getLocationIdx(const topological_mapper::Point2f& current_location) {
 
+        costmap_->getCostmapCopy(costmap_copy_);
+
         /* Close all doors */
         for (size_t i = 0; i < doors_.size(); ++i) {
           closeDoor(i);
         }
+
+        /* Update the planner's copy of the costmap */
+        navfn_->updateCostmap(costmap_copy_);
 
         /* Setup variables */
         geometry_msgs::PoseStamped start_pose, goal_pose;
@@ -319,30 +347,24 @@ namespace clingo_helpers {
         cv::fillPoly(sub_image, point_list, num_points, 1, cv::Scalar(0,0,0));
 
         /* Convert sub_image to Occupancy Grid and update map */
-        nav_msgs::OccupancyGrid new_grid;
-        new_grid.info.map_load_time = info_.map_load_time;
-        new_grid.info.resolution = info_.resolution;
-        new_grid.info.width = width;
-        new_grid.info.height = height;
-        new_grid.info.origin.orientation = info_.origin.orientation;
-        new_grid.info.origin.position.x = 
-            info_.origin.position.x + min_x * info_.resolution;
-        new_grid.info.origin.position.y = 
-            info_.origin.position.y + min_y * info_.resolution;
-        new_grid.header.frame_id = map_frame_id_;
-        new_grid.data.resize(height * width);
+        std::vector<unsigned char> new_grid;
+        new_grid.resize(height * width);
         size_t count = 0;
         for (size_t row = 0; row < height; ++row) {
           const cv::Vec3b* row_ptr = sub_image.ptr<cv::Vec3b>(row);
           for (size_t col = 0; col < width; ++col) {
-            unsigned char intensity = (row_ptr[col][0] + row_ptr[col][1] + row_ptr[col][2]) / 3;
-            new_grid.data[count] = (intensity < 128) ? 100 : 0;
+            unsigned char intensity = 
+              (row_ptr[col][0] + row_ptr[col][1] + row_ptr[col][2]) / 3;
+            new_grid[count] = (intensity < 128) ? 100 : 0;
             count++;
           }
         }
 
         /* Update the map */
-        costmap_->updateStaticMap(new_grid);
+        costmap_copy_.updateStaticMapWindow(
+            info_.origin.position.x + min_x * info_.resolution,
+            info_.origin.position.y + min_y * info_.resolution,
+            width, height, new_grid);
       }
 
       size_t getLocationIdx(const std::string& loc_str) {
@@ -374,8 +396,9 @@ namespace clingo_helpers {
     private:
 
       boost::shared_ptr <topological_mapper::MapLoader> mapper_;
-      boost::shared_ptr <navfn::NavfnROS> navfn_;
+      boost::shared_ptr <NavfnROS> navfn_;
       boost::shared_ptr <costmap_2d::Costmap2DROS> costmap_;
+      costmap_2d::Costmap2D costmap_copy_;
 
       std::vector<Door> doors_;
       std::vector<Location> locations_;

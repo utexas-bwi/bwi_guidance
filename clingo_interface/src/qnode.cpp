@@ -71,13 +71,13 @@ namespace clingo_interface {
   void QNode::clingoInterfaceHandler(
       const clingo_interface::ClingoInterfaceGoalConstPtr &req) {
 
-    clingo_interface::ClingoInterfaceFeedback feedback;
     clingo_interface::ClingoInterfaceResult resp;
 
     if (req->command.op == "approach" || req->command.op == "gothrough") {
       std::string door_name = req->command.args[0];
       size_t door_idx = handler_->getDoorIdx(door_name);
       if (door_idx == (size_t)-1) {
+        // Interface failure
         resp.success = false;
         resp.status = "Could not resolve argument: " + door_name;
       } else {
@@ -110,10 +110,28 @@ namespace clingo_interface {
               pose.pose.orientation); 
           robot_controller_.publish(pose); // TODO Use the action lib API for move base and provide feedback here
           resp.success = true;
+
+          // Publish the observable fluents
+          // TODO Besides should be published if approach goal succeeds
+          if (req->command.op == "approach") {
+            clingo_interface::ClingoFluent beside;
+            beside.op = "beside";
+            beside.args.push_back(door_name);
+            resp.observable_fluents.push_back(beside);
+          }
+          clingo_interface::ClingoFluent door_open;
+          door_open.op = "open";
+          door_open.args.push_back(door_name);
+          if (handler_->isDoorOpen(door_idx)) {
+            resp.observable_fluents.push_back(door_open);
+          }
+
         } else {
+          // Planning failure
           resp.success = false;
           resp.status = "Cannot approach " + door_name + " from here.";
         }
+
       }
     } else if (req->command.op == "callforopen") {
       std::string door_name = req->command.args[0];
@@ -165,11 +183,23 @@ namespace clingo_interface {
       resp.success = true;
     }
 
+    // Get location
+    size_t location_idx = 
+      handler_->getLocationIdx(topological_mapper::Point2f(robot_x_, robot_y_));
+    if (location_idx == (size_t) -1) {
+      ROS_ERROR("Unable to compute position");
+    } else {
+      std::string location_str = handler_->getLocationString(location_idx);
+      clingo_interface::ClingoFluent location;
+      location.op = "location";
+      location.args.push_back(location_str);
+      resp.observable_fluents.push_back(location);
+    }
+
     if (resp.success) {
       as_->setSucceeded(resp, resp.status);
     } else {
       as_->setAborted(resp, resp.status);
-
     }
   }
 
