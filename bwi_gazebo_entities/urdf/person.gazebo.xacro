@@ -17,22 +17,21 @@
 
   <xacro:macro name="gazebo_ros_controller">
     <canonicalBody>base_footprint</canonicalBody>
-    <controller:gazebo_ros_controller_manager name="gazebo_ros_controller_manager" plugin="libgazebo_ros_controller_manager.so">
+    <plugin name="gazebo_ros_controller_manager" filename="libgazebo_ros_controller_manager.so">
       <alwaysOn>true</alwaysOn>
       <updateRate>5.0</updateRate>
-      <interface:audio name="gazebo_ros_controller_manager_dummy_iface" />
-    </controller:gazebo_ros_controller_manager>
+    </plugin>
   </xacro:macro>
 
   <xacro:macro name="gazebo_person_drive">
-    <controller:person_drive_plugin name="object_controller" plugin="libobject_controller_plugin.so">
+    <plugin name="object_controller" filename="libobject_controller_plugin.so">
       <alwaysOn>true</alwaysOn>
       <updateRate>50</updateRate>
       <topicName>cmd_vel</topicName>
       <mapTopic>map</mapTopic>
       <modelRadius>0.15</modelRadius>
       <modelPadding>0.025</modelPadding>
-    </controller:person_drive_plugin>
+    </plugin>
   </xacro:macro>
 
 </root>
