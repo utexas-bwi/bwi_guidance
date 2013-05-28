@@ -121,6 +121,7 @@ private:
 
   // Simple map stuff
   std::string mapTopic;
+  std::string globalFrame;
   double modelRadius;
   double modelPadding;
   double circumscribed_model_distance_;
