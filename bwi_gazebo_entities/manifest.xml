@@ -17,10 +17,6 @@
 
   <rosdep name="opencv2" />
 
-  <export>
-    <gazebo plugin_path="${prefix}/lib" />
-  </export>
-
 </package>
 
 
