@@ -22,7 +22,7 @@
             <far>30.0</far>
           </clip>
         </camera>
-        <plugin name="${name}_controller" filename="libgazebo_ros_prosilica.so">
+        <plugin name="${name}_controller" filename="libgazebo_ros_camera.so">
           <alwaysOn>true</alwaysOn>
           <updateRate>20.0</updateRate>
           <cameraName>${name}</cameraName>
