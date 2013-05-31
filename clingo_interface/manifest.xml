@@ -9,16 +9,17 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/clingo_interface</url>
 
+  <depend package="navfn" />
+  <depend package="costmap_2d" />
+  <depend package="tf" />
+  <depend package="topological_mapper" />
 
-  <rosdep name="qt4"/>
+  <rosdep name="yaml-cpp" />
 
-  <depend package="qt_build"/>
-  <depend package="roscpp"/>
-  <depend package="clingo_helpers"/>
-  <depend package="geometry_msgs"/>
-  <depend package="nav_msgs"/>
-  <depend package="tf"/>
-  <depend package="actionlib"/>
-  <depend package="actionlib_msgs"/>
-  
+  <export>
+    <cpp cflags="-I${prefix}/include"/>
+  </export> 
+
 </package>
+
+

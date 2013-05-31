@@ -49,7 +49,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <yaml-cpp/yaml.h>
 
-namespace clingo_helpers {
+namespace clingo_interface {
 
   class NavfnROS : public navfn::NavfnROS {
     public:
@@ -407,6 +407,6 @@ namespace clingo_helpers {
 
   }; /* DoorHandler */
   
-} /* clingo_helpers */
+} /* clingo_interface */
 
 #endif /* end of include guard: DOOR_HANDLER_WW75RJPS */

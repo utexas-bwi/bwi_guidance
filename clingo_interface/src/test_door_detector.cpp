@@ -37,7 +37,7 @@
 
 #include <ros/ros.h>
 #include <topological_mapper/map_loader.h>
-#include <clingo_helpers/door_handler.h>
+#include <clingo_interface/door_handler.h>
 
 int main(int argc, char *argv[]) {
   
@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 
   boost::shared_ptr<topological_mapper::MapLoader> mapper;
   mapper.reset(new topological_mapper::MapLoader(map_file));
-  clingo_helpers::DoorHandler dd(mapper, door_file, location_file, tf);
+  clingo_interface::DoorHandler dd(mapper, door_file, location_file, tf);
 
   ros::Rate rate(10);
 

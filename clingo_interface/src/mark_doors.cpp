@@ -38,7 +38,7 @@
 
 #include <topological_mapper/topological_mapper.h>
 #include <topological_mapper/map_utils.h>
-#include <clingo_helpers/door_handler.h>
+#include <clingo_interface/door_handler.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -87,10 +87,10 @@ int main(int argc, char** argv) {
   cv::namedWindow("Display", CV_WINDOW_AUTOSIZE);
   cv::setMouseCallback("Display", mouseCallback, 0);
 
-  std::vector<clingo_helpers::Door> doors;
-  clingo_helpers::Door current_door;
-  std::vector<clingo_helpers::Location> locations;
-  clingo_helpers::Location current_location;
+  std::vector<clingo_interface::Door> doors;
+  clingo_interface::Door current_door;
+  std::vector<clingo_interface::Location> locations;
+  clingo_interface::Location current_location;
 
   while (true) {
 
@@ -241,7 +241,7 @@ int main(int argc, char** argv) {
           break;
         case STOP:
           for (size_t i = 0; i < doors.size(); ++i) {
-            clingo_helpers::Door &door = doors[i];
+            clingo_interface::Door &door = doors[i];
             std::cout << "- corners: [";
             for (size_t j = 0; j < 4; ++j) {
               std::cout << "[" << door.corners[j].x << ", " << 
@@ -264,7 +264,7 @@ int main(int argc, char** argv) {
             std::cout << "  name: " << door.name << std::endl;
           }
           for (size_t i = 0; i < locations.size(); ++i) {
-            clingo_helpers::Location &loc = locations[i];
+            clingo_interface::Location &loc = locations[i];
             std::cout << "- loc: [" << loc.loc.x << ", " << loc.loc.y << "]";
             std::cout << std::endl;
             std::cout << "  name: " << loc.name << std::endl;
