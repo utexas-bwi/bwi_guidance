@@ -13,11 +13,13 @@
   <depend package="costmap_2d" />
   <depend package="tf" />
   <depend package="topological_mapper" />
+  <depend package="pluginlib" />
 
   <rosdep name="yaml-cpp" />
 
   <export>
     <cpp cflags="-I${prefix}/include"/>
+    <costmap_2d plugin="${prefix}/costmap_plugins.xml" />
   </export> 
 
 </package>

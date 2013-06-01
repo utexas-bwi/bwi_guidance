@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 
   clingo_interface::DoorHandler dd(tf);
 
-  ros::Rate rate(10);
+  ros::Rate rate(100);
 
   while (ros::ok()) {
     std::cout << "Door 0 is open: " << dd.isDoorOpen(0) << std::endl;

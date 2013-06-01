@@ -1,13 +1,19 @@
+robot_radius: 0.25
 door_handler_costmap:
+  global_frame: /map
   robot_base_frame: base_footprint
-  update_frequency: 3.0
-  publish_frequency: 5.0
-  static_map: true
-  transform_tolerance: 0.5
-  obstacle_range: 2.25
-  raytrace_range: 2.3
-  footprint: [[-0.4, -0.3], [0.2, -0.3], [0.2, 0.3], [-0.4, 0.3]]
-  footprint_padding: 0.05
-  inflation_radius: 0.55
-  observation_sources: scan
-  scan: {data_type: LaserScan, topic: scan_filtered, marking: true, clearing: true, expected_update_rate: 0.2, inf_is_valid: true}
+  publish_frequency: 1.0
+  plugins:
+    - name: static_layer
+      type: costmap_2d::StaticLayer
+    - name: door_plugin
+      type: clingo_interface::CostmapDoorPlugin
+    - name: obstacle_layer
+      type: costmap_2d::ObstacleLayer
+    - name: inflation_layer
+      type: costmap_2d::InflationLayer
+  obstacle_layer:
+    observation_sources: scan
+    scan: {data_type: LaserScan, topic: scan_filtered, marking: true, clearing: true, expected_update_rate: 0.2, inf_is_valid: true}
+  inflation_layer:
+    inflation_radius: 0.3

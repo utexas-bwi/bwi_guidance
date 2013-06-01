@@ -1,0 +1,8 @@
+<class_libraries>
+  <library path="lib/libclingo_interface_costmap_plugins">
+    <class type="clingo_interface::CostmapDoorPlugin" base_class_type="costmap_2d::Layer">
+      <description>Opens and closes doors specified in a YAML file in a given map.</description>
+    </class>
+  </library>
+</class_libraries>
+

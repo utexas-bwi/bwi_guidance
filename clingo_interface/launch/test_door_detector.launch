@@ -4,9 +4,7 @@
   <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
   <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
     <arg name="launch_localization" value="true" />
-    <arg name="use_full_gazebo_model" value="false" />
     <arg name="y" value="8" />
-    <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/segbot_kinect.auxilliary.launch" />
   </include>
   <include file="$(find segbot_navigation)/launch/move_base_eband.launch" />
 

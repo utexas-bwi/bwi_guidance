@@ -38,8 +38,11 @@
 #ifndef COSTMAP_DOOR_PLUGIN_CYIQSKZ0
 #define COSTMAP_DOOR_PLUGIN_CYIQSKZ0
 
+#include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/layer.h>
 #include <costmap_2d/cost_values.h>
 #include <clingo_interface/structures.h>
+#include <topological_mapper/map_loader.h>
 #include <topological_mapper/map_utils.h>
 
 namespace clingo_interface {
@@ -68,6 +71,14 @@ namespace clingo_interface {
           topological_mapper::toGrid(doors_[idx].corners[1], info_);
         drawLine(costmap_2d::LETHAL_OBSTACLE, image_pixels[0], image_pixels[1]);
         costmap_current_ = false;
+        bound_left_ = std::min(bound_left_, doors_[idx].corners[0].x - 0.1);
+        bound_left_ = std::min(bound_left_, doors_[idx].corners[1].x - 0.1);
+        bound_right_ = std::max(bound_right_, doors_[idx].corners[0].x + 0.1);
+        bound_right_ = std::max(bound_right_, doors_[idx].corners[1].x + 0.1);
+        bound_up_ = std::min(bound_up_, doors_[idx].corners[0].y + 0.1);
+        bound_up_ = std::min(bound_up_, doors_[idx].corners[1].y + 0.1);
+        bound_down_ = std::max(bound_down_, doors_[idx].corners[0].y - 0.1);
+        bound_down_ = std::max(bound_down_, doors_[idx].corners[1].y - 0.1);
         return true;
       }
 
@@ -82,6 +93,14 @@ namespace clingo_interface {
           topological_mapper::toGrid(doors_[idx].corners[1], info_);
         drawLine(costmap_2d::FREE_SPACE, image_pixels[0], image_pixels[1]);
         costmap_current_ = false;
+        bound_left_ = std::min(bound_left_, doors_[idx].corners[0].x - 0.1);
+        bound_left_ = std::min(bound_left_, doors_[idx].corners[1].x - 0.1);
+        bound_right_ = std::max(bound_right_, doors_[idx].corners[0].x + 0.1);
+        bound_right_ = std::max(bound_right_, doors_[idx].corners[1].x + 0.1);
+        bound_up_ = std::min(bound_up_, doors_[idx].corners[0].y + 0.1);
+        bound_up_ = std::min(bound_up_, doors_[idx].corners[1].y + 0.1);
+        bound_down_ = std::max(bound_down_, doors_[idx].corners[0].y - 0.1);
+        bound_down_ = std::max(bound_down_, doors_[idx].corners[1].y - 0.1);
         return true;
       }
 
@@ -175,6 +194,8 @@ namespace clingo_interface {
       std::vector<unsigned char> plugin_layer_value_;
       bool costmap_current_;
       boost::mutex door_plugin_mutex_;
+
+      double bound_left_, bound_right_, bound_up_, bound_down_;
   };
 
 } /* clingo_interface */

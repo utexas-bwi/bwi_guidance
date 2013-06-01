@@ -5,9 +5,9 @@ PLUGINLIB_EXPORT_CLASS(clingo_interface::CostmapDoorPlugin, costmap_2d::Layer)
 
 namespace clingo_interface {
 
-  virtual CostmapDoorPlugin::~CostmapDoorPlugin() {}
+  CostmapDoorPlugin::~CostmapDoorPlugin() {}
 
-  virtual void CostmapDoorPlugin::onInitialize() {
+  void CostmapDoorPlugin::onInitialize() {
 
     /* Read parameters */
     ros::NodeHandle nh("~/" + name_);
@@ -25,28 +25,30 @@ namespace clingo_interface {
     nav_msgs::OccupancyGrid grid;
     mapper_->getMap(grid);
     info_ = grid.info;
-    map_frame_id_ = "/map";
-    //map_frame_id_ = grid.header.frame_id; //TODO
     
     matchSize();
     costmap_current_ = false;
 
   }
 
-  virtual void CostmapDoorPlugin::updateBounds(
+  void CostmapDoorPlugin::updateBounds(
       double origin_x, double origin_y, double origin_yaw, 
       double* min_x, double* min_y, double* max_x, double* max_y) {
 
+    boost::mutex::scoped_lock lock(door_plugin_mutex_);
     // I am not sure what the best way to handle bounds are for now. Let's
     // recompute the entire costmap for now
-    *min_x = -std::numeric_limits<float>::max();
-    *min_y = -std::numeric_limits<float>::max();
-    *max_x = std::numeric_limits<float>::max();
-    *max_y = std::numeric_limits<float>::max();
+    *min_x = bound_left_;
+    *min_y = bound_down_;
+    *max_x = bound_right_;
+    *max_y = bound_up_; 
+      
+    bound_left_ = bound_down_ = std::numeric_limits<float>::max();
+    bound_right_ = bound_up_ = -std::numeric_limits<float>::max();
 
   }
 
-  virtual void CostmapDoorPlugin::updateCosts(
+  void CostmapDoorPlugin::updateCosts(
       costmap_2d::Costmap2D& master_grid,
       int min_i, int min_j, int max_i, int max_j) {
 
@@ -55,23 +57,23 @@ namespace clingo_interface {
     for (int j = min_j; j < max_j; ++j) {
       for (int i = min_i; i < max_i; ++i) {
         int index = master_grid.getIndex(i, j);
-        old_cost = master_array(index);
-        cost = plugin_layer_value_[index];
+        unsigned char old_cost = master_array[index];
+        unsigned char cost = plugin_layer_value_[index];
 
-        if (old_cost == NO_INFORMATION && cost >= INSCRIBED_INFLATED_OBSTACLE)
-          grid[index] = cost;
+        if (old_cost == costmap_2d::NO_INFORMATION && cost >= costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+          master_array[index] = cost;
         else
-          grid[index] = std::max(old_cost, cost);
+          master_array[index] = std::max(old_cost, cost);
       }
     }
     costmap_current_ = true;
   }
 
-  virtual bool CostmapDoorPlugin::isDiscretized() {
+  bool CostmapDoorPlugin::isDiscretized() {
     return true;
   }
 
-  virtual void matchSize() {
+  void CostmapDoorPlugin::matchSize() {
     costmap_2d::Costmap2D* costmap = layered_costmap_->getCostmap();
     unsigned int size_x = costmap->getSizeInCellsX();
     unsigned int size_y = costmap->getSizeInCellsY();
@@ -79,6 +81,6 @@ namespace clingo_interface {
 
   }
 
-  virtual void onFootprintChanged() {}
+  void CostmapDoorPlugin::onFootprintChanged() {}
   
 } /* clingo_interface */

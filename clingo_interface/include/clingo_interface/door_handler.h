@@ -40,13 +40,10 @@
 #ifndef DOOR_HANDLER_WW75RJPS
 #define DOOR_HANDLER_WW75RJPS
 
-#include <fstream>
-#include <topological_mapper/structures/point.h>
 #include <boost/shared_ptr.hpp>
 #include <navfn/navfn_ros.h>
 #include <costmap_2d/costmap_2d_ros.h>
-#include <yaml-cpp/yaml.h>
-
+#include <clingo_interface/structures.h>
 #include <clingo_interface/costmap_door_plugin.h>
 
 namespace clingo_interface {
@@ -62,6 +59,24 @@ namespace clingo_interface {
         costmap_->pause();
         ROS_INFO("Costmap size: %d, %d", costmap_->getCostmap()->getSizeInCellsX(), costmap_->getCostmap()->getSizeInCellsY());
         navfn_.reset(new navfn::NavfnROS("door_handler_costmap", costmap_.get()));
+
+        std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = 
+          costmap_->getLayeredCostmap()->getPlugins();
+
+        bool door_plugin_initalized = false;
+        for (size_t i = 0; i < plugins->size(); ++i) {
+          if ((*plugins)[i]->getName().find("door_plugin") != std::string::npos) {
+            door_plugin_ = boost::static_pointer_cast<
+              clingo_interface::CostmapDoorPlugin
+              >((*plugins)[i]); 
+            door_plugin_initalized = true;
+            break;
+          }
+        }
+
+        if (!door_plugin_initalized) {
+          throw std::runtime_error("No CostmapDoorPlugin available in layered costmap");
+        }
 
         costmap_->start();
 
@@ -79,9 +94,9 @@ namespace clingo_interface {
           door_plugin_->closeDoor(i);
         }
 
-        while (!door_plugin_->isCostmapCurrent()) {
-          boost::this_thread::sleep( boost::posix_time::milliseconds(10));
-        }
+        // while (!door_plugin_->isCostmapCurrent()) {
+        //   boost::this_thread::sleep( boost::posix_time::milliseconds(10));
+        // }
 
         /* Now get the start and goal locations for this door */
         geometry_msgs::PoseStamped start_pose, goal_pose;
@@ -110,9 +125,9 @@ namespace clingo_interface {
           door_plugin_->closeDoor(i);
         }
 
-        while (!door_plugin_->isCostmapCurrent()) {
-          boost::this_thread::sleep( boost::posix_time::milliseconds(10));
-        }
+        // while (!door_plugin_->isCostmapCurrent()) {
+        //   boost::this_thread::sleep( boost::posix_time::milliseconds(10));
+        // }
 
         /* Setup variables */
         geometry_msgs::PoseStamped start_pose, goal_pose;
@@ -178,9 +193,9 @@ namespace clingo_interface {
           door_plugin_->closeDoor(i);
         }
 
-        while (!door_plugin_->isCostmapCurrent()) {
-          boost::this_thread::sleep( boost::posix_time::milliseconds(10));
-        }
+        // while (!door_plugin_->isCostmapCurrent()) {
+        //   boost::this_thread::sleep( boost::posix_time::milliseconds(10));
+        // }
 
         /* Setup variables */
         geometry_msgs::PoseStamped start_pose, goal_pose;
@@ -212,7 +227,7 @@ namespace clingo_interface {
 
       boost::shared_ptr <navfn::NavfnROS> navfn_;
       boost::shared_ptr <costmap_2d::Costmap2DROS> costmap_;
-      clingo_interface::CostmapDoorPlugin* door_plugin_;
+      boost::shared_ptr<clingo_interface::CostmapDoorPlugin> door_plugin_;
 
   }; /* DoorHandler */
   

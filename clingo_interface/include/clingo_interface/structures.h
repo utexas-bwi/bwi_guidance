@@ -1,6 +1,11 @@
 #ifndef STRUCTURES_NQP4EY6
 #define STRUCTURES_NQP4EY6
 
+#include <topological_mapper/structures/point.h>
+#include <fstream>
+#include <string>
+#include <yaml-cpp/yaml.h>
+
 namespace clingo_interface {
 
   class Location {
