@@ -9,7 +9,7 @@
 namespace clingo_interface {
 
   inline void readLocationFile(const std::string& filename, 
-      std::vector<std::string>& locations, std::vector<int32_t> location_map) {
+      std::vector<std::string>& locations, std::vector<int32_t>& location_map) {
     std::ifstream fin(filename.c_str());
     YAML::Parser parser(fin);
 
@@ -24,12 +24,12 @@ namespace clingo_interface {
       locations.push_back(location);
     }
     const YAML::Node &data_node = doc["data"];
-    std::cout << data_node.size() << std::endl;
     location_map.resize(data_node.size());
+    std::cout << "num locations: " << location_map.size() << std::endl;
     for (size_t i = 0; i < data_node.size(); i++) {
       data_node[i] >> location_map[i];
+
     }
-    std::cout << "read location file" << std::endl;
   }
 
   class Door {
@@ -66,7 +66,6 @@ namespace clingo_interface {
       doc[i]["name"] >> door.name;
       doors.push_back(door);
     }
-    std::cout << "read door file" << std::endl;
   }
 
 } /* namespace clingo_interface */

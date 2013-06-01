@@ -54,6 +54,7 @@ namespace clingo_interface {
       DoorHandler (std::string map_file, std::string door_file, std::string location_file) {
         readDoorFile(door_file, doors_);
         readLocationFile(location_file, locations_, location_map_);
+        std::cout << "location map size" << location_map_.size() << std::endl;
         mapper_.reset(new topological_mapper::MapLoader(map_file));
         nav_msgs::OccupancyGrid grid;
         mapper_->getMap(grid);
@@ -69,6 +70,7 @@ namespace clingo_interface {
           topological_mapper::Point2f& point, float &yaw) {
 
         for (size_t pt = 0; pt < 2; ++pt) {
+          std::cout << getLocationIdx(doors_[idx].approach_names[pt]) << " vs " <<  getLocationIdx(current_location) << std::endl;
           if (getLocationIdx(doors_[idx].approach_names[pt]) == getLocationIdx(current_location)) {
             point = doors_[idx].approach_points[pt];
             yaw = doors_[idx].approach_yaw[pt];
@@ -98,8 +100,11 @@ namespace clingo_interface {
       size_t getLocationIdx(const topological_mapper::Point2f& current_location) {
 
         topological_mapper::Point2f grid = topological_mapper::toGrid(current_location, info_);
+        std::cout << grid.x << " and " << grid.y << std::endl;
         size_t map_idx = MAP_IDX(info_.width, (int) grid.x, (int) grid.y);
+        std::cout << "location_map_ size" << location_map_.size() << std::endl;
         if (map_idx > location_map_.size()) {
+          std::cout << "size too big" << std::endl; 
           return (size_t) -1;
         }
         return (size_t) location_map_[map_idx];

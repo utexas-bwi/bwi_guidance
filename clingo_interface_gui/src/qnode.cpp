@@ -44,9 +44,11 @@ namespace clingo_interface_gui {
     ros::init(init_argc,init_argv, "clingo_interface_gui");
     nh_.reset(new ros::NodeHandle);
 
-    // Add your ros communications here.
-    tf_.reset(new tf::TransformListener(ros::Duration(10)));
-    handler_.reset(new clingo_interface::DoorHandler(*tf_));
+    std::string map_file, door_file, location_file;
+    ros::param::get("~map_file", map_file);
+    ros::param::get("~door_file", door_file);
+    ros::param::get("~location_file", location_file);
+    handler_.reset(new clingo_interface::DoorHandler(map_file, door_file, location_file));
 
     odom_subscriber_ = nh_->subscribe("odom", 1, &QNode::odometryHandler, this);
     as_.reset(new actionlib::SimpleActionServer<
