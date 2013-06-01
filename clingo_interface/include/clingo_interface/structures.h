@@ -8,14 +8,8 @@
 
 namespace clingo_interface {
 
-  class Location {
-    public:
-      std::string name;
-      topological_mapper::Point2f loc;
-  };
-
   inline void readLocationFile(const std::string& filename, 
-      std::vector<Location>& locations) {
+      std::vector<std::string>& locations, std::vector<int32_t> location_map) {
     std::ifstream fin(filename.c_str());
     YAML::Parser parser(fin);
 
@@ -23,25 +17,27 @@ namespace clingo_interface {
     parser.GetNextDocument(doc);
 
     locations.clear();
-    for (size_t i = 0; i < doc.size(); i++) {
-      Location location;
-      const YAML::Node &loc_node = doc[i]["loc"];
-      for (size_t j = 0; j < 2; ++j) {
-        loc_node[0] >> location.loc.x;
-        loc_node[1] >> location.loc.y;
-      }
-      doc[i]["name"] >> location.name;
+    locations.clear();
+    const YAML::Node &loc_node = doc["locations"];
+    for (size_t i = 0; i < loc_node.size(); i++) {
+      std::string location;
+      loc_node[i]["name"] >> location;
       locations.push_back(location);
     }
-
+    const YAML::Node &data_node = doc["data"];
+    location_map.resize(data_node.size());
+    for (size_t i = 0; i < data_node.size(); i++) {
+      data_node[i] >> location_map[i];
+    }
   }
 
   class Door {
     public:
       std::string name;
+      std::string approach_names[2];
       topological_mapper::Point2f approach_points[2];
       float approach_yaw[2];
-      topological_mapper::Point2f corners[4];
+      topological_mapper::Point2f corners[2];
   };
 
   inline void readDoorFile(const std::string& filename, std::vector<Door>& doors) {
@@ -55,15 +51,16 @@ namespace clingo_interface {
     for (size_t i = 0; i < doc.size(); i++) {
       Door door;
       const YAML::Node &door_node = doc[i]["corners"];
-      for (size_t j = 0; j < 4; ++j) {
+      for (size_t j = 0; j < 2; ++j) {
         door_node[j][0] >> door.corners[j].x;
         door_node[j][1] >> door.corners[j].y;
       }
       const YAML::Node &approach_node = doc[i]["approach"];
       for (size_t j = 0; j < 2; ++j) {
-        approach_node[j][0] >> door.approach_points[j].x; 
-        approach_node[j][1] >> door.approach_points[j].y; 
-        approach_node[j][2] >> door.approach_yaw[j]; 
+        approach_node[j]["from"] >> door.approach_names[j];
+        approach_node[j]["point"][0] >> door.approach_points[j].x; 
+        approach_node[j]["point"][1] >> door.approach_points[j].y; 
+        approach_node[j]["point"][2] >> door.approach_yaw[j]; 
       }
       doc[i]["name"] >> door.name;
       doors.push_back(door);
