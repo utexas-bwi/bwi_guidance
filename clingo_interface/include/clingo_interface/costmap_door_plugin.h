@@ -40,6 +40,7 @@
 
 #include <costmap_2d/cost_values.h>
 #include <clingo_interface/structures.h>
+#include <topological_mapper/map_utils.h>
 
 namespace clingo_interface {
     
@@ -56,10 +57,9 @@ namespace clingo_interface {
       virtual bool isDiscretized();
       virtual void matchSize();
 
-      bool closeDoor(const std::string& door_name) {
+      bool closeDoor(size_t idx) {
         boost::mutex::scoped_lock lock(door_plugin_mutex_);
-        idx = getDoorIdx(door_name);
-        if (idx == (size_t) -1)
+        if (idx > doors_.size())
           return false;
         topological_mapper::Point2f image_pixels[2];
         image_pixels[0] = 
@@ -71,10 +71,9 @@ namespace clingo_interface {
         return true;
       }
 
-      bool openDoor(const std::string& door_name) {
+      bool openDoor(size_t idx) {
         boost::mutex::scoped_lock lock(door_plugin_mutex_);
-        idx = getDoorIdx(door_name);
-        if (idx == (size_t) -1)
+        if (idx > doors_.size())
           return false;
         topological_mapper::Point2f image_pixels[2];
         image_pixels[0] = 
@@ -88,42 +87,6 @@ namespace clingo_interface {
 
       bool isCostmapCurrent() {
         return costmap_current_;
-      }
-
-    protected:
-      virtual void onFootprintChanged();
-
-    private:
-
-      inline void drawPixel(unsigned int x, unsigned int y, 
-          unsigned char value) {
-        int index = getIndex(x, y);
-        plugin_layer_value_[index] = value; 
-      }
-
-      inline void drawLine(unsigned char value, 
-          topological_mapper::Point2f from, topological_mapper::Point2f to) {
-
-        int x0 = from.x, y0 = from.y;
-        int x1 = to.x, y1 = to.y;
-        int dx = abs(x1 - x0);
-        int dy = abs(y1 - y0);
-        int sgnX = x0 < x1 ? 1 : -1;
-        int sgnY = y0 < y1 ? 1 : -1;
-        int e = 0;
-        for (int i=0; i < dx+dy; i++) {
-          drawPixel(x0, y0, value);
-          int e1 = e + dy;
-          int e2 = e - dx;
-          if (abs(e1) < abs(e2)) {
-            x0 += sgnX;
-            e = e1;
-          } else {
-            y0 += sgnY;
-            e = e2;
-          }
-        }
-
       }
 
       inline size_t getLocationIdx(const std::string& loc_str) const {
@@ -156,6 +119,50 @@ namespace clingo_interface {
         return doors_[idx].name;
       }
 
+      std::vector<Door>& doors() {
+        return doors_;
+      }
+
+      std::vector<Location>& locations() {
+        return locations_;
+      }
+
+    protected:
+      virtual void onFootprintChanged();
+
+    private:
+
+      inline void drawPixel(unsigned int x, unsigned int y, 
+          unsigned char value) {
+        int index = layered_costmap_->getCostmap()->getIndex(x, y);
+        plugin_layer_value_[index] = value; 
+      }
+
+      inline void drawLine(unsigned char value, 
+          topological_mapper::Point2f from, topological_mapper::Point2f to) {
+
+        int x0 = from.x, y0 = from.y;
+        int x1 = to.x, y1 = to.y;
+        int dx = abs(x1 - x0);
+        int dy = abs(y1 - y0);
+        int sgnX = x0 < x1 ? 1 : -1;
+        int sgnY = y0 < y1 ? 1 : -1;
+        int e = 0;
+        for (int i=0; i < dx+dy; i++) {
+          drawPixel(x0, y0, value);
+          int e1 = e + dy;
+          int e2 = e - dx;
+          if (abs(e1) < abs(e2)) {
+            x0 += sgnX;
+            e = e1;
+          } else {
+            y0 += sgnY;
+            e = e2;
+          }
+        }
+
+      }
+
       std::vector<clingo_interface::Door> doors_;
       std::vector<clingo_interface::Location> locations_;
 
@@ -168,7 +175,7 @@ namespace clingo_interface {
       std::vector<unsigned char> plugin_layer_value_;
       bool costmap_current_;
       boost::mutex door_plugin_mutex_;
-  }
+  };
 
 } /* clingo_interface */
 
