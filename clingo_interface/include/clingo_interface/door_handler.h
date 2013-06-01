@@ -99,13 +99,29 @@ namespace clingo_interface {
         goal.pose.orientation = tf::createQuaternionMsgFromYaw(goal_yaw);
         srv.request.tolerance = 0.5 + 1e-6;
 
+        float min_distance = sqrt(pow(start_pt.x - goal_pt.x, 2) + pow(start_pt.y - goal_pt.y, 2));
+
         if (make_plan_client_.call(srv)) {
-          if (srv.response.plan.poses.size() != 0)
-            return true;
-          else 
-            return false;
+          if (srv.response.plan.poses.size() != 0) {
+            // Valid plan received. Try rough check that plan distance seems reasonable
+            float distance = 0;
+            geometry_msgs::Point old_pt = srv.response.plan.poses[0].pose.position;
+            for (size_t i = 1; i < srv.response.plan.poses.size(); ++i) {
+              geometry_msgs::Point current_pt = srv.response.plan.poses[i].pose.position;
+              distance += sqrt(pow(current_pt.x - old_pt.x, 2) + pow(current_pt.y - old_pt.y, 2));
+              old_pt = current_pt;
+            }
+            std::cout << "checking door " << idx << ". valid plan received. min, actual: " << min_distance << " vs " << distance << std::endl;
+            if (distance < 3 * min_distance) {
+              return true;
+            } else {
+              return false; // returned path probably through some other door
+            }
+          } else {
+            return false; // this is ok. it means the door is closed
+          }
         } else {
-          return false;
+          return false; // shouldn't be here. the service has failed
         }
       }
 
