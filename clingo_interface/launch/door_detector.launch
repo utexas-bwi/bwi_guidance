@@ -4,8 +4,8 @@
   <arg name="locations_file" default="$(find clingo_interface)/config/locations.yaml" />
   <node name="door_detector" type="test_door_detector" pkg="clingo_interface">
     <rosparam file="$(find clingo_interface)/config/costmap.yaml" command="load" />
-    <param name="door_handler_costmap/door_plugin/map_file" value="$(arg map_file)" />
-    <param name="door_handler_costmap/door_plugin/door_file" value="$(arg door_file)" />
-    <param name="door_handler_costmap/door_plugin/locations_file" value="$(arg locations_file)" />
+    <param name="map_file" value="$(arg map_file)" />
+    <param name="door_file" value="$(arg door_file)" />
+    <param name="locations_file" value="$(arg locations_file)" />
   </node>
 </launch>

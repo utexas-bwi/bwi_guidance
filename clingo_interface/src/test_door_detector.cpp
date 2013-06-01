@@ -42,14 +42,14 @@
 int main(int argc, char *argv[]) {
   
   ros::init(argc, argv, "door_detector_test");
-  tf::TransformListener tf(ros::Duration(10));
+  ros::NodeHandle nh;
 
   std::string map_file, door_file, location_file;
   ros::param::get("~map_file", map_file);
   ros::param::get("~door_file", door_file);
-  ros::param::get("~location_file", location_file);
+  ros::param::get("~locations_file", location_file);
 
-  clingo_interface::DoorHandler dd(tf, map_file, door_file, location_file);
+  clingo_interface::DoorHandler dd(map_file, door_file, location_file);
 
   ros::Rate rate(10);
 

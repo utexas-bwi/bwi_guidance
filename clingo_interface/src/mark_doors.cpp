@@ -97,8 +97,8 @@ int main(int argc, char** argv) {
   std::vector<clingo_interface::Door> doors;
   clingo_interface::Door current_door;
   std::vector<int32_t> component_map;
-  std::vector<clingo_interface::Location> locations;
-  clingo_interface::Location current_location;
+  std::vector<std::string> locations;
+  std::string current_location;
 
   while (true) {
 
@@ -250,7 +250,7 @@ int main(int argc, char** argv) {
         cv::imshow("Display", image);
         cv::waitKey(10);
         std::cout << "Enter location name: ";
-        std::cin >> current_location.name;
+        std::cin >> current_location;
         locations.push_back(current_location);
       }
       global_state = STOP;
@@ -270,12 +270,12 @@ int main(int argc, char** argv) {
           global_state = DOOR_APPROACH_0;
           break;
         case DOOR_PT_2:
-          current_door.corners[2] = map_pt;
-          global_state = DOOR_PT_3;
+          // current_door.corners[2] = map_pt;
+          // global_state = DOOR_PT_3;
           break;
         case DOOR_PT_3:
-          current_door.corners[3] = map_pt;
-          global_state = DOOR_APPROACH_0;
+          // current_door.corners[3] = map_pt;
+          // global_state = DOOR_APPROACH_0;
           break;
         case DOOR_APPROACH_0:
           current_door.approach_points[0] = map_pt;
@@ -298,12 +298,6 @@ int main(int argc, char** argv) {
           doors.push_back(current_door);
           global_state = DOOR_PT_0;
           break;
-        case MARK_LOCATION:
-          current_location.loc = map_pt;
-          std::cout << "Enter location name: ";
-          std::cin >> current_location.name;
-          locations.push_back(current_location);
-          break;
         case STOP:
           std::stringstream door_ss, location_ss;
           for (size_t i = 0; i < doors.size(); ++i) {
@@ -322,7 +316,7 @@ int main(int argc, char** argv) {
               topological_mapper::Point2f grid_pt = toGrid(door.approach_points[j], info);
               size_t map_idx = MAP_IDX(image.cols, (int) grid_pt.x, (int) grid_pt.y); 
               size_t loc_idx = component_map[map_idx];
-              std::string from_loc = locations[loc_idx].name;
+              std::string from_loc = locations[loc_idx];
               door_ss << "    - from: " << from_loc << std::endl;
               door_ss << "      point: " << "[" << door.approach_points[j].x << ", " << 
                   door.approach_points[j].y << ", " << door.approach_yaw[j] 
@@ -336,8 +330,8 @@ int main(int argc, char** argv) {
 
           location_ss << "locations:" << std::endl;
           for (size_t i = 0; i < locations.size(); ++i) {
-            clingo_interface::Location &loc = locations[i];
-            location_ss << "  - name: " << loc.name << std::endl;
+            std::string &loc = locations[i];
+            location_ss << "  - " << loc << std::endl;
           }
           location_ss << "data: [" << std::endl;
           for (size_t x = 0; x < component_map.size(); ++x) {

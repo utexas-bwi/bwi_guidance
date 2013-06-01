@@ -40,14 +40,10 @@
 #ifndef DOOR_HANDLER_WW75RJPS
 #define DOOR_HANDLER_WW75RJPS
 
-#include <fstream>
-#include <topological_mapper/structures/point.h>
 #include <boost/shared_ptr.hpp>
-#include <navfn/navfn_ros.h>
-#include <costmap_2d/costmap_2d_ros.h>
-#include <yaml-cpp/yaml.h>
-
-#include <clingo_interface/costmap_door_plugin.h>
+#include <clingo_interface/structures.h>
+#include <topological_mapper/map_loader.h>
+#include <topological_mapper/map_utils.h>
 
 namespace clingo_interface {
 
@@ -55,93 +51,29 @@ namespace clingo_interface {
 
     public:
 
-      DoorHandler (tf::TransformListener &tf) {
-
-        /* Initialize costmap and planner */
-        costmap_.reset(new costmap_2d::Costmap2DROS("door_handler_costmap", tf)); 
-        costmap_->pause();
-        ROS_INFO("Costmap size: %d, %d", costmap_->getCostmap()->getSizeInCellsX(), costmap_->getCostmap()->getSizeInCellsY());
-        navfn_.reset(new navfn::NavfnROS("door_handler_costmap", costmap_.get()));
-
-        costmap_->start();
-
+      DoorHandler (std::string map_file, std::string door_file, std::string location_file) {
+        readDoorFile(door_file, doors_);
+        readLocationFile(location_file, locations_, location_map_);
+        mapper_.reset(new topological_mapper::MapLoader(map_file));
+        nav_msgs::OccupancyGrid grid;
+        mapper_->getMap(grid);
+        info_ = grid.info;
       }
 
       bool isDoorOpen(size_t idx) {
-
-        /* Close all other doors in the costmap. The current door should be 
-         * getting updated through observations */
-        for (size_t i = 0; i < door_plugin_->doors().size(); ++i) {
-          if (i == idx) {
-            door_plugin_->openDoor(i);
-            continue;
-          }
-          door_plugin_->closeDoor(i);
-        }
-
-        while (!door_plugin_->isCostmapCurrent()) {
-          boost::this_thread::sleep( boost::posix_time::milliseconds(10));
-        }
-
-        /* Now get the start and goal locations for this door */
-        geometry_msgs::PoseStamped start_pose, goal_pose;
-        start_pose.header.frame_id = goal_pose.header.frame_id = "/map"; //TODO
-        start_pose.pose.position.x = door_plugin_->doors()[idx].approach_points[0].x;
-        start_pose.pose.position.y = door_plugin_->doors()[idx].approach_points[0].y;
-        goal_pose.pose.position.x = door_plugin_->doors()[idx].approach_points[1].x;
-        goal_pose.pose.position.y = door_plugin_->doors()[idx].approach_points[1].y;
-        start_pose.pose.position.z = goal_pose.pose.position.z = 0;
-        start_pose.pose.orientation.x = start_pose.pose.orientation.y = 
-          start_pose.pose.orientation.z = 0;
-        start_pose.pose.orientation.w = 1;
-        goal_pose.pose.orientation = start_pose.pose.orientation;
-
-        /* Finally, see if a plan is possible */
-        std::vector<geometry_msgs::PoseStamped> plan; // Irrelevant
-        return navfn_->makePlan(start_pose, goal_pose, plan);
+        return true;
       }
 
       bool getApproachPoint(size_t idx, 
           const topological_mapper::Point2f& current_location,
           topological_mapper::Point2f& point, float &yaw) {
 
-        /* Close all doors */
-        for (size_t i = 0; i < door_plugin_->doors().size(); ++i) {
-          door_plugin_->closeDoor(i);
-        }
-
-        while (!door_plugin_->isCostmapCurrent()) {
-          boost::this_thread::sleep( boost::posix_time::milliseconds(10));
-        }
-
-        /* Setup variables */
-        geometry_msgs::PoseStamped start_pose, goal_pose;
-        start_pose.header.frame_id = goal_pose.header.frame_id = "/map"; //TODO
-        start_pose.pose.position.x = current_location.x;
-        start_pose.pose.position.y = current_location.y;
-        start_pose.pose.position.z = goal_pose.pose.position.z = 0;
-        start_pose.pose.orientation.x = start_pose.pose.orientation.y = 
-          start_pose.pose.orientation.z = 0;
-        start_pose.pose.orientation.w = 1;
-        goal_pose.pose.orientation = start_pose.pose.orientation;
-        std::vector<geometry_msgs::PoseStamped> plan; // Irrelevant
-
-        /* Check against 1st approach point */
-        goal_pose.pose.position.x = door_plugin_->doors()[idx].approach_points[0].x;
-        goal_pose.pose.position.y = door_plugin_->doors()[idx].approach_points[0].y;
-        if (navfn_->makePlan(start_pose, goal_pose, plan)) {
-          point = door_plugin_->doors()[idx].approach_points[0];
-          yaw = door_plugin_->doors()[idx].approach_yaw[0];
-          return true;
-        }
-
-        /* Otherwise check against 2nd approach point */
-        goal_pose.pose.position.x = door_plugin_->doors()[idx].approach_points[1].x;
-        goal_pose.pose.position.y = door_plugin_->doors()[idx].approach_points[1].y;
-        if (navfn_->makePlan(start_pose, goal_pose, plan)) {
-          point = door_plugin_->doors()[idx].approach_points[1];
-          yaw = door_plugin_->doors()[idx].approach_yaw[1];
-          return true;
+        for (size_t pt = 0; pt < 2; ++pt) {
+          if (getLocationIdx(doors_[idx].approach_names[pt]) == getLocationIdx(current_location)) {
+            point = doors_[idx].approach_points[pt];
+            yaw = doors_[idx].approach_yaw[pt];
+            return true;
+          }
         }
 
         /* The door is not approachable from the current location */
@@ -152,67 +84,73 @@ namespace clingo_interface {
           const topological_mapper::Point2f& current_location,
           topological_mapper::Point2f& point, float& yaw) {
 
-        topological_mapper::Point2f approach_point;
-        float approach_yaw;
-        bool point_available = 
-          getApproachPoint(idx, current_location, approach_point, approach_yaw);
-
-        if (point_available) {
-          if (approach_point == door_plugin_->doors()[idx].approach_points[0]) {
-            point = door_plugin_->doors()[idx].approach_points[1];
-            yaw = M_PI + door_plugin_->doors()[idx].approach_yaw[1];
-          } else {
-            point = door_plugin_->doors()[idx].approach_points[0];
-            yaw = M_PI + door_plugin_->doors()[idx].approach_yaw[0];
+        for (size_t pt = 0; pt < 2; ++pt) {
+          if (getLocationIdx(doors_[idx].approach_names[pt]) == getLocationIdx(current_location)) {
+            point = doors_[idx].approach_points[1 - pt];
+            yaw = M_PI + doors_[idx].approach_yaw[1 - pt];
+            return true;
           }
-          yaw = atan2f(sinf(yaw), cosf(yaw));
-          return true;
         }
+
         return false;
       }
 
-      size_t getLocation(const topological_mapper::Point2f& current_location) {
+      size_t getLocationIdx(const topological_mapper::Point2f& current_location) {
 
-        /* Close all doors */
-        for (size_t i = 0; i < door_plugin_->doors().size(); ++i) {
-          door_plugin_->closeDoor(i);
+        topological_mapper::Point2f grid = topological_mapper::toGrid(current_location, info_);
+        size_t map_idx = MAP_IDX(info_.width, (int) grid.x, (int) grid.y);
+        if (map_idx > location_map_.size()) {
+          return (size_t) -1;
         }
+        return (size_t) location_map_[map_idx];
 
-        while (!door_plugin_->isCostmapCurrent()) {
-          boost::this_thread::sleep( boost::posix_time::milliseconds(10));
-        }
+      }
 
-        /* Setup variables */
-        geometry_msgs::PoseStamped start_pose, goal_pose;
-        start_pose.header.frame_id = goal_pose.header.frame_id = "/map";
-        start_pose.pose.position.x = current_location.x;
-        start_pose.pose.position.y = current_location.y;
-        start_pose.pose.position.z = goal_pose.pose.position.z = 0;
-        start_pose.pose.orientation.x = start_pose.pose.orientation.y = 
-          start_pose.pose.orientation.z = 0;
-        start_pose.pose.orientation.w = 1;
-        goal_pose.pose.orientation = start_pose.pose.orientation;
-        std::vector<geometry_msgs::PoseStamped> plan; // Irrelevant
-
-        /* Find a location that is still reachable. We are at that location */
-        for (size_t i = 0; i < door_plugin_->locations().size(); ++i) {
-          /* Check if we can reach this location. If so, then return this idx */
-          goal_pose.pose.position.x = door_plugin_->locations()[i].loc.x;
-          goal_pose.pose.position.y = door_plugin_->locations()[i].loc.y;
-          if (navfn_->makePlan(start_pose, goal_pose, plan)) {
+      inline size_t getLocationIdx(const std::string& loc_str) const {
+        for (size_t i = 0; i < locations_.size(); ++i) {
+          if (locations_[i] == loc_str) {
             return i;
           }
         }
+        return (size_t)-1;
+      }
 
-        return -1;
+      inline size_t getDoorIdx(const std::string& door_str) const {
+        for (size_t i = 0; i < doors_.size(); ++i) {
+          if (doors_[i].name == door_str) {
+            return i;
+          }
+        }
+        return (size_t)-1;
+      }
 
+      inline std::string getLocationString(size_t idx) const {
+        if (idx >= locations_.size())
+          return "";
+        return locations_[idx];
+      }
+
+      inline std::string getDoorString(size_t idx) const {
+        if (idx >= doors_.size())
+          return "";
+        return doors_[idx].name;
       }
 
     private:
 
-      boost::shared_ptr <navfn::NavfnROS> navfn_;
-      boost::shared_ptr <costmap_2d::Costmap2DROS> costmap_;
-      clingo_interface::CostmapDoorPlugin* door_plugin_;
+      std::vector<clingo_interface::Door> doors_;
+      std::vector<std::string> locations_;
+      std::vector<int32_t> location_map_;
+
+      std::string door_yaml_file_;
+      std::string location_file_;
+      std::string map_file_;
+      boost::shared_ptr <topological_mapper::MapLoader> mapper_;
+      nav_msgs::MapMetaData info_;
+
+      // boost::shared_ptr <navfn::NavfnROS> navfn_;
+      // boost::shared_ptr <costmap_2d::Costmap2DROS> costmap_;
+      // boost::shared_ptr<clingo_interface::CostmapDoorPlugin> door_plugin_;
 
   }; /* DoorHandler */
   
