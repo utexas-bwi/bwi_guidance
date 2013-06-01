@@ -117,10 +117,14 @@ namespace clingo_interface_gui {
             resp.observable_fluents.push_back(beside);
           }
           clingo_interface_gui::ClingoFluent door_open;
-          door_open.op = "open";
           door_open.args.push_back(door_name);
           if (handler_->isDoorOpen(door_idx)) {
+            door_open.op = "open";
             resp.observable_fluents.push_back(door_open);
+          } else {
+            door_open.op = "closed";
+            resp.observable_fluents.push_back(door_open);
+
           }
 
         } else {
@@ -178,7 +182,9 @@ namespace clingo_interface_gui {
       display_text_ = "Hello " + req->command.args[0] + "!!";
       Q_EMIT updateFrameInfo();
       resp.success = true;
-    }
+    } else if (req->command.op == "noop") {
+      resp.success = true;
+    } 
 
     // Get location
     size_t location_idx = 
@@ -186,11 +192,11 @@ namespace clingo_interface_gui {
     if (location_idx == (size_t) -1) {
       ROS_ERROR("Unable to compute position");
     } else {
-      std::string location_str = handler_->getLocationString(location_idx);
-      clingo_interface_gui::ClingoFluent location;
-      location.op = "location";
-      location.args.push_back(location_str);
-      resp.observable_fluents.push_back(location);
+      std::string at_str = handler_->getLocationString(location_idx);
+      clingo_interface_gui::ClingoFluent at;
+      at.op = "at";
+      at.args.push_back(at_str);
+      resp.observable_fluents.push_back(at);
     }
 
     if (resp.success) {
