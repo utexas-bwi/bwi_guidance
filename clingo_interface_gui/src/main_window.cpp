@@ -12,13 +12,13 @@
 #include <QtGui>
 #include <QMessageBox>
 #include <iostream>
-#include "../include/clingo_interface/main_window.hpp"
+#include "../include/clingo_interface_gui/main_window.hpp"
 
 /*****************************************************************************
 ** Namespaces
 *****************************************************************************/
 
-namespace clingo_interface {
+namespace clingo_interface_gui {
 
   using namespace Qt;
 
@@ -103,5 +103,5 @@ namespace clingo_interface {
     ui.localMap->setPixmap(QPixmap::fromImage(dest));
 
   }
-}  // namespace clingo_interface
+}  // namespace clingo_interface_gui
 

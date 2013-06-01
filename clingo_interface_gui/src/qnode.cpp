@@ -11,7 +11,7 @@
  *****************************************************************************/
 
 #include <ros/ros.h>
-#include <clingo_interface/qnode.hpp>
+#include <clingo_interface_gui/qnode.hpp>
 #include <tf/transform_datatypes.h>
 #include <geometry_msgs/PoseStamped.h>
 
@@ -19,7 +19,7 @@
  ** Namespaces
  *****************************************************************************/
 
-namespace clingo_interface {
+namespace clingo_interface_gui {
 
   /*****************************************************************************
    ** Implementation
@@ -41,7 +41,7 @@ namespace clingo_interface {
   }
 
   bool QNode::init() {
-    ros::init(init_argc,init_argv, "clingo_interface");
+    ros::init(init_argc,init_argv, "clingo_interface_gui");
     nh_.reset(new ros::NodeHandle);
 
     ros::param::get("~map_file", map_file_);
@@ -52,12 +52,12 @@ namespace clingo_interface {
     tf_.reset(new tf::TransformListener(ros::Duration(10)));
     mapper_.reset(new topological_mapper::MapLoader(map_file_));
     handler_.reset(
-        new clingo_helpers::DoorHandler(mapper_, door_file_, 
+        new clingo_interface::DoorHandler(mapper_, door_file_, 
             location_file_, *tf_));
 
     odom_subscriber_ = nh_->subscribe("odom", 1, &QNode::odometryHandler, this);
     as_.reset(new actionlib::SimpleActionServer<
-        clingo_interface::ClingoInterfaceAction>(*nh_, "clingo_interface", 
+        clingo_interface_gui::ClingoInterfaceAction>(*nh_, "clingo_interface_gui", 
             boost::bind(&QNode::clingoInterfaceHandler, this, _1), false));
     as_->start();
 
@@ -69,9 +69,9 @@ namespace clingo_interface {
   }
 
   void QNode::clingoInterfaceHandler(
-      const clingo_interface::ClingoInterfaceGoalConstPtr &req) {
+      const clingo_interface_gui::ClingoInterfaceGoalConstPtr &req) {
 
-    clingo_interface::ClingoInterfaceResult resp;
+    clingo_interface_gui::ClingoInterfaceResult resp;
 
     if (req->command.op == "approach" || req->command.op == "gothrough") {
       std::string door_name = req->command.args[0];
@@ -114,12 +114,12 @@ namespace clingo_interface {
           // Publish the observable fluents
           // TODO Besides should be published if approach goal succeeds
           if (req->command.op == "approach") {
-            clingo_interface::ClingoFluent beside;
+            clingo_interface_gui::ClingoFluent beside;
             beside.op = "beside";
             beside.args.push_back(door_name);
             resp.observable_fluents.push_back(beside);
           }
-          clingo_interface::ClingoFluent door_open;
+          clingo_interface_gui::ClingoFluent door_open;
           door_open.op = "open";
           door_open.args.push_back(door_name);
           if (handler_->isDoorOpen(door_idx)) {
@@ -190,7 +190,7 @@ namespace clingo_interface {
       ROS_ERROR("Unable to compute position");
     } else {
       std::string location_str = handler_->getLocationString(location_idx);
-      clingo_interface::ClingoFluent location;
+      clingo_interface_gui::ClingoFluent location;
       location.op = "location";
       location.args.push_back(location_str);
       resp.observable_fluents.push_back(location);
@@ -216,4 +216,4 @@ namespace clingo_interface {
     Q_EMIT rosShutdown(); // used to signal the gui for a shutdown (useful to roslaunch)
   }
 
-}  // namespace clingo_interface
+}  // namespace clingo_interface_gui

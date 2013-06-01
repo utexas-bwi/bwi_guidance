@@ -1,20 +1,20 @@
 <package>
-  <description brief="clingo_interface">
+  <description brief="clingo_interface_gui">
 
-     clingo_interface
+     clingo_interface_gui
 
   </description>
   <author>Piyush Khandelwal</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/clingo_interface</url>
+  <url>http://ros.org/wiki/clingo_interface_gui</url>
 
 
   <rosdep name="qt4"/>
 
   <depend package="qt_build"/>
   <depend package="roscpp"/>
-  <depend package="clingo_helpers"/>
+  <depend package="clingo_interface"/>
   <depend package="geometry_msgs"/>
   <depend package="nav_msgs"/>
   <depend package="tf"/>

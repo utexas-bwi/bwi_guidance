@@ -1,5 +1,5 @@
 /**
- * @file /include/clingo_interface/qnode.hpp
+ * @file /include/clingo_interface_gui/qnode.hpp
  *
  * @brief Communications central!
  *
@@ -9,8 +9,8 @@
 ** Ifdefs
 *****************************************************************************/
 
-#ifndef clingo_interface_QNODE_HPP_
-#define clingo_interface_QNODE_HPP_
+#ifndef clingo_interface_gui_QNODE_HPP_
+#define clingo_interface_gui_QNODE_HPP_
 
 /*****************************************************************************
 ** Includes
@@ -23,8 +23,8 @@
 
 #include <topological_mapper/map_loader.h>
 #include <tf/transform_listener.h>
-#include <clingo_interface/ClingoInterfaceAction.h>
-#include <clingo_helpers/door_handler.h>
+#include <clingo_interface_gui/ClingoInterfaceAction.h>
+#include <clingo_interface/door_handler.h>
 #include <nav_msgs/Odometry.h>
 #include <opencv/cv.h>
 
@@ -32,7 +32,7 @@
 ** Namespaces
 *****************************************************************************/
 
-namespace clingo_interface {
+namespace clingo_interface_gui {
 
 /*****************************************************************************
 ** Class
@@ -48,7 +48,7 @@ namespace clingo_interface {
 
       /* Service callback */
       void clingoInterfaceHandler(
-          const clingo_interface::ClingoInterfaceGoalConstPtr &req);
+          const clingo_interface_gui::ClingoInterfaceGoalConstPtr &req);
 
       /* Get robot location */
       void odometryHandler(const nav_msgs::Odometry::ConstPtr &odom);
@@ -74,7 +74,7 @@ namespace clingo_interface {
       ros::Publisher robot_controller_;
       ros::Subscriber odom_subscriber_;
       boost::shared_ptr<actionlib::SimpleActionServer<
-          clingo_interface::ClingoInterfaceAction> > as_;
+          clingo_interface_gui::ClingoInterfaceAction> > as_;
 
       /* Robot Location */
       float robot_x_;
@@ -87,10 +87,10 @@ namespace clingo_interface {
       std::string location_file_;
       boost::shared_ptr<tf::TransformListener> tf_;
       boost::shared_ptr<topological_mapper::MapLoader> mapper_;
-      boost::shared_ptr<clingo_helpers::DoorHandler> handler_;
+      boost::shared_ptr<clingo_interface::DoorHandler> handler_;
 
   };
 
-}  // namespace clingo_interface
+}  // namespace clingo_interface_gui
 
-#endif /* clingo_interface_QNODE_HPP_ */
+#endif /* clingo_interface_gui_QNODE_HPP_ */

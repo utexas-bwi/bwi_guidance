@@ -1,27 +1,27 @@
 #! /usr/bin/env python
 
-import roslib; roslib.load_manifest('clingo_interface')
+import roslib; roslib.load_manifest('clingo_interface_gui')
 import rospy
 
 # Brings in the SimpleActionClient
 import actionlib
 
-import clingo_interface.msg
+import clingo_interface_gui.msg
 import sys
 
 def fibonacci_client():
     # Creates the SimpleActionClient, passing the type of the action
     # (FibonacciAction) to the constructor.
-    client = actionlib.SimpleActionClient('clingo_interface', clingo_interface.msg.ClingoInterfaceAction)
+    client = actionlib.SimpleActionClient('clingo_interface_gui', clingo_interface_gui.msg.ClingoInterfaceAction)
 
     # Waits until the action server has started up and started
     # listening for goals.
     client.wait_for_server()
 
     # Creates a goal to send to the action server.
-    command = clingo_interface.msg.ClingoFluent(sys.argv[1], [sys.argv[2]])
+    command = clingo_interface_gui.msg.ClingoFluent(sys.argv[1], [sys.argv[2]])
 
-    goal = clingo_interface.msg.ClingoInterfaceGoal(command)
+    goal = clingo_interface_gui.msg.ClingoInterfaceGoal(command)
 
     # Sends the goal to the action server.
     client.send_goal(goal)
