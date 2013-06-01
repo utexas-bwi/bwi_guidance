@@ -41,7 +41,7 @@
 #include <topological_mapper/connected_components.h>
 #include <topological_mapper/topological_mapper.h>
 #include <topological_mapper/map_utils.h>
-#include <clingo_interface/door_handler.h>
+#include <clingo_interface/structures.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>

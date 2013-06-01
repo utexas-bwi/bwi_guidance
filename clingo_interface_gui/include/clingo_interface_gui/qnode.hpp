@@ -18,6 +18,9 @@
 
 #include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
+#include <actionlib/client/simple_action_client.h>
+#include <actionlib/client/terminal_state.h>
+#include <move_base_msgs/MoveBaseAction.h>
 #include <QThread>
 #include <QStringListModel>
 
@@ -69,9 +72,11 @@ namespace clingo_interface_gui {
       int init_argc;
       char** init_argv;
 
+      void executeRobotGoal(const geometry_msgs::PoseStamped& pose);
+
       /* Ros Stuff */
       boost::shared_ptr<ros::NodeHandle> nh_;
-      ros::Publisher robot_controller_;
+      boost::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> > robot_controller_;
       ros::Subscriber odom_subscriber_;
       boost::shared_ptr<actionlib::SimpleActionServer<
           clingo_interface_gui::ClingoInterfaceAction> > as_;

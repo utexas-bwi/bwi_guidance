@@ -56,8 +56,10 @@ namespace clingo_interface_gui {
             boost::bind(&QNode::clingoInterfaceHandler, this, _1), false));
     as_->start();
 
-    robot_controller_ = nh_->advertise<geometry_msgs::PoseStamped>(
-        "move_base_simple/goal", 1);
+    robot_controller_.reset(new actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>("move_base", true));
+    robot_controller_->waitForServer();
+
+    std::cout << "move_base server is now AVAILABLE" << std::endl;
 
     start();
     return true;
@@ -103,7 +105,7 @@ namespace clingo_interface_gui {
           pose.pose.position.y = approach_pt.y;
           tf::quaternionTFToMsg(tf::createQuaternionFromYaw(approach_yaw), 
               pose.pose.orientation); 
-          robot_controller_.publish(pose); // TODO Use the action lib API for move base and provide feedback here
+          executeRobotGoal(pose);
           resp.success = true;
 
           // Publish the observable fluents
@@ -203,6 +205,13 @@ namespace clingo_interface_gui {
     robot_x_ = odom->pose.pose.position.x;
     robot_y_ = odom->pose.pose.position.y;
     robot_yaw_ = tf::getYaw(odom->pose.pose.orientation);
+  }
+
+  void QNode::executeRobotGoal(const geometry_msgs::PoseStamped& pose) {
+    move_base_msgs::MoveBaseGoal goal;
+    goal.target_pose = pose;
+    robot_controller_->sendGoal(goal);
+    robot_controller_->waitForResult();
   }
 
   void QNode::run() {

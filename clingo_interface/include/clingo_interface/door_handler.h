@@ -40,10 +40,13 @@
 #ifndef DOOR_HANDLER_WW75RJPS
 #define DOOR_HANDLER_WW75RJPS
 
+#include <ros/ros.h>
 #include <boost/shared_ptr.hpp>
 #include <clingo_interface/structures.h>
 #include <topological_mapper/map_loader.h>
 #include <topological_mapper/map_utils.h>
+#include <tf/transform_datatypes.h>
+#include <nav_msgs/GetPlan.h>
 
 namespace clingo_interface {
 
@@ -54,20 +57,65 @@ namespace clingo_interface {
       DoorHandler (std::string map_file, std::string door_file, std::string location_file) {
         readDoorFile(door_file, doors_);
         readLocationFile(location_file, locations_, location_map_);
-        std::cout << "location map size" << location_map_.size() << std::endl;
         mapper_.reset(new topological_mapper::MapLoader(map_file));
         nav_msgs::OccupancyGrid grid;
         mapper_->getMap(grid);
         info_ = grid.info;
+
+        ros::NodeHandle n;
+        make_plan_client_ = 
+          n.serviceClient<nav_msgs::GetPlan>("move_base/NavfnROS/make_plan"); //TODO maybe not need Navfn here?
+        make_plan_client_.waitForExistence();
+        std::cout << "Make plan server AVAILABLE" << std::endl; 
       }
 
       bool isDoorOpen(size_t idx) {
-        return true;
+
+        if (idx > doors_.size()) {
+          return false;
+        }
+
+        topological_mapper::Point2f start_pt, goal_pt;
+        float start_yaw, goal_yaw;
+
+        start_pt = doors_[idx].approach_points[0];
+        goal_pt = doors_[idx].approach_points[1];
+        start_yaw = doors_[idx].approach_yaw[0];
+        goal_yaw = doors_[idx].approach_yaw[1];
+
+        nav_msgs::GetPlan srv;
+        geometry_msgs::PoseStamped &start = srv.request.start, &goal = srv.request.goal;
+        start.header.frame_id = goal.header.frame_id = "/map";
+        start.header.stamp = goal.header.stamp = ros::Time::now();
+
+        start.pose.position.x = start_pt.x;
+        start.pose.position.y = start_pt.y;
+        start.pose.position.z = 0;
+        start.pose.orientation = tf::createQuaternionMsgFromYaw(start_yaw); 
+
+        goal.pose.position.x = goal_pt.x;
+        goal.pose.position.y = goal_pt.y;
+        goal.pose.position.z = 0;
+        goal.pose.orientation = tf::createQuaternionMsgFromYaw(goal_yaw);
+        srv.request.tolerance = 0.5 + 1e-6;
+
+        if (make_plan_client_.call(srv)) {
+          if (srv.response.plan.poses.size() != 0)
+            return true;
+          else 
+            return false;
+        } else {
+          return false;
+        }
       }
 
       bool getApproachPoint(size_t idx, 
           const topological_mapper::Point2f& current_location,
           topological_mapper::Point2f& point, float &yaw) {
+
+        if (idx > doors_.size()) {
+          return false;
+        }
 
         for (size_t pt = 0; pt < 2; ++pt) {
           std::cout << getLocationIdx(doors_[idx].approach_names[pt]) << " vs " <<  getLocationIdx(current_location) << std::endl;
@@ -86,6 +134,10 @@ namespace clingo_interface {
           const topological_mapper::Point2f& current_location,
           topological_mapper::Point2f& point, float& yaw) {
 
+        if (idx > doors_.size()) {
+          return false;
+        }
+
         for (size_t pt = 0; pt < 2; ++pt) {
           if (getLocationIdx(doors_[idx].approach_names[pt]) == getLocationIdx(current_location)) {
             point = doors_[idx].approach_points[1 - pt];
@@ -100,11 +152,8 @@ namespace clingo_interface {
       size_t getLocationIdx(const topological_mapper::Point2f& current_location) {
 
         topological_mapper::Point2f grid = topological_mapper::toGrid(current_location, info_);
-        std::cout << grid.x << " and " << grid.y << std::endl;
         size_t map_idx = MAP_IDX(info_.width, (int) grid.x, (int) grid.y);
-        std::cout << "location_map_ size" << location_map_.size() << std::endl;
         if (map_idx > location_map_.size()) {
-          std::cout << "size too big" << std::endl; 
           return (size_t) -1;
         }
         return (size_t) location_map_[map_idx];
@@ -152,6 +201,8 @@ namespace clingo_interface {
       std::string map_file_;
       boost::shared_ptr <topological_mapper::MapLoader> mapper_;
       nav_msgs::MapMetaData info_;
+
+      ros::ServiceClient make_plan_client_;
 
       // boost::shared_ptr <navfn::NavfnROS> navfn_;
       // boost::shared_ptr <costmap_2d::Costmap2DROS> costmap_;

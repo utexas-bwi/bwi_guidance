@@ -25,7 +25,6 @@ namespace clingo_interface {
     }
     const YAML::Node &data_node = doc["data"];
     location_map.resize(data_node.size());
-    std::cout << "num locations: " << location_map.size() << std::endl;
     for (size_t i = 0; i < data_node.size(); i++) {
       data_node[i] >> location_map[i];
 
