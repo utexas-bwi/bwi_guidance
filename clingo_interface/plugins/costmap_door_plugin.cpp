@@ -19,6 +19,8 @@ namespace clingo_interface {
     readDoorFile(door_yaml_file_, doors_);
     readLocationFile(location_file_, locations_);
 
+    ROS_INFO("Read %i locations from %s", locations_.size(), location_file_.size());
+
     /* Initialize map information*/
     /* TODO we can get rid of this */
     mapper_.reset(new topological_mapper::MapLoader(map_file_));

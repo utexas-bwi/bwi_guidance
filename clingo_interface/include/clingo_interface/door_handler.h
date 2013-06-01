@@ -94,9 +94,7 @@ namespace clingo_interface {
           door_plugin_->closeDoor(i);
         }
 
-        // while (!door_plugin_->isCostmapCurrent()) {
-        //   boost::this_thread::sleep( boost::posix_time::milliseconds(10));
-        // }
+        //boost::unique_lock< boost::shared_mutex > lock(*(costmap_->getCostmap()->getLock()));
 
         /* Now get the start and goal locations for this door */
         geometry_msgs::PoseStamped start_pose, goal_pose;
@@ -125,9 +123,7 @@ namespace clingo_interface {
           door_plugin_->closeDoor(i);
         }
 
-        // while (!door_plugin_->isCostmapCurrent()) {
-        //   boost::this_thread::sleep( boost::posix_time::milliseconds(10));
-        // }
+        //boost::unique_lock< boost::shared_mutex > lock(*(costmap_->getCostmap()->getLock()));
 
         /* Setup variables */
         geometry_msgs::PoseStamped start_pose, goal_pose;
@@ -186,16 +182,15 @@ namespace clingo_interface {
         return false;
       }
 
-      size_t getLocation(const topological_mapper::Point2f& current_location) {
+      size_t getLocationIdx(const topological_mapper::Point2f& current_location) {
 
+        ROS_ERROR_STREAM("Attempting to get locations idx at" << current_location);
         /* Close all doors */
         for (size_t i = 0; i < door_plugin_->doors().size(); ++i) {
           door_plugin_->closeDoor(i);
         }
 
-        // while (!door_plugin_->isCostmapCurrent()) {
-        //   boost::this_thread::sleep( boost::posix_time::milliseconds(10));
-        // }
+        //boost::unique_lock< boost::shared_mutex > lock(*(costmap_->getCostmap()->getLock()));
 
         /* Setup variables */
         geometry_msgs::PoseStamped start_pose, goal_pose;
@@ -209,6 +204,8 @@ namespace clingo_interface {
         goal_pose.pose.orientation = start_pose.pose.orientation;
         std::vector<geometry_msgs::PoseStamped> plan; // Irrelevant
 
+        ROS_INFO_STREAM("Number of locations: " << door_plugin_->locations().size());
+
         /* Find a location that is still reachable. We are at that location */
         for (size_t i = 0; i < door_plugin_->locations().size(); ++i) {
           /* Check if we can reach this location. If so, then return this idx */
@@ -221,6 +218,23 @@ namespace clingo_interface {
 
         return -1;
 
+      }
+
+      inline size_t getLocationIdx(const std::string& loc_str) const {
+        ROS_ERROR_STREAM("Attempting to get locations idx through str function: " << loc_str);
+        return door_plugin_->getLocationIdx(loc_str);
+      }
+
+      inline size_t getDoorIdx(const std::string& door_str) const {
+        return door_plugin_->getDoorIdx(door_str);
+      }
+
+      inline std::string getLocationString(size_t idx) const {
+        return door_plugin_->getLocationString(idx);
+      }
+
+      inline std::string getDoorString(size_t idx) const {
+        return door_plugin_->getDoorString(idx);
       }
 
     private:
