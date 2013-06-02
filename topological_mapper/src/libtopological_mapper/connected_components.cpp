@@ -37,7 +37,6 @@
 
 #include <topological_mapper/connected_components.h>
 #include <topological_mapper/map_utils.h>
-#include <cvblobs/BlobResult.h>
 
 namespace topological_mapper {
 
@@ -48,45 +47,35 @@ namespace topological_mapper {
    * \param  image map with obstacles and critical lines 
    * \return  
    */
-  ConnectedComponents::ConnectedComponents (cv::Mat& image,
+  ConnectedComponents::ConnectedComponents (const cv::Mat& image,
       std::vector<int32_t>& component_map) {
 
-    IplImage ipl_image = (IplImage)image;
-    IplImage* image_ptr = cvCloneImage(&ipl_image);
-    CBlobResult blobs(image_ptr, NULL, 0);
-    number_components_ = blobs.GetNumBlobs();
+    cv::Mat src = image.clone();
+    cv::Mat dst = cv::Mat::zeros(src.rows, src.cols, CV_32S);
+    cv::vector<cv::vector<cv::Point> > contours;
+    cv::vector<cv::Vec4i> hierarchy;
 
-    // Initialize vector to all zeros 
-    for (size_t i = 0; i < component_map.size(); ++i) {
-      component_map[i] = -1;
+    cv::findContours(src, contours, hierarchy, 
+        CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
+
+    number_components_ = 0;
+    for(int idx = 0; idx >= 0; idx = hierarchy[idx][0]) {
+      cv::Scalar color(number_components_ + 1);
+      cv::drawContours(dst, contours, idx, color, CV_FILLED, 8, hierarchy);
+      number_components_++;
     }
 
-    // Draw individual components onto image
-    for (size_t t = 0; t < number_components_; ++t) {
+    component_map.clear();
+    component_map.resize(dst.rows * dst.cols);
 
-      // Draw this component on to an image
-      CBlob blob(blobs.GetBlob(t));
-      IplImage *blob_image = 
-        cvCreateImage(cvSize(image.cols, image.rows), IPL_DEPTH_8U, 1);
-      cvSetZero(blob_image);
-      blob.FillBlob(blob_image, cvScalar(255));
-
-      // Read the image and fill the std::vector
-      int step = blob_image->widthStep / sizeof(uchar);
-      uchar* data = (uchar *) blob_image->imageData;
-      for (int j = 0; j < image.rows; ++j) {
-        for (int i = 0; i < image.cols; ++i) {
-          if (data[j * step + i] == 255) {
-            size_t map_idx = MAP_IDX(image.cols, i, j);
-            component_map[map_idx] = t;
-          }
-        }
+    size_t map_idx = 0;
+    for (int j = 0; j < dst.rows; ++j) {
+      const int32_t* dst_row = dst.ptr<int32_t>(j);
+      for (int i = 0; i < dst.cols; ++i) {
+        component_map[map_idx] = dst_row[i] - 1;
+        ++map_idx;
       }
-
-      cvReleaseImage(&blob_image);
     }
-
-    cvReleaseImage(&image_ptr);
 
   }
 

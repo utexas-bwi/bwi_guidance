@@ -64,7 +64,7 @@ namespace topological_mapper {
        * \param  image map with obstacles and critical lines 
        * \return  
        */
-      ConnectedComponents (cv::Mat& image, std::vector<int32_t>& component_map);
+      ConnectedComponents (const cv::Mat& image, std::vector<int32_t>& component_map);
 
       /**
        * \brief Returns the number of components obtained by running the

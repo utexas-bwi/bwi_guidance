@@ -11,7 +11,6 @@
 
   <depend package="nav_msgs" />
   <depend package="map_server" />
-  <depend package="libcvblobs" />
 
   <rosdep name="opencv2" />
   <rosdep name="yaml-cpp" />
