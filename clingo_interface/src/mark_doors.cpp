@@ -41,6 +41,7 @@
 #include <topological_mapper/connected_components.h>
 #include <topological_mapper/topological_mapper.h>
 #include <topological_mapper/map_utils.h>
+#include <topological_mapper/map_inflator.h>
 #include <clingo_interface/structures.h>
 
 #include <opencv2/core/core.hpp>
@@ -221,14 +222,28 @@ int main(int argc, char** argv) {
       }
       global_state = MARK_LOCATION;
     } else if (c == 'n') {
-      component_map.resize(image.rows*image.cols);
-      cv::Mat gray_image;
-      cvtColor(image, gray_image, CV_RGB2GRAY);
-      topological_mapper::ConnectedComponents cc(gray_image, component_map);
+
+      // Get grayscale inflated map image
+      nav_msgs::OccupancyGrid map, inflated_map;
+      mapper.getMap(map);
+      topological_mapper::inflateMap(0.3, map, inflated_map);
+      cv::Mat inflated_image, inflated_gray_image;
+      mapper.drawMap(inflated_image, inflated_map);
+      cvtColor(inflated_image, inflated_gray_image, CV_RGB2GRAY);
+
+      // Draw doors on this image again
+      for (size_t i = 0; i < doors.size(); ++i) {
+        cv::line(inflated_gray_image, 
+            toGrid(doors[i].corners[0], info),
+            toGrid(doors[i].corners[1], info),
+            cv::Scalar(0), 5, 8);
+      }
+
+      topological_mapper::ConnectedComponents cc(inflated_gray_image, component_map);
       size_t num_components = cc.getNumberComponents();
       std::cout << "Found " << num_components << " components." << std::endl;
       for (size_t comp = 0; comp < num_components; ++comp) {
-        for (int j = 1; j < image.rows; ++j) {
+        for (int j = 0; j < image.rows; ++j) {
           cv::Vec3b* image_row_j = image.ptr<cv::Vec3b>(j);
           for (int i = 0; i < image.cols; ++i) {
             size_t map_idx = MAP_IDX(image.cols, i, j);
