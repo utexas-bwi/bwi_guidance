@@ -31,5 +31,7 @@ rosbuild_gensrv()
 
 #rosbuild_add_library(clingo_interface_costmap_plugins plugins/costmap_door_plugin.cpp)
 
+rosbuild_add_executable(cc_test src/cc_test.cpp)
+
 rosbuild_add_executable(test_door_detector src/test_door_detector.cpp)
 rosbuild_add_executable(mark_doors src/mark_doors.cpp)
