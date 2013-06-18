@@ -111,9 +111,19 @@ namespace bwi_exp1 {
         all_actions.push_back(Action(PLACE_ROBOT, adjacent_idxs[a]));
       }
 
-      // For the state space, 
+      // Add the relevant states
+      for (size_t dir = 0; dir < NUM_DIRECTIONS; ++dir) {
 
+        std::vector<size_t> possible_next_directions(adjacent_idxs.size(), 0);
+        for (size_t a = 0; a < adjacent_idxs.size(); ++a) {
+          size_t next_dir = computeNextDirection(dir, i, adjacent_idxs[a], graph);
+          possible_next_directions.push_back(next_dir);
+        }
 
+        for (size_t robots_remaining = 0; robots_remaining <= NUM_ROBOTS; ++robots) {
+          size_t 
+        }
+      }
 
     }
   }

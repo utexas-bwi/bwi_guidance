@@ -11,6 +11,9 @@ namespace bwi_exp1 {
   typedef topological_mapper::Graph Graph;
 
   const double GAMMA = 0.98;
+
+  // Even values here will have weird random discretization errors due to an
+  // inability of representing cardinal directions
   const size_t GRID_SIZE = 5;
   const size_t NUM_DIRECTIONS = GRID_SIZE * GRID_SIZE;
   const size_t MAX_ROBOTS = 5;
@@ -77,8 +80,12 @@ namespace bwi_exp1 {
       y = roundWithOffset(x*slope, offset);
     }
 
+    //std::cout << x << " " << y << std::endl;
+
     float x_curr = (dir % GRID_SIZE) - max_value;
     float y_curr = (dir / GRID_SIZE) - max_value;
+
+    //std::cout << dir << " -> " << x_curr << " " << y_curr << std::endl;
 
     float x_net = x_curr / 2.0 + x;
     x_net = std::min(max_value, x_net);
