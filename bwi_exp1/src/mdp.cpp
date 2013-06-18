@@ -1,7 +1,4 @@
-#include 
-
 #include <bwi_exp1/mdp.h>
-#include <topological_mapper/graph.h>
 
 namespace bwi_exp1 {
 
@@ -92,6 +89,8 @@ namespace bwi_exp1 {
     boost::property_map<Graph, boost::vertex_index_t>::type 
         indexmap = boost::get(boost::vertex_index, graph);
 
+    state_space.clear();
+
     for (size_t i = 0; i < num_vertices; ++i) {
       Graph::vertex_descriptor v = boost::vertex(i, graph);
 
@@ -103,11 +102,19 @@ namespace bwi_exp1 {
         adjacent_idxs.push_back(indexmap[*ai]);
       }
 
-      std::vector<Action> actions;
-      actions.push_back(
+      std::vector<Action> all_actions, no_robot_actions;
+      all_actions.push_back(Action(DO_NOTHING,0));
+      no_robot_actions.push_back(Action(DO_NOTHING,0));
+
+      // For each adjacent idx, create an action
+      for (size_t a = 0; a < adjacent_idxs.size(); ++a) {
+        all_actions.push_back(Action(PLACE_ROBOT, adjacent_idxs[a]));
+      }
+
+      // For the state space, 
 
 
-      // For each adjacent idx, crea
+
     }
   }
 }
