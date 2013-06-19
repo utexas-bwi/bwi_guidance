@@ -33,7 +33,7 @@ namespace bwi_exp1 {
   struct State {
 
     size_t graph_id; // ~100
-    size_t num_directions; // 0 to NUM_DIRECTIONS - 1
+    size_t direction; // 0 to NUM_DIRECTIONS - 1
     size_t num_robots_left; // 0 to MAX_ROBOTS
 
     // size_t direction_at_current; // -1 to 7, -1 for no robot
@@ -45,6 +45,24 @@ namespace bwi_exp1 {
     std::vector<size_t> next_states;
 
   };
+
+  inline getActionSpaceAtSet(const State& state, const Graph& graph, 
+      std::vector<Action>& actions, std::vector<size_t>& next_states) {
+
+    // Compute the set of possible actions 
+    std::vector<size_t> adjacent_idxs;
+    Graph::adjacency_iterator ai, aend;
+    for (boost::tie(ai, aend) = boost::adjacent_vertices(v, graph); 
+        ai != aend; ++ai) {
+      adjacent_idxs.push_back(indexmap[*ai]);
+    }
+
+    std::vector<Action> all_actions, no_robot_actions;
+    all_actions.push_back(Action(DO_NOTHING,0));
+    no_robot_actions.push_back(Action(DO_NOTHING,0));
+
+
+  }
 
   inline float roundWithOffset(float value, float offset) {
     return round(value + offset) - offset;

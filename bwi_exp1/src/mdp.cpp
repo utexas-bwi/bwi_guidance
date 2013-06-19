@@ -120,8 +120,13 @@ namespace bwi_exp1 {
           possible_next_directions.push_back(next_dir);
         }
 
-        for (size_t robots_remaining = 0; robots_remaining <= NUM_ROBOTS; ++robots) {
-          size_t 
+        for (size_t robots_remaining = 0; robots_remaining <= NUM_ROBOTS; 
+            ++robots) {
+
+          size_t state_idx = constructStateIndex(i, dir, robots_remaining);
+          state_space[state_idx].graph_id = i;
+          
+          
         }
       }
 
