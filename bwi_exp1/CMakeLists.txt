@@ -42,7 +42,7 @@ rosbuild_add_library(bwi_exp1
   )
 target_link_libraries(bwi_exp1 ${YAML_CPP_LIBRARIES})
 
-rosbuild_add_library(bwi_exp1_analyze
+rosbuild_add_library(bwi_exp1_mdp
   src/mdp.cpp
 )
 
@@ -51,3 +51,4 @@ rosbuild_add_executable(robot_positioner src/nodes/robot_positioner.cpp)
 
 #test exes
 rosbuild_add_executable(test_mdp test/test_mdp.cpp)
+target_link_libraries(test_mdp bwi_exp1_mdp)

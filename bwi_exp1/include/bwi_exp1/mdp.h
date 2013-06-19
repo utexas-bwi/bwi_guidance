@@ -27,60 +27,74 @@ namespace bwi_exp1 {
     public:
       Action(ActionType a, size_t g) : type(a), graph_id(g) {}
       ActionType type;
-      size_t graph_id; // used in conjunction with type = PLACE_ROBOT
+      size_t graph_id; // with PLACE ROBOT, identifies the direction pointed to
   };
 
   struct State {
-
     size_t graph_id; // ~100
     size_t direction; // 0 to NUM_DIRECTIONS - 1
     size_t num_robots_left; // 0 to MAX_ROBOTS
-
-    // size_t direction_at_current; // -1 to 7, -1 for no robot
-    // std::vector<size_t> frontier;
-    // size_t extra_visible_robot; // sizeof(frontier) + 1 (for no extra robot)
-    // size_t direction_extra_robot;
-
-    std::vector<Action> actions;
-    std::vector<size_t> next_states;
-
   };
-
-  inline getActionSpaceAtSet(const State& state, const Graph& graph, 
-      std::vector<Action>& actions, std::vector<size_t>& next_states) {
-
-    // Compute the set of possible actions 
-    std::vector<size_t> adjacent_idxs;
-    Graph::adjacency_iterator ai, aend;
-    for (boost::tie(ai, aend) = boost::adjacent_vertices(v, graph); 
-        ai != aend; ++ai) {
-      adjacent_idxs.push_back(indexmap[*ai]);
-    }
-
-    std::vector<Action> all_actions, no_robot_actions;
-    all_actions.push_back(Action(DO_NOTHING,0));
-    no_robot_actions.push_back(Action(DO_NOTHING,0));
-
-
-  }
 
   inline float roundWithOffset(float value, float offset) {
     return round(value + offset) - offset;
   }
 
-  inline size_t computeNextDirection(size_t dir, size_t graph_id, 
-      size_t next_graph_id, const Graph &graph) {
+  inline size_t getStateSpaceSize(size_t num_vertices) {
+    return num_vertices * NUM_DIRECTIONS * (MAX_ROBOTS + 1);
+  }
 
-    // Compute 1 of 16 directions from current graph_id to next_graph_id
+  inline size_t constructStateIndex(size_t graph_id, size_t direction, 
+      size_t num_robots_left) {
+
+    return graph_id * NUM_DIRECTIONS * (MAX_ROBOTS + 1) + 
+      direction * (MAX_ROBOTS + 1) +
+      num_robots_left;
+  }
+
+  inline bool isTerminalState(const State& state, size_t goal_idx) {
+    return state.graph_id == goal_idx;
+  }
+  
+  inline float getReward(const std::vector<State>& state_space, size_t from_idx,
+      size_t to_idx, const Graph& graph) {
+
+    Graph::vertex_descriptor from_v = 
+      boost::vertex(state_space[from_idx].graph_id, graph);
+    Graph::vertex_descriptor to_v = 
+      boost::vertex(state_space[to_idx].graph_id, graph);
+
+    // Return the cost (i.e negative) for the distance between the 2 state_ids
+    return -cv::norm(graph[from_v].location - graph[to_v].location);
+  }
+
+  inline float getAngleFromStates(
+      const Graph& graph, size_t graph_id, size_t next_graph_id) {
+
     Graph::vertex_descriptor v = boost::vertex(graph_id, graph);
     Graph::vertex_descriptor next_v = boost::vertex(next_graph_id, graph);
 
-    float slope = (graph[next_v].location.y - graph[v].location.y) /
-        (graph[next_v].location.x - graph[v].location.x);
-    float angle = atan2f(graph[next_v].location.y - graph[v].location.y,
+    return atan2f(graph[next_v].location.y - graph[v].location.y,
         graph[next_v].location.x - graph[v].location.x);
+  }
+
+  inline float getAngleFromDirection(size_t dir) {
+
+    float max_value = ((float)GRID_SIZE - 1.0) / 2.0;
+
+    float x = (dir % GRID_SIZE) - max_value;
+    float y = (dir / GRID_SIZE) - max_value;
+
+    return atan2f(y, x);
+  }
+
+  inline void getXYDirectionFromStates(
+      const Graph& graph, size_t graph_id, size_t next_graph_id, 
+      float& x, float& y) {
+
+    float angle = getAngleFromStates(graph, graph_id, next_graph_id);
+    float slope = tanf(angle);
     
-    float x = 0, y = 0;
     float max_value = ((float)GRID_SIZE - 1.0) / 2.0;
     float offset = ((GRID_SIZE + 1) % 2) * 0.5;
 
@@ -98,43 +112,23 @@ namespace bwi_exp1 {
       y = roundWithOffset(x*slope, offset);
     }
 
-    //std::cout << x << " " << y << std::endl;
-
-    float x_curr = (dir % GRID_SIZE) - max_value;
-    float y_curr = (dir / GRID_SIZE) - max_value;
-
-    //std::cout << dir << " -> " << x_curr << " " << y_curr << std::endl;
-
-    float x_net = x_curr / 2.0 + x;
-    x_net = std::min(max_value, x_net);
-    x_net = std::max(-max_value, x_net);
-    float y_net = y_curr / 2.0 + y;
-    y_net = std::min(max_value, y_net);
-    y_net = std::max(-max_value, y_net);
-
-    int x_idx = round(x_net + offset) - round (-max_value + offset);
-    int y_idx = round(y_net + offset) - round (-max_value + offset);
-
-    return y_idx * GRID_SIZE + x_idx;
   }
+ 
+  size_t computeNextDirection(size_t dir, size_t graph_id, 
+      size_t next_graph_id, const Graph &graph);
 
-  inline size_t getStateSpaceSize(size_t num_vertices) {
-    return num_vertices * NUM_DIRECTIONS * (MAX_ROBOTS + 1);
-  }
-
-  inline size_t constructStateIndex(size_t graph_id, size_t direction, 
-      size_t num_robots_left) {
-
-    return graph_id * NUM_DIRECTIONS * (MAX_ROBOTS + 1) + 
-      direction * (MAX_ROBOTS + 1) +
-      num_robots_left;
-  }
+  void getActionsAtState(const State& state, const Graph& graph, 
+      std::vector<Action>& actions);
+  
+  void getNextStatesAtState(const State& state, const Graph& graph, 
+      std::vector<size_t>& next_states);
 
   void populateStateSpace(const topological_mapper::Graph &graph, 
-      std::vector<State>& state_space, size_t goal_idx);
+      std::vector<State>& state_space);
 
-  void getTransitionProbabilities(const State& state, const Action& action, 
-      std::vector<double>& p);
+  void getTransitionProbabilities(const State& state, const State& state_space, 
+      const Graph& graph, const Action& action, 
+      std::vector<size_t>& next_states, std::vector<float>& probabilities);
 
 }
 
