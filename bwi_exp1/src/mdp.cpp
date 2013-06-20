@@ -168,14 +168,15 @@ namespace bwi_exp1 {
       last_non_zero_probability = next_state_counter;
     }
 
-    // Normalize probabilities. Add an epsilon to last non zero probability to 
-    // ensure sum > 1 to avoid floating point errors
+    // Normalize probabilities. Ensure sum == 1 with last non zero probability 
+    float normalized_probability_sum = 0;
     for (size_t probability_counter = 0; 
         probability_counter < probabilities.size();
         ++probability_counter) {
       probabilities[probability_counter] /= probability_sum;
+      normalized_probability_sum += probabilities[probability_counter];
     }
-    probabilities[last_non_zero_probability] += 0.1; // add epsilon
+    probabilities[last_non_zero_probability] += 1 - normalized_probability_sum;
 
   }
 

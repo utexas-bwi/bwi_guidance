@@ -126,7 +126,8 @@ namespace bwi_exp1 {
   void populateStateSpace(const topological_mapper::Graph &graph, 
       std::vector<State>& state_space);
 
-  void getTransitionProbabilities(const State& state, const State& state_space, 
+  void getTransitionProbabilities(const State& state, 
+      const std::vector<State>& state_space, 
       const Graph& graph, const Action& action, 
       std::vector<size_t>& next_states, std::vector<float>& probabilities);
 
