@@ -242,7 +242,7 @@ class ExperimentController:
         self.pause_person_plugin(True)
 
         # Read the arrows
-        images_dir = roslib.packages.get_pkg_dir("bwi_web") + "/images"
+        images_dir = roslib.packages.get_pkg_dir("bwi_exp1") + "/images"
         self.arrow = readImage(images_dir + "/Up.png")
         self.image_none = numpy.zeros((120,160,3), numpy.uint8)
 

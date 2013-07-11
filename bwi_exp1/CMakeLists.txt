@@ -1,94 +1,65 @@
 # http://ros.org/doc/groovy/api/catkin/html/user_guide/supposed.html
 cmake_minimum_required(VERSION 2.8.3)
 project(bwi_exp1)
-# Load catkin and all dependencies required for this package
-# TODO: remove all from COMPONENTS that are not catkin packages.
-find_package(catkin REQUIRED COMPONENTS gazebo gazebo_msgs bwi_msgs bwi_web topological_mapper)
 
-# include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
-# CATKIN_MIGRATION: removed during catkin migration
-# cmake_minimum_required(VERSION 2.4.6)
+find_package(catkin REQUIRED COMPONENTS bwi_msgs topological_mapper)
 
-# CATKIN_MIGRATION: removed during catkin migration
-# include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
-
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
-
-
-# CATKIN_MIGRATION: removed during catkin migration
-# rosbuild_init()
-
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
-# find yaml lib definitions
-
-# CATKIN_MIGRATION: removed during catkin migration
-# include($ENV{ROS_ROOT}/core/rosbuild/FindPkgConfig.cmake)
+find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
-include_directories(${YAML_CPP_INCLUDE_DIRS})
-link_directories(${YAML_CPP_LIBRARY_DIRS})
 
-#uncomment if you have defined messages
-#add_message_files(
-  FILES
-  # TODO: List your msg files here
-)
-#uncomment if you have defined services
-#add_service_files(
-  FILES
-  # TODO: List your msg files here
-)
-
-#common commands for building c++ executables and libraries
-#add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#
-# CATKIN_MIGRATION: removed during catkin migration
-# rosbuild_add_boost_directories()
-#find_package(Boost REQUIRED COMPONENTS thread)
-include_directories(${Boost_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
-#add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+  ${YAML_CPP_INCLUDE_DIRS})
 
 add_library(bwi_exp1
   src/libbwi_exp1/users.cpp
   src/libbwi_exp1/odometry.cpp
   src/libbwi_exp1/experiment.cpp
   )
-target_link_libraries(bwi_exp1 ${YAML_CPP_LIBRARIES})
+target_link_libraries(bwi_exp1 
+  ${catkin_LIBRARIES}
+  ${YAML_CPP_LIBRARIES})
 
 add_library(bwi_exp1_mdp
   src/mdp.cpp
 )
+target_link_libraries(bwi_exp1_mdp 
+  ${catkin_LIBRARIES})
 
 add_executable(create_experiment src/create_experiment.cpp)
+target_link_libraries(create_experiment 
+  ${catkin_LIBRARIES})
 add_executable(robot_positioner src/nodes/robot_positioner.cpp)
+target_link_libraries(robot_positioner 
+  ${catkin_LIBRARIES})
 
-#test exes
+#test the mdp
 add_executable(test_mdp test/test_mdp.cpp)
 target_link_libraries(test_mdp bwi_exp1_mdp)
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-  #TODO DEPENDENCIES geometry_msgs std_msgs
-)
-# TODO: fill in what other packages will need to use this package
-## DEPENDS: system dependencies of this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## INCLUDE_DIRS: 
-## LIBRARIES: libraries you create in this project that dependent projects also need
+
 catkin_package(
-    DEPENDS gazebo gazebo_msgs bwi_msgs bwi_web topological_mapper
-    CATKIN_DEPENDS # TODO
-    INCLUDE_DIRS # TODO include
-    LIBRARIES # TODO
+    DEPENDS yaml-cpp
+    CATKIN_DEPENDS bwi_msgs topological_mapper
+    INCLUDE_DIRS include
+    LIBRARIES bwi_exp1 bwi_exp1_mdp
 )
+
+#install targets
+install(TARGETS
+  bwi_exp1
+  bwi_exp1_mdp
+  create_experiment
+  robot_positioner
+  test_mdp
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
+
+foreach(dir config data images include launch maps Media worlds www)
+  install(DIRECTORY ${dir}/
+    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${dir})
+endforeach(dir)
+
+install(PROGRAMS
+  scripts/experiment.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
