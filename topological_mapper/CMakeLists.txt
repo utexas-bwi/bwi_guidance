@@ -1,48 +1,22 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+# http://ros.org/doc/groovy/api/catkin/html/user_guide/supposed.html
+cmake_minimum_required(VERSION 2.8.3)
+project(topological_mapper)
+find_package(catkin REQUIRED COMPONENTS nav_msgs map_server)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-# set(ROS_BUILD_TYPE Debug)
-# set(CMAKE_VERBOSE_MAKEFILE on)
-
-rosbuild_init()
-
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
-
-# find yaml and opencv lib definitions
-include($ENV{ROS_ROOT}/core/rosbuild/FindPkgConfig.cmake)
-
+find_package(OpenCV)
+find_package(PkgConfig)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
-include_directories(${YAML_CPP_INCLUDE_DIRS})
-link_directories(${YAML_CPP_LIBRARY_DIRS})
 
-pkg_check_modules(OPENCV REQUIRED opencv)
-include_directories(${OPENCV_INCLUDE_DIRS})
-link_directories(${OPENCV_LIBRARY_DIRS})
-
-#uncomment if you have defined messages
-#rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
-
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+  ${YAML_CPP_INCLUDE_DIRS}
+  ${OPENCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
+  )
 
 #main library
-rosbuild_add_library(topological_mapper 
+add_library(topological_mapper 
   src/libtopological_mapper/circle_provider.cpp 
   src/libtopological_mapper/map_inflator.cpp 
   src/libtopological_mapper/map_loader.cpp
@@ -57,29 +31,60 @@ rosbuild_add_library(topological_mapper
   src/libtopological_mapper/structures/voronoi_point.cpp
   )
 
-target_link_libraries(topological_mapper ${YAML_CPP_LIBRARIES})
-target_link_libraries(topological_mapper ${OPENCV_LIBRARIES})
-target_link_libraries(topological_mapper image_loader) #from map_server
+target_link_libraries(topological_mapper 
+  ${catkin_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${Boost_LIBRARIES}
+  )
 
 #binaries
-rosbuild_add_executable(generate_graph src/nodes/generate_graph.cpp)
+add_executable(generate_graph src/nodes/generate_graph.cpp)
 target_link_libraries(generate_graph topological_mapper)
 
-rosbuild_add_executable(view_graph src/nodes/view_graph.cpp)
+add_executable(view_graph src/nodes/view_graph.cpp)
 target_link_libraries(view_graph topological_mapper)
 
 #test binaries
-rosbuild_add_executable(test_circle test/test_circle.cpp)
+add_executable(test_circle test/test_circle.cpp)
 target_link_libraries(test_circle topological_mapper)
 
-rosbuild_add_executable(test_map_loader test/test_map_loader.cpp)
+add_executable(test_map_loader test/test_map_loader.cpp)
 target_link_libraries(test_map_loader topological_mapper)
 
-rosbuild_add_executable(test_voronoi test/test_voronoi.cpp)
+add_executable(test_voronoi test/test_voronoi.cpp)
 target_link_libraries(test_voronoi topological_mapper)
 
-rosbuild_add_executable(test_dfs test/test_dfs.cpp)
+add_executable(test_dfs test/test_dfs.cpp)
 target_link_libraries(test_dfs topological_mapper)
 
-rosbuild_add_executable(test_graph test/test_graph.cpp)
+add_executable(test_graph test/test_graph.cpp)
 target_link_libraries(test_graph topological_mapper)
+
+catkin_package(
+    DEPENDS opencv2 yaml-cpp
+    CATKIN_DEPENDS nav_msgs map_server
+    INCLUDE_DIRS include
+    LIBRARIES topological_mapper
+)
+
+#install all targets
+install(DIRECTORY include/
+   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
+
+install(DIRECTORY maps/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/maps)
+
+install(TARGETS
+  topological_mapper
+  generate_graph
+  view_graph
+  test_circle
+  test_map_loader
+  test_voronoi
+  test_dfs
+  test_graph
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  )
+

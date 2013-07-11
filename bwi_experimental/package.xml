@@ -1,0 +1,27 @@
+<package>
+  <name>bwi_experimental</name>
+  <version>0.0.1</version>
+  <description>bwi_experimental</description>
+
+  <license>BSD</license>
+
+  <author>Piyush Khandelwal</author>
+  <maintainer email="piyushk@gmail.com">Piyush Khandelwal</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- <run_depend>bwi_exp1</run_depend> -->
+  <!-- <run_depend>bwi_exp1_visualizer</run_depend> -->
+  <!-- <run_depend>bwi_msgs</run_depend> -->
+  <!-- <run_depend>bwi_gazebo_entities</run_depend> -->
+  <!-- <run_depend>bwi_web</run_depend> -->
+  <!-- <run_depend>clingo_interface_gui</run_depend> -->
+  <run_depend>topological_mapper</run_depend>
+  <!-- <run_depend>utexas_gdc</run_depend> -->
+  <!-- <run_depend>clingo_interface</run_depend> -->
+
+  <export>
+    <metapackage/>
+  </export>
+
+</package>
