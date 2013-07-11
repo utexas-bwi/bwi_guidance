@@ -14,7 +14,7 @@
   <!-- <run_depend>bwi_exp1_visualizer</run_depend> -->
   <!-- <run_depend>bwi_msgs</run_depend> -->
   <!-- <run_depend>bwi_gazebo_entities</run_depend> -->
-  <!-- <run_depend>bwi_web</run_depend> -->
+  <run_depend>bwi_web</run_depend>
   <!-- <run_depend>clingo_interface_gui</run_depend> -->
   <run_depend>topological_mapper</run_depend>
   <!-- <run_depend>utexas_gdc</run_depend> -->
