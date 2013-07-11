@@ -1,4 +1,0 @@
-<launch>
-  <arg name="model" default="test" />
-  <node pkg="gazebo" name="spawn_test" type="spawn_model" args="-gazebo -file $(find bwi_gazebo_entities)/sdf/model.sdf -model $(arg model)" />>
-</launch>

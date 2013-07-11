@@ -10,7 +10,7 @@
   <param name="$(arg personid)_description" 
     command="$(find xacro)/xacro.py '$(arg urdf_file)'" />
 
-  <node name="spawn_person" pkg="gazebo" type="spawn_model"
+  <node name="spawn_person" pkg="gazebo_ros" type="spawn_model"
     args="-param $(arg personid)_description
     -urdf
     -x $(arg x)

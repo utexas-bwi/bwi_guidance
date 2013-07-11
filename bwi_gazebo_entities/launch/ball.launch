@@ -10,7 +10,7 @@
   <param name="$(arg ballid)_description" 
     command="$(find xacro)/xacro.py '$(arg urdf_file)'" />
 
-  <node name="spawn_ball" pkg="gazebo" type="spawn_model"
+  <node name="spawn_ball" pkg="gazebo_ros" type="spawn_model"
     args="-param $(arg ballid)_description
     -urdf
     -x $(arg x)
