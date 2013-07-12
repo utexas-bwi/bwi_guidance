@@ -18,7 +18,7 @@
   <!-- <run_depend>clingo_interface_gui</run_depend> -->
   <run_depend>topological_mapper</run_depend>
   <run_depend>utexas_gdc</run_depend>
-  <!-- <run_depend>clingo_interface</run_depend> -->
+  <run_depend>clingo_interface</run_depend>
 
   <export>
     <metapackage/>
