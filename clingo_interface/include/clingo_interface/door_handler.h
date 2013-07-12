@@ -165,6 +165,16 @@ namespace clingo_interface {
         return false;
       }
 
+      bool isPointBesideDoor(const topological_mapper::Point2f& current_location,
+          float threshold, size_t idx) {
+        for (size_t pt = 0; pt < 2; ++pt) {
+          if (cv::norm(doors_[idx].approach_points[pt] - current_location) < 
+              threshold) {
+            return true;
+          }
+        }
+      }
+
       size_t getLocationIdx(const topological_mapper::Point2f& current_location) {
 
         topological_mapper::Point2f grid = topological_mapper::toGrid(current_location, info_);
@@ -204,6 +214,10 @@ namespace clingo_interface {
         if (idx >= doors_.size())
           return "";
         return doors_[idx].name;
+      }
+
+      inline size_t getNumDoors() const {
+        return doors_.size();
       }
 
     private:

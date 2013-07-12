@@ -1,4 +1,5 @@
 ClingoFluent command
+ClingoFluent sense_fluent
 ---
 bool success
 string status
