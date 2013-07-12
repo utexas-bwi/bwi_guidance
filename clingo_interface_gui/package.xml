@@ -2,41 +2,28 @@
   <name>clingo_interface_gui</name>
   <version>0.0.1</version>
   <description>clingo_interface_gui</description>
-  <!-- <maintainer>Piyush Khandelwal</maintainer> -->
 
   <license>BSD</license>
 
-  <url type="website">http://ros.org/wiki/clingo_interface_gui</url>
-  <!-- <url type="bugtracker"></url> -->
-
   <author>Piyush Khandelwal</author>
+  <maintainer email="piyushk@gmail.com">Piyush Khandelwal</maintainer>
 
-  <!-- <build_depend>qt_build</build_depend> -->
-  <!-- <build_depend>roscpp</build_depend> -->
-  <!-- <build_depend>clingo_interface</build_depend> -->
-  <!-- <build_depend>geometry_msgs</build_depend> -->
-  <!-- <build_depend>nav_msgs</build_depend> -->
-  <!-- <build_depend>tf</build_depend> -->
-  <!-- <build_depend>actionlib</build_depend> -->
-  <!-- <build_depend>actionlib_msgs</build_depend> -->
-  <!-- <run_depend>qt_build</run_depend> -->
-  <!-- <run_depend>roscpp</run_depend> -->
-  <!-- <run_depend>clingo_interface</run_depend> -->
-  <!-- <run_depend>geometry_msgs</run_depend> -->
-  <!-- <run_depend>nav_msgs</run_depend> -->
-  <!-- <run_depend>tf</run_depend> -->
-  <!-- <run_depend>actionlib</run_depend> -->
-  <!-- <run_depend>actionlib_msgs</run_depend> -->
-  <!-- <test_depend>qt_build</test_depend> -->
-  <!-- <test_depend>roscpp</test_depend> -->
-  <!-- <test_depend>clingo_interface</test_depend> -->
-  <!-- <test_depend>geometry_msgs</test_depend> -->
-  <!-- <test_depend>nav_msgs</test_depend> -->
-  <!-- <test_depend>tf</test_depend> -->
-  <!-- <test_depend>actionlib</test_depend> -->
-  <!-- <test_depend>actionlib_msgs</test_depend> -->
+  <buildtool_depend>catkin</buildtool_depend>
 
-  <export>
+  <build_depend>clingo_interface</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>actionlib</build_depend>
+  <build_depend>actionlib_msgs</build_depend>
+  <build_depend>qt4</build_depend>
 
-  </export>
+  <run_depend>clingo_interface</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>nav_msgs</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>actionlib</run_depend>
+  <run_depend>actionlib_msgs</run_depend>
+  <run_depend>qt4</run_depend>
+
 </package>

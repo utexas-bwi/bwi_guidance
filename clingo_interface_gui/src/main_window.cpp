@@ -12,7 +12,7 @@
 #include <QtGui>
 #include <QMessageBox>
 #include <iostream>
-#include "../include/clingo_interface_gui/main_window.hpp"
+#include <clingo_interface_gui/main_window.hpp>
 
 /*****************************************************************************
 ** Namespaces
