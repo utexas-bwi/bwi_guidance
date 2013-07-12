@@ -21,10 +21,14 @@ def fibonacci_client():
     # Creates a goal to send to the action server.
     command = clingo_interface_gui.msg.ClingoFluent(sys.argv[1], [sys.argv[2]])
     sense_fluent = clingo_interface_gui.msg.ClingoFluent()
+    evaluate_fluents = []
     if command.op == "sense":
         sense_fluent = clingo_interface_gui.msg.ClingoFluent(sys.argv[2], [sys.argv[3]])
+    if command.op == "evaluate":
+        num_fluents = (len(sys.argv) - 2) / 2
+        evaluate_fluents = [clingo_interface_gui.msg.ClingoFluent(sys.argv[2 + 2 * f], [sys.argv[3 + 2 * f]]) for f in range(num_fluents)]
 
-    goal = clingo_interface_gui.msg.ClingoInterfaceGoal(command, sense_fluent)
+    goal = clingo_interface_gui.msg.ClingoInterfaceGoal(command, sense_fluent, evaluate_fluents)
 
     # Sends the goal to the action server.
     client.send_goal(goal)

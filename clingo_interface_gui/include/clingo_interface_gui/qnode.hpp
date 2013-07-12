@@ -56,6 +56,8 @@ namespace clingo_interface_gui {
       /* Get robot location */
       void odometryHandler(const nav_msgs::Odometry::ConstPtr &odom);
 
+      bool newLocationReceived(const std::string& loc);
+
       /* Display stuff */
       std::string display_text_;
       bool button1_enabled_;
@@ -63,6 +65,7 @@ namespace clingo_interface_gui {
       bool button2_enabled_;
       std::string button2_text_;
       cv::Mat generated_image_;
+      bool location_box_enabled_;
 
     Q_SIGNALS:
       void rosShutdown();
@@ -88,6 +91,11 @@ namespace clingo_interface_gui {
       float robot_x_;
       float robot_y_;
       float robot_yaw_;
+
+      /* Feedback from gui */
+      bool location_received_;
+      std::string person_name_;
+      std::string person_location_;
 
       /* DoorHandler */
       std::string map_file_;

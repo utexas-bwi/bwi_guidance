@@ -95,6 +95,7 @@ namespace clingo_interface_gui {
           /* Update the display */
           button1_enabled_ = false;
           button2_enabled_ = false;
+          location_box_enabled_ = false;
           display_text_ = req->command.op + " " + door_name;
           Q_EMIT updateFrameInfo();
 
@@ -143,6 +144,7 @@ namespace clingo_interface_gui {
         /* Update the display */
         button1_enabled_ = false;
         button2_enabled_ = false;
+        location_box_enabled_ = false;
         display_text_ = "Can you please open " + door_name;
         Q_EMIT updateFrameInfo();
 
@@ -211,11 +213,88 @@ namespace clingo_interface_gui {
           resp.observable_fluents.push_back(beside);
         }
         resp.success = true;
+      } else if (sense_fluent_op == "ploc") {
+        person_name_ = req->sense_fluent.args[0];
+        /* Update the display */
+        button1_enabled_ = false;
+        button2_enabled_ = false;
+        location_box_enabled_ = true;
+        display_text_ = "Can you tell me where " + person_name_ + " is?";
+        location_received_ = false;
+        Q_EMIT updateFrameInfo();
+
+        /* Wait for the location to be received */
+        ros::Rate r(10);
+        int count = 0;
+        bool door_open = false; 
+        while (!location_received_ && count < 300) {
+          if (as_->isPreemptRequested() || !ros::ok()) { // TODO What about goal not being active or new goal?
+            ROS_INFO("Preempting action");
+            as_->setPreempted();
+            return;
+          }
+          count++;
+          r.sleep();
+        }
+
+        if (location_received_) {
+          display_text_ = "Thank you! I will try and find " + person_name_ + " in " + person_location_;
+          clingo_interface_gui::ClingoFluent person_loc_fluent;
+          person_loc_fluent.op = "ploc";
+          person_loc_fluent.args.push_back(person_name_);
+          person_loc_fluent.args.push_back(person_location_);
+          resp.observable_fluents.push_back(person_loc_fluent);
+        } else {
+          display_text_ = "Oh no! The request timed out. Let me think...";
+        }
+        location_box_enabled_ = false; 
+        Q_EMIT updateFrameInfo();
+
+      }
+    } else if (req->command.op == "evaluate") {
+      resp.plan_cost = 0;
+      resp.success = true;
+      topological_mapper::Point2f prev_pt(robot_x_, robot_y_), approach_pt;
+      float prev_yaw = robot_yaw_, approach_yaw = 0;
+      for (size_t i = 0; i < req->evaluate_fluents.size(); ++i) {
+        if (req->evaluate_fluents[i].op == "approach") {
+          std::string door_name = req->evaluate_fluents[i].args[0];
+          std::cout << "door_name: " << door_name << std::endl;
+          size_t door_idx = handler_->getDoorIdx(door_name);
+          bool door_approachable = handler_->getApproachPoint(door_idx, 
+              prev_pt, approach_pt, approach_yaw);
+          if (!door_approachable) {
+            resp.plan_cost = std::numeric_limits<float>::max();
+            resp.success = false;
+            resp.status = "unable to evaluate one approach leg of plan.";
+            break;
+          }
+          resp.plan_cost += handler_->getPathCost(prev_pt, prev_yaw, approach_pt, approach_yaw);
+        } else if (req->evaluate_fluents[i].op == "gothrough") {
+          std::string door_name = req->evaluate_fluents[i].args[0];
+          size_t door_idx = handler_->getDoorIdx(door_name);
+          bool door_approachable = handler_->getThroughDoorPoint(door_idx, 
+              prev_pt, approach_pt, approach_yaw);
+          if (!door_approachable) {
+            resp.plan_cost = std::numeric_limits<float>::max();
+            resp.success = false;
+            resp.status = "unable to evaluate one gothrough leg of plan.";
+            std::cout << "from " << prev_pt << " to " << approach_pt << std::endl;
+            break;
+          }
+          resp.plan_cost += cv::norm(approach_pt - prev_pt); // don't worry about closed doors for now
+        } else {
+          continue;
+        }
+
+        prev_pt = approach_pt;
+        prev_yaw = approach_yaw;
       }
     } else if (req->command.op == "goto") {
       /* Update the display */
       button1_enabled_ = false;
       button2_enabled_ = false;
+      location_box_enabled_ = false;
       display_text_ = "Hello " + req->command.args[0] + "!!";
       Q_EMIT updateFrameInfo();
       resp.success = true;
@@ -248,6 +327,17 @@ namespace clingo_interface_gui {
     robot_x_ = odom->pose.pose.position.x;
     robot_y_ = odom->pose.pose.position.y;
     robot_yaw_ = tf::getYaw(odom->pose.pose.orientation);
+  }
+
+  bool QNode::newLocationReceived(const std::string& loc) {
+
+    std::cout << "testing location: " << loc << std::endl;
+    if (handler_->getLocationIdx(loc) != (size_t) -1) {
+      location_received_ = true;
+      person_location_ = loc;
+      return true;
+    }
+    return false;
   }
 
   void QNode::senseDoorProximity( 

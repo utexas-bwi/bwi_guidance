@@ -39,8 +39,8 @@ namespace clingo_interface_gui {
     QObject::connect(&qnode, SIGNAL(rosShutdown()), this, SLOT(close()));
     QObject::connect(&qnode, SIGNAL(updateFrameInfo()), 
         this, SLOT(updateFrameInfo()));
-    QObject::connect(ui.button1, SIGNAL(valueChanged(int)), 
-        &qnode, SLOT(on_timeSlider_valueChanged(int)));
+    QObject::connect(ui.locationBox, SIGNAL(editingFinished()), 
+        this, SLOT(newTextAvailable()));
 
     ui.button1->setText("(none)");
     ui.button1->setEnabled(false);
@@ -77,6 +77,13 @@ namespace clingo_interface_gui {
       ui.button2->setEnabled(false);
     }
 
+    /* Update text box */
+    if (qnode.location_box_enabled_) {
+      ui.locationBox->setEnabled(true);
+    } else {
+      ui.locationBox->setEnabled(false);
+    }
+
     /* Update image */
     float image_height = qnode.generated_image_.rows;
     float image_width = qnode.generated_image_.cols;
@@ -101,6 +108,16 @@ namespace clingo_interface_gui {
       }
     }
     ui.localMap->setPixmap(QPixmap::fromImage(dest));
+
+  }
+
+  void MainWindow::newTextAvailable() {
+    std::cout << "text available slot called" << std::endl;
+
+    bool success = qnode.newLocationReceived(ui.locationBox->text().toStdString());
+    if (!success) {
+      ui.textDisplay->setText("Invalid location");
+    }
 
   }
 }  // namespace clingo_interface_gui

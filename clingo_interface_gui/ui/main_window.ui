@@ -63,6 +63,29 @@
      <string/>
     </property>
    </widget>
+   <widget class="QLineEdit" name="locationBox">
+    <property name="geometry">
+     <rect>
+      <x>510</x>
+      <y>440</y>
+      <width>113</width>
+      <height>21</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="locationLabel">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>440</y>
+      <width>121</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Enter location here:</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>

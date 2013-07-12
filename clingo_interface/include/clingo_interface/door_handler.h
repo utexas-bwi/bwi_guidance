@@ -125,6 +125,43 @@ namespace clingo_interface {
         }
       }
 
+      float getPathCost(const topological_mapper::Point2f& start_pt, float start_yaw,
+          const topological_mapper::Point2f& goal_pt, float goal_yaw) {
+        nav_msgs::GetPlan srv;
+        geometry_msgs::PoseStamped &start = srv.request.start, &goal = srv.request.goal;
+        start.header.frame_id = goal.header.frame_id = "/map";
+        start.header.stamp = goal.header.stamp = ros::Time::now();
+
+        start.pose.position.x = start_pt.x;
+        start.pose.position.y = start_pt.y;
+        start.pose.position.z = 0;
+        start.pose.orientation = tf::createQuaternionMsgFromYaw(start_yaw); 
+
+        goal.pose.position.x = goal_pt.x;
+        goal.pose.position.y = goal_pt.y;
+        goal.pose.position.z = 0;
+        goal.pose.orientation = tf::createQuaternionMsgFromYaw(goal_yaw);
+        srv.request.tolerance = 0.5 + 1e-6;
+
+        if (make_plan_client_.call(srv)) {
+          if (srv.response.plan.poses.size() != 0) {
+            // Valid plan received. Try rough check that plan distance seems reasonable
+            float distance = 0;
+            geometry_msgs::Point old_pt = srv.response.plan.poses[0].pose.position;
+            for (size_t i = 1; i < srv.response.plan.poses.size(); ++i) {
+              geometry_msgs::Point current_pt = srv.response.plan.poses[i].pose.position;
+              distance += sqrt(pow(current_pt.x - old_pt.x, 2) + pow(current_pt.y - old_pt.y, 2));
+              old_pt = current_pt;
+            }
+            return distance;
+          } else {
+            return 0; // the 2 points not in same location. this function should not have been used
+          }
+        } else {
+          return 0; // shouldn't be here. the service has failed
+        }
+      }
+
       bool getApproachPoint(size_t idx, 
           const topological_mapper::Point2f& current_location,
           topological_mapper::Point2f& point, float &yaw) {

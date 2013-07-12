@@ -38,10 +38,11 @@ namespace clingo_interface_gui {
     public Q_SLOTS:
 
       void updateFrameInfo();
+      void newTextAvailable();
 
     private:
-        Ui::MainWindow ui;
-        QNode qnode;
+      Ui::MainWindow ui;
+      QNode qnode;
   };
 
 }  // namespace clingo_interface_gui
