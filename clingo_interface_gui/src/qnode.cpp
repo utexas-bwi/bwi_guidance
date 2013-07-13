@@ -240,7 +240,7 @@ namespace clingo_interface_gui {
         if (location_received_) {
           display_text_ = "Thank you! I will try and find " + person_name_ + " in " + person_location_;
           clingo_interface_gui::ClingoFluent person_loc_fluent;
-          person_loc_fluent.op = "ploc";
+          person_loc_fluent.op = "inside";
           person_loc_fluent.args.push_back(person_name_);
           person_loc_fluent.args.push_back(person_location_);
           resp.observable_fluents.push_back(person_loc_fluent);
