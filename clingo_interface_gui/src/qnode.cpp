@@ -297,6 +297,10 @@ namespace clingo_interface_gui {
       location_box_enabled_ = false;
       display_text_ = "Hello " + req->command.args[0] + "!!";
       Q_EMIT updateFrameInfo();
+      clingo_interface_gui::ClingoFluent visited;
+      visited.op = "visited";
+      visited.args.push_back(req->command.args[0]);
+      resp.observable_fluents.push_back(visited);
       resp.success = true;
     } else if (req->command.op == "noop") {
       resp.success = true;
