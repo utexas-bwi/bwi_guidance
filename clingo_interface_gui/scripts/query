@@ -1,0 +1,9 @@
+goal(1,I):- visited(raymooney,I).
+goal(3,I):- visited(danaballard,I).
+goal(2,I):- visited(peterstone,I).
+
+goal(G,I+1) :- goal(G,I), I<n.
+:- not goal(1,n).
+:- not goal(2,n).
+inside(raymooney,o3_512,0).
+goal(1,2).goal(1,3).goal(1,2).goal(2,2).
