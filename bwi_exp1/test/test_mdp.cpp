@@ -79,14 +79,11 @@ void testValueIteration(topological_mapper::Graph& graph) {
     }
   }
 
-  std::cout << "Testing next state cache" << std::endl; 
-
   std::cout << "Size of next probability space cache: " << size_transition_probability_space << 
     std::endl;
 
   // Now perform value iteration
   std::vector<float> value_space(state_space.size(), 0);
-  std::vector<Action> best_action_space(state_space.size(), Action(DO_NOTHING, 0));
   size_t count = 0;
   bool change = true;
   while(change) {
@@ -110,8 +107,10 @@ void testValueIteration(topological_mapper::Graph& graph) {
         }
         if (action_value > value) {
           value = action_value;
-          best_action_space[state_id] = actions[action_id];
         }
+      }
+      if (count == 1) {
+        std::cout << value << std::endl;
       }
       change = change || (value_space[state_id] != value);
       value_space[state_id] = value;
@@ -125,11 +124,19 @@ void testValueIteration(topological_mapper::Graph& graph) {
     size_t current_state_idx = constructStateIndex(start_idx, 12, starting_robots);
     while (state_space[current_state_idx].graph_id != goal_idx) {
       State& current_state = state_space[current_state_idx];
-      Action& action = best_action_space[current_state_idx];
       std::cout << "At State (" << current_state.graph_id << ", " << current_state.direction << ", " << current_state.num_robots_left << ")" << std::endl;
       std::cout << "Value of this state: " << value_space[current_state_idx] << std::endl;
-      std::cout << "  - The best action is (" << action.type << ", " << action.graph_id << ")" << std::endl;
 
+      std::cout << " Actions available: " << std::endl;
+      std::vector<Action>& actions = action_space[current_state.graph_id * 2 + (current_state.num_robots_left != 0)];
+      for (size_t action_idx = 0; action_idx < actions.size(); ++action_idx) {
+        Action action = actions[action_idx];
+        std::cout << "  - #" << action_idx << " (" << action.type << ", " << action.graph_id << ")" << std::endl;
+      }
+      std::cout << "Choice: ";
+      int choice;
+      std::cin >> choice;
+      Action& action = actions[choice];
       std::vector<size_t> next_states;
       std::vector<float> probabilities;
       getTransitionProbabilities(current_state, state_space, graph, action, next_states, probabilities);
@@ -149,9 +156,9 @@ void testValueIteration(topological_mapper::Graph& graph) {
       current_state_idx = most_likely_transition;
       std::cout << " - Making transition to most likely state for this best action" << std::endl; 
 
-      //pause
-      std::cin.ignore().get();
     }
+    std::cout << "VALUE of final state: " << value_space[current_state_idx] << std::endl;
+  
   }
 }
 
