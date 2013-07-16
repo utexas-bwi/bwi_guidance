@@ -30,6 +30,19 @@ void testValueIteration(topological_mapper::Graph& graph) {
   }
 
   std::cout << "Size of action cache: " << size_action_space << std::endl; 
+  std::cout << "Testing action cache..." << std::endl; 
+
+  // Test action cache 
+  size_t action_cache_test_idx = 76;
+  for (size_t robots_remaining = 0; robots_remaining <= 1; ++robots_remaining) {
+    std::cout << " Actions at " << action_cache_test_idx << " with robots_remaining: " << robots_remaining << std::endl;
+    std::cout << " rr != 0: " << (robots_remaining != 0) << std::endl;
+    std::vector<Action>& actions = action_space[action_cache_test_idx * 2 + (robots_remaining != 0)];
+    for (size_t action_idx = 0; action_idx < actions.size(); ++action_idx) {
+      Action action = actions[action_idx];
+      std::cout << "  - (" << action.type << ", " << action.graph_id << ")" << std::endl;
+    }
+  }
 
   // for each state, get the cached next states
   std::vector<std::vector<size_t> > next_state_space;
@@ -48,7 +61,7 @@ void testValueIteration(topological_mapper::Graph& graph) {
   long size_transition_probability_space = 0;
   for (size_t state_id = 0; state_id < state_space.size(); ++state_id) {
     State& state = state_space[state_id];
-    std::vector<Action>& actions = action_space[state.graph_id * 2 + state.num_robots_left != 0];
+    std::vector<Action>& actions = action_space[state.graph_id * 2 + (state.num_robots_left != 0)];
 
     // if (state.graph_id == 0 && state.direction == 0 && state.num_robots_left == 0) {
     //   std::cout << "At State (" << state.graph_id << ", " << state.direction << ", " << state.num_robots_left << ")" << std::endl;
@@ -58,13 +71,15 @@ void testValueIteration(topological_mapper::Graph& graph) {
     //   }
     // }
 
-    probability_space[state_id].resize(action_space[state.graph_id * 2 + state.num_robots_left != 0].size());
+    probability_space[state_id].resize(action_space[state.graph_id * 2 + (state.num_robots_left != 0)].size());
     for (size_t action_id = 0; action_id < actions.size(); ++action_id) {
       std::vector<size_t> next_states;
       getTransitionProbabilities(state, state_space, graph, actions[action_id], next_states, probability_space[state_id][action_id]);
       size_transition_probability_space += sizeof(float) * next_states.size();
     }
   }
+
+  std::cout << "Testing next state cache" << std::endl; 
 
   std::cout << "Size of next probability space cache: " << size_transition_probability_space << 
     std::endl;
@@ -83,7 +98,7 @@ void testValueIteration(topological_mapper::Graph& graph) {
       if (isTerminalState(state, goal_idx))
         continue;
       std::vector<size_t>& next_states = next_state_space[state_id];
-      std::vector<Action>& actions = action_space[state.graph_id * 2 + state.num_robots_left != 0];
+      std::vector<Action>& actions = action_space[state.graph_id * 2 + (state.num_robots_left != 0)];
       float value = -std::numeric_limits<float>::max();
       for (size_t action_id = 0; action_id < actions.size(); ++action_id) {
         float action_value = 0;
@@ -98,7 +113,7 @@ void testValueIteration(topological_mapper::Graph& graph) {
           best_action_space[state_id] = actions[action_id];
         }
       }
-      change = change || value_space[state_id] != value;
+      change = change || (value_space[state_id] != value);
       value_space[state_id] = value;
     }
   }
@@ -112,6 +127,7 @@ void testValueIteration(topological_mapper::Graph& graph) {
       State& current_state = state_space[current_state_idx];
       Action& action = best_action_space[current_state_idx];
       std::cout << "At State (" << current_state.graph_id << ", " << current_state.direction << ", " << current_state.num_robots_left << ")" << std::endl;
+      std::cout << "Value of this state: " << value_space[current_state_idx] << std::endl;
       std::cout << "  - The best action is (" << action.type << ", " << action.graph_id << ")" << std::endl;
 
       std::vector<size_t> next_states;
