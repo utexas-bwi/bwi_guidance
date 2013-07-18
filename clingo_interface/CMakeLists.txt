@@ -7,6 +7,12 @@ find_package(OpenCV REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
 
+catkin_package(
+    DEPENDS opencv2 yaml-cpp
+    CATKIN_DEPENDS roscpp topological_mapper tf nav_msgs
+    INCLUDE_DIRS include
+)
+
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
@@ -27,12 +33,6 @@ target_link_libraries(mark_doors
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${YAML_CPP_LIBRARIES})
-
-catkin_package(
-    DEPENDS opencv2 yaml-cpp
-    CATKIN_DEPENDS roscpp topological_mapper tf nav_msgs
-    INCLUDE_DIRS include
-)
 
 install(TARGETS
   cc_test

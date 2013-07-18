@@ -7,6 +7,13 @@ find_package(catkin REQUIRED COMPONENTS bwi_msgs topological_mapper)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
 
+catkin_package(
+    DEPENDS yaml-cpp
+    CATKIN_DEPENDS bwi_msgs topological_mapper
+    INCLUDE_DIRS include
+    LIBRARIES bwi_exp1 bwi_exp1_mdp
+)
+
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
@@ -37,13 +44,6 @@ target_link_libraries(robot_positioner
 #test the mdp
 add_executable(test_mdp test/test_mdp.cpp)
 target_link_libraries(test_mdp bwi_exp1_mdp)
-
-catkin_package(
-    DEPENDS yaml-cpp
-    CATKIN_DEPENDS bwi_msgs topological_mapper
-    INCLUDE_DIRS include
-    LIBRARIES bwi_exp1 bwi_exp1_mdp
-)
 
 #install targets
 install(TARGETS

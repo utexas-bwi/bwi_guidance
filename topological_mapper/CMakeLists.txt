@@ -7,6 +7,13 @@ find_package(OpenCV)
 find_package(PkgConfig)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
 
+catkin_package(
+  DEPENDS opencv2 yaml-cpp
+  CATKIN_DEPENDS nav_msgs map_server
+  INCLUDE_DIRS include
+  LIBRARIES topological_mapper
+)
+
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
@@ -60,13 +67,6 @@ target_link_libraries(test_dfs topological_mapper)
 
 add_executable(test_graph test/test_graph.cpp)
 target_link_libraries(test_graph topological_mapper)
-
-catkin_package(
-    DEPENDS opencv2 yaml-cpp
-    CATKIN_DEPENDS nav_msgs map_server
-    INCLUDE_DIRS include
-    LIBRARIES topological_mapper
-)
 
 #install all targets
 install(DIRECTORY include/
