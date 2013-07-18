@@ -1,4 +1,4 @@
-#include <bwi_exp1/mdp.h>
+#include <bwi_exp1_solver/mdp.h>
 #include <topological_mapper/map_loader.h>
 
 using namespace bwi_exp1;

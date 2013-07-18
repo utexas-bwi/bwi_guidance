@@ -12,6 +12,7 @@
 
   <run_depend>bwi_exp1</run_depend>
   <!-- <run_depend>bwi_exp1_visualizer</run_depend> -->
+  <run_depend>bwi_exp1_solver</run_depend>
   <run_depend>bwi_msgs</run_depend>
   <run_depend>bwi_gazebo_entities</run_depend>
   <run_depend>bwi_web</run_depend>
