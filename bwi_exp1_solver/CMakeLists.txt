@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 2.8.3)
 project(bwi_exp1_solver)
 
 ## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS bwi_exp1 topological_mapper)
 
 ###################################
@@ -11,9 +9,13 @@ find_package(catkin REQUIRED COMPONENTS bwi_exp1 topological_mapper)
 ###################################
 
 catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES bwi_exp1_mdp
-  CATKIN_DEPENDS bwi_exp1 topological_mapper
+  INCLUDE_DIRS 
+    include
+  LIBRARIES 
+    bwi_exp1_mdp
+  CATKIN_DEPENDS 
+    bwi_exp1 
+    topological_mapper
 )
 
 ###########
@@ -23,7 +25,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  )
+)
 
 ## Declare a cpp library
 add_library(bwi_exp1_mdp

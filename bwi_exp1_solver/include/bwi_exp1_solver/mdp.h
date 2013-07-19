@@ -15,7 +15,8 @@ namespace bwi_exp1 {
   // Even values here will have weird random discretization errors due to an
   // inability of representing cardinal directions
   const size_t GRID_SIZE = 5;
-  const size_t NUM_DIRECTIONS = GRID_SIZE * GRID_SIZE;
+  /* const size_t NUM_DIRECTIONS = GRID_SIZE * GRID_SIZE; */
+  const size_t NUM_DIRECTIONS = 16; //GRID_SIZE * GRID_SIZE;
   const size_t MAX_ROBOTS = 5;
 
   enum ActionType {
@@ -78,41 +79,52 @@ namespace bwi_exp1 {
         graph[next_v].location.x - graph[v].location.x);
   }
 
+  inline size_t getDirectionFromAngle(float angle) {
+    angle = angle + M_PI / NUM_DIRECTIONS;
+    while (angle < 0) angle += 2 * M_PI;
+    while (angle >= 2 * M_PI) angle -= 2 * M_PI;
+    return (angle * NUM_DIRECTIONS) / (2 * M_PI);
+  }
+
   inline float getAngleFromDirection(size_t dir) {
-
-    float max_value = ((float)GRID_SIZE - 1.0) / 2.0;
-
-    float x = (dir % GRID_SIZE) - max_value;
-    float y = (dir / GRID_SIZE) - max_value;
-
-    return atan2f(y, x);
+    return ((2 * M_PI) / NUM_DIRECTIONS) * dir;
   }
 
-  inline void getXYDirectionFromStates(
-      const Graph& graph, size_t graph_id, size_t next_graph_id, 
-      float& x, float& y) {
+  // inline float getAngleFromDirection(size_t dir) {
 
-    float angle = getAngleFromStates(graph, graph_id, next_graph_id);
-    float slope = tanf(angle);
-    
-    float max_value = ((float)GRID_SIZE - 1.0) / 2.0;
-    float offset = ((GRID_SIZE + 1) % 2) * 0.5;
+  //   float max_value = ((float)GRID_SIZE - 1.0) / 2.0;
 
-    if (angle >= M_PI/4.0 && angle < 3.0*M_PI/4.0) {
-      y = max_value;
-      x = roundWithOffset(y/slope, offset);
-    } else if (angle >= 3.0*M_PI/4.0 || angle < -3.0*M_PI/4.0) {
-      x = -max_value;
-      y = roundWithOffset(x*slope, offset);
-    } else if (angle >= -3.0*M_PI/4.0 && angle < -M_PI/4.0) {
-      y = -max_value;
-      x = roundWithOffset(y/slope, offset);
-    } else {
-      x = max_value;
-      y = roundWithOffset(x*slope, offset);
-    }
+  //   float x = (dir % GRID_SIZE) - max_value;
+  //   float y = (dir / GRID_SIZE) - max_value;
 
-  }
+  //   return atan2f(y, x);
+  // }
+
+  // inline void getXYDirectionFromStates(
+  //     const Graph& graph, size_t graph_id, size_t next_graph_id, 
+  //     float& x, float& y) {
+
+  //   float angle = getAngleFromStates(graph, graph_id, next_graph_id);
+  //   float slope = tanf(angle);
+  //   
+  //   float max_value = ((float)GRID_SIZE - 1.0) / 2.0;
+  //   float offset = ((GRID_SIZE + 1) % 2) * 0.5;
+
+  //   if (angle >= M_PI/4.0 && angle < 3.0*M_PI/4.0) {
+  //     y = max_value;
+  //     x = roundWithOffset(y/slope, offset);
+  //   } else if (angle >= 3.0*M_PI/4.0 || angle < -3.0*M_PI/4.0) {
+  //     x = -max_value;
+  //     y = roundWithOffset(x*slope, offset);
+  //   } else if (angle >= -3.0*M_PI/4.0 && angle < -M_PI/4.0) {
+  //     y = -max_value;
+  //     x = roundWithOffset(y/slope, offset);
+  //   } else {
+  //     x = max_value;
+  //     y = roundWithOffset(x*slope, offset);
+  //   }
+
+  // }
  
   size_t computeNextDirection(size_t dir, size_t graph_id, 
       size_t next_graph_id, const Graph &graph);

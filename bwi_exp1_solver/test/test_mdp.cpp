@@ -84,7 +84,9 @@ void testValueIteration(topological_mapper::Graph& graph) {
 
   // Now perform value iteration
   std::vector<float> value_space(state_space.size(), 0);
+  std::vector<Action> best_action_space(state_space.size(), Action(DO_NOTHING, 0));
   size_t count = 0;
+
   bool change = true;
   while(change) {
     change = false;
@@ -102,15 +104,17 @@ void testValueIteration(topological_mapper::Graph& graph) {
         std::vector<float>& probability = probability_space[state_id][action_id];
 
         for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
-          action_value += probability[next_state_counter] * (getReward(state_space, state_id, next_states[next_state_counter], graph) + GAMMA * value_space[next_states[next_state_counter]]);
+          float reward = getReward(state_space, state_id, next_states[next_state_counter], graph);
+          // if (actions[action_id].type == PLACE_ROBOT) {
+          //   reward -= 500; 
+          // }
+          action_value += probability[next_state_counter] * (reward + GAMMA * value_space[next_states[next_state_counter]]);
 
         }
         if (action_value > value) {
           value = action_value;
+          best_action_space[state_id] = actions[action_id];
         }
-      }
-      if (count == 1) {
-        std::cout << value << std::endl;
       }
       change = change || (value_space[state_id] != value);
       value_space[state_id] = value;
@@ -118,47 +122,49 @@ void testValueIteration(topological_mapper::Graph& graph) {
   }
 
   // Now perform a max walk from start state to goal state
-  size_t start_idx = 76;
-  for (size_t starting_robots = MAX_ROBOTS; starting_robots >= 1; --starting_robots) {
-    std::cout << std::endl << "SETUP with STARTING ROBOTS = " << starting_robots << std::endl;
-    size_t current_state_idx = constructStateIndex(start_idx, 12, starting_robots);
+  while(true) {
+    size_t start_idx, starting_robots, start_direction;
+    std::cout << "Enter start idx: ";
+    std::cin >> start_idx;
+    std::cout << "Enter start direction: ";
+    std::cin >> start_direction;
+    std::cout << "Enter robots remaining: ";
+    std::cin >> starting_robots;
+    size_t current_state_idx = constructStateIndex(start_idx, start_direction, starting_robots);
     while (state_space[current_state_idx].graph_id != goal_idx) {
       State& current_state = state_space[current_state_idx];
       std::cout << "At State (" << current_state.graph_id << ", " << current_state.direction << ", " << current_state.num_robots_left << ")" << std::endl;
       std::cout << "Value of this state: " << value_space[current_state_idx] << std::endl;
-
-      std::cout << " Actions available: " << std::endl;
-      std::vector<Action>& actions = action_space[current_state.graph_id * 2 + (current_state.num_robots_left != 0)];
-      for (size_t action_idx = 0; action_idx < actions.size(); ++action_idx) {
-        Action action = actions[action_idx];
-        std::cout << "  - #" << action_idx << " (" << action.type << ", " << action.graph_id << ")" << std::endl;
+      Action& action = best_action_space[current_state_idx];
+      if (action.type == PLACE_ROBOT) {
+        std::cout << "FOUND ROBOT. Robot points towards " << action.graph_id << std::endl;
       }
-      std::cout << "Choice: ";
-      int choice;
-      std::cin >> choice;
-      Action& action = actions[choice];
+
+      // std::cout << " Actions available: " << std::endl;
+      // std::vector<Action>& actions = action_space[current_state.graph_id * 2 + (current_state.num_robots_left != 0)];
+      // for (size_t action_idx = 0; action_idx < actions.size(); ++action_idx) {
+      //   Action action = actions[action_idx];
+      //   std::cout << "  - #" << action_idx << " (" << action.type << ", " << action.graph_id << ")" << std::endl;
+      // }
+      // std::cout << "Choice: ";
+      // int choice;
+      // std::cin >> choice;
+      // Action& action = actions[choice];
       std::vector<size_t> next_states;
       std::vector<float> probabilities;
       getTransitionProbabilities(current_state, state_space, graph, action, next_states, probabilities);
-      size_t most_likely_transition = (size_t) -1;
-      float most_likely_transition_prob = -0.1;
 
       for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
         size_t next_state_idx = next_states[next_state_counter];
         State& next_state = state_space[next_state_idx];
-        std::cout << "  - Leads to State (" << next_state.graph_id << ", " << next_state.direction << ", " << next_state.num_robots_left << ") with probability " << probabilities[next_state_counter] << std::endl;
-
-        if (probabilities[next_state_counter] > most_likely_transition_prob) {
-          most_likely_transition_prob = probabilities[next_state_counter];
-          most_likely_transition = next_state_idx;
-        }
+        std::cout << "  - #" << next_state_counter << " Leads to State (" << next_state.graph_id << ", " << next_state.direction << ", " << next_state.num_robots_left << ") with probability " << probabilities[next_state_counter] << std::endl;
       }
-      current_state_idx = most_likely_transition;
-      std::cout << " - Making transition to most likely state for this best action" << std::endl; 
-
+      std::cout << "Choice: ";
+      int choice;
+      std::cin >> choice;
+      current_state_idx = next_states[choice];
     }
     std::cout << "VALUE of final state: " << value_space[current_state_idx] << std::endl;
-  
   }
 }
 

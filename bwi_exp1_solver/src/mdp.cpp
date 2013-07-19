@@ -4,31 +4,37 @@ namespace bwi_exp1 {
  
   size_t computeNextDirection(size_t dir, size_t graph_id, 
       size_t next_graph_id, const Graph &graph) {
-
-    float x, y;
-    getXYDirectionFromStates(graph, graph_id, next_graph_id, x, y);
-    //std::cout << x << " " << y << std::endl;
-    
-    float max_value = ((float)GRID_SIZE - 1.0) / 2.0;
-    float offset = ((GRID_SIZE + 1) % 2) * 0.5;
-
-    float x_curr = (dir % GRID_SIZE) - max_value;
-    float y_curr = (dir / GRID_SIZE) - max_value;
-
-    //std::cout << dir << " -> " << x_curr << " " << y_curr << std::endl;
-
-    float x_net = x_curr / 2.0 + x;
-    x_net = std::min(max_value, x_net);
-    x_net = std::max(-max_value, x_net);
-    float y_net = y_curr / 2.0 + y;
-    y_net = std::min(max_value, y_net);
-    y_net = std::max(-max_value, y_net);
-
-    int x_idx = round(x_net + offset) - round (-max_value + offset);
-    int y_idx = round(y_net + offset) - round (-max_value + offset);
-
-    return y_idx * GRID_SIZE + x_idx;
+    float angle = getAngleFromStates(graph, graph_id, next_graph_id);
+    return getDirectionFromAngle(angle);
   }
+
+  // size_t computeNextDirection(size_t dir, size_t graph_id, 
+  //     size_t next_graph_id, const Graph &graph) {
+
+  //   float x, y;
+  //   getXYDirectionFromStates(graph, graph_id, next_graph_id, x, y);
+  //   //std::cout << x << " " << y << std::endl;
+  //   
+  //   float max_value = ((float)GRID_SIZE - 1.0) / 2.0;
+  //   float offset = ((GRID_SIZE + 1) % 2) * 0.5;
+
+  //   float x_curr = (dir % GRID_SIZE) - max_value;
+  //   float y_curr = (dir / GRID_SIZE) - max_value;
+
+  //   //std::cout << dir << " -> " << x_curr << " " << y_curr << std::endl;
+
+  //   float x_net = x_curr / 2.0 + x;
+  //   x_net = std::min(max_value, x_net);
+  //   x_net = std::max(-max_value, x_net);
+  //   float y_net = y_curr / 2.0 + y;
+  //   y_net = std::min(max_value, y_net);
+  //   y_net = std::max(-max_value, y_net);
+
+  //   int x_idx = round(x_net + offset) - round (-max_value + offset);
+  //   int y_idx = round(y_net + offset) - round (-max_value + offset);
+
+  //   return y_idx * GRID_SIZE + x_idx;
+  // }
 
   void getActionsAtState(const State& state, const Graph& graph, 
       std::vector<Action>& actions) {
@@ -122,11 +128,11 @@ namespace bwi_exp1 {
     if (action.type == PLACE_ROBOT) {
       expected_direction = 
         getAngleFromStates(graph, state.graph_id, action.graph_id);
-      sigma_sq = 0.2;
+      sigma_sq = 0.05;
     } else {
       expected_direction = 
         getAngleFromDirection(state.direction);
-      sigma_sq = 1.0;
+      sigma_sq = 0.05;
     }
 
     // Now compute the weight of each next state. Get the favored direction
