@@ -1,7 +1,7 @@
 /** \file ValueIteration2.cc
-    Implements the ValueIteration2 class
-    \author Todd Hester
-*/
+  Implements the ValueIteration2 class
+  \author Todd Hester
+  */
 
 #include <bwi_exp1_solver/value_iteration.h>
 #include <algorithm>
@@ -10,34 +10,34 @@
 
 
 ValueIteration2::ValueIteration2(int numactions, float gamma,
-                               int MAX_LOOPS, float MAX_TIME, int modelType,
-                               const std::vector<float> &fmax, 
-                               const std::vector<float> &fmin, 
-                               const std::vector<int> &n, Random newRng):
+    int MAX_LOOPS, float MAX_TIME, int modelType,
+    const std::vector<float> &fmax, 
+    const std::vector<float> &fmin, 
+    const std::vector<int> &n, Random newRng):
   numactions(numactions), gamma(gamma),
   MAX_LOOPS(MAX_LOOPS), MAX_TIME(MAX_TIME), modelType(modelType),
   statesPerDim(n) {
 
-  rng = newRng;
+    rng = newRng;
 
-  nstates = 0;
-  nactions = 0;
+    nstates = 0;
+    nactions = 0;
 
-  timingType = false; //true;
+    timingType = false; //true;
 
-  model = NULL;
-  planTime = getSeconds();
+    model = NULL;
+    planTime = getSeconds();
 
-  // algorithm options
-  MAX_STEPS = 100; 
+    // algorithm options
+    MAX_STEPS = 100; 
 
-  featmax = fmax;
-  featmin = fmin;
+    featmax = fmax;
+    featmin = fmin;
 
-  if (statesPerDim[0] > 0){
-    cout << "Planner VI using discretization of " << statesPerDim[0] << endl;
+    if (statesPerDim[0] > 0){
+      cout << "Planner VI using discretization of " << statesPerDim[0] << endl;
+    }
   }
-}
 
 ValueIteration2::~ValueIteration2() { }
 
@@ -126,10 +126,10 @@ bool ValueIteration2::updateModelWithExperience(
     float reward, bool term) {
 #ifdef PLANNERDEBUG
   cout << "updateModelWithExperience(last = " << &laststate
-                         << ", curr = " << &currstate
-                         << ", lastact = " << lastact
-                         << ", r = " << reward
-                         << ")" << endl;
+    << ", curr = " << &currstate
+    << ", lastact = " << lastact
+    << ", r = " << reward
+    << ")" << endl;
 #endif
 
   if (!timingType)
@@ -206,7 +206,7 @@ void ValueIteration2::updateStatesFromModel() {
 
   // for each state
   for (std::set<std::vector<float> >::iterator i = statespace.begin();
-       i != statespace.end(); i++){
+      i != statespace.end(); i++){
 
 #ifdef PLANNERDEBUG
     cout << "updateStatesFromModel i = " << &(*i) << endl;
@@ -243,7 +243,7 @@ void ValueIteration2::updateStatesFromModel() {
 int ValueIteration2::getBestAction(const std::vector<float> &state){
 #ifdef PLANNERDEBUG
   cout << "getBestAction(s = " << &state
-                         << ")" << endl;
+    << ")" << endl;
 #endif
 
 
@@ -263,14 +263,14 @@ int ValueIteration2::getBestAction(const std::vector<float> &state){
   float val = *a;
 
 #ifdef ACTDEBUG
-    cout << endl << "chooseAction State " << (*s)[0] << "," << (*s)[1]
-         << " act: " << act << " val: " << val << endl;
-    for (int iAct = 0; iAct < numactions; iAct++){
-      cout << " Action: " << iAct
-           << " val: " << Q[iAct]
-           << " visits: " << info->visits[iAct]
-           << " modelsAgree: " << info->modelInfo[iAct].known << endl;
-    }
+  cout << endl << "chooseAction State " << (*s)[0] << "," << (*s)[1]
+    << " act: " << act << " val: " << val << endl;
+  for (int iAct = 0; iAct < numactions; iAct++){
+    cout << " Action: " << iAct
+      << " val: " << Q[iAct]
+      << " visits: " << info->visits[iAct]
+      << " modelsAgree: " << info->modelInfo[iAct].known << endl;
+  }
 #endif
 
   nactions++;
@@ -301,8 +301,8 @@ void ValueIteration2::createPolicy(){
   while (maxError > MIN_ERROR){ // && nloops < MAX_LOOPS){
 
 #ifdef POLICYDEBUG
-      cout << "max error: " << maxError << " nloops: " << nloops
-           << endl;
+    cout << "max error: " << maxError << " nloops: " << nloops
+      << endl;
 #endif
 
     maxError = 0;
@@ -310,7 +310,7 @@ void ValueIteration2::createPolicy(){
 
     // for all states
     for (std::set<std::vector<float> >::iterator i = statespace.begin();
-         i != statespace.end(); i++){
+        i != statespace.end(); i++){
 
       statesUpdated++;
       state_t s = canonicalize(*i);
@@ -319,10 +319,10 @@ void ValueIteration2::createPolicy(){
       state_info* info = &(statedata[s]);
 
 #ifdef POLICYDEBUG
-        cout << endl << " State: id: " << info->id << ": " ;
-        for (unsigned si = 0; si < s->size(); si++){
-          cout << (*s)[si] << ",";
-        }
+      cout << endl << " State: id: " << info->id << ": " ;
+      for (unsigned si = 0; si < s->size(); si++){
+        cout << (*s)[si] << ",";
+      }
 #endif
 
       // for each action
@@ -332,10 +332,10 @@ void ValueIteration2::createPolicy(){
         StateActionInfo *modelInfo = &(info->modelInfo[act]);
 
 #ifdef POLICYDEBUG
-          cout << "  Action: " << act
-               << " State visits: " << info->visits[act]
-               << " reward: " << modelInfo->reward 
-	       << " term: " << modelInfo->termProb << endl;
+        cout << "  Action: " << act
+          << " State visits: " << info->visits[act]
+          << " reward: " << modelInfo->reward 
+          << " term: " << modelInfo->termProb << endl;
 #endif
 
         // Q = R + discounted val of next state
@@ -347,17 +347,17 @@ void ValueIteration2::createPolicy(){
         // for all next states, add discounted value appropriately
         // loop through next state's that are in this state-actions list
         for (std::map<std::vector<float>, float>::iterator outIt
-               = modelInfo->transitionProbs.begin();
-             outIt != modelInfo->transitionProbs.end(); outIt++){
+            = modelInfo->transitionProbs.begin();
+            outIt != modelInfo->transitionProbs.end(); outIt++){
 
           std::vector<float> nextstate = (*outIt).first;
 
 #ifdef POLICYDEBUG
-            cout << "  Next state was: ";
-            for (unsigned oi = 0; oi < nextstate.size(); oi++){
-              cout << nextstate[oi] << ",";
-            }
-            cout << endl;
+          cout << "  Next state was: ";
+          for (unsigned oi = 0; oi < nextstate.size(); oi++){
+            cout << nextstate[oi] << ",";
+          }
+          cout << endl;
 #endif
 
           // get transition probability
@@ -367,7 +367,7 @@ void ValueIteration2::createPolicy(){
           probSum += transitionProb;
 
 #ifdef POLICYDEBUG
-            cout << "   prob: " << transitionProb << endl;
+          cout << "   prob: " << transitionProb << endl;
 #endif
 
           if (transitionProb < 0 || transitionProb > 1.0001){
@@ -388,32 +388,32 @@ void ValueIteration2::createPolicy(){
                   || nextstate[b] > (featmax[b]+EPSILON)){
                 realState = false;
 #ifdef POLICYDEBUG
-                  cout << "    Next state is not valid (feature "
-                       << b << " out of range)" << endl;
+                cout << "    Next state is not valid (feature "
+                  << b << " out of range)" << endl;
 #endif
                 break;
               }
             }
 
             state_t next;
-            
+
             // update q values for any states within MAX_STEPS of visited states
             if (!realState){
               next = s;
             } else {
               next = canonicalize(nextstate);
             }
-            
+
             state_info* nextinfo = &(statedata[next]);
-            
+
             // find the max value of this next state
             std::vector<float>::iterator maxAct =
               std::max_element(nextinfo->Q.begin(),
-                               nextinfo->Q.end());
+                  nextinfo->Q.end());
             maxval = *maxAct;
-            
+
             nextstate.clear();
-            
+
 #ifdef POLICYDEBUG
             cout << "    Max value: " << maxval << endl;
 #endif
@@ -428,7 +428,7 @@ void ValueIteration2::createPolicy(){
 
         if (probSum < 0.9999 || probSum > 1.0001){
           cout << "Error: transition probabilities do not add to 1: Sum: "
-               << probSum << endl;
+            << probSum << endl;
           exit(-1);
         }
 
@@ -437,7 +437,7 @@ void ValueIteration2::createPolicy(){
         float tdError = fabs(info->Q[act] - newQ);
 #ifdef POLICYDEBUG
         cout << "  NewQ: " << newQ
-                              << " OldQ: " << info->Q[act] << endl;
+          << " OldQ: " << info->Q[act] << endl;
 #endif
         info->Q[act] = newQ;
 
@@ -447,7 +447,7 @@ void ValueIteration2::createPolicy(){
 
 #ifdef POLICYDEBUG
         cout << "  TD error: " << tdError
-             << " Max error: " << maxError << endl;
+          << " Max error: " << maxError << endl;
 #endif
 
       } // action loop
@@ -458,160 +458,160 @@ void ValueIteration2::createPolicy(){
 
   if (nloops >= MAX_LOOPS){
     cout << nactions << " Policy creation ended with maxError: " << maxError
-         << " nloops: " << nloops << " time: " << (getSeconds()-planTime)
-         << " states: " << statesUpdated
-         << endl;
+      << " nloops: " << nloops << " time: " << (getSeconds()-planTime)
+      << " states: " << statesUpdated
+      << endl;
   }
 
 #ifdef POLICYDEBUG
   cout << nactions
-                        << " policy creation complete: maxError: "
-                        << maxError << " nloops: " << nloops
-                        << endl;
+    << " policy creation complete: maxError: "
+    << maxError << " nloops: " << nloops
+    << endl;
 #endif
 
-}
-
-void ValueIteration2::planOnNewModel(){
-
-  // update model info
-  // can just update one for tabular model
-  if (modelType == RMAX){
-    updateStateActionFromModel(prevstate, prevact);
-  }
-  else {
-    updateStatesFromModel();
   }
 
-  // run value iteration
-  createPolicy();
+  void ValueIteration2::planOnNewModel(){
 
-}
-
-////////////////////////////
-// Helper Functions       //
-////////////////////////////
-
-ValueIteration2::state_t ValueIteration2::canonicalize(const std::vector<float> &s) {
-  cout << "canonicalize(s = " << s[0] << ", "
-                         << s[1] << ")" << endl;
-
-  std::vector<float> s2;
-  if (statesPerDim[0] > 0){
-    s2 = discretizeState(s);
-  } else {
-    s2 = s;
-  }
-
-#ifdef PLANNERDEBUG
-  cout << "discretized(" << s2[0] << ", " << s2[1] << ")" << endl;
-#endif
-
-  // get state_t for pointer if its in statespace
-  const std::pair<std::set<std::vector<float> >::iterator, bool> result =
-    statespace.insert(s2);
-  state_t retval = &*result.first; // Dereference iterator then get pointer
-
-#ifdef PLANNERDEBUG
-  cout << " returns " << retval
-                         << " New: " << result.second << endl;
-#endif
-
-  // if not, init this new state
-  if (result.second) { // s is new, so initialize Q(s,a) for all a
-    initNewState(retval);
-#ifdef PLANNERDEBUG
-   cout << " New state initialized" << endl;
-#endif
-  }
-
-  return retval;
-}
-
-void ValueIteration2::printStates(){
-
-  for (std::set< std::vector<float> >::iterator i = statespace.begin();
-       i != statespace.end(); i++){
-
-    state_t s = canonicalize(*i);
-
-    state_info* info = &(statedata[s]);
-
-    cout << "State " << info->id << ": ";
-    for (unsigned j = 0; j < s->size(); j++){
-      cout << (*s)[j] << ", ";
+    // update model info
+    // can just update one for tabular model
+    if (modelType == RMAX){
+      updateStateActionFromModel(prevstate, prevact);
     }
-    cout << endl;
-
-    for (int act = 0; act < info->numactions; act++){
-      cout << " visits[" << act << "] = " << info->visits[act]
-           << " Q: " << info->Q[act]
-           << " R: " << info->modelInfo[act].reward << endl;
+    else {
+      updateStatesFromModel();
     }
 
-  }
-}
-
-double ValueIteration2::getSeconds(){
-  struct timezone tz;
-  timeval timeT;
-  gettimeofday(&timeT, &tz);
-  return  timeT.tv_sec + (timeT.tv_usec / 1000000.0);
-}
-
-void ValueIteration2::savePolicy(const char* filename){
-
-  ofstream policyFile(filename, ios::out | ios::binary | ios::trunc);
-
-  // first part, save the vector size
-  int fsize = featmin.size();
-  policyFile.write((char*)&fsize, sizeof(int));
-
-  // save numactions
-  policyFile.write((char*)&numactions, sizeof(int));
-
-  // go through all states, and save Q values
-  for (std::set< std::vector<float> >::iterator i = statespace.begin();
-       i != statespace.end(); i++){
-
-    state_t s = canonicalize(*i);
-    state_info* info = &(statedata[s]);
-
-    // save state
-    policyFile.write((char*)&((*i)[0]), sizeof(float)*fsize);
-
-    // save q-values
-    policyFile.write((char*)&(info->Q[0]), sizeof(float)*info->numactions);
+    // run value iteration
+    createPolicy();
 
   }
 
-  policyFile.close();
-}
+  ////////////////////////////
+  // Helper Functions       //
+  ////////////////////////////
 
+  ValueIteration2::state_t ValueIteration2::canonicalize(const std::vector<float> &s) {
+    cout << "canonicalize(s = " << s[0] << ", "
+      << s[1] << ")" << endl;
 
-// should do it such that an already discretized state stays the same
-// mainly the numerical value of each bin should be the average of that bin
-std::vector<float> ValueIteration2::discretizeState(const std::vector<float> &s){
-  std::vector<float> ds(s.size());
-
-  for (unsigned i = 0; i < s.size(); i++){
-    
-    // since i'm sometimes doing this for discrete domains
-    // want to center bins on 0, not edge on 0
-    //cout << "feat " << i << " range: " << featmax[i] << " " << featmin[i] << " " << (featmax[i]-featmin[i]) << " n: " << (float)statesPerDim;
-
-    float factor = (featmax[i] - featmin[i]) / (float)statesPerDim[i];
-    int bin = 0;
-    if (s[i] > 0){
-      bin = (int)((s[i]+factor/2) / factor);
+    std::vector<float> s2;
+    if (statesPerDim[0] > 0){
+      s2 = discretizeState(s);
     } else {
-      bin = (int)((s[i]-factor/2) / factor);
+      s2 = s;
     }
 
-    ds[i] = factor*bin;
-    //cout << " factor: " << factor << " bin: " << bin;
-    //cout << " Original: " << s[i] << " Discrete: " << ds[i] << endl;
+#ifdef PLANNERDEBUG
+    cout << "discretized(" << s2[0] << ", " << s2[1] << ")" << endl;
+#endif
+
+    // get state_t for pointer if its in statespace
+    const std::pair<std::set<std::vector<float> >::iterator, bool> result =
+      statespace.insert(s2);
+    state_t retval = &*result.first; // Dereference iterator then get pointer
+
+#ifdef PLANNERDEBUG
+    cout << " returns " << retval
+      << " New: " << result.second << endl;
+#endif
+
+    // if not, init this new state
+    if (result.second) { // s is new, so initialize Q(s,a) for all a
+      initNewState(retval);
+#ifdef PLANNERDEBUG
+      cout << " New state initialized" << endl;
+#endif
+    }
+
+    return retval;
   }
 
-  return ds;
-}
+  void ValueIteration2::printStates(){
+
+    for (std::set< std::vector<float> >::iterator i = statespace.begin();
+        i != statespace.end(); i++){
+
+      state_t s = canonicalize(*i);
+
+      state_info* info = &(statedata[s]);
+
+      cout << "State " << info->id << ": ";
+      for (unsigned j = 0; j < s->size(); j++){
+        cout << (*s)[j] << ", ";
+      }
+      cout << endl;
+
+      for (int act = 0; act < info->numactions; act++){
+        cout << " visits[" << act << "] = " << info->visits[act]
+          << " Q: " << info->Q[act]
+          << " R: " << info->modelInfo[act].reward << endl;
+      }
+
+    }
+  }
+
+  double ValueIteration2::getSeconds(){
+    struct timezone tz;
+    timeval timeT;
+    gettimeofday(&timeT, &tz);
+    return  timeT.tv_sec + (timeT.tv_usec / 1000000.0);
+  }
+
+  void ValueIteration2::savePolicy(const char* filename){
+
+    ofstream policyFile(filename, ios::out | ios::binary | ios::trunc);
+
+    // first part, save the vector size
+    int fsize = featmin.size();
+    policyFile.write((char*)&fsize, sizeof(int));
+
+    // save numactions
+    policyFile.write((char*)&numactions, sizeof(int));
+
+    // go through all states, and save Q values
+    for (std::set< std::vector<float> >::iterator i = statespace.begin();
+        i != statespace.end(); i++){
+
+      state_t s = canonicalize(*i);
+      state_info* info = &(statedata[s]);
+
+      // save state
+      policyFile.write((char*)&((*i)[0]), sizeof(float)*fsize);
+
+      // save q-values
+      policyFile.write((char*)&(info->Q[0]), sizeof(float)*info->numactions);
+
+    }
+
+    policyFile.close();
+  }
+
+
+  // should do it such that an already discretized state stays the same
+  // mainly the numerical value of each bin should be the average of that bin
+  std::vector<float> ValueIteration2::discretizeState(const std::vector<float> &s){
+    std::vector<float> ds(s.size());
+
+    for (unsigned i = 0; i < s.size(); i++){
+
+      // since i'm sometimes doing this for discrete domains
+      // want to center bins on 0, not edge on 0
+      //cout << "feat " << i << " range: " << featmax[i] << " " << featmin[i] << " " << (featmax[i]-featmin[i]) << " n: " << (float)statesPerDim;
+
+      float factor = (featmax[i] - featmin[i]) / (float)statesPerDim[i];
+      int bin = 0;
+      if (s[i] > 0){
+        bin = (int)((s[i]+factor/2) / factor);
+      } else {
+        bin = (int)((s[i]-factor/2) / factor);
+      }
+
+      ds[i] = factor*bin;
+      //cout << " factor: " << factor << " bin: " << bin;
+      //cout << " Original: " << s[i] << " Discrete: " << ds[i] << endl;
+    }
+
+    return ds;
+  }

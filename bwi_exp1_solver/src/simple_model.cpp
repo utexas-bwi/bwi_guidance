@@ -1,4 +1,5 @@
 #include <bwi_exp1_solver/simple_model.h>
+#include <cmath>
 
 namespace bwi_exp1 {
 
@@ -11,10 +12,74 @@ namespace bwi_exp1 {
     initializeNextStateCache();
   }
 
+  /** Update the MDP model with a vector of experiences. */
+  bool PersonModel::updateWithExperiences(std::vector<experience> &instances) {
+    throw std::runtime_error("Updating person model is not supported!!");
+  }
+
+  /** Update the MDP model with a single experience. */
+  bool PersonModel::updateWithExperience(experience &instance) {
+    throw std::runtime_error("Updating person model is not supported!!");
+  }
+
+  /** Get the predictions of the MDP model for a given state action */
+  float PersonModel::getStateActionInfo(const std::vector<float> &state, int action, StateActionInfo* retval) {
+    retval->transitionProbs.clear();
+    retval->known = false;
+    state_t s = canonicalizeState(state);
+    State &s_deref = state_cache_[s]; 
+    action_t a = canonicalizeAction(action);
+    if (state_cache_[s].graph_id == goal_idx_) {
+      retval->reward = 0;
+      retval->termProb = 1.0;
+    } else {
+      std::vector<Action> actions = getActionsAtState(s);
+      if (a >= actions.size()) {
+        // this action is not well defined for this state, should return a negative confidence
+        return -1.0f;
+      }
+      Action& a_deref = actions[a];
+      std::vector<state_t> next_states = getNextStatesAtState(s);
+      std::vector<float> transition_probabilities = getTransitionProbabilities(s, a);
+      retval->reward = 0;
+      for (size_t ns = 0; ns < next_states.size(); ++ns) {
+        state_t &next_state = next_states[ns]; 
+        State &ns_deref = state_cache_[ns]; 
+        std::vector<float> ns_continuous;
+        produceContinuousState(next_state, ns_continuous);
+        retval->transitionProbs[ns_continuous] = transition_probabilities[ns];
+        retval->reward += transition_probabilities[ns] *
+            getDistanceFromStates(s_deref.graph_id, ns_deref.graph_id);
+        if (a_deref.type == PLACE_ROBOT) {
+          retval->reward += -500;
+        }
+      }
+      retval->termProb = 0;
+    }
+    retval->known = true;
+  }
+
   state_t PersonModel::canonicalizeState(uint32_t graph_id, uint32_t direction, uint32_t robots_remaining) const {
     return graph_id * num_directions_ * (max_robots_ + 1) + 
       direction * (max_robots_ + 1) +
       robots_remaining;
+  }
+
+  void PersonModel::produceContinuousState(state_t state_id,
+      std::vector<float>& state) {
+    State& s = state_cache_[state_id];
+    state.resize(3);
+    state[0] = (float) s.graph_id;
+    state[1] = (float) s.direction;
+    state[1] = (float) s.num_robots_left;
+  }
+
+  state_t PersonModel::canonicalizeState(const std::vector<float> &state) const {
+    return canonicalizeState(lrint(state[0]), lrint(state[1]), lrint(state[2]));
+  }
+
+  action_t PersonModel::canonicalizeAction(int action) const {
+    return action;
   }
 
   void PersonModel::initializeStateSpace() {
@@ -207,6 +272,11 @@ namespace bwi_exp1 {
 
   }
 
+  std::vector<float>& PersonModel::getTransitionProbabilities(
+      state_t state_id, action_t action_id) {
+    return ns_distribution_cache_[state_id][action_id];
+  }
+
   size_t PersonModel::computeNextDirection(size_t dir, size_t graph_id, 
       size_t next_graph_id) {
     float angle = getAngleFromStates(graph_id, next_graph_id);
@@ -222,6 +292,15 @@ namespace bwi_exp1 {
 
     return atan2f(graph_[next_v].location.y - graph_[v].location.y,
         graph_[next_v].location.x - graph_[v].location.x);
+  }
+
+  float PersonModel::getDistanceFromStates(size_t graph_id, size_t next_graph_id) {
+    topological_mapper::Graph::vertex_descriptor v = 
+      boost::vertex(graph_id, graph_);
+    topological_mapper::Graph::vertex_descriptor next_v =
+      boost::vertex(next_graph_id, graph_);
+
+    return cv::norm(graph_[next_v].location - graph_[v].location);
   }
 
   size_t PersonModel::getDirectionFromAngle(float angle) {

@@ -54,6 +54,7 @@ namespace bwi_exp1 {
       state_t canonicalizeState(uint32_t graph_id, uint32_t direction, uint32_t robots_remaining) const;
       state_t canonicalizeState(const std::vector<float> &state) const;
       action_t canonicalizeAction(int action) const;
+      void produceContinuousState(state_t state_id, std::vector<float>& state);
 
       void initializeStateSpace();
       std::vector<State> state_cache_;
@@ -75,6 +76,7 @@ namespace bwi_exp1 {
 
       size_t computeNextDirection(size_t dir, size_t graph_id, size_t next_graph_id);
       float getAngleFromStates(size_t graph_id, size_t next_graph_id);
+      float getDistanceFromStates(size_t graph_id, size_t next_graph_id);
       size_t getDirectionFromAngle(float angle);
       float getAngleFromDirection(size_t dir);
       uint32_t num_vertices_;
