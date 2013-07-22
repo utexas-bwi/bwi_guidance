@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(bwi_exp1_solver)
 
 ## Find catkin macros and libraries
-find_package(catkin REQUIRED COMPONENTS bwi_exp1 topological_mapper)
+find_package(catkin REQUIRED COMPONENTS bwi_exp1 rl_common topological_mapper)
 
 ###################################
 ## catkin specific configuration ##
@@ -15,6 +15,7 @@ catkin_package(
     bwi_exp1_mdp
   CATKIN_DEPENDS 
     bwi_exp1 
+    rl_common
     topological_mapper
 )
 
@@ -32,6 +33,13 @@ add_library(bwi_exp1_mdp
   src/mdp.cpp
 )
 target_link_libraries(bwi_exp1_mdp 
+  ${catkin_LIBRARIES}
+)
+add_library(bwi_exp1_solver
+  src/simple_model.cpp
+  src/value_iteration.cpp
+)
+target_link_libraries(bwi_exp1_solver 
   ${catkin_LIBRARIES}
 )
 
