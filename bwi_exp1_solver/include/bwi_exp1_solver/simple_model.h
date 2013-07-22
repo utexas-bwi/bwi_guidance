@@ -37,16 +37,16 @@ namespace bwi_exp1 {
       PersonModel(const topological_mapper::Graph& graph, size_t goal_idx);
 
       /** Update the MDP model with a vector of experiences. */
-      virtual bool updateWithExperiences(std::vector<experience> &instances) = 0;
+      virtual bool updateWithExperiences(std::vector<experience> &instances);
 
       /** Update the MDP model with a single experience. */
-      virtual bool updateWithExperience(experience &instance) = 0;
+      virtual bool updateWithExperience(experience &instance);
 
       /** Get the predictions of the MDP model for a given state action */
-      virtual float getStateActionInfo(const std::vector<float> &state, int action, StateActionInfo* retval) = 0;
+      virtual float getStateActionInfo(const std::vector<float> &state, int action, StateActionInfo* retval);
 
       /** Get a copy of the MDP Model */
-      virtual PersonModel* getCopy() = 0;
+      virtual PersonModel* getCopy();
       virtual ~PersonModel() {};
 
     private:

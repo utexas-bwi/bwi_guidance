@@ -22,6 +22,10 @@ namespace bwi_exp1 {
     throw std::runtime_error("Updating person model is not supported!!");
   }
 
+  PersonModel* PersonModel::getCopy() {
+    throw std::runtime_error("Copy person model is not supported!!");
+  }
+
   /** Get the predictions of the MDP model for a given state action */
   float PersonModel::getStateActionInfo(const std::vector<float> &state, int action, StateActionInfo* retval) {
     retval->transitionProbs.clear();
@@ -49,10 +53,10 @@ namespace bwi_exp1 {
         produceContinuousState(next_state, ns_continuous);
         retval->transitionProbs[ns_continuous] = transition_probabilities[ns];
         retval->reward += transition_probabilities[ns] *
-            getDistanceFromStates(s_deref.graph_id, ns_deref.graph_id);
-        if (a_deref.type == PLACE_ROBOT) {
-          retval->reward += -500;
-        }
+            -getDistanceFromStates(s_deref.graph_id, ns_deref.graph_id);
+      }
+      if (a_deref.type == PLACE_ROBOT) {
+        retval->reward += -500;
       }
       retval->termProb = 0;
     }
@@ -206,7 +210,8 @@ namespace bwi_exp1 {
     std::vector<state_t>& next_states = getNextStatesAtState(state_id);
 
     State& state = state_cache_[state_id];
-    Action& action = action_cache_[state_id][action_id];
+    std::vector<Action>& actions = getActionsAtState(state_id);
+    Action& action = actions[action_id];
 
     // In this simple MDP formulation, the action should induce a desired 
     // direction for the person to be walking to.
@@ -269,6 +274,11 @@ namespace bwi_exp1 {
       normalized_probability_sum += probabilities[probability_counter];
     }
     probabilities[last_non_zero_probability] += 1 - normalized_probability_sum;
+
+    if (state.graph_id == 0 && state.direction == 0 && state.num_robots_left == 0) {
+      std::cout << "Sum is " << normalized_probability_sum << " across " << next_states.size() << " states." << std::endl;
+      std::cout << probabilities[0] << " " << probabilities[1] << std::endl;
+    }
 
   }
 

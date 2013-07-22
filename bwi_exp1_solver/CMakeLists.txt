@@ -23,6 +23,8 @@ catkin_package(
 ## Build ##
 ###########
 
+add_definitions(-DPOLICYDEBUG)
+
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
@@ -49,6 +51,13 @@ add_executable(test_mdp
 )
 target_link_libraries(test_mdp 
   bwi_exp1_mdp
+)
+add_executable(test_rl
+  test/test_mdp2.cpp
+)
+
+target_link_libraries(test_rl
+  bwi_exp1_solver
 )
 
 #############

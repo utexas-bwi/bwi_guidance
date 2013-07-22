@@ -34,9 +34,6 @@ ValueIteration2::ValueIteration2(int numactions, float gamma,
     featmax = fmax;
     featmin = fmin;
 
-    if (statesPerDim[0] > 0){
-      cout << "Planner VI using discretization of " << statesPerDim[0] << endl;
-    }
   }
 
 ValueIteration2::~ValueIteration2() { }
@@ -429,6 +426,8 @@ void ValueIteration2::createPolicy(){
         if (probSum < 0.9999 || probSum > 1.0001){
           cout << "Error: transition probabilities do not add to 1: Sum: "
             << probSum << endl;
+          cout << " State: (" << (*i)[0] << "," << (*i)[1] << "," << (*i)[2] << ")" << endl;
+          cout << " Action: " << act << " out of " << info->numactions << endl;
           exit(-1);
         }
 
@@ -493,8 +492,8 @@ void ValueIteration2::createPolicy(){
   ////////////////////////////
 
   ValueIteration2::state_t ValueIteration2::canonicalize(const std::vector<float> &s) {
-    cout << "canonicalize(s = " << s[0] << ", "
-      << s[1] << ")" << endl;
+   // cout << "canonicalize(s = " << s[0] << ", "
+    //   << s[1] << ")" << endl;
 
     std::vector<float> s2;
     if (statesPerDim[0] > 0){
