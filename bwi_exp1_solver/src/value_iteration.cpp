@@ -407,7 +407,11 @@ void ValueIteration2::createPolicy(){
             std::vector<float>::iterator maxAct =
               std::max_element(nextinfo->Q.begin(),
                   nextinfo->Q.end());
-            maxval = *maxAct;
+            if (maxAct != nextinfo->Q.end()) {
+              maxval = *maxAct;
+            } else {
+              maxval = 0;
+            }
 
             nextstate.clear();
 

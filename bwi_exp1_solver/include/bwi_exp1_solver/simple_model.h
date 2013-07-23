@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include <rl_common/core.hh>
+#include <bwi_exp1_solver/PredictiveModel.h>
 #include <topological_mapper/graph.h>
 
 namespace bwi_exp1 {
@@ -30,31 +30,24 @@ namespace bwi_exp1 {
   typedef uint32_t state_t;
   typedef uint32_t action_t;
 
-  class PersonModel : public MDPModel {
+  class PersonModel : public PredictiveModel<state_t, action_t> {
 
     public:
 
       PersonModel(const topological_mapper::Graph& graph, size_t goal_idx);
 
-      /** Update the MDP model with a vector of experiences. */
-      virtual bool updateWithExperiences(std::vector<experience> &instances);
+      bool isTerminalState(const state_t& state) const;
+      std::vector<action_t>& getActionsAtState(State &state);
+      std::vector<state_t>& getStateVector();
+      void getTransitionDynamics(const state_t &s, 
+          const action_t &a, std::vector<state_t> &next_states, 
+          std::vector<float> &rewards, std::vector<float> &probabilities);
 
-      /** Update the MDP model with a single experience. */
-      virtual bool updateWithExperience(experience &instance);
-
-      /** Get the predictions of the MDP model for a given state action */
-      virtual float getStateActionInfo(const std::vector<float> &state, int action, StateActionInfo* retval);
-
-      /** Get a copy of the MDP Model */
-      virtual PersonModel* getCopy();
       virtual ~PersonModel() {};
 
     private:
 
       state_t canonicalizeState(uint32_t graph_id, uint32_t direction, uint32_t robots_remaining) const;
-      state_t canonicalizeState(const std::vector<float> &state) const;
-      action_t canonicalizeAction(int action) const;
-      void produceContinuousState(state_t state_id, std::vector<float>& state);
 
       void initializeStateSpace();
       std::vector<State> state_cache_;

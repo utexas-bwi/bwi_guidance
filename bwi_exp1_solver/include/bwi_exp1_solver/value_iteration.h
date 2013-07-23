@@ -32,8 +32,8 @@ public:
   ValueIteration2(int numactions, float gamma,
                  int MAX_LOOPS, float MAX_TIME, int modelType,
                  const std::vector<float> &featmax, 
-                 const std::vector<float> &featmin, const std::vector<int> &statesPerDim,
-                 Random rng = Random());
+                 const std::vector<float> &featmin, 
+                 const std::vector<int> &statesPerDim);
 
   /** Unimplemented copy constructor: internal state cannot be simply
       copied. */
@@ -160,6 +160,5 @@ private:
   const std::vector<int> statesPerDim;
 
 };
-
 
 #endif /* end of include guard: VALUE_ITERATION_XOO8QINS */

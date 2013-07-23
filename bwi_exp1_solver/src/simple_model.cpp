@@ -12,78 +12,46 @@ namespace bwi_exp1 {
     initializeNextStateCache();
   }
 
-  /** Update the MDP model with a vector of experiences. */
-  bool PersonModel::updateWithExperiences(std::vector<experience> &instances) {
-    throw std::runtime_error("Updating person model is not supported!!");
-  }
-
-  /** Update the MDP model with a single experience. */
-  bool PersonModel::updateWithExperience(experience &instance) {
-    throw std::runtime_error("Updating person model is not supported!!");
-  }
-
-  PersonModel* PersonModel::getCopy() {
-    throw std::runtime_error("Copy person model is not supported!!");
+  bool PersonModel::isTerminalState(const state_t& state) const {
+    return state_cache_[state].graph_id == goal_idx_;
   }
 
   /** Get the predictions of the MDP model for a given state action */
-  float PersonModel::getStateActionInfo(const std::vector<float> &state, int action, StateActionInfo* retval) {
-    retval->transitionProbs.clear();
-    retval->known = false;
-    state_t s = canonicalizeState(state);
-    State &s_deref = state_cache_[s]; 
-    action_t a = canonicalizeAction(action);
-    if (state_cache_[s].graph_id == goal_idx_) {
-      retval->reward = 0;
-      retval->termProb = 1.0;
-    } else {
-      std::vector<Action> actions = getActionsAtState(s);
-      if (a >= actions.size()) {
-        // this action is not well defined for this state, should return a negative confidence
-        return -1.0f;
-      }
-      Action& a_deref = actions[a];
-      std::vector<state_t> next_states = getNextStatesAtState(s);
-      std::vector<float> transition_probabilities = getTransitionProbabilities(s, a);
-      retval->reward = 0;
-      for (size_t ns = 0; ns < next_states.size(); ++ns) {
-        state_t &next_state = next_states[ns]; 
-        State &ns_deref = state_cache_[ns]; 
-        std::vector<float> ns_continuous;
-        produceContinuousState(next_state, ns_continuous);
-        retval->transitionProbs[ns_continuous] = transition_probabilities[ns];
-        retval->reward += transition_probabilities[ns] *
-            -getDistanceFromStates(s_deref.graph_id, ns_deref.graph_id);
-      }
-      if (a_deref.type == PLACE_ROBOT) {
-        retval->reward += -500;
-      }
-      retval->termProb = 0;
+  void PersonModel::getTransitionDynamics(const state_t &s, 
+      const action_t &a, std::vector<state_t> &next_states, 
+      std::vector<float> &rewards, std::vector<float> &probabilities) {
+
+    next_states.clear();
+    rewards.clear();
+    probabilities.clear();
+
+    if (isTerminalState(s)) {
+      return; // no reward for you!
     }
-    retval->known = true;
+
+    State &s_deref = state_cache_[s]; 
+    std::vector<Action> actions = getActionsAtState(s);
+    Action& a_deref = actions[a];
+    next_states = getNextStatesAtState(s); // copy cost
+    probabilities = getTransitionProbabilities(s, a);
+    rewards.resize(next_states.size());
+
+    // Compute reward
+    for (std::vector<state_t>::const_iterator ns = next_states.begin();
+        ns != next_states.end(); ++ns) {
+      State &ns_deref = state_cache_[*ns];
+      rewards[ns - next_states.begin()] = 
+        -getDistanceFromStates(s_deref.graph_id, ns_deref.graph_id);
+      if (a_deref.type == PLACE_ROBOT) { 
+        rewards[ns - next_states.begin()] -= 500; 
+      }
+    }
   }
 
   state_t PersonModel::canonicalizeState(uint32_t graph_id, uint32_t direction, uint32_t robots_remaining) const {
     return graph_id * num_directions_ * (max_robots_ + 1) + 
       direction * (max_robots_ + 1) +
       robots_remaining;
-  }
-
-  void PersonModel::produceContinuousState(state_t state_id,
-      std::vector<float>& state) {
-    State& s = state_cache_[state_id];
-    state.resize(3);
-    state[0] = (float) s.graph_id;
-    state[1] = (float) s.direction;
-    state[1] = (float) s.num_robots_left;
-  }
-
-  state_t PersonModel::canonicalizeState(const std::vector<float> &state) const {
-    return canonicalizeState(lrint(state[0]), lrint(state[1]), lrint(state[2]));
-  }
-
-  action_t PersonModel::canonicalizeAction(int action) const {
-    return action;
   }
 
   void PersonModel::initializeStateSpace() {

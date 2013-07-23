@@ -39,7 +39,7 @@ target_link_libraries(bwi_exp1_mdp
 )
 add_library(bwi_exp1_solver
   src/simple_model.cpp
-  src/value_iteration.cpp
+  #src/value_iteration.cpp
 )
 target_link_libraries(bwi_exp1_solver 
   ${catkin_LIBRARIES}
@@ -52,13 +52,13 @@ add_executable(test_mdp
 target_link_libraries(test_mdp 
   bwi_exp1_mdp
 )
-add_executable(test_rl
-  test/test_mdp2.cpp
-)
-
-target_link_libraries(test_rl
-  bwi_exp1_solver
-)
+## add_executable(test_rl
+##   test/test_mdp2.cpp
+## )
+## 
+## target_link_libraries(test_rl
+##   bwi_exp1_solver
+## )
 
 #############
 ## Install ##
