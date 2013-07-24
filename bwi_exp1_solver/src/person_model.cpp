@@ -269,11 +269,6 @@ namespace bwi_exp1 {
     }
     probabilities[last_non_zero_probability] += 1 - normalized_probability_sum;
 
-    if (state.graph_id == 0 && state.direction == 0 && state.num_robots_left == 0) {
-      std::cout << "Sum is " << normalized_probability_sum << " across " << next_states.size() << " states." << std::endl;
-      std::cout << probabilities[0] << " " << probabilities[1] << std::endl;
-    }
-
   }
 
   std::vector<float>& PersonModel::getTransitionProbabilities(

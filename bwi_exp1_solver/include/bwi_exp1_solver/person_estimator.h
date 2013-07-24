@@ -8,6 +8,12 @@
 #include <bwi_exp1_solver/VIEstimator.h>
 #include <bwi_exp1_solver/structures.h>
 
+namespace boost {
+  namespace serialization {
+    class access;
+  }
+}
+
 namespace bwi_exp1 {
 
   class PersonEstimator : public VIEstimator<state_t, action_t> {
@@ -23,6 +29,9 @@ namespace bwi_exp1 {
       virtual action_t getBestAction(const state_t &state) const;
       virtual void setBestAction(const state_t &state, const action_t& action);
 
+      virtual void saveEstimatedValues(const std::string& file);
+      virtual void loadEstimatedValues(const std::string& file);
+
       virtual std::string generateDescription(unsigned int indentation = 0) {
         return std::string("stub");
       }
@@ -31,6 +40,10 @@ namespace bwi_exp1 {
 
       std::vector<float> value_cache_;
       std::vector<action_t> best_action_cache_;
+
+      friend class boost::serialization::access;
+      template<class Archive>
+      void serialize(Archive & ar, const unsigned int version);
 
       float default_value_;
   };

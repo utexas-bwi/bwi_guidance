@@ -3,6 +3,7 @@ project(bwi_exp1_solver)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS bwi_exp1 rl_common topological_mapper)
+find_package(Boost REQUIRED COMPONENTS serialization)
 
 ###################################
 ## catkin specific configuration ##
@@ -28,6 +29,7 @@ add_definitions(-DVI_DEBUG)
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 ## Declare a cpp library
@@ -37,6 +39,7 @@ add_library(bwi_exp1_solver
 )
 target_link_libraries(bwi_exp1_solver 
   ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
 )
 
 ## Declare a cpp executable

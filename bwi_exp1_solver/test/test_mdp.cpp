@@ -1,3 +1,5 @@
+#include<fstream>
+
 #include <bwi_exp1_solver/ValueIteration.h>
 #include <bwi_exp1_solver/person_estimator.h>
 #include <bwi_exp1_solver/person_model.h>
@@ -5,7 +7,7 @@
 
 using namespace bwi_exp1;
 
-void testValueIteration(topological_mapper::Graph& graph) {
+void testValueIteration(topological_mapper::Graph& graph, const std::string& file = "") {
 
   size_t goal_idx = 33;
 
@@ -13,7 +15,22 @@ void testValueIteration(topological_mapper::Graph& graph) {
   boost::shared_ptr<PersonEstimator> estimator(
       new PersonEstimator(model->getStateSpaceSize(), 0));
   ValueIteration<state_t, action_t> vi(model, estimator, 0.98, 1000);
-  vi.computePolicy();
+
+  bool policyAvailable = false;
+  if (!file.empty()) {
+    std::ifstream my_file(file.c_str());
+    if (my_file.good()) {
+      policyAvailable = true;
+    }
+  }
+  if (policyAvailable) {
+    vi.loadPolicy(file);
+    std::cout << "Read policy from file: " << file << std::endl;
+  } else {
+    vi.computePolicy();
+    vi.savePolicy("policy.txt");
+    std::cout << "Saved policy to file: policy.txt" << std::endl;
+  }
 
   // Now perform a max walk from start state to goal state
   while(true) {
@@ -55,6 +72,7 @@ void testValueIteration(topological_mapper::Graph& graph) {
     }
     std::cout << "VALUE of final state: " << estimator->getValue(current_state_idx) << std::endl;
   }
+
 }
 
 // void testActionChoices(topological_mapper::Graph& graph) {
@@ -125,7 +143,7 @@ int main(int argc, char** argv) {
 
   if (argc < 3) {
     std::cerr << "USAGE: " << argv[0] 
-        << " <yaml-map-file> <yaml-graph-file>" << std::endl;
+        << " <yaml-map-file> <yaml-graph-file> [<saved policy>]" << std::endl;
     return -1;
   }
 
@@ -137,7 +155,11 @@ int main(int argc, char** argv) {
 
   //testNextDirectionComputation(graph);
   //testActionChoices(graph);
-  testValueIteration(graph);
+  if (argc >= 4) {
+    testValueIteration(graph, std::string(argv[3]));
+  } else {
+    testValueIteration(graph);
+  }
 
   return 0;
 }

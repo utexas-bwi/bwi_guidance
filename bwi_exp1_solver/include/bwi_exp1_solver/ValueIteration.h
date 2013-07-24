@@ -10,6 +10,7 @@ Created:  2013-07-23
 
 #include <boost/shared_ptr.hpp>
 #include <limits>
+#include <stdexcept>
 
 #include "PredictiveModel.h"
 #include "VIEstimator.h"
@@ -29,6 +30,8 @@ public:
   virtual ~ValueIteration () {}
 
   void computePolicy();
+  void loadPolicy(const std::string& file);
+  void savePolicy(const std::string& file);
   Action getBestAction(const State& state) const;
 
   virtual std::string generateDescription(unsigned int indentation = 0) {
@@ -104,10 +107,28 @@ void ValueIteration<State,Action>::computePolicy() {
       value_estimator_->setBestAction(state, best_action);
     }
   }
+  policy_available_ = true;
+}
+
+template<class State, class Action>
+void ValueIteration<State,Action>::loadPolicy(const std::string& file) {
+  value_estimator_->loadEstimatedValues(file);
+  policy_available_ = true;
+}
+
+template<class State, class Action>
+void ValueIteration<State,Action>::savePolicy(const std::string& file) {
+  if (!policy_available_) {
+    throw std::runtime_error("VI::savePolicy(): No policy available. Please call computePolicy() or loadPolicy() first.");
+  }
+  value_estimator_->saveEstimatedValues(file);
 }
 
 template<class State, class Action>
 Action ValueIteration<State,Action>::getBestAction(const State& state) const {
+  if (!policy_available_) {
+    throw std::runtime_error("VI::getBestAction(): No policy available. Please call computePolicy() or loadPolicy() first.");
+  }
   return value_estimator_->getBestAction(state);
 }
 

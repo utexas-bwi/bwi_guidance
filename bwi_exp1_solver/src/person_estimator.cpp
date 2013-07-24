@@ -1,3 +1,8 @@
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include <fstream> 
+
 #include <bwi_exp1_solver/person_estimator.h>
 
 namespace bwi_exp1 {
@@ -38,6 +43,24 @@ namespace bwi_exp1 {
           boost::lexical_cast<std::string>(value_cache_.size())); 
     }
     best_action_cache_[state] = action;
+  }
+
+  void PersonEstimator::loadEstimatedValues(const std::string& file) {
+    std::ifstream ifs(file.c_str());
+    boost::archive::text_iarchive ia(ifs);
+    ia >> *this;
+  }
+
+  void PersonEstimator::saveEstimatedValues(const std::string& file) {
+    std::ofstream ofs(file.c_str());
+    boost::archive::text_oarchive oa(ofs);
+    oa << *this;
+  }
+
+  template<class Archive>
+  void PersonEstimator::serialize(Archive & ar, const unsigned int version) {
+    ar & value_cache_;
+    ar & best_action_cache_;
   }
 
 } /* bwi_exp1 */
