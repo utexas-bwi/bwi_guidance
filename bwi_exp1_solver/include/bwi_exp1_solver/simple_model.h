@@ -4,31 +4,10 @@
 #include <stdint.h>
 
 #include <bwi_exp1_solver/PredictiveModel.h>
+#include <bwi_exp1_solver/structures.h>
 #include <topological_mapper/graph.h>
 
 namespace bwi_exp1 {
-
-  struct State {
-    size_t graph_id; // ~100
-    size_t direction; // 0 to NUM_DIRECTIONS - 1
-    size_t num_robots_left; // 0 to MAX_ROBOTS
-  };
-
-  enum ActionType {
-    DO_NOTHING = 0,
-    PLACE_ROBOT = 1
-  };
-
-  class Action {
-    public:
-      Action();
-      Action(ActionType a, size_t g);
-      ActionType type;
-      size_t graph_id; // with PLACE ROBOT, identifies the direction pointed to
-  };
-
-  typedef uint32_t state_t;
-  typedef uint32_t action_t;
 
   class PersonModel : public PredictiveModel<state_t, action_t> {
 
@@ -36,25 +15,32 @@ namespace bwi_exp1 {
 
       PersonModel(const topological_mapper::Graph& graph, size_t goal_idx);
 
-      bool isTerminalState(const state_t& state) const;
-      std::vector<action_t>& getActionsAtState(State &state);
-      std::vector<state_t>& getStateVector();
-      void getTransitionDynamics(const state_t &s, 
+      virtual bool isTerminalState(const state_t& state) const;
+      virtual void getStateVector(std::vector<state_t>& states);
+      virtual void getActionsAtState(const state_t &state, std::vector<action_t>& actions);
+      virtual void getTransitionDynamics(const state_t &s, 
           const action_t &a, std::vector<state_t> &next_states, 
           std::vector<float> &rewards, std::vector<float> &probabilities);
 
       virtual ~PersonModel() {};
+      virtual std::string generateDescription(unsigned int indentation = 0) {
+        return std::string("stub");
+      }
+
+      size_t getStateSpaceSize() const;
+      state_t canonicalizeState(uint32_t graph_id, uint32_t direction, uint32_t robots_remaining) const;
+      State resolveState(state_t state);
+      Action resolveAction(state_t state, action_t action);
 
     private:
 
-      state_t canonicalizeState(uint32_t graph_id, uint32_t direction, uint32_t robots_remaining) const;
 
       void initializeStateSpace();
       std::vector<State> state_cache_;
 
       void initializeActionCache();
       void constructActionsAtState(state_t state, std::vector<Action>& actions);
-      std::vector<Action>& getActionsAtState(state_t state);
+      std::vector<Action>& getActionsAtState(const state_t &state);
       std::vector<std::vector<Action> > action_cache_;
 
       void initializeNextStateCache();
@@ -75,7 +61,6 @@ namespace bwi_exp1 {
       uint32_t num_vertices_;
       uint32_t num_directions_;
       uint32_t max_robots_;
-      size_t getStateSpaceSize() const;
 
       topological_mapper::Graph graph_;
       size_t goal_idx_;

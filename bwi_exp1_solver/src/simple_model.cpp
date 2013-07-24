@@ -16,6 +16,22 @@ namespace bwi_exp1 {
     return state_cache_[state].graph_id == goal_idx_;
   }
 
+  void PersonModel::getStateVector(std::vector<state_t>& states) {
+    states.clear();
+    for (size_t s = 0; s < getStateSpaceSize(); ++s) {
+      states.push_back(s);
+    }
+  }
+
+  void PersonModel::getActionsAtState(const state_t& state, 
+      std::vector<action_t>& actions) {
+    std::vector<Action>& resolved_actions = getActionsAtState(state);
+    actions.clear();
+    for (size_t a = 0; a < resolved_actions.size(); ++a) {
+      actions.push_back(a);
+    }
+  }
+
   /** Get the predictions of the MDP model for a given state action */
   void PersonModel::getTransitionDynamics(const state_t &s, 
       const action_t &a, std::vector<state_t> &next_states, 
@@ -52,6 +68,15 @@ namespace bwi_exp1 {
     return graph_id * num_directions_ * (max_robots_ + 1) + 
       direction * (max_robots_ + 1) +
       robots_remaining;
+  }
+
+  State PersonModel::resolveState(state_t state) {
+    return state_cache_[state];
+  }
+
+  Action PersonModel::resolveAction(state_t state, action_t action) {
+    std::vector<Action>& actions = getActionsAtState(state);
+    return actions[action];
   }
 
   void PersonModel::initializeStateSpace() {
@@ -107,7 +132,8 @@ namespace bwi_exp1 {
     }
   }
 
-  std::vector<Action>& PersonModel::getActionsAtState(state_t state) {
+  std::vector<Action>& PersonModel::getActionsAtState(
+      const state_t& state) {
     State& s = state_cache_[state];
     return action_cache_[s.graph_id * 2 + (s.num_robots_left != 0)];
   }

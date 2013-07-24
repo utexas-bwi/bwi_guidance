@@ -23,7 +23,7 @@ catkin_package(
 ## Build ##
 ###########
 
-add_definitions(-DPOLICYDEBUG)
+add_definitions(-DVI_DEBUG)
 
 include_directories(
   include
@@ -50,7 +50,7 @@ add_executable(test_mdp
   test/test_mdp.cpp
 )
 target_link_libraries(test_mdp 
-  bwi_exp1_mdp
+  bwi_exp1_solver
 )
 ## add_executable(test_rl
 ##   test/test_mdp2.cpp

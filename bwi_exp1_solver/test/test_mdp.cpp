@@ -1,4 +1,6 @@
-#include <bwi_exp1_solver/mdp.h>
+#include <bwi_exp1_solver/ValueIteration.h>
+#include <bwi_exp1_solver/PersonEstimator.h>
+#include <bwi_exp1_solver/simple_model.h>
 #include <topological_mapper/map_loader.h>
 
 using namespace bwi_exp1;
@@ -6,120 +8,12 @@ using namespace bwi_exp1;
 void testValueIteration(topological_mapper::Graph& graph) {
 
   size_t goal_idx = 33;
-  size_t num_vertices = boost::num_vertices(graph);
-  State s;
 
-  std::vector<bwi_exp1::State> state_space;
-  bwi_exp1::populateStateSpace(graph, state_space);
-
-  std::cout << "Size of state cache: " << sizeof(State) * state_space.size() << std::endl; 
-
-  // for each state, get the cached actions (independent of current direction)
-  std::vector<std::vector<Action> > action_space;
-  action_space.resize(num_vertices * 2);
-  long size_action_space = 0;
-  for (size_t graph_id = 0; graph_id < num_vertices; ++graph_id) {
-    s.graph_id = graph_id;
-    for (size_t robots_remaining = 0; robots_remaining <= 1; ++robots_remaining) {
-      s.num_robots_left = robots_remaining;
-      std::vector<Action>& actions =
-        action_space[graph_id * 2 + robots_remaining];
-      getActionsAtState(s, graph, actions);
-      size_action_space += actions.size() * sizeof(Action);
-    }
-  }
-
-  std::cout << "Size of action cache: " << size_action_space << std::endl; 
-  std::cout << "Testing action cache..." << std::endl; 
-
-  // Test action cache 
-  size_t action_cache_test_idx = 76;
-  for (size_t robots_remaining = 0; robots_remaining <= 1; ++robots_remaining) {
-    std::cout << " Actions at " << action_cache_test_idx << " with robots_remaining: " << robots_remaining << std::endl;
-    std::cout << " rr != 0: " << (robots_remaining != 0) << std::endl;
-    std::vector<Action>& actions = action_space[action_cache_test_idx * 2 + (robots_remaining != 0)];
-    for (size_t action_idx = 0; action_idx < actions.size(); ++action_idx) {
-      Action action = actions[action_idx];
-      std::cout << "  - (" << action.type << ", " << action.graph_id << ")" << std::endl;
-    }
-  }
-
-  // for each state, get the cached next states
-  std::vector<std::vector<size_t> > next_state_space;
-  next_state_space.resize(num_vertices * NUM_DIRECTIONS * (MAX_ROBOTS + 1));
-  long size_next_state_space = 0;
-  for (size_t state_id = 0; state_id < state_space.size(); ++state_id) {
-    getNextStatesAtState(state_space[state_id], graph, next_state_space[state_id]);
-    size_next_state_space += sizeof(size_t) * next_state_space[state_id].size();
-  }
-
-  std::cout << "Size of next state cache: " << size_next_state_space << 
-    std::endl;
-
-  std::vector<std::vector<std::vector<float> > > probability_space;
-  probability_space.resize(num_vertices * NUM_DIRECTIONS * (MAX_ROBOTS + 1));
-  long size_transition_probability_space = 0;
-  for (size_t state_id = 0; state_id < state_space.size(); ++state_id) {
-    State& state = state_space[state_id];
-    std::vector<Action>& actions = action_space[state.graph_id * 2 + (state.num_robots_left != 0)];
-
-    // if (state.graph_id == 0 && state.direction == 0 && state.num_robots_left == 0) {
-    //   std::cout << "At State (" << state.graph_id << ", " << state.direction << ", " << state.num_robots_left << ")" << std::endl;
-    //   for (size_t action_counter = 0; action_counter < actions.size(); ++action_counter) {
-    //     Action& action = actions[action_counter];
-    //     std::cout << "  - An action is (" << action.type << ", " << action.graph_id << ")" << std::endl;
-    //   }
-    // }
-
-    probability_space[state_id].resize(action_space[state.graph_id * 2 + (state.num_robots_left != 0)].size());
-    for (size_t action_id = 0; action_id < actions.size(); ++action_id) {
-      std::vector<size_t> next_states;
-      getTransitionProbabilities(state, state_space, graph, actions[action_id], next_states, probability_space[state_id][action_id]);
-      size_transition_probability_space += sizeof(float) * next_states.size();
-    }
-  }
-
-  std::cout << "Size of next probability space cache: " << size_transition_probability_space << 
-    std::endl;
-
-  // Now perform value iteration
-  std::vector<float> value_space(state_space.size(), 0);
-  std::vector<Action> best_action_space(state_space.size(), Action(DO_NOTHING, 0));
-  size_t count = 0;
-
-  bool change = true;
-  while(change) {
-    change = false;
-    count++;
-    std::cout << "Iteration " << count << std::endl;
-    for (size_t state_id = 0; state_id < value_space.size(); ++state_id) {
-      State& state = state_space[state_id];
-      if (isTerminalState(state, goal_idx))
-        continue;
-      std::vector<size_t>& next_states = next_state_space[state_id];
-      std::vector<Action>& actions = action_space[state.graph_id * 2 + (state.num_robots_left != 0)];
-      float value = -std::numeric_limits<float>::max();
-      for (size_t action_id = 0; action_id < actions.size(); ++action_id) {
-        float action_value = 0;
-        std::vector<float>& probability = probability_space[state_id][action_id];
-
-        for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
-          float reward = getReward(state_space, state_id, next_states[next_state_counter], graph);
-          // if (actions[action_id].type == PLACE_ROBOT) {
-          //   reward -= 500; 
-          // }
-          action_value += probability[next_state_counter] * (reward + GAMMA * value_space[next_states[next_state_counter]]);
-
-        }
-        if (action_value > value) {
-          value = action_value;
-          best_action_space[state_id] = actions[action_id];
-        }
-      }
-      change = change || (value_space[state_id] != value);
-      value_space[state_id] = value;
-    }
-  }
+  boost::shared_ptr<PersonModel> model(new PersonModel(graph, goal_idx));
+  boost::shared_ptr<PersonEstimator> estimator(
+      new PersonEstimator(model->getStateSpaceSize(), 0));
+  ValueIteration<state_t, action_t> vi(model, estimator, 0.98, 1000);
+  vi.computePolicy();
 
   // Now perform a max walk from start state to goal state
   while(true) {
@@ -130,107 +24,102 @@ void testValueIteration(topological_mapper::Graph& graph) {
     std::cin >> start_direction;
     std::cout << "Enter robots remaining: ";
     std::cin >> starting_robots;
-    size_t current_state_idx = constructStateIndex(start_idx, start_direction, starting_robots);
-    while (state_space[current_state_idx].graph_id != goal_idx) {
-      State& current_state = state_space[current_state_idx];
+    state_t current_state_idx = 
+      model->canonicalizeState(start_idx, start_direction, starting_robots);
+    State current_state = 
+      model->resolveState(current_state_idx); 
+    while (current_state.graph_id != goal_idx) {
       std::cout << "At State (" << current_state.graph_id << ", " << current_state.direction << ", " << current_state.num_robots_left << ")" << std::endl;
-      std::cout << "Value of this state: " << value_space[current_state_idx] << std::endl;
-      Action& action = best_action_space[current_state_idx];
+      std::cout << "Value of this state: " << estimator->getValue(current_state_idx) << std::endl;
+      action_t action_idx = vi.getBestAction(current_state_idx);
+      Action action = model->resolveAction(current_state_idx, action_idx);
       if (action.type == PLACE_ROBOT) {
         std::cout << "FOUND ROBOT. Robot points towards " << action.graph_id << std::endl;
       }
-
-      // std::cout << " Actions available: " << std::endl;
-      // std::vector<Action>& actions = action_space[current_state.graph_id * 2 + (current_state.num_robots_left != 0)];
-      // for (size_t action_idx = 0; action_idx < actions.size(); ++action_idx) {
-      //   Action action = actions[action_idx];
-      //   std::cout << "  - #" << action_idx << " (" << action.type << ", " << action.graph_id << ")" << std::endl;
-      // }
-      // std::cout << "Choice: ";
-      // int choice;
-      // std::cin >> choice;
-      // Action& action = actions[choice];
-      std::vector<size_t> next_states;
+      std::vector<state_t> next_states;
       std::vector<float> probabilities;
-      getTransitionProbabilities(current_state, state_space, graph, action, next_states, probabilities);
+      std::vector<float> rewards;
+      model->getTransitionDynamics(current_state_idx, action_idx, next_states, 
+          rewards, probabilities);
 
       for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
-        size_t next_state_idx = next_states[next_state_counter];
-        State& next_state = state_space[next_state_idx];
+        state_t next_state_idx = next_states[next_state_counter];
+        State next_state = model->resolveState(next_state_idx);
         std::cout << "  - #" << next_state_counter << " Leads to State (" << next_state.graph_id << ", " << next_state.direction << ", " << next_state.num_robots_left << ") with probability " << probabilities[next_state_counter] << std::endl;
       }
       std::cout << "Choice: ";
       int choice;
       std::cin >> choice;
       current_state_idx = next_states[choice];
+      current_state = model->resolveState(current_state_idx);
     }
-    std::cout << "VALUE of final state: " << value_space[current_state_idx] << std::endl;
+    std::cout << "VALUE of final state: " << estimator->getValue(current_state_idx) << std::endl;
   }
 }
 
-void testActionChoices(topological_mapper::Graph& graph) {
-
-  State state;
-  state.graph_id = 16;
-  state.num_robots_left = 1;
-  std::vector<Action> actions;
-  getActionsAtState(state, graph, actions);
-
-  std::cout << "At State (" << state.graph_id << ", " << state.direction << ", " << state.num_robots_left << ")" << std::endl;
-  for (size_t action_counter = 0; action_counter < actions.size(); ++action_counter) {
-    Action& action = actions[action_counter];
-    std::cout << "  - An action is (" << action.type << ", " << action.graph_id << ")" << std::endl;
-  }
-
-}
-
-void testNextDirectionComputation(topological_mapper::Graph& graph) {
-
-  size_t direction = 12;
-  size_t current_state = 78;
-  size_t next_state = 79;
-  size_t next_direction;
-
-  next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
-  std::cout << "(" << current_state << ", " << direction << ") -> " <<
-      "(" << next_state << ", " << next_direction << ")" << std::endl;
-
-  current_state = next_state;
-  direction = next_direction;
-  next_state = 65;
-  next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
-  std::cout << "(" << current_state << ", " << direction << ") -> " <<
-      "(" << next_state << ", " << next_direction << ")" << std::endl;
-
-  current_state = next_state;
-  direction = next_direction;
-  next_state = 57;
-  next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
-  std::cout << "(" << current_state << ", " << direction << ") -> " <<
-      "(" << next_state << ", " << next_direction << ")" << std::endl;
-
-  current_state = next_state;
-  direction = next_direction;
-  next_state = 55;
-  next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
-  std::cout << "(" << current_state << ", " << direction << ") -> " <<
-      "(" << next_state << ", " << next_direction << ")" << std::endl;
-
-  current_state = next_state;
-  direction = next_direction;
-  next_state = 51;
-  next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
-  std::cout << "(" << current_state << ", " << direction << ") -> " <<
-      "(" << next_state << ", " << next_direction << ")" << std::endl;
-
-  current_state = next_state;
-  direction = next_direction;
-  next_state = 33;
-  next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
-  std::cout << "(" << current_state << ", " << direction << ") -> " <<
-      "(" << next_state << ", " << next_direction << ")" << std::endl;
-
-}
+// void testActionChoices(topological_mapper::Graph& graph) {
+// 
+//   State state;
+//   state.graph_id = 16;
+//   state.num_robots_left = 1;
+//   std::vector<Action> actions;
+//   getActionsAtState(state, graph, actions);
+// 
+//   std::cout << "At State (" << state.graph_id << ", " << state.direction << ", " << state.num_robots_left << ")" << std::endl;
+//   for (size_t action_counter = 0; action_counter < actions.size(); ++action_counter) {
+//     Action& action = actions[action_counter];
+//     std::cout << "  - An action is (" << action.type << ", " << action.graph_id << ")" << std::endl;
+//   }
+// 
+// }
+// 
+// void testNextDirectionComputation(topological_mapper::Graph& graph) {
+// 
+//   size_t direction = 12;
+//   size_t current_state = 78;
+//   size_t next_state = 79;
+//   size_t next_direction;
+// 
+//   next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
+//   std::cout << "(" << current_state << ", " << direction << ") -> " <<
+//       "(" << next_state << ", " << next_direction << ")" << std::endl;
+// 
+//   current_state = next_state;
+//   direction = next_direction;
+//   next_state = 65;
+//   next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
+//   std::cout << "(" << current_state << ", " << direction << ") -> " <<
+//       "(" << next_state << ", " << next_direction << ")" << std::endl;
+// 
+//   current_state = next_state;
+//   direction = next_direction;
+//   next_state = 57;
+//   next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
+//   std::cout << "(" << current_state << ", " << direction << ") -> " <<
+//       "(" << next_state << ", " << next_direction << ")" << std::endl;
+// 
+//   current_state = next_state;
+//   direction = next_direction;
+//   next_state = 55;
+//   next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
+//   std::cout << "(" << current_state << ", " << direction << ") -> " <<
+//       "(" << next_state << ", " << next_direction << ")" << std::endl;
+// 
+//   current_state = next_state;
+//   direction = next_direction;
+//   next_state = 51;
+//   next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
+//   std::cout << "(" << current_state << ", " << direction << ") -> " <<
+//       "(" << next_state << ", " << next_direction << ")" << std::endl;
+// 
+//   current_state = next_state;
+//   direction = next_direction;
+//   next_state = 33;
+//   next_direction = bwi_exp1::computeNextDirection(direction, current_state, next_state, graph);
+//   std::cout << "(" << current_state << ", " << direction << ") -> " <<
+//       "(" << next_state << ", " << next_direction << ")" << std::endl;
+// 
+// }
 
 int main(int argc, char** argv) {
 

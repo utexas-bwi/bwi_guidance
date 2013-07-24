@@ -17,9 +17,9 @@ public:
   PredictiveModel () {}
   virtual ~PredictiveModel () {}
 
-  virtual bool isTerminalState(State &state) = 0;
-  virtual std::vector<Action>& getActionsAtState(State &state) = 0;
-  virtual std::vector<State>& getStateVector() = 0; // should only be implemented by tabular representations 
+  virtual bool isTerminalState(const State &state) const = 0;
+  virtual void getActionsAtState(const State &state, std::vector<Action>& actions) = 0;
+  virtual void getStateVector(std::vector<State>& states) = 0; // should only be implemented by tabular representations 
   virtual void getTransitionDynamics(const State &state, 
       const Action &action, std::vector<State> &next_states, 
       std::vector<float> &rewards, std::vector<float> &probabilities) = 0;

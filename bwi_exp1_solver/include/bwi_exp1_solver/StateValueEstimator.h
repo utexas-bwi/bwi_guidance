@@ -3,13 +3,12 @@
 
 #include <string>
 
-template<class State, Action>
+template<class State, class Action>
 class StateValueEstimator {
 public:
   StateValueEstimator () {}
   virtual ~StateValueEstimator () {}
 
-  virtual void reset() = 0;
   virtual float getValue(const State &state) const = 0;
   virtual void updateValue(const State &state, float value) = 0;
   virtual Action getBestAction(const State &state) const = 0;
