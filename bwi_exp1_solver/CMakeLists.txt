@@ -31,15 +31,9 @@ include_directories(
 )
 
 ## Declare a cpp library
-add_library(bwi_exp1_mdp
-  src/mdp.cpp
-)
-target_link_libraries(bwi_exp1_mdp 
-  ${catkin_LIBRARIES}
-)
 add_library(bwi_exp1_solver
-  src/simple_model.cpp
-  #src/value_iteration.cpp
+  src/person_model.cpp
+  src/person_estimator.cpp
 )
 target_link_libraries(bwi_exp1_solver 
   ${catkin_LIBRARIES}
@@ -66,7 +60,7 @@ target_link_libraries(test_mdp
 
 ## Mark executables and/or libraries for installation
 install(TARGETS 
-  bwi_exp1_mdp
+  bwi_exp1_solver
   test_mdp
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

@@ -1,4 +1,4 @@
-#include <bwi_exp1_solver/simple_model.h>
+#include <bwi_exp1_solver/person_model.h>
 #include <cmath>
 
 namespace bwi_exp1 {

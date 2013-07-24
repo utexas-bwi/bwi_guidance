@@ -4,10 +4,10 @@
 #include <string>
 
 template<class State, class Action>
-class StateValueEstimator {
+class VIEstimator {
 public:
-  StateValueEstimator () {}
-  virtual ~StateValueEstimator () {}
+  VIEstimator () {}
+  virtual ~VIEstimator () {}
 
   virtual float getValue(const State &state) const = 0;
   virtual void updateValue(const State &state, float value) = 0;

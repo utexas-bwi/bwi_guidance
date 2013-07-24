@@ -12,7 +12,7 @@ Created:  2013-07-23
 #include <limits>
 
 #include "PredictiveModel.h"
-#include "StateValueEstimator.h"
+#include "VIEstimator.h"
 
 #ifdef VI_DEBUG
 #define VI_OUTPUT(x) std::cout << x << std::endl
@@ -24,7 +24,7 @@ template<class State, class Action>
 class ValueIteration {
 public:
   ValueIteration (boost::shared_ptr<PredictiveModel<State, Action> > model,
-      boost::shared_ptr<StateValueEstimator<State, Action> > value_estimator,
+      boost::shared_ptr<VIEstimator<State, Action> > value_estimator,
       float gamma, unsigned int max_iter);
   virtual ~ValueIteration () {}
 
@@ -38,7 +38,7 @@ public:
 private:
 
   boost::shared_ptr<PredictiveModel<State, Action> > model_;
-  boost::shared_ptr<StateValueEstimator<State, Action> > value_estimator_;
+  boost::shared_ptr<VIEstimator<State, Action> > value_estimator_;
 
   float gamma_;
   float max_iter_;
@@ -50,7 +50,7 @@ private:
 template<class State, class Action>
 ValueIteration<State, Action>::ValueIteration(
     boost::shared_ptr<PredictiveModel<State, Action> > model,
-    boost::shared_ptr<StateValueEstimator<State, Action> > value_estimator,
+    boost::shared_ptr<VIEstimator<State, Action> > value_estimator,
     float gamma, unsigned int max_iter) : model_(model), 
   value_estimator_(value_estimator), gamma_(gamma), 
   max_iter_(max_iter), policy_available_(false) {}

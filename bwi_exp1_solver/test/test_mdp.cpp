@@ -1,6 +1,6 @@
 #include <bwi_exp1_solver/ValueIteration.h>
-#include <bwi_exp1_solver/PersonEstimator.h>
-#include <bwi_exp1_solver/simple_model.h>
+#include <bwi_exp1_solver/person_estimator.h>
+#include <bwi_exp1_solver/person_model.h>
 #include <topological_mapper/map_loader.h>
 
 using namespace bwi_exp1;
