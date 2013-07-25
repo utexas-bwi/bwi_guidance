@@ -1,26 +1,45 @@
 # http://ros.org/doc/groovy/api/catkin/html/user_guide/supposed.html
 cmake_minimum_required(VERSION 2.8.3)
 project(topological_mapper)
-find_package(catkin REQUIRED COMPONENTS nav_msgs map_server)
 
-find_package(OpenCV)
-find_package(PkgConfig)
+## Find catkin and external packages
+find_package(catkin REQUIRED 
+  COMPONENTS 
+    map_server
+    nav_msgs 
+)
+find_package(OpenCV REQUIRED)
+find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
 
+###################################
+## catkin specific configuration ##
+###################################
+
 catkin_package(
-  DEPENDS opencv2 yaml-cpp
-  CATKIN_DEPENDS nav_msgs map_server
-  INCLUDE_DIRS include
-  LIBRARIES topological_mapper
+  DEPENDS 
+    opencv2 
+    yaml-cpp
+  CATKIN_DEPENDS 
+    map_server
+    nav_msgs 
+  INCLUDE_DIRS 
+    include
+  LIBRARIES 
+    topological_mapper
 )
+
+###########
+## Build ##
+###########
 
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIRS}
-  ${OPENCV_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
-  )
+)
 
 #main library
 add_library(topological_mapper 
@@ -36,14 +55,14 @@ add_library(topological_mapper
   src/libtopological_mapper/point_utils.cpp
   src/libtopological_mapper/structures/point.cpp
   src/libtopological_mapper/structures/voronoi_point.cpp
-  )
+)
 
 target_link_libraries(topological_mapper 
   ${catkin_LIBRARIES}
   ${YAML_CPP_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${Boost_LIBRARIES}
-  )
+)
 
 #binaries
 add_executable(generate_graph src/nodes/generate_graph.cpp)
@@ -68,12 +87,17 @@ target_link_libraries(test_dfs topological_mapper)
 add_executable(test_graph test/test_graph.cpp)
 target_link_libraries(test_graph topological_mapper)
 
-#install all targets
+#############
+## Install ##
+#############
+
 install(DIRECTORY include/
-   DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION})
+  DESTINATION ${CATKIN_GLOBAL_INCLUDE_DESTINATION}
+)
 
 install(DIRECTORY maps/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/maps)
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/maps
+)
 
 install(TARGETS
   topological_mapper
@@ -86,5 +110,5 @@ install(TARGETS
   test_graph
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  )
+)
 
