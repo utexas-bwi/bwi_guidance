@@ -41,16 +41,20 @@ namespace topological_mapper {
   /* http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment */
   float minimumDistanceToLineSegment(Point2f v, Point2f w, Point2f p) {
     // Return minimum distance between line segment vw and point p
-    const float l2 = cv::norm(w-v);  
-    if (l2 == 0.0) return cv::norm(p-v);   // v == w case
+    const float l2 = getMagnitude(w-v);  
+    if (l2 == 0.0) return getMagnitude(p-v);   // v == w case
     // Consider the line extending the segment, parameterized as v + t (w - v).
     // We find projection of point p onto the line. 
     // It falls where t = [(p-v) . (w-v)] / |w-v|^2
     const float t = (p - v).dot(w - v) / (l2 * l2);
-    if (t < 0.0) return cv::norm(p - v);  // Beyond the 'v' end 
-    else if (t > 1.0) return cv::norm(p - w);  // Beyond the 'w' 
-    const topological_mapper::Point2f projection = v + t * (w - v); 
-    return cv::norm(p - projection);
+    if (t < 0.0) return getMagnitude(p - v);  // Beyond the 'v' end 
+    else if (t > 1.0) return getMagnitude(p - w);  // Beyond the 'w' 
+    const Point2f projection = v + t * (w - v); 
+    return getMagnitude(p - projection);
+  }
+
+  float getMagnitude(Point2f p) {
+    return cv::norm(p);
   }
   
 } /* topological_mapper */

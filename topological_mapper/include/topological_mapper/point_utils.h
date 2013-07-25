@@ -45,6 +45,8 @@ namespace topological_mapper {
   /* minimum distance for point p from line segment defined by v and w */
   float minimumDistanceToLineSegment(Point2f v, Point2f w, Point2f p);
 
+  float getMagnitude(Point2f v);
+
 } /* topological_mapper */
 
 #endif /* end of include guard: POINT_UTILS_JIEAIBJ2 */

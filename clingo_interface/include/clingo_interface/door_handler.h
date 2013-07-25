@@ -45,6 +45,7 @@
 #include <clingo_interface/structures.h>
 #include <topological_mapper/map_loader.h>
 #include <topological_mapper/map_utils.h>
+#include <topological_mapper/point_utils.h>
 #include <tf/transform_datatypes.h>
 #include <nav_msgs/GetPlan.h>
 
@@ -205,7 +206,8 @@ namespace clingo_interface {
       bool isPointBesideDoor(const topological_mapper::Point2f& current_location,
           float threshold, size_t idx) {
         for (size_t pt = 0; pt < 2; ++pt) {
-          if (cv::norm(doors_[idx].approach_points[pt] - current_location) < 
+          if (topological_mapper::getMagnitude(
+                doors_[idx].approach_points[pt] - current_location) < 
               threshold) {
             return true;
           }

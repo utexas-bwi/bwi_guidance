@@ -41,6 +41,7 @@
 
 #include <topological_mapper/voronoi_approximator.h>
 #include <topological_mapper/map_utils.h>
+#include <topological_mapper/point_utils.h>
 
 namespace topological_mapper {
 
@@ -103,7 +104,7 @@ namespace topological_mapper {
                 MAP_IDX(inflated_map_.info.width, i_box, j_box);
               if (map_resp_.map.data[map_idx_box] != 0) {
                 Point2d p(i_box, j_box);
-                p.distance_from_ref = cv::norm(p - center_pt);
+                p.distance_from_ref = topological_mapper::getMagnitude(p - center_pt);
                 obstacles.push_back(p);
               }
             }
@@ -117,7 +118,7 @@ namespace topological_mapper {
                 MAP_IDX(inflated_map_.info.width, i_box, j_box);
               if (map_resp_.map.data[map_idx_box] != 0) {
                 Point2d p(i_box, j_box);
-                p.distance_from_ref = cv::norm(p - center_pt);
+                p.distance_from_ref = topological_mapper::getMagnitude(p - center_pt);
                 obstacles.push_back(p);
               }
             }

@@ -37,6 +37,7 @@
 
 #include <topological_mapper/structures/voronoi_point.h>
 #include <topological_mapper/directed_dfs.h>
+#include <topological_mapper/point_utils.h>
 
 namespace topological_mapper {
 
@@ -96,7 +97,7 @@ namespace topological_mapper {
         }
 
         // See if basis point i is too close to basis point j. retain j
-        float distance = cv::norm(basis_points[i] - basis_points[j]);
+        float distance = topological_mapper::getMagnitude(basis_points[i] - basis_points[j]);
         if (distance < 2 * threshold) {
           elements_to_erase.push_back(i); // does not affect erase_iterator
           break;

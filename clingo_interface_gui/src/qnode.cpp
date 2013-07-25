@@ -282,7 +282,8 @@ namespace clingo_interface_gui {
             std::cout << "from " << prev_pt << " to " << approach_pt << std::endl;
             break;
           }
-          resp.plan_cost += cv::norm(approach_pt - prev_pt); // don't worry about closed doors for now
+          resp.plan_cost += 
+            topological_mapper::getMagnitude(approach_pt - prev_pt); // don't worry about closed doors for now
         } else {
           continue;
         }

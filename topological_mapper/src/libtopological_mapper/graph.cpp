@@ -41,6 +41,7 @@
 
 #include <topological_mapper/graph.h>
 #include <topological_mapper/map_utils.h>
+#include <topological_mapper/point_utils.h>
 
 namespace topological_mapper {
 
@@ -169,7 +170,7 @@ namespace topological_mapper {
         Graph::edge_descriptor e; bool b;
         boost::tie(e,b) = boost::add_edge(vi, vj, graph);
         graph[e].weight = 
-          cv::norm(graph[vi].location - graph[vj].location);
+          topological_mapper::getMagnitude(graph[vi].location - graph[vj].location);
       }
     }
 
@@ -189,7 +190,7 @@ namespace topological_mapper {
     int count = 0;
     for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
       Point2f location = graph[*vi].location;
-      if (cv::norm(point - location) <= threshold) {
+      if (topological_mapper::getMagnitude(point - location) <= threshold) {
         return count;
       }
       count++;

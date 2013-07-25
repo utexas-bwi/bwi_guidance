@@ -96,7 +96,7 @@ bool position(bwi_msgs::PositionRobot::Request &req,
   topological_mapper::Point2f yaw2_pt(cosf(yaw2),sinf(yaw2));
   topological_mapper::Point2f yawmid_pt = 0.5 * (yaw1_pt + yaw2_pt);
 
-  if (cv::norm(yawmid_pt) < 0.1) {
+  if (topological_mapper::getMagnitude(yawmid_pt) < 0.1) {
     use_outside_angle = false;
   }
 

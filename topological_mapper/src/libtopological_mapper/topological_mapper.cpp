@@ -38,6 +38,7 @@
 #include <topological_mapper/topological_mapper.h>
 #include <topological_mapper/connected_components.h>
 #include <topological_mapper/map_utils.h>
+#include <topological_mapper/point_utils.h>
 
 namespace topological_mapper {
 
@@ -185,7 +186,7 @@ namespace topological_mapper {
         // Compute distance of jth point to ith point - 
         // don't compare if too far away
         VoronoiPoint &vpj = voronoi_points_[j];
-        float distance = cv::norm(vpj - vpi); 
+        float distance = topological_mapper::getMagnitude(vpj - vpi); 
         if (distance > pixel_critical_epsilon) {
           continue;
         }
@@ -372,7 +373,7 @@ namespace topological_mapper {
         Graph::edge_descriptor e; bool b;
         boost::tie(e,b) = boost::add_edge(vi, vj, region_graph_);
         region_graph_[e].weight = 
-            cv::norm(region_graph_[vi].location - region_graph_[vj].location);
+            topological_mapper::getMagnitude(region_graph_[vi].location - region_graph_[vj].location);
       }
     }
 
@@ -482,7 +483,7 @@ namespace topological_mapper {
                 Graph::edge_descriptor e; bool b;
                 boost::tie(e,b) = boost::add_edge(vi, vj, point_graph_);
                 point_graph_[e].weight =
-                  cv::norm(point_graph_[vi].location - point_graph_[vj].location);
+                  topological_mapper::getMagnitude(point_graph_[vi].location - point_graph_[vj].location);
               }
             }
           }

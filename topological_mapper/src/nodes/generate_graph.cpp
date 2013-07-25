@@ -61,7 +61,6 @@ int main(int argc, char** argv) {
   std::string filename(argv[2]);
   mapper.writePointGraphToFile(filename);
 
-
   cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
   cv::imshow("Display window", image);                
 

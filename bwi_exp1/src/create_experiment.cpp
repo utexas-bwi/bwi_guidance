@@ -63,11 +63,9 @@ bool new_robot_available = false;
 bool new_path_point_available = false;
 int highlight_idx = -1;
 
-void findStartAndGoalIdx(cv::Point start_pxl, cv::Point goal_pxl, 
+void findStartAndGoalIdx(topological_mapper::Point2f start, 
+    topological_mapper::Point2f goal, 
     topological_mapper::Graph &graph, size_t &start_idx, size_t &goal_idx) {
-
-  cv::Vec2f start(start_pxl.x, start_pxl.y);
-  cv::Vec2f goal(goal_pxl.x, goal_pxl.y);
 
   boost::property_map<topological_mapper::Graph, boost::vertex_index_t>::type 
       indexmap = boost::get(boost::vertex_index, graph);
@@ -77,19 +75,20 @@ void findStartAndGoalIdx(cv::Point start_pxl, cv::Point goal_pxl,
 
   topological_mapper::Graph::vertex_iterator vi, vend;
   for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
-    cv::Vec2f loc(graph[*vi].location.x, graph[*vi].location.y);
+    topological_mapper::Point2f& loc = graph[*vi].location;
     topological_mapper::Graph::adjacency_iterator ai, aend;
     for (boost::tie(ai, aend) = boost::adjacent_vertices(
           (topological_mapper::Graph::vertex_descriptor)*vi, graph); 
         ai != aend; ++ai) {
-      cv::Vec2f loc2(graph[*ai].location.x, graph[*ai].location.y);
+      topological_mapper::Point2f& loc2 = graph[*ai].location;
 
       // Improve start idx as necessary
       float start_distance = 
           topological_mapper::minimumDistanceToLineSegment(loc, loc2, start);
       if (start_distance < start_fitness) {
         start_fitness = start_distance;
-        if (cv::norm(loc - goal) < cv::norm(loc2 - goal)) {
+        if (topological_mapper::getMagnitude(loc - goal) < 
+            topological_mapper::getMagnitude(loc2 - goal)) {
           start_idx = indexmap[*vi];
         } else {
           start_idx = indexmap[*ai];
@@ -101,7 +100,8 @@ void findStartAndGoalIdx(cv::Point start_pxl, cv::Point goal_pxl,
           topological_mapper::minimumDistanceToLineSegment(loc, loc2, goal);
       if (goal_distance < goal_fitness) {
         goal_fitness = goal_distance;
-        if (cv::norm(loc - start) < cv::norm(loc2 - start)) {
+        if (topological_mapper::getMagnitude(loc - start) < 
+            topological_mapper::getMagnitude(loc2 - start)) {
           goal_idx = indexmap[*vi];
         } else {
           goal_idx = indexmap[*ai];

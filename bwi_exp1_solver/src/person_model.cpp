@@ -1,5 +1,7 @@
-#include <bwi_exp1_solver/person_model.h>
 #include <cmath>
+
+#include <bwi_exp1_solver/person_model.h>
+#include <topological_mapper/point_utils.h>
 
 namespace bwi_exp1 {
 
@@ -299,7 +301,8 @@ namespace bwi_exp1 {
     topological_mapper::Graph::vertex_descriptor next_v =
       boost::vertex(next_graph_id, graph_);
 
-    return cv::norm(graph_[next_v].location - graph_[v].location);
+    return topological_mapper::getMagnitude(
+        graph_[next_v].location - graph_[v].location);
   }
 
   size_t PersonModel::getDirectionFromAngle(float angle) {
