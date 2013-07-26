@@ -2,8 +2,8 @@
 
   <!-- <include file="$(find bwi_web)/launch/webserver.launch" /> -->
   <include file="$(find bwi_exp1)/launch/exp1.launch">
-    <arg name="gui" value="false" />
     <!-- <arg name="debug" value="true" /> -->
+    <!-- <arg name="gui" value="false" /> -->
   </include>
 
   <!-- Launch the person with their very own map server -->
