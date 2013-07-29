@@ -21,4 +21,6 @@
     respawn="false" output="screen">
   </node>
 
+  <param name="camera/imager_rate" value="20.0" />
+
 </launch>

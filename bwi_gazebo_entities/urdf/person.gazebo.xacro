@@ -24,13 +24,11 @@
   </xacro:macro>
 
   <xacro:macro name="gazebo_person_drive">
-    <plugin name="object_controller" filename="libobject_controller_plugin.so">
-      <alwaysOn>true</alwaysOn>
-      <updateRate>50</updateRate>
-      <topicName>cmd_vel</topicName>
-      <mapTopic>map</mapTopic>
-      <modelRadius>0.15</modelRadius>
-      <modelPadding>0.025</modelPadding>
+    <plugin name="object_controller" filename="libgazebo_model_controller.so">
+      <commandTopic>cmd_vel</commandTopic>
+      <odometryTopic>odom</odometryTopic>
+      <odometryFrame>odom</odometryFrame>
+      <robotBaseFrame>base_footprint</robotBaseFrame>
     </plugin>
   </xacro:macro>
 
