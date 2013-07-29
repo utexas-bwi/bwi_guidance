@@ -9,7 +9,6 @@
   <!-- Launch the person with their very own map server -->
   <group ns="person">
     <include file="$(find bwi_exp1)/launch/person.launch" />
-    <include file="$(find bwi_exp1)/launch/exp1_map.launch" />
   </group>
 
   <!-- launch the 5 robots that will be required for this experiment
