@@ -49,13 +49,15 @@ namespace topological_mapper {
    * \param   threshold same as threhold in  VoronoiApproximator()
    * \param   critical_epsilon (meters) no 2 critical points can be closer
    *          than this distance.
+   * \param   merge_threshold graph vertices having a smaller area than this
+   *          should be merged together (meter^2)
    */
   void TopologicalMapper::computeTopologicalGraph(double threshold, 
-      double critical_epsilon) {
+      double critical_epsilon, double merge_threshold) {
 
     findVoronoiPoints(threshold);
     computeCriticalRegions(critical_epsilon);
-    computeGraph();
+    computeGraph(merge_threshold);
   }
 
   /**
@@ -289,7 +291,7 @@ namespace topological_mapper {
 
   }
 
-  void TopologicalMapper::computeGraph() {
+  void TopologicalMapper::computeGraph(double merge_threshold) {
 
     // First for each critical point, find out the neigbouring regions
     std::vector< std::set<uint32_t> > point_neighbours;
@@ -385,8 +387,7 @@ namespace topological_mapper {
     }
 
     // Reduce the point graph as necessary
-    double threshold = 2.0;
-    size_t pixel_threshold = threshold / map_resp_.map.info.resolution;
+    size_t pixel_threshold = merge_threshold / map_resp_.map.info.resolution;
     std::cout << "using pixel threshold: " << std::endl;
 
     // Look for small regions

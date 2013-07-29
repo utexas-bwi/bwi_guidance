@@ -62,7 +62,6 @@ namespace topological_mapper {
       TopologicalMapper (const std::string &fname) :
         VoronoiApproximator(fname) {}
 
-
       /**
        * \brief   computes the topological graph given the threshold for 
        *          VoronoiApproximator and a parameter controlling the size of 
@@ -70,9 +69,11 @@ namespace topological_mapper {
        * \param   threshold same as threhold in  VoronoiApproximator()
        * \param   critical_epsilon (meters) no 2 critical points can be closer
        *          than this distance.
+       * \param   merge_threshold graph vertices having a smaller area than this
+       *          should be merged together(meter^2)
        */
-      void computeTopologicalGraph(double threshold, double critical_epsilon); 
-
+      void computeTopologicalGraph(double threshold, double critical_epsilon,
+          double merge_threshold); 
 
       /**
        * \brief   draws critical points and lines onto a given image starting at
@@ -119,7 +120,7 @@ namespace topological_mapper {
        */
       void computeCriticalRegions (double critical_epsilon);
 
-      void computeGraph ();
+      void computeGraph (double merge_threshold);
 
       /**
        * \brief   Draws critical lines (4-connected) onto given image starting
