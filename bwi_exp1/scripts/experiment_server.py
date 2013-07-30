@@ -87,6 +87,8 @@ class ExperimentServerController:
                 time.sleep(period - elapsed)
             self.experiment_lock.release()
 
+        self.close_all_processes()
+
     def close_all_processes(self):
         for process in self.processes:
             stop_roslaunch_process(process)
@@ -114,7 +116,7 @@ class ExperimentServerController:
         if self.experiment_server_locked and uid == self.experiment_uid:
             self.close_all_processes()
             self.experiment_server_locked = False
-            self.experiment_uid = False
+            self.experiment_uid = ''
             success = True
         self.experiment_lock.release()
         return success
