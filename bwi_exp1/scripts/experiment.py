@@ -9,7 +9,7 @@ from tf.transformations import quaternion_from_euler
 from nav_msgs.msg import Odometry
 from std_srvs.srv import Empty
 from bwi_msgs.msg import ExperimentStatus
-from bwi_msgs.srv import PositionRobot, PositionRobotRequest, UpdatePluginState, UpdateExperiment, UpdateExperimentResponse
+from bwi_msgs.srv import PositionRobot, PositionRobotRequest, UpdateExperiment, UpdateExperimentResponse
 from gazebo_msgs.srv import SetModelState, SetModelStateRequest
 
 import cv, cv2, numpy
@@ -234,13 +234,6 @@ class ExperimentController:
         rospy.loginfo("Service acquired: /gazebo/unpause_physics")
         self.unpauseGazebo()
 
-        # Get the person pause service
-        rospy.loginfo("Waiting for service: " + self.person_id + "/update_state")
-        rospy.wait_for_service(self.person_id + "/update_state")
-        self.pause_person_plugin = rospy.ServiceProxy(self.person_id + "/update_state", UpdatePluginState)
-        rospy.loginfo("Service acquired: " + self.person_id + "/update_state")
-        self.pause_person_plugin(True)
-
         # Read the arrows
         images_dir = roslib.packages.get_pkg_dir("bwi_exp1") + "/images"
         self.arrow = readImage(images_dir + "/Up.png")
@@ -401,14 +394,12 @@ class ExperimentController:
 
         self.experiment_in_progress = True
         self.experiment_success = False
-        self.pause_person_plugin(False)
 
         self.experiment_interface.startExperiment(experiment_text)
 
     def stopCurrentExperiment(self, success):
 
         self.experiment_in_progress = False
-        self.pause_person_plugin(True)
 
         if not self.experiment_tutorial:
             current_time = rospy.get_time()

@@ -14,8 +14,8 @@ function parseParameters() {
 }
 
 /* Global ROS parameters */
-/* var host = 'localhost' */
-var host = 'zoidberg.csres.utexas.edu'
+var host = 'localhost'
+/* var host = 'zoidberg.csres.utexas.edu' */
 var ros;
 var experiment_status_subscriber; // subs
 var update_experiment_service; // services
@@ -117,7 +117,7 @@ function start() {
   var mjpeg = new MjpegCanvas({
     host : host,
       /* topic : '/l_forearm_cam/image_color', */
-      topic : '/camera/rgb/image_raw',
+      topic : '/person/camera/rgb/image_raw',
     canvasID : 'my-mjpeg',
       /* width : 800, */
       width : 320,
