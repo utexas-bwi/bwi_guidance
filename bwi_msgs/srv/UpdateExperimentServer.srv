@@ -1,0 +1,9 @@
+bool lock_experiment
+string name
+string email
+
+---
+
+bool result
+string uid
+string status

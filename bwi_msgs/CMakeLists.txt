@@ -6,12 +6,14 @@ find_package(catkin REQUIRED COMPONENTS geometry_msgs message_generation)
 add_message_files(
   FILES
   ExperimentStatus.msg
+  ExperimentServerStatus.msg
 )
 
 add_service_files(
   FILES
   PositionRobot.srv
   UpdateExperiment.srv
+  UpdateExperimentServer.srv
 )
 
 generate_messages(
