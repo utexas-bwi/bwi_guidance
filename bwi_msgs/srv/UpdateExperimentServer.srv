@@ -2,6 +2,9 @@ bool lock_experiment
 string name
 string email
 
+bool unlock_experiment
+string uid
+
 ---
 
 bool result
