@@ -10,9 +10,7 @@ add_message_files(
 
 add_service_files(
   FILES
-  AcquireExperimentLock.srv
   PositionRobot.srv
-  ResetExperiment.srv
   UpdateExperiment.srv
 )
 
