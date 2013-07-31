@@ -3,6 +3,7 @@ string name
 string email
 
 bool unlock_experiment
+bool keep_alive
 string uid
 
 ---
