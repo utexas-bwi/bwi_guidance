@@ -1,105 +1,17 @@
 #!/usr/bin/env python
 
+import random
+from string import ascii_uppercase, digits
+import threading
+
 import rospy
 
+import bwi_exp1
 from bwi_msgs.msg import ExperimentServerStatus
 from bwi_msgs.srv import UpdateExperimentServer, UpdateExperimentServerResponse
 
-import time
-import threading
-import random
-from string import ascii_uppercase, digits
-import subprocess
-
 def id_generator(size=6, chars=ascii_uppercase + digits):
     return ''.join(random.choice(chars) for x in range(size))
-
-def start_roslaunch_process(package, binary, args=None, log=None):
-    if args == None:
-        args = {}
-    command_args = ['roslaunch', package, binary]
-    command_args.extend([key + ':=' + value for key, value in args.iteritems()])
-    return (subprocess.Popen(command_args, stdout=log, stderr=subprocess.STDOUT)
-            if log != None else subprocess.Popen(command_args))
-
-def stop_roslaunch_process(process):
-    process.terminate()
-
-class WallRate:
-
-    def __init__(self, rate):
-        self.rate = rate
-        self.period = 1.0 / rate if rate > 0.0 else 0.0
-        self.recorded_time = time.time() 
-
-    def sleep(self):
-        current_time = time.time()
-        elapsed = current_time - self.recorded_time
-        if self.period - elapsed > 0:
-            time.sleep(self.period - elapsed)
-        self.recorded_time = current_time
-
-class Timer:
-
-    def __init__(self, period = 1.0):
-        self.timer_lock = threading.Lock()
-        self.total_time = 0.0
-        self.time_remaining = 0.0
-        self.callback = None
-        self.start_time = 0.0
-        self.timer = None
-        self.period = period
-
-    def start(self, total_time, callback):
-        self.timer_lock.acquire()
-        success = False
-        if not self.timer:
-            self.timer = threading.Timer(self.period, self.tick)
-            self.start_time = time.time()
-            self.total_time = total_time
-            self.time_remaining = total_time
-            self.callback = callback
-            self.timer.start()
-            success = True
-        self.timer_lock.release()
-        return success
-
-    def tick(self):
-        callback = None
-        self.timer_lock.acquire()
-        if self.timer: # check in case cancel timer has been called
-            current_time = time.time() 
-            self.time_remaining = \
-                    self.total_time - (current_time - self.start_time)
-            if self.time_remaining <= 0.0:
-                callback = self.callback
-                self.reset_vars()
-            else:
-                self.timer = threading.Timer(self.period, self.tick)
-                self.timer.start()
-        self.timer_lock.release()
-        if callback:
-            callback()
-
-    def cancel(self):
-        self.timer_lock.acquire()
-        success = False
-        if self.timer:
-            self.timer.cancel()
-            self.reset_vars()
-            success = True
-        self.timer_lock.release()
-        return success
-
-    def time(self):
-        return round(self.time_remaining)
-
-    def reset_vars(self):
-        self.total_time = 0.0
-        self.time_remaining = 0.0
-        self.callback = None
-        self.start_time = 0.0
-        self.timer = None
 
 class ExperimentServerInterface(threading.Thread):
 
@@ -142,7 +54,7 @@ class ExperimentServerInterface(threading.Thread):
         return resp
 
     def run(self):
-        rate = WallRate(20)
+        rate = bwi_exp1.WallRate(20)
         try:
             while not rospy.is_shutdown():
                 self.interface_lock.acquire()
@@ -182,7 +94,7 @@ class ExperimentServer:
         # Prevent race conditions for acquiring a lock on the experiment server
         self.experiment_lock = threading.Lock()
 
-        self.reset_timer = Timer()
+        self.reset_timer = bwi_exp1.Timer()
 
     def start(self):
         self.experiment_interface.start()
@@ -196,7 +108,7 @@ class ExperimentServer:
 
     def close_all_processes(self):
         for process in self.processes:
-            stop_roslaunch_process(process)
+            bwi_exp1.stop_roslaunch_process(process)
         self.processes = []
             
     def start_experiments(self, name, email):
@@ -208,7 +120,8 @@ class ExperimentServer:
             log_file = self.logs_folder + "/" + uid + ".log"
             self.log = open(log_file, "w")
             rospy.loginfo("  Log at: " + log_file)
-            process = start_roslaunch_process(self.package, self.script,
+            process = bwi_exp1.start_roslaunch_process(
+                    self.package, self.script,
                     args={'uid': uid, 'name': name, 'email': email},
                     log=self.log)
             self.processes.append(process)

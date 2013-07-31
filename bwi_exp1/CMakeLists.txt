@@ -18,6 +18,8 @@ catkin_package(
   LIBRARIES bwi_exp1
 )
 
+catkin_python_setup()
+
 ###########
 ## Build ##
 ###########

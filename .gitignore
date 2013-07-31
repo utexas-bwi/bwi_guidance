@@ -3,6 +3,7 @@ build
 lib
 *.swp
 *.swo
+*.pyc
 msg_gen
 srv_gen
 tags
