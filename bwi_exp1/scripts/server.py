@@ -4,6 +4,7 @@ import random
 from string import ascii_uppercase, digits
 import threading
 
+import roslib
 import rospy
 
 import bwi_exp1
@@ -67,7 +68,8 @@ class ExperimentServerInterface(threading.Thread):
                 self.experiment_status_publisher.publish(msg)
                 rate.sleep()
         except rospy.ROSInterruptException:
-            rospy.loginfo("Server Interface thread shutting down...")
+            pass
+        rospy.loginfo("Server Interface thread shutting down...")
 
 class ExperimentServer:
 
@@ -77,7 +79,8 @@ class ExperimentServer:
         # Get parameters
         self.package = rospy.get_param("~package", "bwi_exp1")
         self.script = rospy.get_param("~script")
-        self.logs_folder = rospy.get_param("~logs_folder")
+        self.logs_folder = rospy.get_param("~logs_folder",
+                 roslib.packages.get_pkg_dir("bwi_exp1") + "/logs")
         self.timeout = rospy.get_param("~timeout", 600.0)
 
         # Server status parameters
@@ -102,7 +105,8 @@ class ExperimentServer:
         try:
             rospy.spin()
         except rospy.ROSInterruptException:
-            rospy.loginfo("Server controller thread shutting down...")
+            pass
+        rospy.loginfo("Server thread shutting down...")
 
         self.close_all_processes()
 
@@ -133,6 +137,11 @@ class ExperimentServer:
         return success, uid
 
     def keep_user_alive(self, uid):
+        """Restarts the reset timer with the max timeout duration. This function
+        implements a keep alive ping that is used to prevent a user from holding
+        the server for arbitrarily long.
+        
+        """
         self.experiment_lock.acquire()
         success = False
         if self.experiment_server_locked and uid == self.experiment_uid:
@@ -143,6 +152,7 @@ class ExperimentServer:
         return success
 
     def stop_experiments(self, uid):
+        """Stops a running experiment if provided uid matches the current one"""
         self.experiment_lock.acquire()
         success = False
         if self.experiment_server_locked and uid == self.experiment_uid:
