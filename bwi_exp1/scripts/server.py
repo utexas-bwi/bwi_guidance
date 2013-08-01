@@ -16,14 +16,14 @@ def id_generator(size=6, chars=ascii_uppercase + digits):
 
 class ExperimentServerInterface(threading.Thread):
 
-    def __init__(self, experiment_server_controller):
+    def __init__(self, server):
         threading.Thread.__init__(self)
-        self.experiment_status_publisher = rospy.Publisher(
-            '~server_status', ExperimentServerStatus)
+        self.server_status_publisher = rospy.Publisher(
+                '~server_status', ExperimentServerStatus)
         self.update_experiment_server = rospy.Service(
-            '~update_server', UpdateExperimentServer, 
-            self.handle_server_update)
-        self.experiment_controller = experiment_server_controller
+                '~update_server', UpdateExperimentServer, 
+                self.handle_server_update)
+        self.server = server
         self.interface_lock = threading.Lock()
 
     def handle_server_update(self, req):
@@ -31,20 +31,20 @@ class ExperimentServerInterface(threading.Thread):
         self.interface_lock.acquire()
         if req.lock_experiment:
             resp.result, resp.uid = \
-                    self.experiment_controller.start_experiments(
+                    self.server.start_experiments(
                         req.name, req.email)
             if not resp.result:
                 resp.status = "The experiment server is already locked. " \
                         "It cannot be locked right now!"
         elif req.unlock_experiment: 
             resp.result = \
-                    self.experiment_controller.stop_experiments(req.uid)
+                    self.server.stop_experiments(req.uid)
             if not resp.result:
                 resp.status = "Unable to unlock the experiment server. " \
                         "Do you have a lock on the experiment server?"
         elif req.keep_alive:
             resp.result = \
-                    self.experiment_controller.keep_user_alive(req.uid)
+                    self.server.keep_user_alive(req.uid)
             if not resp.result:
                 resp.status = "Unable to keep the experiment server alive. " \
                         "Do you have a lock on the experiment server?"
@@ -55,17 +55,16 @@ class ExperimentServerInterface(threading.Thread):
         return resp
 
     def run(self):
-        rate = bwi_exp1.WallRate(20)
+        rate = bwi_exp1.WallRate(10)
         try:
             while not rospy.is_shutdown():
                 self.interface_lock.acquire()
                 msg = ExperimentServerStatus()
-                msg.locked = self.experiment_controller.experiment_server_locked
-                msg.uid = self.experiment_controller.experiment_uid
-                msg.time_remaining = \
-                        self.experiment_controller.reset_timer.time()
+                msg.locked = self.server.experiment_server_locked
+                msg.uid = self.server.experiment_uid
+                msg.time_remaining = self.server.reset_timer.time()
                 self.interface_lock.release()
-                self.experiment_status_publisher.publish(msg)
+                self.server_status_publisher.publish(msg)
                 rate.sleep()
         except rospy.ROSInterruptException:
             pass

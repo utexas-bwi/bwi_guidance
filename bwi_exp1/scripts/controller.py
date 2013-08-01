@@ -58,95 +58,86 @@ def compute_average_angle(angle1, angle2):
     average_vec = [vec1[0] + vec2[0], vec1[1] + vec2[1]]
     return math.atan2(average_vec[1], average_vec[0])
 
-class ExperimentInterface:
+class ExperimentInterface(threading.Thread):
 
-    def __init__(self, experiment_controller):
-        self.experiment_text = ""
-        self.reward = 0.0
-        self.reward_in_previous_experiment = 0.0
-        self.previous_experiment_reset = False
-        self.previous_experiment_successfully_finished = False
-        self.experiment_interface_lock = threading.Lock()
-        self.experiment_status_publisher = rospy.Publisher('~experiment_status', ExperimentStatus)
-        self.update_experiment_server = rospy.Service('~update_experiment', UpdateExperiment, self.handleUpdateExperimentRequest)
+    def __init__(self, controller):
+        threading.Thread.__init__(self)
+        self.experiment_status_publisher = rospy.Publisher(
+                '~experiment_status', ExperimentStatus)
+        self.update_experiment_server = rospy.Service(
+                '~update_experiment', UpdateExperiment, 
+                self.handle_experiment_update)
+        # self.experiment_text = ""
+        # self.reward = 0.0
+        # self.reward_in_prev_exp = 0.0
+        # self.prev_exp_reset = False
+        # self.prev_exp_success = False
+        self.interface_lock = threading.Lock()
         
-        self.experiment_controller = experiment_controller
+        self.controller = controller
 
-    def handleUpdateExperimentRequest(self, req):
+    def handle_experiment_update(self, req):
         resp = UpdateExperimentResponse()
-        if req.lock_experiment:
-            resp.result, resp.uid = self.experiment_controller.startExperimentsForNewUser(req.name, req.email)
-            if not resp.result:
-                resp.status = "The experiment server is already locked. It cannot be locked right now!"
-            else:
-                self.experiment_interface_lock.acquire()
-                self.reward = 0
-                self.previous_experiment_reset = False
-                self.previous_experiment_successfully_finished = False
-                self.experiment_interface_lock.release()
-        elif req.pause_experiment:
-            resp.result = self.experiment_controller.pauseCurrentExperiment()
+        if req.pause_experiment:
+            resp.result = self.controller.pauseCurrentExperiment()
             if not resp.result:
                 resp.status = "Cannot pause the experiment right now!"
-            else:
-                self.publishStatus()
         elif req.unpause_experiment:
-            resp.result = self.experiment_controller.unpauseCurrentExperiment()
+            resp.result = self.controller.unpauseCurrentExperiment()
             if not resp.result:
                 resp.status = "Cannot unpause the experiment right now!"
         elif req.continue_experiment:
-            resp.result = self.experiment_controller.startNextExperiment()
+            resp.result = self.controller.startNextExperiment()
             if not resp.result:
                 resp.status = "Cannot start next experiment right now!"
         return resp
 
-    def startExperiment(self, text):
-        self.experiment_interface_lock.acquire()
-        self.experiment_text = text
-        self.experiment_interface_lock.release()
+    # def startExperiment(self, text):
+    #     self.interface_lock.acquire()
+    #     self.experiment_text = text
+    #     self.interface_lock.release()
 
-    def stopCurrentExperiment(self, reward, text):
-        self.experiment_interface_lock.acquire()
-        self.experiment_text = text
-        self.reward_in_previous_experiment = reward
-        self.reward += self.reward_in_previous_experiment
-        self.experiment_interface_lock.release()
+    # def stopCurrentExperiment(self, reward, text):
+    #     self.interface_lock.acquire()
+    #     self.experiment_text = text
+    #     self.reward_in_prev_exp = reward
+    #     self.reward += self.reward_in_prev_exp
+    #     self.interface_lock.release()
 
-    def resetExperiment(self):
-        self.experiment_interface_lock.acquire()
-        self.reward = -1
-        self.previous_experiment_reset = True
-        self.experiment_interface_lock.release()
+    # def resetExperiment(self):
+    #     self.interface_lock.acquire()
+    #     self.reward = -1
+    #     self.prev_exp_reset = True
+    #     self.interface_lock.release()
 
-    def stopExperiment(self):
-        self.experiment_interface_lock.acquire()
-        self.previous_experiment_successfully_finished = True
-        self.experiment_interface_lock.release()
+    # def stopExperiment(self):
+    #     self.interface_lock.acquire()
+    #     self.prev_exp_success = True
+    #     self.interface_lock.release()
 
-    def publishStatus(self):
-        self.experiment_interface_lock.acquire()
-        msg = ExperimentStatus()
-        msg.locked = self.experiment_controller.experiment_server_locked
-        msg.instance_in_progress = self.experiment_controller.instance_in_progress
-        msg.uid = self.experiment_controller.experiment_uid
-        msg.total_reward = self.reward
-        msg.current_display_text = self.experiment_text
-        msg.instance_number = self.experiment_controller.instance_number
-        msg.total_experiments = self.experiment_controller.num_instances
-        msg.reward_in_previous_experiment = self.reward_in_previous_experiment
-        msg.pause_enabled = msg.locked and msg.instance_in_progress
-        msg.paused = self.experiment_controller.paused
-        msg.continue_enabled = msg.locked and (not msg.instance_in_progress)
-        msg.reset_warning_text = ""
-        if self.experiment_controller.reset_timer:
-            if msg.pause_enabled:
-                msg.reset_warning_text = "Please UNPAUSE within the next " + str(self.experiment_controller.reset_time_remaining) + " seconds to avoid timing out the entire experiment!"
-            elif msg.continue_enabled:
-                msg.reset_warning_text = "Please CONTINUE within the next " + str(self.experiment_controller.reset_time_remaining) + " seconds to avoid timing out the entire experiment!"
-        msg.previous_experiment_reset = self.previous_experiment_reset
-        msg.previous_experiment_successfully_finished = self.previous_experiment_successfully_finished
-        self.experiment_status_publisher.publish(msg)
-        self.experiment_interface_lock.release()
+    def run(self):
+        rate = bwi_exp1.WallRate(10)
+        try:
+            while not rospy.is_shutdown():
+                self.interface_lock.acquire()
+                msg = ExperimentStatus()
+                msg.instance_in_progress = self.controller.instance_in_progress
+                msg.uid = self.controller.experiment_uid
+                msg.total_reward = self.controller.reward
+                msg.current_display_text = self.controller.experiment_text
+                msg.instance_number = self.controller.instance_number
+                msg.total_experiments = self.controller.num_instances
+                msg.reward_in_prev_exp = self.reward_in_prev_exp
+                msg.pause_enabled = msg.instance_in_progress
+                msg.paused = self.controller.paused
+                msg.continue_enabled = (not msg.instance_in_progress)
+                msg.prev_exp_reset = self.prev_exp_reset
+                msg.prev_exp_success = self.prev_exp_success
+                self.experiment_status_publisher.publish(msg)
+                self.interface_lock.release()
+        except rospy.ROSInterruptException:
+            pass
+        rospy.loginfo("Controller Interface thread shutting down...")
 
 class RobotScreenPublisher(threading.Thread):
 
@@ -158,7 +149,8 @@ class RobotScreenPublisher(threading.Thread):
         self.bridge = CvBridge()
 
     def add_robot(self, robotid):
-        self.robot_image_publisher[robotid] = rospy.Publisher(robotid + '/image', Image)
+        self.robot_image_publisher[robotid] = rospy.Publisher(
+                robotid + '/image', Image)
         self.robot_image[robotid] = numpy.zeros((120,160,3), numpy.uint8)
         self.robot_image_lock[robotid] = threading.Lock()
 
@@ -181,8 +173,9 @@ class RobotScreenPublisher(threading.Thread):
                 rate.sleep()
         except rospy.ROSInterruptException:
             pass
+        rospy.loginfo("Robot screen publisher thread shutting down...")
 
-class Experiment:
+class ExperimentController:
 
     def __init__(self):
 
@@ -205,6 +198,7 @@ class Experiment:
         self.data_directory = rospy.get_param("~data_dir",
                 roslib.packages.get_pkg_dir("bwi_exp1") + "/data")
 
+        self.experiment_uid = 
         # Get ROS Services
         rospy.loginfo("Waiting for service: position")
         rospy.wait_for_service("position")
@@ -254,7 +248,10 @@ class Experiment:
         self.ball_id = self.experiment['ball_id']
         self.experiment_uid = ""
 
-        # Setup some default values for a single experiment
+        # Initialize some variables used for the interface
+        self.reward = 0;
+
+        # Initialize some default values for a single experiment
         self.instance_number = 0
         self.num_instances = 0
         self.instance_in_progress = False
@@ -264,9 +261,8 @@ class Experiment:
         self.paused = False
 
         # Setup the odometry subscriber
-        self.odometry_subscriber = \
-                rospy.Subscriber(self.person_id + '/odom', 
-                                 Odometry, self.odometry_callback)
+        self.odometry_subscriber = rospy.Subscriber(self.person_id + '/odom', 
+                Odometry, self.odometry_callback)
 
         # Log file lock
         self.log_lock = threading.Lock()
@@ -674,7 +670,7 @@ class Experiment:
 
 if __name__ == '__main__':
     try:
-        controller = Experiment()
+        controller = ExperimentController()
         controller.start()
     except rospy.ROSInterruptException:
         pass
