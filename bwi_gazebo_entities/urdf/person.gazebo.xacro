@@ -24,7 +24,7 @@
   </xacro:macro>
 
   <xacro:macro name="gazebo_person_drive">
-    <plugin name="object_controller" filename="libgazebo_ros_model_controller.so">
+    <plugin name="object_controller" filename="libgazebo_ros_planar_move.so">
       <commandTopic>cmd_vel</commandTopic>
       <odometryTopic>odom</odometryTopic>
       <odometryFrame>odom</odometryFrame>
