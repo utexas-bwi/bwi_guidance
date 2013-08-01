@@ -1,0 +1,19 @@
+<launch>
+
+  <include file="$(find utexas_gdc)/launch/3ne.launch" />
+  <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
+
+  <group ns="robot1">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="0" />
+      <arg name="y" value="0" />
+      <arg name="robotid" value="robot1" />
+      <arg name="has_tf_prefix" value="false" />
+      <arg name="configuration_file" 
+           value="$(find segbot_bringup)/launch/includes/auxiliary.segbot_hokuyo.launch" />
+      <arg name="launch_localization" value="true" />
+      <arg name="launch_move_base" value="true" />
+    </include>
+  </group>
+
+</launch>

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package>
+  <name>orc_interface</name>
+  <version>0.0.0</version>
+  <description>The orc_interface package</description>
+
+  <maintainer email="piyushk@todo.todo">piyushk</maintainer>
+
+  <license>TODO</license>
+
+  <!-- <url type="website">http://ros.org/wiki/orc_interface</url> -->
+
+  <author email="piyushk@gmail.com">Piyush Khandelwal</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>
