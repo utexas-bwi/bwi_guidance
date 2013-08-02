@@ -34,12 +34,20 @@ def send(channel, type, object=None):
 
 def recv(channel):
     byte = channel.recv(1)
+    try:
+        byte = byte.encode('utf-8')
+    except UnicodeDecodeError:
+        return None, None
     if byte == START_TEXT:
         buf = ''
         while True:
             byte = channel.recv(1)
-            if byte == END_TEXT:
-                break
+            try:
+                byte = byte.encode('utf-8')
+                if byte == END_TEXT:
+                    break
+            except UnicodeDecodeError:
+                return None, None
             buf = buf + byte
         try:
             converted_data = convert(json.loads(buf))

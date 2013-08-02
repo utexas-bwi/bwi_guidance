@@ -1,37 +1,48 @@
 #!/usr/bin/env python
 
 import select
-import signal
 import socket
 import threading
 
 import bwi_exp1
 import comms
 
-class Server:
+class Server(threading.Thread):
 
     def __init__(self, callback=None, host='', port=12345, max_connections=1):
+        
+        threading.Thread.__init__(self)
 
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind((host,port))
-        print 'Listening to port',port,'...'
+        print 'Server: listening to port',port,'...'
         self.server.listen(max_connections)
 
-        self.outputs = []
         self.inputs = [self.server]
 
-        signal.signal(signal.SIGINT, self.signal_handler)
+        #signal.signal(signal.SIGINT, self.signal_handler)
         self.callback = callback
 
-    def start(self):
+        self.client_map = {}
+        self.client_name_map = {}
+        self.response_received = {}
 
-        rate = bwi_exp1.WallRate(100)
+        self.alive = False
+        self.server_lock = threading.Lock()
 
+    def run(self):
+
+        rate = bwi_exp1.WallRate(20)
+
+        self.alive = True
         while True:
+            self.server_lock.acquire()
+            if not self.alive:
+                break
             try:
                 inputready,outputready,exceptready = \
-                        select.select(self.inputs, self.outputs, [])
+                        select.select(self.inputs, [], [], 0.01)
             except select.error, e:
                 break
             except socket.error, e:
@@ -41,41 +52,38 @@ class Server:
                 if s == self.server:
                     # handle the server socket
                     client, address = self.server.accept()
-                    print 'chatserver: got connection %d from %s' % (client.fileno(), address)
-                    self.inputs.append(client)
+                    self.add_client(client, address)
                 else:
                     try:
                         type, data = comms.recv(s)
                         if type == comms.ENQ:
                             comms.send(s, comms.ACK)
                         elif type == comms.EOT:
-                            print 'server: removing connection on EOT request'
-                            self.inputs.remove(s)
-                            self.outputs.remove(s)
-                        elif type == comms.MESSAGE:
+                            self.remove_client(s)
+                        elif type == comms.MSG:
                             success = False
-                            if data:
-                                success = self.callback(self.get_name(s), data)
+                            if data and self.callback != None:
+                                success = self.callback(self.get_client_name(s), data)
                             if success:
                                 comms.send(s, comms.ACK)
                             else:
                                 comms.send(s, comms.NACK)
                         elif type == comms.ACK or type == comms.NACK:
-                            self.response_received[self.get_name(s)] = type 
+                            self.response_received[self.get_client_name(s)] = type 
                                 
                     except socket.error, e:
-                        print 'server: removing connection on socket exception'
                         comms.send(s, comms.EOT)
-                        self.inputs.remove(s)
-                        self.outputs.remove(s)
+                        self.remove_client(s)
+
+            self.server_lock.release()
             rate.sleep()
 
     def send_message(self, client_name, data):
         client = self.get_client(client_name)
         if client == None:
-            return False #TODO throw exception here
+            return False
         self.response_received[client_name] = None
-        comms.send(self.get_client(client_name))
+        comms.send(client, comms.MSG, data)
         timer = threading.Timer(30.0, self.send_message_failed, [client_name])
         timer.start()
         rate = bwi_exp1.WallRate(10)
@@ -87,15 +95,44 @@ class Server:
         return False
 
     def send_message_failed(self, client_name):
-        self.response_received[client_name] = comms.NACK #TODO throw exception here
+        self.response_received[client_name] = comms.NACK
 
-    def signal_handler(self, signum, frame): 
-        # Close existing client sockets
-        print 'Shutting down server...'
-        for o in self.outputs:
-            o.close()
-        self.server.close()
+    def generate_client_name(self, address):
+        return str(address[1]) + '@' + str(address[0])
 
+    def get_client(self, client_name):
+        if client_name in self.client_map:
+            return self.client_map[client_name]
+        return None
 
+    def get_client_name(self, client):
+        if client in self.client_name_map:
+            return self.client_name_map[client]
+        return None
 
+    def get_available_clients(self):
+        return self.client_map.keys()
 
+    def add_client(self, client, address):
+        client_name = self.generate_client_name(address)
+        print 'Server: start connection with %s' % client_name
+        self.inputs.append(client)
+        self.client_map[client_name] = client
+        self.client_name_map[client] = client_name
+
+    def remove_client(self, client):
+        client_name = self.get_client_name(client)
+        print 'Server: end connection with %s' % client_name
+        client.close()
+        self.inputs.remove(client)
+        del self.client_map[client_name]
+        del self.client_name_map[client]
+
+    def shutdown(self):
+        self.server_lock.acquire()
+        self.alive = False
+        self.server.shutdown(socket.SHUT_RDWR)
+        print 'Server: Shutting down...'
+        for i in self.inputs:
+            i.close()
+        self.server_lock.release()

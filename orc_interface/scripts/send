@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+
+import json
+import socket
+import sys
+
+import orc_interface
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.connect(('', 12345))
+
+if sys.argv[1] == 'msg':
+    # a = {}
+    # a['asdfdasf'] = 'asdfadsf'
+    # a['vddv'] = 'asdfadsf'
+    # a['wewr'] = ['asdfa', 'sadfa', 'dfsf']
+    # data = json.dumps(a)
+    # print data
+    print sys.argv[2]
+    data = json.loads(sys.argv[2])
+    print data
+    orc_interface.send(sock, orc_interface.MSG, json.loads(sys.argv[2]))
+    a, b = orc_interface.recv(sock)
+    print repr(a), b

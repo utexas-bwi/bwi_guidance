@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+
+import bwi_exp1
+import rospy
+import threading
+
+import orc_interface
+
+INVOKE = 'invoke'
+RETURN = 'return'
+CANCEL = 'cancel'
+FAILURE = 'failure'
+
+class InterfaceMessage:
+
+    def __init__(self, client_name, data):
+        self.is_request = False
+        self.is_valid = False
+        self.client_name = client_name
+        try:
+            if data['msgType'] == INVOKE:
+                self.is_request = True
+                self.call_id = data['callId'] #id
+                self.target = data['target'] #str
+                self.method = data['method'] #str
+                self.args = data['args'] #list
+                self.is_valid = True
+            elif data['msgType'] == CANCEL:
+                self.is_request = True
+                self.call_id = data['callId'] #id
+                self.is_valid = True
+            elif data['msgType'] == CANCEL:
+                self.call_id = data['callId'] #id
+                self.value = data['value'] #int
+                self.is_valid = True
+            elif data['msgType'] == FAILURE:
+                self.is_valid = True
+                self.call_id = data['callId'] #id
+                self.fail_type = data['failType'] #int
+                self.message = data['message'] #str
+                self.causes = data['causes'] #list ??
+                self.is_valid = True
+        except KeyError:
+            pass
+        except TypeError:
+            pass
+
+    def valid(self):
+        return self.is_valid
+
+    def request(self):
+        return self.is_request
+
+class OrcInterface:
+
+    def __init__(self):
+        rospy.init_node('orc_interface')
+        self.server = orc_interface.Server(self.server_callback)
+        self.requests = []
+        self.request_lock = threading.Lock()
+
+    def start(self):
+        rospy.loginfo("Interface starting up...")
+        self.server.start()
+        rate = bwi_exp1.WallRate(10)
+        try:
+            while not rospy.is_shutdown():
+                rate.sleep()
+        except rospy.ROSInterruptException:
+            pass
+        self.server.shutdown()
+        self.server.join()
+        rospy.loginfo("Interface shutting down...")
+
+    def server_callback(self, client_name, data):
+        message = InterfaceMessage(client_name, data)
+        if not message.valid():
+            rospy.logerr("Received invalid message from %s"%client_name)
+            return False
+        if message.request():
+            self.request_lock.acquire()
+            self.requests.append(message)
+            self.request_lock.release()
+        else:
+            rospy.logerr("Received response message (NOT request): %s"%str(message))
+        return True
+
+if __name__ == '__main__':
+    try:
+        server = OrcInterface()
+        server.start()
+    except rospy.ROSInterruptException:
+        pass
