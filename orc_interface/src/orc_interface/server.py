@@ -7,6 +7,9 @@ import threading
 import bwi_exp1
 import comms
 
+class ClientNotFoundException(Exception):
+        pass
+
 class Server(threading.Thread):
 
     def __init__(self, callback=None, host='', port=12345, max_connections=1):
@@ -80,7 +83,7 @@ class Server(threading.Thread):
     def send_message(self, client_name, data):
         client = self.get_client(client_name)
         if client == None:
-            return False
+            raise ClientNotFoundException()
         self.response_received[client_name] = None
         comms.send(client, comms.MSG, data)
         timer = threading.Timer(30.0, self.send_message_failed, [client_name])
