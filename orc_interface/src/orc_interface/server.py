@@ -72,7 +72,6 @@ class Server(threading.Thread):
                             self.response_received[self.get_client_name(s)] = type 
                                 
                     except socket.error, e:
-                        comms.send(s, comms.EOT)
                         self.remove_client(s)
 
             self.server_lock.release()
@@ -121,6 +120,7 @@ class Server(threading.Thread):
         self.client_name_map[client] = client_name
 
     def remove_client(self, client):
+        comms.send(client, comms.EOT)
         client_name = self.get_client_name(client)
         print 'Server: end connection with %s' % client_name
         client.close()

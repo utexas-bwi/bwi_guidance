@@ -1,8 +1,16 @@
 #!/usr/bin/env python
 
+import actionlib
 import bwi_exp1
 import rospy
+import tf
 import threading
+
+from std_msgs.msg import Header
+from geometry_msgs.msg import Pose, PoseStamped, Point
+from actionlib_msgs.msg import GoalStatus
+
+import move_base_msgs.msg
 
 import orc_interface
 
@@ -17,6 +25,8 @@ class InterfaceMessage:
         self.is_request = False
         self.is_valid = False
         self.client_name = client_name
+        self.data = data
+        self.type = data['msgType']
         try:
             if data['msgType'] == INVOKE:
                 self.is_request = True
@@ -29,7 +39,7 @@ class InterfaceMessage:
                 self.is_request = True
                 self.call_id = data['callId'] #id
                 self.is_valid = True
-            elif data['msgType'] == CANCEL:
+            elif data['msgType'] == RETURN:
                 self.call_id = data['callId'] #id
                 self.value = data['value'] #int
                 self.is_valid = True
@@ -45,6 +55,9 @@ class InterfaceMessage:
         except TypeError:
             pass
 
+    def __str__(self):
+        return str(self.data)
+
     def valid(self):
         return self.is_valid
 
@@ -55,8 +68,13 @@ class OrcInterface:
 
     def __init__(self):
         rospy.init_node('orc_interface')
+        self.client = actionlib.SimpleActionClient('move_base', 
+                move_base_msgs.msg.MoveBaseAction)
+        self.client.wait_for_server()
         self.server = orc_interface.Server(self.server_callback)
         self.requests = []
+        self.status = {}
+        self.current_request = None
         self.request_lock = threading.Lock()
 
     def start(self):
@@ -65,6 +83,41 @@ class OrcInterface:
         rate = bwi_exp1.WallRate(10)
         try:
             while not rospy.is_shutdown():
+
+                # Check if current request completed
+                if self.current_request != None:
+                    completed, success, ret_value, message, causes = self.check_current_status()
+                    if completed:
+                        if success:
+                            ret_msg = {'msgType': RETURN, 
+                                       'callId': self.current_request.call_id, 
+                                       'value': ret_value}
+                        else:
+                            ret_msg = {'msgType': FAILURE,
+                                       'callId': self.current_request.call_id,
+                                       'fail_type': ret_value,
+                                       'message': message,
+                                       'causes': causes}
+                        success = self.server.send_message(self.current_request.client_name, ret_msg)
+                        self.current_request = None
+
+                # Check new requests
+                self.request_lock.acquire()
+                for request in self.requests:
+                    if request.type == INVOKE:
+                        self.invoke(request)
+                    elif request.type == CANCEL:
+                        self.cancel(request)
+                self.requests = []
+                self.request_lock.release()
+
+                # Check if a request got preempted or cancelled by one of the new requests
+                for request_id, status in self.status.iteritems():
+                    rospy.loginfo("For request: %s, sending negative status %s"%(str(request_id),str(status)))
+                    self.server.send_message(status[1], status[0])
+                self.status = {}
+
+                # Sleep for remaining duration
                 rate.sleep()
         except rospy.ROSInterruptException:
             pass
@@ -81,9 +134,66 @@ class OrcInterface:
             self.request_lock.acquire()
             self.requests.append(message)
             self.request_lock.release()
+            rospy.loginfo("Received valid request: %s"%str(message))
         else:
             rospy.logerr("Received response message (NOT request): %s"%str(message))
         return True
+
+    def invoke(self, request):
+
+        rospy.loginfo("Invoking call: %s"%str(request.call_id))
+
+        if self.current_request != None:
+            rospy.loginfo("Pre-empting call: %s"%str(self.current_request.call_id))
+            self.status[self.current_request.call_id] = (self.generate_preempted_status(self.current_request.call_id), self.current_request.client_name)
+            self.current_request = None
+
+        # Invoke movement call
+        goal = move_base_msgs.msg.MoveBaseGoal()
+        goal.target_pose.header.stamp = rospy.Time.now()
+        goal.target_pose.header.frame_id = "/map"
+        goal.target_pose.pose.position.x = request.args[0]
+        goal.target_pose.pose.position.y = request.args[1]
+        goal.target_pose.pose.position.z = 0
+        q = tf.transformations.quaternion_from_euler(0, 0, request.args[2])
+        goal.target_pose.pose.orientation.x = q[0] 
+        goal.target_pose.pose.orientation.y = q[1] 
+        goal.target_pose.pose.orientation.z = q[2] 
+        goal.target_pose.pose.orientation.w = q[3] 
+        self.client.send_goal(goal)
+        
+        self.current_request = request
+
+    def cancel(self, request):
+        if (self.current_request != None and
+                request.call_id == self.current_request.call_id):
+            rospy.loginfo("Cancelling call: %s"%str(self.current_request.call_id))
+            self.client.cancel_goal()
+            self.current_request = None
+            self.status[request.call_id] = (self.generate_cancelled_status(self.current_request.call_id), self.current_request.client_name)
+
+    def check_current_status(self):
+        status = self.client.get_state()
+        if status == GoalStatus.PENDING or status == GoalStatus.ACTIVE:
+            return False, None, None, None, None
+        elif status == GoalStatus.SUCCEEDED:
+            return True, True, 0, None, None
+        else:
+            return True, False, -1.0, 'The request was cancelled/prempted from outside this server', []
+
+    def generate_cancelled_status(self, call_id):
+        return {'msgType': FAILURE,
+                   'callId': call_id,
+                   'fail_type': -1,
+                   'message': 'The request was cancelled through this server.',
+                   'causes': []}
+
+    def generate_preempted_status(self, call_id):
+        return {'msgType': FAILURE,
+                   'callId': call_id,
+                   'fail_type': -1,
+                   'message': 'The request was preempted through this server.',
+                   'causes': []}
 
 if __name__ == '__main__':
     try:
