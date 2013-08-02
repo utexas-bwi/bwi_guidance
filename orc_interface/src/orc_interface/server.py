@@ -4,7 +4,7 @@ import select
 import socket
 import threading
 
-import bwi_exp1
+import bwi_tools
 import comms
 
 class ClientNotFoundException(Exception):
@@ -36,7 +36,7 @@ class Server(threading.Thread):
 
     def run(self):
 
-        rate = bwi_exp1.WallRate(20)
+        rate = bwi_tools.WallRate(20)
 
         self.alive = True
         while True:
@@ -88,7 +88,7 @@ class Server(threading.Thread):
         comms.send(client, comms.MSG, data)
         timer = threading.Timer(30.0, self.send_message_failed, [client_name])
         timer.start()
-        rate = bwi_exp1.WallRate(10)
+        rate = bwi_tools.WallRate(10)
         while self.response_received == None:
             rate.sleep()
         timer.cancel()
