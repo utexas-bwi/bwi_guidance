@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
+import bwi_exp1
+import bwi_tools
 import random
-from string import ascii_uppercase, digits
-import threading
-
 import roslib
 import rospy
+import threading
 
-import bwi_exp1
 from bwi_msgs.msg import ExperimentServerStatus
 from bwi_msgs.srv import UpdateExperimentServer, UpdateExperimentServerResponse
+from string import ascii_uppercase, digits
 
 def id_generator(size=6, chars=ascii_uppercase + digits):
     return ''.join(random.choice(chars) for x in range(size))
@@ -55,7 +55,7 @@ class ExperimentServerInterface(threading.Thread):
         return resp
 
     def run(self):
-        rate = bwi_exp1.WallRate(10)
+        rate = bwi_tools.WallRate(10)
         try:
             while not rospy.is_shutdown():
                 self.interface_lock.acquire()
@@ -96,7 +96,7 @@ class ExperimentServer:
         # Prevent race conditions for acquiring a lock on the experiment server
         self.experiment_lock = threading.Lock()
 
-        self.reset_timer = bwi_exp1.Timer()
+        self.reset_timer = bwi_tools.Timer()
 
     def start(self):
         self.experiment_interface.start()
