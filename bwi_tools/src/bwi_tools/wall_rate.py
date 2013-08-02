@@ -14,4 +14,4 @@ class WallRate():
         elapsed = current_time - self.recorded_time
         if self.period - elapsed > 0:
             time.sleep(self.period - elapsed)
-        self.recorded_time = current_time
+        self.recorded_time = time.time()
