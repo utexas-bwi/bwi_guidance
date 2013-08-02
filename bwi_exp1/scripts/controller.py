@@ -1,25 +1,27 @@
 #!/usr/bin/env python
 
+import bwi_tools
+import cv
+import cv2
+import math
+import numpy
+import random
 import roslib
 import rospy
-
-import yaml
-from geometry_msgs.msg import Pose, Quaternion
-from tf.transformations import quaternion_from_euler
-from nav_msgs.msg import Odometry
-from std_srvs.srv import Empty
-from bwi_msgs.msg import ExperimentStatus
-from bwi_msgs.srv import PositionRobot, PositionRobotRequest, UpdateExperiment, UpdateExperimentResponse
-from gazebo_msgs.srv import SetModelState, SetModelStateRequest
-
-import bwi_exp1
-import cv, cv2, numpy
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
-
 import threading
-import math
-import random
+import yaml
+
+from cv_bridge import CvBridge
+from tf.transformations import quaternion_from_euler
+
+from bwi_msgs.msg import ExperimentStatus
+from bwi_msgs.srv import PositionRobot, PositionRobotRequest, \
+                         UpdateExperiment, UpdateExperimentResponse
+from gazebo_msgs.srv import SetModelState, SetModelStateRequest
+from geometry_msgs.msg import Pose, Quaternion
+from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Image
+from std_srvs.srv import Empty
 
 def getPoseMsgFrom2dData(x, y, yaw):
     pose = Pose()
@@ -49,7 +51,8 @@ def produceDirectedArrow(up_arrow, yaw):
     left = (image.shape[1] - resized_image.shape[1]) / 2
     right = image.shape[1] - resized_image.shape[1] - left
 
-    image = cv2.copyMakeBorder(resized_image, top, bottom, left, right, cv2.BORDER_CONSTANT, image, (0,0,0))
+    image = cv2.copyMakeBorder(resized_image, top, bottom, left, right, 
+                               cv2.BORDER_CONSTANT, image, (0,0,0))
     return image
 
 def compute_average_angle(angle1, angle2):
@@ -67,37 +70,31 @@ class ExperimentInterface(threading.Thread):
         self.update_experiment_server = rospy.Service(
                 '~update_experiment', UpdateExperiment, 
                 self.handle_experiment_update)
-        # self.experiment_text = ""
-        # self.reward = 0.0
-        # self.reward_in_prev_exp = 0.0
-        # self.prev_exp_reset = False
-        # self.prev_exp_success = False
         self.interface_lock = threading.Lock()
-        
         self.controller = controller
 
     def handle_experiment_update(self, req):
         resp = UpdateExperimentResponse()
         if req.pause_experiment:
-            resp.result = self.controller.pauseCurrentExperiment()
+            resp.result = self.controller.pause_experiment()
             if not resp.result:
                 resp.status = "Cannot pause the experiment right now!"
         elif req.unpause_experiment:
-            resp.result = self.controller.unpauseCurrentExperiment()
+            resp.result = self.controller.unpause_experiment()
             if not resp.result:
                 resp.status = "Cannot unpause the experiment right now!"
         elif req.continue_experiment:
-            resp.result = self.controller.startNextExperiment()
+            resp.result = self.controller.continue_to_next_instance()
             if not resp.result:
                 resp.status = "Cannot start next experiment right now!"
         return resp
 
-    # def startExperiment(self, text):
+    # def start_instance(self, text):
     #     self.interface_lock.acquire()
     #     self.experiment_text = text
     #     self.interface_lock.release()
 
-    # def stopCurrentExperiment(self, reward, text):
+    # def stop_instance(self, reward, text):
     #     self.interface_lock.acquire()
     #     self.experiment_text = text
     #     self.reward_in_prev_exp = reward
@@ -116,7 +113,7 @@ class ExperimentInterface(threading.Thread):
     #     self.interface_lock.release()
 
     def run(self):
-        rate = bwi_exp1.WallRate(10)
+        rate = bwi_tools.WallRate(10)
         try:
             while not rospy.is_shutdown():
                 self.interface_lock.acquire()
@@ -160,7 +157,7 @@ class RobotScreenPublisher(threading.Thread):
         self.robot_image_lock[robotid].release()
 
     def run(self):
-        rate = bwi_exp1.WallRate(5) # 5hz
+        rate = bwi_tools.WallRate(5) # 5hz
         try:
             while not rospy.is_shutdown():
                 for robotid in self.robot_image_publisher.keys():
@@ -198,7 +195,10 @@ class ExperimentController:
         self.data_directory = rospy.get_param("~data_dir",
                 roslib.packages.get_pkg_dir("bwi_exp1") + "/data")
 
-        self.experiment_uid = 
+        self.experiment_uid = rospy.get_param("~uid") 
+        self.experiment_uname = rospy.get_param("~name") 
+        self.experiment_uemail = rospy.get_param("~email") 
+
         # Get ROS Services
         rospy.loginfo("Waiting for service: position")
         rospy.wait_for_service("position")
@@ -242,7 +242,7 @@ class ExperimentController:
         # Setup the experiment interface
         self.interface = ExperimentInterface(self)
 
-        # Get some constants across all experiments
+        # Get some constants across all instances
         self.person_id = self.experiment['person_id']
         self.robots = self.experiment['robots']
         self.ball_id = self.experiment['ball_id']
@@ -257,17 +257,17 @@ class ExperimentController:
         self.instance_in_progress = False
         self.instance_success = False
         self.start_next_instance = False
-        self.allow_logging = True
         self.paused = False
 
         # Setup the odometry subscriber
         self.odometry_subscriber = rospy.Subscriber(self.person_id + '/odom', 
                 Odometry, self.odometry_callback)
 
-        # Log file lock
-        self.log_lock = threading.Lock()
+        # A couple of locks
+        self.modify_experiment_lock = threading.Lock()
+        self.modify_instance_lock = threading.Lock()
 
-    def startExperiment(self, log_file_name, experiment_data, instance_number):
+    def start_instance(self, log_file_name, experiment_data, instance_number):
 
         # Pause gazebo during teleportation
         self.pauseGazebo() # time also stops
@@ -277,13 +277,13 @@ class ExperimentController:
         start_y = experiment_data['start_y']
         start_yaw = experiment_data['start_yaw']
         start_pose = getPoseMsgFrom2dData(start_x, start_y, yaw=start_yaw)
-        result = self.teleportEntity(self.person_id, start_pose)
+        result = self.teleport_entity(self.person_id, start_pose)
 
         # Teleport the goal ball to its correct position
         ball_x = experiment_data['ball_x']
         ball_y = experiment_data['ball_y']
         ball_pose = getPoseMsgFrom2dData(ball_x, ball_y, 0)
-        result = self.teleportEntity(self.ball_id, ball_pose)
+        result = self.teleport_entity(self.ball_id, ball_pose)
         self.goal_location = [ball_x, ball_y]
 
         # Teleport all the robots to their respective positions
@@ -303,7 +303,7 @@ class ExperimentController:
                 req.at_id = self.robots_in_instance[i]['id']
                 if path_position != 0:
                     req.from_id = self.path[path_position - 1]['id']
-                    arriving_from = self.getGraphLocation(req.from_id)
+                    arriving_from = self.get_location_at_graph_id(req.from_id)
                 else:
                     req.from_pt.x = start_x
                     req.from_pt.y = start_y
@@ -311,7 +311,7 @@ class ExperimentController:
                     arriving_from = [start_x, start_y]
                 if path_position != len(self.path) - 1:
                     req.to_id = self.path[path_position + 1]['id']
-                    going_to = self.getGraphLocation(req.to_id)
+                    going_to = self.get_location_at_graph_id(req.to_id)
                 else:
                     req.to_pt.x = ball_x
                     req.to_pt.y = ball_y
@@ -329,7 +329,7 @@ class ExperimentController:
                 path_position = path_position + 1
                 while destination_distance < 3:
                     if path_position != len(self.path) - 1:
-                        going_to = self.getGraphLocation(self.path[path_position + 1]['id'])
+                        going_to = self.get_location_at_graph_id(self.path[path_position + 1]['id'])
                     else:
                         going_to = [ball_x, ball_y]
                     destination_distance = math.sqrt((going_to[1] - robot_loc[1])*(going_to[1] - robot_loc[1]) + (going_to[0] - robot_loc[0])*(going_to[0] - robot_loc[0]))
@@ -354,7 +354,7 @@ class ExperimentController:
 
             # Perform the actual teleport and image update
             robot_pose = getPoseMsgFrom2dData(*robot_loc, yaw=robot_yaw)
-            result = self.teleportEntity(self.robots[i]['id'], robot_pose)
+            result = self.teleport_entity(self.robots[i]['id'], robot_pose)
             self.robot_images[i] = robot_image
             self.robot_locations[i] = robot_loc
 
@@ -384,9 +384,9 @@ class ExperimentController:
         self.instance_in_progress = True
         self.instance_success = False
 
-        self.interface.startExperiment(experiment_text)
+        self.interface.start_instance(experiment_text)
 
-    def stopCurrentExperiment(self, success):
+    def stop_instance(self, success):
 
         self.instance_in_progress = False
 
@@ -404,7 +404,7 @@ class ExperimentController:
                 experiment_text = "Oh no! It looks like you ran out of time with this experiment. We've awarded you " + str(reward) + " points."
         else:
             if (success):
-                if self.experiments[self.instance_number + 1]['is_tutorial']:
+                if self.instances[self.instance_number + 1]['is_tutorial']:
                     experiment_text = "Awesome! You found the goal! There are more TUTORIALS to go!"
                 else:
                     experiment_text = "Awesome! You've finished the tutorials! Hit the enter key or press the continue button to proceed to the EXPERIMENTS!"
@@ -416,7 +416,7 @@ class ExperimentController:
                 reward = 0
 
         experiment_text += " Hit the ENTER key or press Continue to try again!"
-        self.interface.stopCurrentExperiment(reward, experiment_text)
+        self.interface.stop_instance(reward, experiment_text)
 
         # setup odometry thread to stop writing out odometry values
         if self.allow_logging:
@@ -430,7 +430,7 @@ class ExperimentController:
         self.pauseGazebo()
         for robot in self.robots:
             robot_pose = getPoseMsgFrom2dData(*robot['default_loc'], yaw=0)
-            self.teleportEntity(robot['id'], robot_pose) 
+            self.teleport_entity(robot['id'], robot_pose) 
         self.unpauseGazebo() 
 
     def odometry_callback(self, odom):
@@ -468,60 +468,60 @@ class ExperimentController:
 
         self.robot_image_publisher.start()
 
-        r = rospy.Rate(10) # 10hz
+        # Use wall rate here as you don't want the loop to stop while gazebo is
+        # paused
+        rate = bwi_tools.WallRate(10) # 10hz
 
         while not rospy.is_shutdown():
 
+            # Get ROS time here in case Gazebo was paused
             time = rospy.get_time()
+            time_taken = time - self.experiment_start_time
 
-            self.experiment_lock_mutex.acquire()
+            self.modify_experiment_lock.acquire()
 
             if self.start_next_instance:
-                self.startExperiment(self.data_directory + "/" + self.log_file_prefix + self.experiment_names[self.instance_number], self.experiments[self.instance_number], self.instance_number)
+                # Should start next instance
+                log_file = self.log_file_prefix + \
+                        self.instance_names[self.instance_number]
+                self.start_instance(log_file,
+                    self.instances[self.instance_number], self.instance_number)
                 self.start_next_instance = False
+
             elif self.instance_in_progress and self.instance_success:
                 if self.experiment_tutorial:
-                    if (time - self.experiment_start_time) > self.experiment_tutorial_duration: # too slow
-                        self.stopCurrentExperiment(False)
+                    if time_taken > self.max_tutorial_time:
+                        # Cannot complete a tutorial this slow, redo
+                        self.stop_instance(False)
                     else:
-                        self.stopCurrentExperiment(True)
+                        self.stop_instance(True)
                         self.instance_number = self.instance_number + 1
-                        self.allow_logging = True
                 else: 
-                    self.stopCurrentExperiment(True)
+                    self.stop_instance(True)
                     self.instance_number = self.instance_number + 1
-                    self.allow_logging = True
-                self.experiment_server_locked = self.instance_number != len(self.experiments)
-                if self.experiment_server_locked:
-                    self.startResetTimer()
-                else:
-                    self.finalizeExperimentsForUser()
-            elif self.instance_in_progress and (time - self.experiment_start_time) > self.experiment_max_duration:
-                self.stopCurrentExperiment(False)
+                if self.instance_number != len(self.instances):
+                    # All done! Nothing to see here
+                    self.finalize_experiment()
+            elif (self.instance_in_progress and 
+                  time_taken > self.experiment_max_duration):
+                # The instance timed out. If tutorial then redo.
+                self.stop_instance(False)
                 if not self.experiment_tutorial:
                     self.instance_number = self.instance_number + 1
-                    self.allow_logging = True
-                else:
-                    self.allow_logging = False
-                self.experiment_server_locked = self.instance_number != len(self.experiments)
-                if self.experiment_server_locked:
-                    self.startResetTimer()
-                else:
-                    self.finalizeExperimentsForUser()
+                if self.instance_number != len(self.instances):
+                    # All done! Nothing to see here
+                    self.finalize_experiment()
 
-            #publish the experiment status
-            self.interface.publishStatus()
-            self.experiment_lock_mutex.release()
+            self.modify_experiment_lock.release()
+            rate.sleep()
 
-            r.sleep()
-
-    def getGraphLocation(self, id):
+    def get_location_at_graph_id(self, id):
         for entry in self.graph:
             if entry['id'] == id:
                 return [entry['x'], entry['y']]
-        raise IndexError, "Graph id %d does not exist in graph: %s"%(id, self.graph_file)
+        raise IndexError, "GraphId %d does not exist in %s"%(id,self.graph_file)
 
-    def teleportEntity(self, entity, pose):
+    def teleport_entity(self, entity, pose):
         set_state = SetModelStateRequest()
         set_state.model_state.model_name = entity
         set_state.model_state.pose = pose
@@ -529,143 +529,113 @@ class ExperimentController:
         if not resp.success:
             rospy.logerr(resp.status_message)
 
-    def startResetTimer(self, time = 300.0):
-        self.reset_timer_lock.acquire()
-        if not self.reset_timer:
-            self.reset_timer = threading.Timer(5.0, self.tickResetTimer, [time])
-            self.reset_time_remaining = time
-            self.reset_timer.start()
-            rospy.loginfo("Started RESET timer (" + str(time) + ") for " + self.experiment_uid)
-        else:
-            rospy.logerr("Tried to start a timer when one exists")
-        self.reset_timer_lock.release()
+    def start_experiment(self):
 
-    def cancelResetTimer(self):
-        self.reset_timer_lock.acquire()
-        if self.reset_timer:
-            rospy.loginfo("Cancelled RESET timer for " + self.experiment_uid)
-            self.reset_timer.cancel()
-            self.reset_timer = None
-        else:
-            rospy.logerr("Tried to cancel non-existant RESET timer")
-        self.reset_timer_lock.release()
+        # Compute the order in which the instance groups need to be performed
+        # If a group has order != -1, then it is placed at location <order>
+        # in the instance group order. If the order is -1, then all -1 instance 
+        # groups are shuffled and placed at the end
 
-    def tickResetTimer(self, time_remaining):
-        self.reset_timer_lock.acquire()
-        if self.reset_timer: # check in case cancel timer has been called
-            if time_remaining <= 0.0:
-                self.reset_timer = None
-                self.resetExperiment()
+        # EXAMPLE - The following instance groups with the specified order
+        # prefix: tutorial, order: 0
+        # prefix: first, order: 1
+        # prefix: dont_care_1, order: -1
+        # prefix: dont_care_2, order: -1
+        # can result in 1 of 2 orderings:
+        # [tutorial, first, dont_care_1, dont_care_2] OR
+        # [tutorial, first, dont_care_2, dont_care_1]
+
+        self.instance_group_order = \
+                [None] * len(self.experiment['instance_groups'])
+        randomly_ordered_groups = []
+        highest_ordered_group = -1
+        for instance_group in self.experiment['instance_groups']:
+            group_name = instance_group['prefix']
+            group_order = instance_group['order']
+            if group_order != -1: 
+                self.instance_group_order[group_order] = group_name
+                highest_ordered_group = max(highest_ordered_group, group_order)
             else:
-                time_remaining -= 5
-                self.reset_time_remaining = time_remaining
-                if self.paused:
-                    self.interface.publishStatus()
-                self.reset_timer = threading.Timer(5.0, self.tickResetTimer, [time_remaining])
-                self.reset_timer.start()
-        self.reset_timer_lock.release()
+                randomly_ordered_groups.append(group_name)
+        random_groups_start = highest_ordered_group + 1
+        random.shuffle(randomly_ordered_groups)
+        self.instance_group_order[random_groups_start:] = \
+                randomly_ordered_groups
+        rospy.loginfo("Selected the following group order: %s"%
+                      str(self.instance_group_order))
 
-    def resetExperiment(self):
-        self.experiment_lock_mutex.acquire()
-        if self.experiment_server_locked:
-            if self.instance_in_progress:
-                self.stopCurrentExperiment(False)
-            self.reward = -1
-            rospy.loginfo("RESET CALLED for user: " + self.experiment_uid)
-            self.interface.resetExperiment()
-            self.experiment_server_locked = False
-            self.instance_number = len(self.experiments)
-            self.paused = False
-            self.unpauseGazebo()
-        self.experiment_lock_mutex.release()
+        # Load instances based on the instance group order
+        self.instance_names = []
+        self.instances = []
+        self.instance_group_count = []
+        for instance_group_name in self.instance_group_order:
+            for instance_group in self.experiment['instance_groups']:
+                if (instance_group['prefix'] != instance_group_name):
+                    continue
+                num_instances = len(instance_group['instance'])
+                self.instance_names.extend(
+                    [instance_group_name + "_" + str(i) 
+                     for i in range(num_instances)]
+                )
+                self.instances.extend(instance_group['instances'])
+                self.instance_group_count.append(num_instances)
 
-    def startExperimentsForNewUser(self, name, email):
-        self.experiment_lock_mutex.acquire()
-        uid = id_generator()
-        if not self.experiment_server_locked:
-            self.experiment_group_order = [None] * len(self.experiment['experiments'])
-            randomly_ordered_groups = []
-            highest_ordered_group = -1
-            for experiment_group in self.experiment['experiments']:
-                if experiment_group['order'] != -1:
-                    self.experiment_group_order[experiment_group['order']] = experiment_group['prefix']
-                    highest_ordered_group = max(highest_ordered_group, experiment_group['order'])
-                else:
-                    randomly_ordered_groups.append(experiment_group['prefix'])
-            random_groups_start = highest_ordered_group + 1
-            random.shuffle(randomly_ordered_groups)
-            self.experiment_group_order[random_groups_start:] = randomly_ordered_groups
-            self.experiment_names = []
-            self.experiments = []
-            self.experiment_group_count = []
-            for experiment_group_prefix in self.experiment_group_order:
-                for experiment_group in self.experiment['experiments']:
-                    if (experiment_group['prefix'] != experiment_group_prefix):
-                        continue
-                    self.experiment_names.extend([experiment_group_prefix + "_" + str(i) for i in range(len(experiment_group['experiments']))])
-                    self.experiments.extend(experiment_group['experiments'])
-                    self.experiment_group_count.append(len(experiment_group['experiments']))
-            self.instance_number = 0
-            self.reward = 0
+        # calculate the total number of instances from all groups
+        rospy.loginfo("Instances will be run in following order: %s"%
+                      str(self.instance_names))
+        self.num_instances = len(self.instances)
+        rospy.loginfo("There are a total of %i instances"%
+                      self.num_instances)
+        self.log_file_prefix = \
+                self.data_directory + "/" + self.experiment_uid + "_"
+        rospy.loginfo("Using log prefix: %s"%self.log_file_prefix)  
 
-            self.experiment_uname = name
-            self.experiment_uemail = email
-            self.experiment_uid = uid
-            self.num_instances = len(self.experiments)
+        # Prepare to start the first instance
+        self.instance_number = 0
+        self.reward = 0
+        self.start_next_instance = True
+        rospy.loginfo("Starting experiment for user: " + self.experiment_uid)
 
-            rospy.loginfo("Starting experiments for user: " + uid)
-            self.log_file_prefix = uid + "_"
-
-            self.experiment_server_locked = True
-            self.start_next_instance = True
-            success = True
-        else:
-            success = False
-        self.experiment_lock_mutex.release()
-        return success, uid
-
-    def finalizeExperimentsForUser(self):
+    def finalize_experiment(self):
         self.interface.stopExperiment()
         user_file = open(self.user_file, "a")
         user_file.write("- user: " + self.experiment_uid + "\n")
         user_file.write("  name: " + self.experiment_uname + "\n")
+        user_file.write("  email: " + self.experiment_uemail + "\n")
         user_file.write("  experiment_order:\n")
-        for i in range(len(self.experiment_group_order)):
-            user_file.write("    - name: " + self.experiment_group_order[i] + "\n")
-            user_file.write("      num: " + str(self.experiment_group_count[i]) + "\n")
+        for i in range(len(self.instance_group_order)):
+            user_file.write("    - name: " + 
+                            self.instance_group_order[i] + "\n")
+            user_file.write("      num: " + 
+                            str(self.instance_group_count[i]) + "\n")
         user_file.close()
-        rospy.loginfo("Finalized experiments for user: " + self.experiment_uid)
+        rospy.loginfo("Finalized instances for user: " + self.experiment_uid)
+        # TODO send unlock request to experiment server (needs to be try-catched)
 
-    def startNextExperiment(self):
+    def continue_to_next_instance(self):
         success = False
-        self.experiment_lock_mutex.acquire()
-        if not self.instance_in_progress and self.experiment_server_locked:
+        self.modify_experiment_lock.acquire()
+        if not self.instance_in_progress:
             self.start_next_instance = True
-            self.cancelResetTimer()
+            self.ping_server()
             success = True
-        self.experiment_lock_mutex.release()
+        self.modify_experiment_lock.release()
         return success
 
-    def pauseCurrentExperiment(self):
+    def pause_experiment(self):
         success = False
-        self.experiment_lock_mutex.acquire()
-        if self.instance_in_progress and self.experiment_server_locked:
+        if self.instance_in_progress and not self.paused:
             self.pauseGazebo()
-            self.startResetTimer()
             self.paused = True
             success = True
-        self.experiment_lock_mutex.release()
         return success
 
-    def unpauseCurrentExperiment(self):
+    def unpause_experiment(self):
         success = False
-        self.experiment_lock_mutex.acquire()
-        if self.paused and self.instance_in_progress and self.experiment_server_locked:
+        if self.instance_in_progress and self.paused:
             self.unpauseGazebo()
-            self.cancelResetTimer()
             self.paused = False
             success = True
-        self.experiment_lock_mutex.release()
         return success
 
 if __name__ == '__main__':

@@ -21,10 +21,10 @@ robots:
   - id: robot10
     default_loc: [518, 500]
 ball_id: ball
-experiments:
+instance_group:
   - prefix: tutorial
     order: 0
-    experiments:
+    instances:
       - start_x: 20.75
         start_y: 1.35
         start_yaw: 0
@@ -69,8 +69,8 @@ experiments:
         is_tutorial: true
   - prefix: pair1
     order: -1
-    experiments:
-      # experiment 1 testing directional choices
+    instances:
+      # instance 1 testing directional choices
       - start_x: 14.2
         start_y: 45.4
         start_yaw: -0.0525822
@@ -94,7 +94,7 @@ experiments:
         extra_robots: []
         max_duration: 300 #seconds
         is_tutorial: false
-      #experiment 3 tests navigating a big room without directional arrows
+      #instance 3 tests navigating a big room without directional arrows
       - start_x: 1.35
         start_y: 18.9
         start_yaw: 1.5708
@@ -114,7 +114,7 @@ experiments:
         extra_robots: []
         max_duration: 300 #seconds
         is_tutorial: false
-      #experiment 5 tests distraction in presence of a robot
+      #instance 5 tests distraction in presence of a robot
       - start_x: 34
         start_y: 45.45
         start_yaw: -0.0434503
@@ -150,8 +150,8 @@ experiments:
         is_tutorial: false
   - prefix: pair2
     order: -1
-    experiments:
-      # experiment 2 (paired) experiment for experiment 1 in opposite direction
+    instances:
+      # instance 2 (paired) experiment for experiment 1 in opposite direction
       - start_x: 46.15
         start_y: 45.6
         start_yaw: 3.09617
@@ -175,7 +175,7 @@ experiments:
         extra_robots: []
         max_duration: 300 #seconds
         is_tutorial: false
-      #experiment 4 (paired with 3) attempts to show that directions in big room help
+      #instance 4 (paired with 3) attempts to show that directions in big room help
       - start_x: 1.35
         start_y: 18.9
         start_yaw: 1.5708
@@ -195,7 +195,7 @@ experiments:
         extra_robots: []
         max_duration: 300 #seconds
         is_tutorial: false
-      #experiment 6 (paired with 5) tests distraction in absense of robot
+      #instance 6 (paired with 5) tests distraction in absense of robot
       - start_x: 34
         start_y: 45.45
         start_yaw: -0.0434503
