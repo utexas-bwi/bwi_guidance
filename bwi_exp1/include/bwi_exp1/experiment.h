@@ -44,27 +44,27 @@
 
 namespace bwi_exp1 {
 
-  struct ExperimentLocation {
+  struct Location {
     float x;
     float y;
     float yaw;
   };
 
-  struct ExperimentRobot {
+  struct Robot {
     std::string id;
-    ExperimentLocation default_loc;
+    Location default_loc;
   };
 
-  struct ExperimentPathPoint {
+  struct PathPoint {
     size_t graph_id;
     bool robot_present;
   };
 
   struct Instance {
-    ExperimentLocation start_loc;
-    ExperimentLocation ball_loc;
-    std::vector<ExperimentPathPoint> path;
-    std::vector<ExperimentLocation> extra_robots;
+    Location start_loc;
+    Location ball_loc;
+    std::vector<PathPoint> path;
+    std::vector<Location> extra_robots;
     float max_duration;
   };
 
@@ -76,21 +76,21 @@ namespace bwi_exp1 {
 
   struct Experiment {
     std::string person_id;
-    std::vector<ExperimentRobot> robots;
+    std::vector<Robot> robots;
     std::string ball_id;
     std::vector<InstanceGroup> experiments; 
   };
 
-  void readExperimentCollectionFromFile(const std::string& file, 
+  void readExperimentFromFile(const std::string& file, 
       Experiment& ec); 
 
-  void getExperimentNames(const Experiment& ec, 
+  void getInstanceNames(const Experiment& ec, 
       std::vector<std::string> &names); 
 
   void computeOrderings(const Experiment& ec,
       std::vector< std::vector<std::string> >& orderings); 
 
-  Instance& getExperiment(Experiment& ec, size_t idx);
+  Instance& getInstance(Experiment& ec, size_t idx);
   
 } /* bwi_exp1 */
 

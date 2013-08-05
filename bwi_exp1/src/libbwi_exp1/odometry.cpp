@@ -5,7 +5,7 @@
 namespace bwi_exp1 {
   
   bool readOdometry(const std::string& file, 
-      std::vector<ExperimentLocationStamped>& path) {
+      std::vector<LocationStamped>& path) {
 
     std::ifstream fin(file.c_str());
     if (!fin) {
@@ -22,7 +22,7 @@ namespace bwi_exp1 {
     path.clear();
     for (size_t i = 0; i < doc["odometry"].size(); ++i) {
       const YAML::Node& stamped_location = doc["odometry"][i];
-      ExperimentLocationStamped location;
+      LocationStamped location;
       stamped_location[0] >> location.location.x;
       stamped_location[1] >> location.location.y;
       int stamp_idx = 2;

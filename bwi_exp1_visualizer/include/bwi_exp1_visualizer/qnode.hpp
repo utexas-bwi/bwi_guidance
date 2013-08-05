@@ -93,7 +93,7 @@ namespace bwi_exp1_visualizer {
       std::vector<bwi_exp1::User> users_;
       std::vector< std::vector<size_t> > user_box_to_idx_map_;
       std::vector< std::vector< 
-        std::vector<bwi_exp1::ExperimentLocationStamped> > > odometry_;
+        std::vector<bwi_exp1::LocationStamped> > > odometry_;
 
   };
 

@@ -69,8 +69,8 @@ namespace bwi_exp1_visualizer {
     topological_mapper::readGraphFromFile(graph_file_, info, graph_);
 
     /* Process experiment data */
-    bwi_exp1::readExperimentCollectionFromFile(experiment_file_, experiments_);
-    bwi_exp1::getExperimentNames(experiments_, experiment_box_strings_);
+    bwi_exp1::readExperimentFromFile(experiment_file_, experiments_);
+    bwi_exp1::getInstanceNames(experiments_, experiment_box_strings_);
     
     /* Process user data */
     bwi_exp1::readUserDataFromFile(users_file_, users_);
@@ -104,10 +104,10 @@ namespace bwi_exp1_visualizer {
 
     /* Process odometry data */
     for (size_t exp = 0; exp < experiment_box_strings_.size(); ++exp) {
-      std::vector< std::vector<bwi_exp1::ExperimentLocationStamped> >
+      std::vector< std::vector<bwi_exp1::LocationStamped> >
         all_paths_for_experiment;
       for (size_t u = 0; u < users_.size(); ++u) {
-        std::vector<bwi_exp1::ExperimentLocationStamped> path;
+        std::vector<bwi_exp1::LocationStamped> path;
         std::string file = data_directory_ + "/" + users_[u].id + "_" + 
           experiment_box_strings_[exp];
         bwi_exp1::readOdometry(file, path);
@@ -156,7 +156,7 @@ namespace bwi_exp1_visualizer {
     
     // mark the start and goal locations
     bwi_exp1::Instance& exp = 
-      bwi_exp1::getExperiment(experiments_, current_experiment_index_);
+      bwi_exp1::getInstance(experiments_, current_experiment_index_);
     cv::Vec2f start_loc(exp.start_loc.x, exp.start_loc.y);
     cv::Vec2f goal_loc(exp.ball_loc.x, exp.ball_loc.y);
     cv::circle(generated_image_, toImage(start_loc), 5, cv::Scalar(0,0,255),3);
@@ -200,7 +200,7 @@ namespace bwi_exp1_visualizer {
         user_box_to_idx_map_[current_user_index_];
     max_experiment_time_ = 0.0;
     for (size_t u = 0; u < users_in_frame.size(); ++u) {
-      std::vector<bwi_exp1::ExperimentLocationStamped>& path = 
+      std::vector<bwi_exp1::LocationStamped>& path = 
         odometry_[current_experiment_index_][users_in_frame[u]];
       for (size_t t = 1; t < path.size(); ++t) {
         if (path[t].seconds_since_start < 0.1)

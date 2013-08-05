@@ -6,7 +6,7 @@
 
 namespace bwi_exp1 {
 
-  void operator >> (const YAML::Node& node, ExperimentPathPoint& point) {
+  void operator >> (const YAML::Node& node, PathPoint& point) {
     node["id"] >> point.graph_id;
     node["robot"] >> point.robot_present;
   }
@@ -19,13 +19,13 @@ namespace bwi_exp1 {
     node["ball_y"] >> exp.ball_loc.y;
     exp.path.clear();
     for (size_t i = 0; i < node["path"].size(); ++i) {
-      ExperimentPathPoint path_point;
+      PathPoint path_point;
       node["path"][i] >> path_point;
       exp.path.push_back(path_point);
     }
     exp.extra_robots.clear();
     for (size_t i = 0; i < node["extra_robots"].size(); ++i) {
-      ExperimentLocation extra_robot;
+      Location extra_robot;
       node["extra_robots"][i]["loc_x"] >> extra_robot.x;
       node["extra_robots"][i]["loc_y"] >> extra_robot.y;
       exp.extra_robots.push_back(extra_robot);
@@ -43,7 +43,7 @@ namespace bwi_exp1 {
     }
   }
 
-  void operator >> (const YAML::Node& node, ExperimentRobot& robot) {
+  void operator >> (const YAML::Node& node, Robot& robot) {
     node["id"] >> robot.id;
     node["default_loc"][0] >> robot.default_loc.x;
     node["default_loc"][1] >> robot.default_loc.y;
@@ -54,7 +54,7 @@ namespace bwi_exp1 {
     node["person_id"] >> ec.person_id;
     ec.robots.clear();
     for (size_t i = 0; i < node["robots"].size(); ++i) {
-      ExperimentRobot robot;
+      Robot robot;
       node["robots"][i] >> robot;
       ec.robots.push_back(robot);
     }
@@ -67,7 +67,7 @@ namespace bwi_exp1 {
     node["ball_id"] >> ec.person_id;
   }
 
-  void readExperimentCollectionFromFile(const std::string& file, 
+  void readExperimentFromFile(const std::string& file, 
       Experiment& ec) {
 
     std::ifstream fin(file.c_str());
@@ -78,7 +78,7 @@ namespace bwi_exp1 {
     doc >> ec;
   }
 
-  void getExperimentNames(const Experiment& ec, 
+  void getInstanceNames(const Experiment& ec, 
       std::vector<std::string> &names) {
     names.clear();
     for (size_t i = 0; i < ec.experiments.size(); ++i) {
@@ -124,7 +124,7 @@ namespace bwi_exp1 {
 
   }
 
-  Instance& getExperiment(Experiment& ec, size_t idx) {
+  Instance& getInstance(Experiment& ec, size_t idx) {
     size_t count = 0;
     for (size_t i = 0; i < ec.experiments.size(); ++i) {
       InstanceGroup& eg = ec.experiments[i];

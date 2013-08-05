@@ -42,13 +42,13 @@
 
 namespace bwi_exp1 {
 
-  struct ExperimentLocationStamped {
-    ExperimentLocation location;
+  struct LocationStamped {
+    Location location;
     float seconds_since_start;
   };
 
   bool readOdometry(const std::string& file, 
-      std::vector<ExperimentLocationStamped>& path);
+      std::vector<LocationStamped>& path);
   
 } /* bwi_exp1 */
 
