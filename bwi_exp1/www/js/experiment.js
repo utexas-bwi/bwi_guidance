@@ -18,7 +18,10 @@ var host = 'localhost'
 /* var host = 'zoidberg.csres.utexas.edu' */
 var ros;
 var experiment_status_subscriber; // subs
+var server_status_subscriber; // subs
 var update_experiment_service; // services
+var update_server_service; // services
+var uid = '';
 
 function initializeROS() {
   /* Setup ROS */
@@ -26,12 +29,22 @@ function initializeROS() {
   ros = new ROS('ws://' + host +':9090');
 
   /* Subscribed topics */
+  server_status_subscriber = new ros.Topic({
+    name        : '/server/server_status',
+    messageType : 'bwi_msgs/ExperimentServerStatus'
+  });
+
   experiment_status_subscriber = new ros.Topic({
-    name        : '/experiment_controller/status',
+    name        : '/experiment_controller/experiment_status',
     messageType : 'bwi_msgs/ExperimentStatus'
   });
 
   /* Service Proxies */
+  update_server_service = new ros.Service({
+      name        : '/server/update_server',
+      serviceType : 'bwi_msgs/UpdateExperimentServer'
+  });
+
   update_experiment_service = new ros.Service({
       name        : '/experiment_controller/update_experiment',
       serviceType : 'bwi_msgs/UpdateExperiment'
@@ -41,7 +54,7 @@ function initializeROS() {
 
 /* JS Stuff on the finish page */
 function finish() {
-  var score_text = document.getElementById( 'score' );
+  var score_text = document.getElementById('score');
   params = parseParameters();
 
   var score;
@@ -58,7 +71,9 @@ function finish() {
 function instructions() {
 
   /* Get DOM Elements */
-  var instructions = document.getElementById('instructions');
+  var lock_instructions = document.getElementById('lock_instructions');
+  var lock_button = document.getElementById('lock_button');
+  var continue_instructions = document.getElementById('continue_instructions');
   var continue_button = document.getElementById('continue_button');
 
   initializeROS();
@@ -66,13 +81,39 @@ function instructions() {
   /* Enable/disable continue button based on the current experiment status.
    * This button is disabled by default, so if the experiment server is not
    * running, nothing will happen */
-  experiment_status_subscriber.subscribe(function(message) {
+  server_status_subscriber.subscribe(function(message) {
     if (message.locked == true) {
-      instructions.innerHTML = "The experiment server is in use!";
-      continue_button.disabled = true;
+      lock_button.disabled = true;
+      if (uid != message.uid) {
+        lock_instructions.innerHTML = "The experiment server is in use!";
+      } else {
+        lock_instructions.innerHTML = "You have locked the experiment server! "
+          + message.time_remaining + " seconds left before the lock resets!";
+      }
     } else {
-      instructions.innerHTML = "The experiment server is free!";
-      continue_button.disabled = false;
+      lock_instructions.innerHTML = "The experiment server is free!";
+      lock_button.disabled = false;
+    }
+  });
+
+  /* Enable/disable continue button based on the current experiment status.
+   * This button is disabled by default, so if the experiment server is not
+   * running, nothing will happen */
+  experiment_status_subscriber.subscribe(function(message) {
+    if (uid == message.uid) {
+      if (message.experiment_ready == true) {
+        continue_instructions.innerHTML = 
+          "Hit continue to proceed to experiment!";
+        continue_button.disabled = false;
+      } else {
+        continue_instructions.innerHTML = 
+          "The experiment is coming online. Please wait...";
+        continue_button.disabled = true;
+      }
+    } else {
+      continue_instructions.innerHTML = 
+        "You don't have a lock on the experiment!";
+      continue_button.disable = true;
     }
   });
 
@@ -82,23 +123,38 @@ function instructions() {
  * the experiment server */
 function attemptExperimentLock() {
 
-  var continue_instructions = 
-      document.getElementById('continue_instructions');
-  var name_field = document.getElementById('name');
+  var lock_result = document.getElementById('lock_result');
+  var lock_button = document.getElementById('lock_button');
+  var continue_instructions = document.getElementById('continue_instructions');
+  var continue_button = document.getElementById('continue_button');
 
-  if (name_field.value == "") {
-    continue_instructions.innerHTML = "Please enter your name!"
+  var name_field = document.getElementById('name');
+  var email_field = document.getElementById('email');
+
+  if (name_field.value == "" || email_field.value == "") {
+    lock_result.innerHTML = "Please enter your name and email! "
   } else {
-    var request = new ros.ServiceRequest({'lock_experiment': true, 'name': name_field.value});
-    update_experiment_service.callService(request, function (result) {
-      if (result.result) {
-        window.location.href="experiment.html?uid=" + result.uid;
-      } else {
-        continue_instructions.innerHTML = "It looks like sombody else started"
-            + " the experiment at the same time. Please try again later!";
-      }
+    var request = new ros.ServiceRequest({
+      'lock_experiment': true, 
+      'name': name_field.value,
+      'email': email_field.value,
+      'unlock_experiment': false,
+      'keep_alive': false,
+      'uid': ''
+    });
+    update_server_service.callService(request, function (result) {
+      lock_result.innerHTML = "";
+      uid = result.uid;
+      continue_instructions.innerHTML = 
+        "The experiment is coming online. Please wait...";
+      continue_button.disabled = true;
     });
   }
+
+}
+
+function continueToExperiment() {
+  window.location.href = "experiment.html?uid=" + uid;
 }
 
 function start() {

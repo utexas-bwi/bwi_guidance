@@ -11,3 +11,4 @@ bool paused
 bool continue_enabled
 
 bool experiment_success
+bool experiment_ready

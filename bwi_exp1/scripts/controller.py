@@ -9,6 +9,7 @@ import random
 import roslib
 import rospy
 import threading
+import time
 import yaml
 
 from cv_bridge import CvBridge
@@ -16,7 +17,8 @@ from tf.transformations import quaternion_from_euler
 
 from bwi_msgs.msg import ExperimentStatus
 from bwi_msgs.srv import PositionRobot, PositionRobotRequest, \
-                         UpdateExperiment, UpdateExperimentResponse
+                         UpdateExperiment, UpdateExperimentResponse, \
+                         UpdateExperimentServer, UpdateExperimentServerRequest
 from gazebo_msgs.srv import SetModelState, SetModelStateRequest
 from geometry_msgs.msg import Pose, Quaternion
 from nav_msgs.msg import Odometry
@@ -76,7 +78,7 @@ class ExperimentInterface(threading.Thread):
         threading.Thread.__init__(self)
         self.experiment_status_publisher = rospy.Publisher(
                 '~experiment_status', ExperimentStatus)
-        self.update_experiment_server = rospy.Service(
+        self.update_experiment = rospy.Service(
                 '~update_experiment', UpdateExperiment, 
                 self.handle_experiment_update)
         self.interface_lock = threading.Lock()
@@ -114,6 +116,7 @@ class ExperimentInterface(threading.Thread):
                 msg.paused = self.controller.paused
                 msg.continue_enabled = (not msg.instance_in_progress)
                 msg.experiment_success = self.controller.experiment_success
+                msg.experiment_ready = self.controller.experiment_ready
                 self.experiment_status_publisher.publish(msg)
                 self.interface_lock.release()
                 rate.sleep()
@@ -190,6 +193,19 @@ class ExperimentController:
         self.position_robot = rospy.ServiceProxy('position', PositionRobot)
         rospy.loginfo("Service acquired: position")
 
+        # See if an experiment server is running
+        rospy.loginfo("Waiting for service: /server/update_server")
+        try:
+            rospy.wait_for_service("/server/update_server", 5.0)
+            self.update_server = rospy.ServiceProxy(
+                    '/server/update_server', UpdateExperimentServer)
+            self.server_available = True
+            rospy.loginfo("Server AVAILABLE!")
+        except rospy.exceptions.ROSException:
+            self.server_available = False
+            rospy.loginfo("Server NOT AVAILABLE!")
+
+        # Get Gazebo services
         rospy.loginfo("Waiting for service: /gazebo/set_model_state")
         rospy.wait_for_service("/gazebo/set_model_state")
         self.teleport = \
@@ -198,17 +214,14 @@ class ExperimentController:
 
         rospy.loginfo("Waiting for service: /gazebo/pause_physics")
         rospy.wait_for_service("/gazebo/pause_physics")
-        self.pauseGazebo = rospy.ServiceProxy("/gazebo/pause_physics", Empty)
+        self.pause_gazebo = rospy.ServiceProxy("/gazebo/pause_physics", Empty)
         rospy.loginfo("Service acquired: /gazebo/pause_physics")
 
         rospy.loginfo("Waiting for service: /gazebo/unpause_physics")
         rospy.wait_for_service("/gazebo/unpause_physics")
-        self.unpauseGazebo = \
+        self.unpause_gazebo = \
                 rospy.ServiceProxy("/gazebo/unpause_physics", Empty)
         rospy.loginfo("Service acquired: /gazebo/unpause_physics")
-
-        # Let's start with gazebo paused
-        self.pauseGazebo()
 
         # Setup components required for publishing directed arrows to the
         # robot screens
@@ -234,12 +247,12 @@ class ExperimentController:
         self.person_id = self.experiment['person_id']
         self.robots = self.experiment['robots']
         self.ball_id = self.experiment['ball_id']
-        self.experiment_uid = ""
 
         # Initialize some variables used for the interface
         self.reward = 0
         self.experiment_text = ''
         self.experiment_success = False
+        self.experiment_ready = False
 
         # Initialize some default values for a single experiment
         self.instance_number = 0
@@ -265,7 +278,7 @@ class ExperimentController:
         self.modify_instance_lock.acquire()
 
         # Pause gazebo during teleportation
-        self.pauseGazebo()
+        self.pause_gazebo()
 
         # Teleport person to correct place, however pause and unpause
         start_x = experiment_data['start_x']
@@ -384,7 +397,7 @@ class ExperimentController:
         self.instance_success = False
 
         # Unpause gazebo
-        self.unpauseGazebo()
+        self.unpause_gazebo()
 
         self.modify_instance_lock.release()
 
@@ -438,22 +451,27 @@ class ExperimentController:
         self.log_file.close()
 
         #teleport all the robots to correct positions
-        self.pauseGazebo()
+        self.pause_gazebo()
         for robot in self.robots:
             robot_pose = get_pose_msg_from_2d(*robot['default_loc'], yaw=0)
             self.teleport_entity(robot['id'], robot_pose) 
 
         # Leave gazebo paused to prevent the user from moving the character
         # around
-        # self.unpauseGazebo() 
+        # self.unpause_gazebo() 
 
         self.modify_instance_lock.release()
 
     def odometry_callback(self, odom):
 
+        # TODO set this flag under additional timer?
+        self.experiment_ready = True
+
         self.modify_instance_lock.acquire()
 
         if (not self.instance_in_progress):
+            # This instance has completed. We just received an extra odom 
+            # message from Gazebo before it got completely paused.
             self.modify_instance_lock.release()
             return
 
@@ -497,8 +515,8 @@ class ExperimentController:
 
             # Get ROS time here in case Gazebo was paused
             if self.instance_in_progress:
-                time = rospy.get_time()
-                time_taken = time - self.experiment_start_time
+                current_time = rospy.get_time()
+                time_taken = current_time - self.experiment_start_time
 
             self.modify_experiment_lock.acquire()
 
@@ -616,7 +634,6 @@ class ExperimentController:
         # Prepare to start the first instance
         self.instance_number = 0
         self.reward = 0
-        self.start_next_instance = True
         rospy.loginfo("Starting experiment for user: " + self.experiment_uid)
 
     def finalize_experiment(self):
@@ -634,15 +651,29 @@ class ExperimentController:
         rospy.loginfo("Finalized instances for user: " + self.experiment_uid)
         self.experiment_success = True
 
-        # Wait 2 seconds, then do as follows
-        # TODO send unlock request to experiment server (needs to be try-catched)
+        time.sleep(2.0)
+        self.unlock_server()
+
+    def ping_server(self):
+        if self.server_available:
+            req = UpdateExperimentServerRequest()
+            req.keep_alive = True
+            req.uid = self.experiment_uid
+            self.update_server(req)
+
+    def unlock_server(self):
+        if self.server_available:
+            req = UpdateExperimentServerRequest()
+            req.unlock_experiment = True
+            req.uid = self.experiment_uid
+            self.update_server(req)
 
     def continue_to_next_instance(self):
         success = False
         self.modify_experiment_lock.acquire()
         if not self.instance_in_progress:
             self.start_next_instance = True
-            # TODO send a ping to the server
+            self.ping_server()
             success = True
         self.modify_experiment_lock.release()
         return success
@@ -650,7 +681,7 @@ class ExperimentController:
     def pause_experiment(self):
         success = False
         if self.instance_in_progress and not self.paused:
-            self.pauseGazebo()
+            self.pause_gazebo()
             self.paused = True
             success = True
         return success
@@ -658,7 +689,7 @@ class ExperimentController:
     def unpause_experiment(self):
         success = False
         if self.instance_in_progress and self.paused:
-            self.unpauseGazebo()
+            self.unpause_gazebo()
             self.paused = False
             success = True
         return success

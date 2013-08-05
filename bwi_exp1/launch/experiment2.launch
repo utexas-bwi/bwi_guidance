@@ -1,4 +1,0 @@
-<launch>
-  <include file="$(find bwi_exp1)/launch/environment.launch" />
-  <include file="$(find bwi_exp1)/launch/controller2.launch" />
-</launch>

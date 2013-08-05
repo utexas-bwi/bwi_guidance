@@ -13,6 +13,19 @@
   <body onload="instructions()" style="font-family: arial;">
     <h2> Instructions </h2>
     Please read the instructions thoroughly before proceeding.
+    <h4> Experiment Server </h4>
+    <ul>
+      <li>
+      The experiment server can only support 1 person at a time. To start the experiment, enter your name and email address and lock the server below. <br />
+      <form > 
+        <!--onSubmit="attemptExperimentLock(); return false;">-->
+        Enter full name here: <input id="name" type="text" name="name" /> <br />
+        Enter email address here: <input id="email" type="text" name="email" /> <br />
+        <button onClick="attemptExperimentLock();" id="lock_button" type="button" disabled>Lock Server!</button>
+        <span id="lock_result"></span><span id="lock_instructions">The experiment server is in use!</span>
+      </form>
+      </li>
+    </ul>
     <h4> Experiment Goal </h4>
     <ul> 
       <li>
@@ -63,11 +76,9 @@
     <p>
     It will take you between 15-30 minutes to complete the entire set of
     experiments, so make sure you have enough time to proceed. <br/>
-    <div id="instructions">The experiment server is in use!</div>
-    <form onSubmit="attemptExperimentLock(); return false;">
-      Enter full name here: <input id="name" type="text" name="name" />
-      <button id="continue_button" type="submit" disabled>Continue</button>
-      <span id="continue_instructions"></span>
+    <form onSubmit="continueToExperiment(); return false;">
+      <button id="continue_button" type="submit" disabled>Continue to Experiment!</button>
+      <span id="continue_instructions">You don't have a lock on the experiment!</span>
     </form>
     </p>
   </body>
