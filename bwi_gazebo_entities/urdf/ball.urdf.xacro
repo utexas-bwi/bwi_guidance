@@ -17,7 +17,7 @@
     </link>
 
     <joint name="base_link_joint" type="fixed">
-      <origin xyz="0.0 0 0.3" rpy="0 0 0" />
+      <origin xyz="0.0 0 0.4" rpy="0 0 0" />
       <parent link="base_footprint"/>
       <child link="base_link" />
     </joint>
@@ -33,13 +33,13 @@
       </inertial>
       <visual>
         <geometry>
-          <sphere radius="0.3" />
+          <sphere radius="0.4" />
         </geometry>
         <material name="red" />
       </visual>
       <collision>
         <geometry>
-          <sphere radius="0.3" />
+          <sphere radius="0.4" />
         </geometry>
       </collision>
     </link>
