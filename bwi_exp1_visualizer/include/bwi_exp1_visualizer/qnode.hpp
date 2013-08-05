@@ -89,7 +89,7 @@ namespace bwi_exp1_visualizer {
       /* Experiment and graph information */
       boost::shared_ptr<topological_mapper::MapLoader> mapper_;
       topological_mapper::Graph graph_;
-      bwi_exp1::ExperimentCollection experiments_;
+      bwi_exp1::Experiment experiments_;
       std::vector<bwi_exp1::User> users_;
       std::vector< std::vector<size_t> > user_box_to_idx_map_;
       std::vector< std::vector< 

@@ -11,7 +11,7 @@ namespace bwi_exp1 {
     node["robot"] >> point.robot_present;
   }
 
-  void operator >> (const YAML::Node& node, Experiment& exp) {
+  void operator >> (const YAML::Node& node, Instance& exp) {
     node["start_x"] >> exp.start_loc.x;
     node["start_y"] >> exp.start_loc.y;
     node["start_yaw"] >> exp.start_loc.yaw;
@@ -32,13 +32,13 @@ namespace bwi_exp1 {
     }
   }
 
-  void operator >> (const YAML::Node& node, ExperimentGroup& eg) {
+  void operator >> (const YAML::Node& node, InstanceGroup& eg) {
     node["prefix"] >> eg.prefix;
     node["order"] >> eg.order;
     eg.experiments.clear();
-    for (size_t i = 0; i < node["experiments"].size(); ++i) {
-      Experiment exp;
-      node["experiments"][i] >> exp;
+    for (size_t i = 0; i < node["instances"].size(); ++i) {
+      Instance exp;
+      node["instances"][i] >> exp;
       eg.experiments.push_back(exp);
     }
   }
@@ -50,7 +50,7 @@ namespace bwi_exp1 {
     robot.default_loc.yaw = 0;
   }
 
-  void operator >> (const YAML::Node& node, ExperimentCollection& ec) {
+  void operator >> (const YAML::Node& node, Experiment& ec) {
     node["person_id"] >> ec.person_id;
     ec.robots.clear();
     for (size_t i = 0; i < node["robots"].size(); ++i) {
@@ -59,16 +59,16 @@ namespace bwi_exp1 {
       ec.robots.push_back(robot);
     }
     ec.experiments.clear();
-    for (size_t i = 0; i < node["experiments"].size(); ++i) {
-      ExperimentGroup group;
-      node["experiments"][i] >> group;
+    for (size_t i = 0; i < node["instance_groups"].size(); ++i) {
+      InstanceGroup group;
+      node["instance_groups"][i] >> group;
       ec.experiments.push_back(group);
     }
     node["ball_id"] >> ec.person_id;
   }
 
   void readExperimentCollectionFromFile(const std::string& file, 
-      ExperimentCollection& ec) {
+      Experiment& ec) {
 
     std::ifstream fin(file.c_str());
     YAML::Parser parser(fin);
@@ -78,11 +78,11 @@ namespace bwi_exp1 {
     doc >> ec;
   }
 
-  void getExperimentNames(const ExperimentCollection& ec, 
+  void getExperimentNames(const Experiment& ec, 
       std::vector<std::string> &names) {
     names.clear();
     for (size_t i = 0; i < ec.experiments.size(); ++i) {
-      const ExperimentGroup& eg = ec.experiments[i];
+      const InstanceGroup& eg = ec.experiments[i];
       for (size_t j = 0; j < eg.experiments.size(); ++j) {
         names.push_back(eg.prefix + "_" + 
             boost::lexical_cast<std::string>(j));
@@ -90,14 +90,14 @@ namespace bwi_exp1 {
     }
   }
 
-  void computeOrderings(const ExperimentCollection& ec,
+  void computeOrderings(const Experiment& ec,
       std::vector< std::vector<std::string> >& orderings) {
 
     std::vector<std::string> base_order;
     base_order.resize(ec.experiments.size());
     std::vector<std::string> randomly_ordered_groups;
     for (size_t i = 0; i < ec.experiments.size(); ++i) {
-      const ExperimentGroup& eg = ec.experiments[i];
+      const InstanceGroup& eg = ec.experiments[i];
       if (eg.order != -1) {
         base_order[eg.order] = eg.prefix;
       } else {
@@ -124,10 +124,10 @@ namespace bwi_exp1 {
 
   }
 
-  Experiment& getExperiment(ExperimentCollection& ec, size_t idx) {
+  Instance& getExperiment(Experiment& ec, size_t idx) {
     size_t count = 0;
     for (size_t i = 0; i < ec.experiments.size(); ++i) {
-      ExperimentGroup& eg = ec.experiments[i];
+      InstanceGroup& eg = ec.experiments[i];
       for (size_t j = 0; j < eg.experiments.size(); ++j) {
         if (count == idx) {
           return eg.experiments[j];

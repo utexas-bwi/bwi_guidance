@@ -155,7 +155,7 @@ namespace bwi_exp1_visualizer {
     mapper_->drawMap(generated_image_);
     
     // mark the start and goal locations
-    bwi_exp1::Experiment& exp = 
+    bwi_exp1::Instance& exp = 
       bwi_exp1::getExperiment(experiments_, current_experiment_index_);
     cv::Vec2f start_loc(exp.start_loc.x, exp.start_loc.y);
     cv::Vec2f goal_loc(exp.ball_loc.x, exp.ball_loc.y);
