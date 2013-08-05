@@ -21,7 +21,7 @@ robots:
   - id: robot10
     default_loc: [518, 500]
 ball_id: ball
-instance_group:
+instance_groups:
   - prefix: tutorial
     order: 0
     instances:

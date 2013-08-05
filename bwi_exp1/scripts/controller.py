@@ -113,7 +113,7 @@ class ExperimentInterface(threading.Thread):
     #     self.interface_lock.release()
 
     def run(self):
-        rate = bwi_tools.WallRate(10)
+        rate = bwi_tools.WallRate(5) #5Hz
         try:
             while not rospy.is_shutdown():
                 self.interface_lock.acquire()
@@ -124,14 +124,13 @@ class ExperimentInterface(threading.Thread):
                 msg.current_display_text = self.controller.experiment_text
                 msg.instance_number = self.controller.instance_number
                 msg.total_experiments = self.controller.num_instances
-                msg.reward_in_prev_exp = self.reward_in_prev_exp
                 msg.pause_enabled = msg.instance_in_progress
                 msg.paused = self.controller.paused
                 msg.continue_enabled = (not msg.instance_in_progress)
-                msg.prev_exp_reset = self.prev_exp_reset
-                msg.prev_exp_success = self.prev_exp_success
+                msg.experiment_success = self.controller.experiment_success
                 self.experiment_status_publisher.publish(msg)
                 self.interface_lock.release()
+                rate.sleep()
         except rospy.ROSInterruptException:
             pass
         rospy.loginfo("Controller Interface thread shutting down...")
@@ -221,7 +220,9 @@ class ExperimentController:
         self.unpauseGazebo = \
                 rospy.ServiceProxy("/gazebo/unpause_physics", Empty)
         rospy.loginfo("Service acquired: /gazebo/unpause_physics")
-        self.unpauseGazebo()
+
+        # Let's start with gazebo paused
+        self.pauseGazebo()
 
         # Setup components required for publishing directed arrows to the
         # robot screens
@@ -230,6 +231,7 @@ class ExperimentController:
         self.image_none = numpy.zeros((120,160,3), numpy.uint8)
 
         self.robot_image_publisher = RobotScreenPublisher()
+        self.robots = self.experiment['robots']
         for i, robot in enumerate(self.robots):
             robot_id = robot['id']
             self.robot_image_publisher.add_robot(robot_id)
@@ -249,7 +251,9 @@ class ExperimentController:
         self.experiment_uid = ""
 
         # Initialize some variables used for the interface
-        self.reward = 0;
+        self.reward = 0
+        self.experiment_text = ''
+        self.experiment_success = False
 
         # Initialize some default values for a single experiment
         self.instance_number = 0
@@ -267,7 +271,12 @@ class ExperimentController:
         self.modify_experiment_lock = threading.Lock()
         self.modify_instance_lock = threading.Lock()
 
+        # Start the experiment
+        self.start_experiment()
+
     def start_instance(self, log_file_name, experiment_data, instance_number):
+
+        self.modify_instance_lock.acquire()
 
         # Pause gazebo during teleportation
         self.pauseGazebo() # time also stops
@@ -362,12 +371,8 @@ class ExperimentController:
         self.unpauseGazebo()
 
         # setup odometry thread to write out odometry values
-        if self.allow_logging:
-            self.log_lock.acquire()
-            self.record_odometry = True
-            self.log_file = open(log_file_name, 'w')
-            self.log_file.write("odometry: \n")
-            self.log_lock.release()
+        self.log_file = open(log_file_name, 'w')
+        self.log_file.write("odometry: \n")
 
         # Save experiment start time
         self.experiment_start_time = rospy.get_time()
@@ -376,18 +381,23 @@ class ExperimentController:
         # Setup interactions with user
         self.experiment_tutorial = experiment_data['is_tutorial']
         if self.experiment_tutorial:
-            self.experiment_tutorial_duration = experiment_data['tutorial_duration']
-            experiment_text = "#" + str(instance_number + 1) + " The TUTORIAL has started! Use this tutorial to become comfortable with moving the person around."
+            self.max_tutorial_time = experiment_data['tutorial_duration']
+            self.experiment_text = "#" + str(instance_number + 1) + " "\
+                    + "The TUTORIAL has started! Use this tutorial to become "\
+                    + "comfortable with moving the person around."
         else:
-            experiment_text = "#" + str(instance_number + 1) + " The EXPERIMENT has started! Find the red ball as quickly as possible!"
+            self.experiment_text = "#" + str(instance_number + 1) + " "\
+                    + "The EXPERIMENT has started! Find the red ball as "\
+                    + "quickly as possible!"
 
         self.instance_in_progress = True
         self.instance_success = False
 
-        self.interface.start_instance(experiment_text)
+        self.modify_instance_lock.release()
 
     def stop_instance(self, success):
 
+        self.modify_instance_lock.acquire()
         self.instance_in_progress = False
 
         if not self.experiment_tutorial:
@@ -398,56 +408,69 @@ class ExperimentController:
             # Send message to user
             if (success):
                 reward = int(reward_time) + 50
-                experiment_text = "You found the goal in " + str(time_diff) + " seconds and earned " + str(reward) + " points!"
+                self.experiment_text = "You found the goal in " \
+                        + str(time_diff) + " seconds and earned " \
+                        + str(reward) + " points!"
             else:
                 reward = 25
-                experiment_text = "Oh no! It looks like you ran out of time with this experiment. We've awarded you " + str(reward) + " points."
+                self.experiment_text = "Oh no! It looks like you ran out of "\
+                        + "time with this experiment. We've awarded you "\
+                        + str(reward) + " points."
         else:
             if (success):
                 if self.instances[self.instance_number + 1]['is_tutorial']:
-                    experiment_text = "Awesome! You found the goal! There are more TUTORIALS to go!"
+                    self.experiment_text = "Awesome! You found the goal! "\
+                            + "There are more TUTORIALS to go!"
                 else:
-                    experiment_text = "Awesome! You've finished the tutorials! Hit the enter key or press the continue button to proceed to the EXPERIMENTS!"
+                    self.experiment_text = "Awesome! You've finished the "\
+                            + "tutorials! Hit the enter key or press the "\
+                            + "continue button to proceed to the EXPERIMENTS!"
                 reward = 50
             else:
                 current_time = rospy.get_time()
                 time_diff = current_time - self.experiment_start_time
-                experiment_text = "Oh no! You were unable to find the ball quickly enough (" + str(time_diff) + " seconds). You need to find the ball in " + str(self.experiment_tutorial_duration) + " seconds. Let's try the tutorial again!"
+                self.experiment_text = "Oh no! You were unable to find the "\
+                        + "ball quickly enough (" + str(time_diff) + " "\
+                        + "seconds). You need to find the ball in "\
+                        + str(self.experiment_tutorial_duration) + " seconds. "\
+                        + "Let's try the tutorial again!"
                 reward = 0
 
-        experiment_text += " Hit the ENTER key or press Continue to try again!"
-        self.interface.stop_instance(reward, experiment_text)
+        self.experiment_text += \
+                " Hit the ENTER key or press Continue to try again!"
+        self.reward += reward
 
         # setup odometry thread to stop writing out odometry values
-        if self.allow_logging:
-            self.log_lock.acquire()
-            self.record_odometry = False
-            self.log_file.write("success: " + str(success))
-            self.log_file.close()
-            self.log_lock.release()
+        self.log_file.write("success: " + str(success))
+        self.log_file.close()
 
         #teleport all the robots to correct positions
         self.pauseGazebo()
         for robot in self.robots:
             robot_pose = getPoseMsgFrom2dData(*robot['default_loc'], yaw=0)
             self.teleport_entity(robot['id'], robot_pose) 
-        self.unpauseGazebo() 
+
+        # Leave gazebo paused to prevent the user from moving the character
+        # around
+        # self.unpauseGazebo() 
+
+        self.modify_instance_lock.release()
 
     def odometry_callback(self, odom):
 
+        self.modify_instance_lock.acquire()
+
         if (not self.instance_in_progress):
+            self.modify_instance_lock.release()
             return
 
         loc = [odom.pose.pose.position.x, odom.pose.pose.position.y]
 
         # record position
-        self.log_lock.acquire()
         try:
             self.log_file.write("  - [" + str(odom.pose.pose.position.x) + ", " + str(odom.pose.pose.position.y) + ", " + str(odom.header.stamp.to_sec()) + "]\n")
         except ValueError as e:
             rospy.logerr("Value error caught while writing odometry data. FIX THIS!!!")
-
-        self.log_lock.release()
 
         # check if the person is near a robot
         for i, robot in enumerate(self.robots):
@@ -464,9 +487,12 @@ class ExperimentController:
         if distance_sqr < 1.0 * 1.0:
             self.instance_success = True
 
+        self.modify_instance_lock.release()
+
     def start(self):
 
         self.robot_image_publisher.start()
+        self.interface.start()
 
         # Use wall rate here as you don't want the loop to stop while gazebo is
         # paused
@@ -475,8 +501,9 @@ class ExperimentController:
         while not rospy.is_shutdown():
 
             # Get ROS time here in case Gazebo was paused
-            time = rospy.get_time()
-            time_taken = time - self.experiment_start_time
+            if self.instance_in_progress:
+                time = rospy.get_time()
+                time_taken = time - self.experiment_start_time
 
             self.modify_experiment_lock.acquire()
 
@@ -499,7 +526,7 @@ class ExperimentController:
                 else: 
                     self.stop_instance(True)
                     self.instance_number = self.instance_number + 1
-                if self.instance_number != len(self.instances):
+                if self.instance_number == len(self.instances):
                     # All done! Nothing to see here
                     self.finalize_experiment()
             elif (self.instance_in_progress and 
@@ -508,7 +535,7 @@ class ExperimentController:
                 self.stop_instance(False)
                 if not self.experiment_tutorial:
                     self.instance_number = self.instance_number + 1
-                if self.instance_number != len(self.instances):
+                if self.instance_number == len(self.instances):
                     # All done! Nothing to see here
                     self.finalize_experiment()
 
@@ -572,7 +599,7 @@ class ExperimentController:
             for instance_group in self.experiment['instance_groups']:
                 if (instance_group['prefix'] != instance_group_name):
                     continue
-                num_instances = len(instance_group['instance'])
+                num_instances = len(instance_group['instances'])
                 self.instance_names.extend(
                     [instance_group_name + "_" + str(i) 
                      for i in range(num_instances)]
@@ -597,7 +624,6 @@ class ExperimentController:
         rospy.loginfo("Starting experiment for user: " + self.experiment_uid)
 
     def finalize_experiment(self):
-        self.interface.stopExperiment()
         user_file = open(self.user_file, "a")
         user_file.write("- user: " + self.experiment_uid + "\n")
         user_file.write("  name: " + self.experiment_uname + "\n")
@@ -610,6 +636,9 @@ class ExperimentController:
                             str(self.instance_group_count[i]) + "\n")
         user_file.close()
         rospy.loginfo("Finalized instances for user: " + self.experiment_uid)
+        self.experiment_success = True
+
+        # Wait 2 seconds, then do as follows
         # TODO send unlock request to experiment server (needs to be try-catched)
 
     def continue_to_next_instance(self):
@@ -617,7 +646,7 @@ class ExperimentController:
         self.modify_experiment_lock.acquire()
         if not self.instance_in_progress:
             self.start_next_instance = True
-            self.ping_server()
+            # TODO send a ping to the server
             success = True
         self.modify_experiment_lock.release()
         return success

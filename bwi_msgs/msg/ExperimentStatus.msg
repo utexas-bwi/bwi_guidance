@@ -1,17 +1,13 @@
-bool locked
-bool experiment_in_progress
+bool instance_in_progress
 string uid
 float32 total_reward
 
 string current_display_text
-int32 experiment_number
+int32 instance_number
 int32 total_experiments
-float32 reward_in_previous_experiment
 
 bool pause_enabled
 bool paused
 bool continue_enabled
-string reset_warning_text
 
-bool previous_experiment_reset
-bool previous_experiment_successfully_finished
+bool experiment_success
