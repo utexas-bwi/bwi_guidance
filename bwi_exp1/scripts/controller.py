@@ -19,7 +19,8 @@ from bwi_msgs.msg import ExperimentStatus
 from bwi_msgs.srv import PositionRobot, PositionRobotRequest, \
                          UpdateExperiment, UpdateExperimentResponse, \
                          UpdateExperimentServer, UpdateExperimentServerRequest
-from gazebo_msgs.srv import SetModelState, SetModelStateRequest
+from gazebo_msgs.srv import SetModelState, SetModelStateRequest, \
+                            GetModelState, GetModelStateRequest
 from geometry_msgs.msg import Pose, Quaternion
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
@@ -72,6 +73,12 @@ def compute_average_angle(angle1, angle2):
     average_vec = [vec1[0] + vec2[0], vec1[1] + vec2[1]]
     return math.atan2(average_vec[1], average_vec[0])
 
+def check_close_poses(pose1, pose2):
+    if (math.fabs(pose1.position.x - pose2.position.x) < 0.1 and
+        math.fabs(pose1.position.y - pose2.position.y) < 0.1):
+        return True
+    return False
+
 class ExperimentInterface(threading.Thread):
 
     def __init__(self, controller):
@@ -114,7 +121,8 @@ class ExperimentInterface(threading.Thread):
                 msg.total_experiments = self.controller.num_instances
                 msg.pause_enabled = msg.instance_in_progress
                 msg.paused = self.controller.paused
-                msg.continue_enabled = (not msg.instance_in_progress)
+                msg.continue_enabled = ((not msg.instance_in_progress) and
+                        (msg.instance_number != msg.total_experiments))
                 msg.experiment_success = self.controller.experiment_success
                 msg.experiment_ready = self.controller.experiment_ready
                 self.experiment_status_publisher.publish(msg)
@@ -208,9 +216,15 @@ class ExperimentController:
         # Get Gazebo services
         rospy.loginfo("Waiting for service: /gazebo/set_model_state")
         rospy.wait_for_service("/gazebo/set_model_state")
-        self.teleport = \
+        self.set_gazebo_model_state = \
                 rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
         rospy.loginfo("Service acquired: /gazebo/set_model_state")
+
+        rospy.loginfo("Waiting for service: /gazebo/get_model_state")
+        rospy.wait_for_service("/gazebo/get_model_state")
+        self.get_gazebo_model_state = \
+                rospy.ServiceProxy("/gazebo/get_model_state", GetModelState)
+        rospy.loginfo("Service acquired: /gazebo/get_model_state")
 
         rospy.loginfo("Waiting for service: /gazebo/pause_physics")
         rospy.wait_for_service("/gazebo/pause_physics")
@@ -253,6 +267,7 @@ class ExperimentController:
         self.experiment_text = ''
         self.experiment_success = False
         self.experiment_ready = False
+        self.experiment_ready_timer_started = False
 
         # Initialize some default values for a single experiment
         self.instance_number = 0
@@ -277,8 +292,8 @@ class ExperimentController:
 
         self.modify_instance_lock.acquire()
 
-        # Pause gazebo during teleportation
-        self.pause_gazebo()
+        # Unpause gazebo before teleportation
+        self.unpause_gazebo()
 
         # Teleport person to correct place, however pause and unpause
         start_x = experiment_data['start_x']
@@ -396,9 +411,6 @@ class ExperimentController:
         self.instance_in_progress = True
         self.instance_success = False
 
-        # Unpause gazebo
-        self.unpause_gazebo()
-
         self.modify_instance_lock.release()
 
     def stop_instance(self, success):
@@ -450,24 +462,29 @@ class ExperimentController:
         self.log_file.write("success: " + str(success))
         self.log_file.close()
 
-        #teleport all the robots to correct positions
-        self.pause_gazebo()
         for robot in self.robots:
             robot_pose = get_pose_msg_from_2d(*robot['default_loc'], yaw=0)
             self.teleport_entity(robot['id'], robot_pose) 
 
         # Leave gazebo paused to prevent the user from moving the character
         # around
-        # self.unpause_gazebo() 
+        self.pause_gazebo()
 
         self.modify_instance_lock.release()
 
-    def odometry_callback(self, odom):
-
-        # TODO set this flag under additional timer?
+    def ready_the_experiment(self):
         self.experiment_ready = True
 
+    def odometry_callback(self, odom):
+
         self.modify_instance_lock.acquire()
+
+        # Once first odometry message is received, ready the experiment in 10s
+        if not self.experiment_ready_timer_started:
+            self.experiment_ready_timer_started = True
+            self.experiment_ready_timer = \
+                threading.Timer(10.0, self.ready_the_experiment)
+            self.experiment_ready_timer.start()
 
         if (not self.instance_in_progress):
             # This instance has completed. We just received an extra odom 
@@ -562,12 +579,36 @@ class ExperimentController:
         raise IndexError, "GraphId %d does not exist in %s"%(id,self.graph_file)
 
     def teleport_entity(self, entity, pose):
-        set_state = SetModelStateRequest()
-        set_state.model_state.model_name = entity
-        set_state.model_state.pose = pose
-        resp = self.teleport(set_state)
-        if not resp.success:
-            rospy.logerr(resp.status_message)
+        """
+        Teleports an model named by entity to give pose. Sometimes gazebo 
+        teleportation fails, so a number of repeated attempts are made. An
+        error is printed if teleportation fails after repeated attempts.
+
+        THIS FUNCTION CANNOT BE CALLED WHILE GAZEBO IS PAUSED!! Any attempts
+        to check location while gazebo is paused will fail. Use carefully
+
+        """
+        count = 0
+        attempts = 5
+        location_verified = False
+        while count < attempts and not location_verified:
+            get_state = GetModelStateRequest()
+            get_state.model_name = entity
+            resp = self.get_gazebo_model_state(get_state)
+            if check_close_poses(resp.pose, pose):
+                location_verified = True
+            else:
+                set_state = SetModelStateRequest()
+                set_state.model_state.model_name = entity
+                set_state.model_state.pose = pose
+                resp = self.set_gazebo_model_state(set_state)
+                if not resp.success:
+                    rospy.logwarn("Failed attempt at moving object")
+            count = count + 1
+        if not location_verified:
+            rospy.logerr("Unable to move " + entity + " to " + str(pose) 
+                     + " after " + attempts + " attempts.")
+        return location_verified
 
     def start_experiment(self):
         """
@@ -650,8 +691,9 @@ class ExperimentController:
         user_file.close()
         rospy.loginfo("Finalized instances for user: " + self.experiment_uid)
         self.experiment_success = True
-
-        time.sleep(2.0)
+        self.experiment_text = "Huzzah. You are all done. Thanks for "\
+                + " participating in this experiment!"
+        time.sleep(10.0)
         self.unlock_server()
 
     def ping_server(self):
