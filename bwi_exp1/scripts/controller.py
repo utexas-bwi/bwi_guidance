@@ -691,6 +691,7 @@ class ExperimentController:
         if self.instance_in_progress and self.paused:
             self.unpause_gazebo()
             self.paused = False
+            self.ping_server()
             success = True
         return success
 
