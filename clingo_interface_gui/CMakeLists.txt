@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 2.8.3)
 project(clingo_interface_gui)
 find_package(catkin REQUIRED COMPONENTS clingo_interface geometry_msgs nav_msgs tf actionlib actionlib_msgs)
 
-include_directories(include ${catkin_INCLUDE_DIRS})
-
 add_message_files(
   FILES
   ClingoFluent.msg
@@ -16,7 +14,16 @@ add_action_files(
 )
 
 generate_messages(
-  DEPENDENCIES actionlib_msgs std_msgs)
+  DEPENDENCIES actionlib_msgs std_msgs
+)
+
+catkin_package(
+  DEPENDS qt4
+  CATKIN_DEPENDS actionlib actionlib_msgs clingo_interface geometry_msgs nav_msgs tf
+  INCLUDE_DIRS include
+)
+
+include_directories(include ${catkin_INCLUDE_DIRS})
 
 ##############################################################################
 # QT Stuff
@@ -46,10 +53,7 @@ file(GLOB_RECURSE QT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} FOLLOW_SYMLINK
 add_executable(clingo_interface_gui ${QT_SOURCES} ${QT_FORMS_HPP} ${QT_MOC_HPP})
 target_link_libraries(clingo_interface_gui 
   ${catkin_LIBRARIES}
-  ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY})
-
-catkin_package(
-    DEPENDS qt4
-    CATKIN_DEPENDS actionlib actionlib_msgs clingo_interface geometry_msgs nav_msgs tf
-    INCLUDE_DIRS include
+  ${QT_QTCORE_LIBRARY} 
+  ${QT_QTGUI_LIBRARY}
 )
+
