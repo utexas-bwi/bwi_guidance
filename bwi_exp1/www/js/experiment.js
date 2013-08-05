@@ -153,7 +153,24 @@ function attemptExperimentLock() {
 
 }
 
+function updateExperiment (options) {
+  var pause_experiment = (options.pause_experiment == null) ? false : options.pause_experiment;
+  var unpause_experiment = (options.unpause_experiment == null) ? false : options.unpause_experiment;
+  var continue_experiment = (options.continue_experiment == null) ? false : options.continue_experiment;
+  var request = new ros.ServiceRequest({
+    'pause_experiment': pause_experiment, 
+    'unpause_experiment': unpause_experiment,
+    'continue_experiment': continue_experiment
+  });
+  update_experiment_service.callService(request, function (result) {});
+}
+
+function startNextExperiment (event) {
+  updateExperiment({continue_experiment: true});
+}
+
 function continueToExperiment() {
+  startNextExperiment();
   window.location.href = "experiment.html?uid=" + uid;
 }
 
@@ -162,7 +179,7 @@ function start() {
   /* Get DOM Elements */
   var score = document.getElementById('score');
   var continue_button = document.getElementById('continue_button');
-  var instructions = document.getElementById('instructions' );
+  var instructions = document.getElementById('instructions');
   var reset_instructions = document.getElementById('reset_instructions');
   var mouse_button = document.getElementById('mouse_button');
   var pause_button = document.getElementById('pause_button');
@@ -279,65 +296,46 @@ function start() {
     return false;
   };
 
-  /* Handle experiment status callback */
-  experiment_status_subscriber.subscribe(function(message) {
-    if (typeof params.uid === 'undefined' || message.uid == "" || 
-        params.uid != message.uid) { // user should not be in experiment page
+  server_status_subscriber.subscribe(function(message) {
+    if (message.locked == false || 
+        typeof params.uid === 'undefined' || 
+        message.uid == "" ||
+        params.uid != message.uid) {
       window.location.href = "index.html";
     } else {
-      if (!message.locked) {
-        if (message.previous_experiment_reset) {
-          publishVelocity({velx: 0, vely: 0, vela: 0});
-          window.location.href = "reset.html";
-        } else if (message.previous_experiment_successfully_finished) {
-          publishVelocity({velx: 0, vely: 0, vela: 0});
-          window.location.href = "end.html?score=" + message.total_reward;
-        }
+      if (!continue_button.disabled || 
+          (!pause_button.disabled && pause_button.innerHTML == "Unpause")) {
+        reset_instructions.innerHTML = 
+            message.time_remaining + 
+            " seconds left before your lock on the experiment server resets!";
       } else {
-        instructions.innerHTML = message.current_display_text;
-        score.innerHTML = "Score: " + message.total_reward
-        if (message.pause_enabled) {
-          pause_button.disabled = false;
-          if (message.paused) {
-            pause_button.innerHTML = "Unpause";
-          } else {
-            pause_button.innerHTML = "Pause";
-          }
-        } else {
-          pause_button.disabled = true;
-        }
-        if (message.continue_enabled) {
-          continue_button.disabled = false;
-        } else {
-          continue_button.disabled = true;
-        }
-        reset_instructions.innerHTML = message.reset_warning_text;
+        reset_instructions.innerHTML = '';
       }
     }
   });
 
+  /* Handle experiment status callback */
+  experiment_status_subscriber.subscribe(function(message) {
+    instructions.innerHTML = message.current_display_text;
+    score.innerHTML = "Score: " + message.total_reward
+    if (message.pause_enabled) {
+      pause_button.disabled = false;
+      if (message.paused) {
+        pause_button.innerHTML = "Unpause";
+      } else {
+        pause_button.innerHTML = "Pause";
+      }
+    } else {
+      pause_button.disabled = true;
+    }
+    if (message.continue_enabled) {
+      continue_button.disabled = false;
+    } else {
+      continue_button.disabled = true;
+    }
+  });
+
   /* Handle experiment service requests */
-  updateExperiment = function(options) {
-    var lock_experiment = (options.lock_experiment == null) ? false : options.lock_experiment;
-    var name = (options.name == null) ? "" : options.name;
-    var email = (options.email == null) ? "" : options.email;
-    var pause_experiment = (options.pause_experiment == null) ? false : options.pause_experiment;
-    var unpause_experiment = (options.unpause_experiment == null) ? false : options.unpause_experiment;
-    var continue_experiment = (options.continue_experiment == null) ? false : options.continue_experiment;
-    var request = new ros.ServiceRequest({
-        'lock_experiment': lock_experiment, 
-        'name': name, 
-        'email': email, 
-        'pause_experiment': pause_experiment, 
-        'unpause_experiment': unpause_experiment,
-        'continue_experiment': continue_experiment
-    });
-    update_experiment_service.callService(request, function (result) {});
-  }
-  /* Handle continue button */
-  var startNextExperiment = function (event) {
-    updateExperiment({continue_experiment: true});
-  }
   continue_button.addEventListener('click', startNextExperiment, false);
 
   /* Handle pause button */
@@ -349,7 +347,6 @@ function start() {
     }
   }
   pause_button.addEventListener('click', pauseToggle, false);
-
 
   /* Handle mouse movement based velocity control */
 

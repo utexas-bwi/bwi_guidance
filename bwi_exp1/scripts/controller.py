@@ -475,7 +475,7 @@ class ExperimentController:
             self.modify_instance_lock.release()
             return
 
-        ros_time = odom.heade.stamp.to_sec()
+        ros_time = odom.header.stamp.to_sec()
         loc = [odom.pose.pose.position.x, odom.pose.pose.position.y]
 
         # record position
