@@ -23,7 +23,7 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
 from std_srvs.srv import Empty
 
-def getPoseMsgFrom2dData(x, y, yaw):
+def get_pose_msg_from_2d(x, y, yaw):
     pose = Pose()
     pose.position.x = x
     pose.position.y = y
@@ -34,7 +34,16 @@ def getPoseMsgFrom2dData(x, y, yaw):
 def readImage(location):
     return cv2.imread(location)
 
-def produceDirectedArrow(up_arrow, yaw):
+def distance(a, b):
+    return math.sqrt(((a[1]-b[1]) * (a[1]-b[1])) + ((a[0]-b[0]) * (a[0]-b[0])))
+
+def orientation(a, b):
+    return math.atan2(a[1] - b[1], a[0] - b[0])
+
+def normalize_angle(y):
+    return math.atan2(math.sin(y), math.cos(y))
+
+def produce_directed_arrow(up_arrow, yaw):
     height, width, channels = up_arrow.shape
     center = (width / 2, height / 2)
     rotation_matrix = cv2.getRotationMatrix2D(center, yaw * 180 / math.pi, 1.0)
@@ -89,29 +98,6 @@ class ExperimentInterface(threading.Thread):
                 resp.status = "Cannot start next experiment right now!"
         return resp
 
-    # def start_instance(self, text):
-    #     self.interface_lock.acquire()
-    #     self.experiment_text = text
-    #     self.interface_lock.release()
-
-    # def stop_instance(self, reward, text):
-    #     self.interface_lock.acquire()
-    #     self.experiment_text = text
-    #     self.reward_in_prev_exp = reward
-    #     self.reward += self.reward_in_prev_exp
-    #     self.interface_lock.release()
-
-    # def resetExperiment(self):
-    #     self.interface_lock.acquire()
-    #     self.reward = -1
-    #     self.prev_exp_reset = True
-    #     self.interface_lock.release()
-
-    # def stopExperiment(self):
-    #     self.interface_lock.acquire()
-    #     self.prev_exp_success = True
-    #     self.interface_lock.release()
-
     def run(self):
         rate = bwi_tools.WallRate(5) #5Hz
         try:
@@ -150,7 +136,7 @@ class RobotScreenPublisher(threading.Thread):
         self.robot_image[robotid] = numpy.zeros((120,160,3), numpy.uint8)
         self.robot_image_lock[robotid] = threading.Lock()
 
-    def updateImage(self, robotid, new_image):
+    def update(self, robotid, new_image):
         self.robot_image_lock[robotid].acquire()
         self.robot_image[robotid] = new_image
         self.robot_image_lock[robotid].release()
@@ -279,30 +265,34 @@ class ExperimentController:
         self.modify_instance_lock.acquire()
 
         # Pause gazebo during teleportation
-        self.pauseGazebo() # time also stops
+        self.pauseGazebo()
 
         # Teleport person to correct place, however pause and unpause
         start_x = experiment_data['start_x']
         start_y = experiment_data['start_y']
         start_yaw = experiment_data['start_yaw']
-        start_pose = getPoseMsgFrom2dData(start_x, start_y, yaw=start_yaw)
+        start_pose = get_pose_msg_from_2d(start_x, start_y, yaw=start_yaw)
         result = self.teleport_entity(self.person_id, start_pose)
 
         # Teleport the goal ball to its correct position
         ball_x = experiment_data['ball_x']
         ball_y = experiment_data['ball_y']
-        ball_pose = getPoseMsgFrom2dData(ball_x, ball_y, 0)
+        ball_pose = get_pose_msg_from_2d(ball_x, ball_y, 0)
         result = self.teleport_entity(self.ball_id, ball_pose)
         self.goal_location = [ball_x, ball_y]
 
         # Teleport all the robots to their respective positions
         self.path = experiment_data['path']
-        self.robots_in_instance = [{'id': p['id'], 'path_position': i} for i, p in enumerate(self.path) if p['robot']]
+        self.robots_in_instance = \
+                [{'id': p['id'], 'path_position': i} 
+                 for i, p in enumerate(self.path) if p['robot']]
         self.extra_robots = experiment_data['extra_robots']
         self.robot_locations = [None] * len(self.robots)
         self.robot_images = [None] * len(self.robots)
         for i, robot in enumerate(self.robots):
-            if i < len(self.robots_in_instance): #one of the robors being used in this experiment
+            if i < len(self.robots_in_instance):
+                # This robit is being used in this instance
+                # Find a position for it
                 path_position = self.robots_in_instance[i]['path_position']
 
                 # Get position and orientation of robot from C++ based service
@@ -332,28 +322,31 @@ class ExperimentController:
                 robot_yaw = resp.yaw
 
                 # Get orientation of the arrow on the screen
-                # If the next point in the graph is too close, select the next
-                # point
-                destination_distance = math.sqrt((going_to[1] - robot_loc[1])*(going_to[1] - robot_loc[1]) + (going_to[0] - robot_loc[0])*(going_to[0] - robot_loc[0]))
+                # If the point in the graph is too close, select the next point
+                destination_distance = distance(going_to, robot_loc)
                 path_position = path_position + 1
                 while destination_distance < 3:
                     if path_position != len(self.path) - 1:
-                        going_to = self.get_location_at_graph_id(self.path[path_position + 1]['id'])
+                        going_to = self.get_location_at_graph_id(
+                            self.path[path_position + 1]['id'])
                     else:
                         going_to = [ball_x, ball_y]
-                    destination_distance = math.sqrt((going_to[1] - robot_loc[1])*(going_to[1] - robot_loc[1]) + (going_to[0] - robot_loc[0])*(going_to[0] - robot_loc[0]))
+                    destination_distance = distance(going_to, robot_loc)
                     path_position = path_position + 1
 
-                destination_yaw = math.atan2(going_to[1] - robot_loc[1], going_to[0] - robot_loc[0])
+                destination_yaw = orientation(going_to, robot_loc)
                 change_in_yaw = destination_yaw - robot_yaw
-                change_in_yaw = math.atan2(math.sin(change_in_yaw), math.cos(change_in_yaw)) #normalize angle
+                change_in_yaw = normalize_angle(change_in_yaw) 
 
                 # Compute the arrow based on direction
-                robot_image = produceDirectedArrow(self.arrow, change_in_yaw)
+                robot_image = produce_directed_arrow(self.arrow, change_in_yaw)
 
-            elif i - len(self.robots_in_instance) < len(self.extra_robots): # Move a distraction robot into place
-                robot_loc = [self.extra_robots[i - len(self.robots_in_instance)]['loc_x'], self.extra_robots[i - len(self.robots_in_instance)]['loc_y']]
-                robot_yaw = self.extra_robots[i - len(self.robots_in_instance)]['yaw']
+            elif (i - len(self.robots_in_instance)) < len(self.extra_robots): 
+                # This is an extra (distraction) robot. Move it into place
+                extra_robot = self.extra_robots[i-len(self.robots_in_instance)]
+                
+                robot_loc = [extra_robot['loc_x'], extra_robot['loc_y']]
+                robot_yaw = extra_robot['yaw']
                 robot_image = self.image_none
 
             else: # Move a robot not used in the experiment
@@ -362,13 +355,10 @@ class ExperimentController:
                 robot_image = self.image_none
 
             # Perform the actual teleport and image update
-            robot_pose = getPoseMsgFrom2dData(*robot_loc, yaw=robot_yaw)
+            robot_pose = get_pose_msg_from_2d(*robot_loc, yaw=robot_yaw)
             result = self.teleport_entity(self.robots[i]['id'], robot_pose)
             self.robot_images[i] = robot_image
             self.robot_locations[i] = robot_loc
-
-        # Unpause gazebo
-        self.unpauseGazebo()
 
         # setup odometry thread to write out odometry values
         self.log_file = open(log_file_name, 'w')
@@ -392,6 +382,9 @@ class ExperimentController:
 
         self.instance_in_progress = True
         self.instance_success = False
+
+        # Unpause gazebo
+        self.unpauseGazebo()
 
         self.modify_instance_lock.release()
 
@@ -447,7 +440,7 @@ class ExperimentController:
         #teleport all the robots to correct positions
         self.pauseGazebo()
         for robot in self.robots:
-            robot_pose = getPoseMsgFrom2dData(*robot['default_loc'], yaw=0)
+            robot_pose = get_pose_msg_from_2d(*robot['default_loc'], yaw=0)
             self.teleport_entity(robot['id'], robot_pose) 
 
         # Leave gazebo paused to prevent the user from moving the character
@@ -464,27 +457,29 @@ class ExperimentController:
             self.modify_instance_lock.release()
             return
 
+        ros_time = odom.heade.stamp.to_sec()
         loc = [odom.pose.pose.position.x, odom.pose.pose.position.y]
 
         # record position
-        try:
-            self.log_file.write("  - [" + str(odom.pose.pose.position.x) + ", " + str(odom.pose.pose.position.y) + ", " + str(odom.header.stamp.to_sec()) + "]\n")
-        except ValueError as e:
-            rospy.logerr("Value error caught while writing odometry data. FIX THIS!!!")
+        self.log_file.write("  - [" + str(loc[0]) + ", " + str(loc[1]) + ", "
+                            + str(ros_time) + "]\n")
 
         # check if the person is near a robot
         for i, robot in enumerate(self.robots):
             if i < len(self.robots_in_instance):
+                # This is non-distraction robot that is a part of the instance
                 robot_loc = self.robot_locations[i]
-                distance_sqr = (loc[0] - robot_loc[0]) * (loc[0] - robot_loc[0]) + (loc[1] - robot_loc[1]) * (loc[1] - robot_loc[1])
-                if distance_sqr < 3.0 * 3.0:
-                    self.robot_image_publisher.updateImage(robot['id'], self.robot_images[i])
+                distance_from_robot = distance(loc, robot_loc)
+                if distance_from_robot < 3.0:
+                    self.robot_image_publisher.update(robot['id'],
+                                                      self.robot_images[i])
                 else:
-                    self.robot_image_publisher.updateImage(robot['id'], self.image_none)
+                    self.robot_image_publisher.update(robot['id'], 
+                                                      self.image_none)
 
         # check if the person is close to the ball
-        distance_sqr = (loc[0] - self.goal_location[0]) * (loc[0] - self.goal_location[0]) + (loc[1] - self.goal_location[1]) * (loc[1] - self.goal_location[1])
-        if distance_sqr < 1.0 * 1.0:
+        distance_from_goal = distance(loc, self.goal_location)
+        if distance_from_goal < 1.0:
             self.instance_success = True
 
         self.modify_instance_lock.release()
@@ -557,21 +552,22 @@ class ExperimentController:
             rospy.logerr(resp.status_message)
 
     def start_experiment(self):
+        """
+        Compute the order in which the instance groups need to be performed
+        If a group has order != -1, then it is placed at location <order>
+        in the instance group order. If the order is -1, then all -1 instance 
+        groups are shuffled and placed at the end
 
-        # Compute the order in which the instance groups need to be performed
-        # If a group has order != -1, then it is placed at location <order>
-        # in the instance group order. If the order is -1, then all -1 instance 
-        # groups are shuffled and placed at the end
+        EXAMPLE - The following instance groups with the specified order
+        prefix: tutorial, order: 0
+        prefix: first, order: 1
+        prefix: dont_care_1, order: -1
+        prefix: dont_care_2, order: -1
+        can result in 1 of 2 orderings:
+        [tutorial, first, dont_care_1, dont_care_2] OR
+        [tutorial, first, dont_care_2, dont_care_1]
 
-        # EXAMPLE - The following instance groups with the specified order
-        # prefix: tutorial, order: 0
-        # prefix: first, order: 1
-        # prefix: dont_care_1, order: -1
-        # prefix: dont_care_2, order: -1
-        # can result in 1 of 2 orderings:
-        # [tutorial, first, dont_care_1, dont_care_2] OR
-        # [tutorial, first, dont_care_2, dont_care_1]
-
+        """
         self.instance_group_order = \
                 [None] * len(self.experiment['instance_groups'])
         randomly_ordered_groups = []
