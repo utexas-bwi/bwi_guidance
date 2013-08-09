@@ -59,13 +59,13 @@ message4 = {
     'args'   : [1, 8, 0]
 }
 
-message5 = {
-    'msgType': orc_interface.INVOKE,
-    'callId' : 5,
-    'method' : 'move',
-    'target' : 'robot4',
-    'args'   : [1, 7, 0]
-}
+# message5 = {
+#     'msgType': orc_interface.INVOKE,
+#     'callId' : 5,
+#     'method' : 'move',
+#     'target' : 'robot4',
+#     'args'   : [1, 7, 0]
+# }
 
 send_and_receive(message1)
 send_and_receive(message2)
