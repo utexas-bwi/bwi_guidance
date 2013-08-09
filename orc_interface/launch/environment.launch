@@ -6,9 +6,43 @@
   <group ns="robot1">
     <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
       <arg name="x" value="0" />
-      <arg name="y" value="0" />
+      <arg name="y" value="5" />
       <arg name="robotid" value="robot1" />
-      <arg name="has_tf_prefix" value="false" />
+      <arg name="tf_prefix" value="robot1" />
+      <arg name="launch_localization" value="true" />
+      <arg name="launch_move_base" value="true" />
+      <arg name="use_full_gazebo_model" value="true" />
+    </include>
+  </group>
+
+  <group ns="robot2">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="0" />
+      <arg name="y" value="6" />
+      <arg name="robotid" value="robot2" />
+      <arg name="tf_prefix" value="robot2" />
+      <arg name="launch_localization" value="true" />
+      <arg name="launch_move_base" value="true" />
+    </include>
+  </group>
+
+  <group ns="robot3">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="0" />
+      <arg name="y" value="7" />
+      <arg name="robotid" value="robot3" />
+      <arg name="tf_prefix" value="robot3" />
+      <arg name="launch_localization" value="true" />
+      <arg name="launch_move_base" value="true" />
+    </include>
+  </group>
+
+  <group ns="robot4">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="0" />
+      <arg name="y" value="8" />
+      <arg name="robotid" value="robot4" />
+      <arg name="tf_prefix" value="robot4" />
       <arg name="launch_localization" value="true" />
       <arg name="launch_move_base" value="true" />
     </include>
