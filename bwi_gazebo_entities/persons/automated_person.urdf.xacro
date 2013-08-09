@@ -4,9 +4,9 @@
        xmlns:xacro="http://ros.org/wiki/xacro">
 
   <!-- Included URDF Files -->
-  <include filename="$(find bwi_gazebo_entities)/urdf/common.urdf.xacro" />
-  <include filename="$(find bwi_gazebo_entities)/urdf/person.urdf.xacro" />
-  <include filename="$(find bwi_gazebo_entities)/gazebo/automated_person.gazebo.xacro" />
+  <xacro:include filename="$(find bwi_gazebo_entities)/urdf/common.urdf.xacro" />
+  <xacro:include filename="$(find bwi_gazebo_entities)/urdf/person.urdf.xacro" />
+  <xacro:include filename="$(find bwi_gazebo_entities)/gazebo/automated_person.gazebo.xacro" />
 
   <!-- Add the person -->
   <xacro:person />
