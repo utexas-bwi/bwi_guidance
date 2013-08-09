@@ -1,24 +1,74 @@
 #!/usr/bin/env python
 
-import json
+import select
 import socket
-import sys
 
 import orc_interface
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect(('', 12345))
 
-if sys.argv[1] == 'msg':
-    # a = {}
-    # a['asdfdasf'] = 'asdfadsf'
-    # a['vddv'] = 'asdfadsf'
-    # a['wewr'] = ['asdfa', 'sadfa', 'dfsf']
-    # data = json.dumps(a)
-    # print data
-    print sys.argv[2]
-    data = json.loads(sys.argv[2])
-    print data
-    orc_interface.send(sock, orc_interface.MSG, json.loads(sys.argv[2]))
-    a, b = orc_interface.recv(sock)
-    print repr(a), b
+def send_and_receive(message):
+    orc_interface.send(sock, orc_interface.MSG, message)
+    while True:
+        try:
+            inputready,outputready,exceptready = \
+                    select.select([sock], [], [], 0.01)
+        except select.error, e:
+            break
+        except socket.error, e:
+            break
+        if sock in inputready:
+            type, data = orc_interface.recv(sock)
+            if type != None:
+                print "Received " + repr(type),
+                if type == orc_interface.MSG:
+                    print ", Data: ", str(data)
+                    break
+                print ""
+
+message1 = {
+    'msgType': orc_interface.INVOKE,
+    'callId' : 1,
+    'method' : 'move',
+    'target' : 'robot1',
+    'args'   : [1, 5, 0]
+}
+
+message2 = {
+    'msgType': orc_interface.INVOKE,
+    'callId' : 2,
+    'method' : 'move',
+    'target' : 'robot2',
+    'args'   : [1, 6, 0]
+}
+
+message3 = {
+    'msgType': orc_interface.INVOKE,
+    'callId' : 3,
+    'method' : 'move',
+    'target' : 'robot3',
+    'args'   : [1, 7, 0]
+}
+
+message4 = {
+    'msgType': orc_interface.INVOKE,
+    'callId' : 4,
+    'method' : 'move',
+    'target' : 'robot4',
+    'args'   : [1, 8, 0]
+}
+
+message5 = {
+    'msgType': orc_interface.INVOKE,
+    'callId' : 5,
+    'method' : 'move',
+    'target' : 'robot4',
+    'args'   : [1, 7, 0]
+}
+
+send_and_receive(message1)
+send_and_receive(message2)
+send_and_receive(message3)
+send_and_receive(message4)
+

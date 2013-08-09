@@ -1,0 +1,5 @@
+<launch>
+  <node name="interface" pkg="orc_interface" type="interface">
+    <rosparam param="targets">[robot1, robot2, robot3, robot4]</rosparam>
+  </node>
+</launch>

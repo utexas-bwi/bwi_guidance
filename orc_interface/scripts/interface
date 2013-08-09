@@ -1,81 +1,30 @@
 #!/usr/bin/env python
 
-import actionlib
 import bwi_tools
 import rospy
-import tf
 import threading
 
-from std_msgs.msg import Header
-from geometry_msgs.msg import Pose, PoseStamped, Point
-from actionlib_msgs.msg import GoalStatus
-
-import move_base_msgs.msg
-
 import orc_interface
-
-INVOKE = 'invoke'
-RETURN = 'return'
-CANCEL = 'cancel'
-FAILURE = 'failure'
-
-class InterfaceMessage:
-
-    def __init__(self, client_name, data):
-        self.is_request = False
-        self.is_valid = False
-        self.client_name = client_name
-        self.data = data
-        self.type = data['msgType']
-        try:
-            if data['msgType'] == INVOKE:
-                self.is_request = True
-                self.call_id = data['callId'] #id
-                self.target = data['target'] #str
-                self.method = data['method'] #str
-                self.args = data['args'] #list
-                self.is_valid = True
-            elif data['msgType'] == CANCEL:
-                self.is_request = True
-                self.call_id = data['callId'] #id
-                self.is_valid = True
-            elif data['msgType'] == RETURN:
-                self.call_id = data['callId'] #id
-                self.value = data['value'] #int
-                self.is_valid = True
-            elif data['msgType'] == FAILURE:
-                self.is_valid = True
-                self.call_id = data['callId'] #id
-                self.fail_type = data['failType'] #int
-                self.message = data['message'] #str
-                self.causes = data['causes'] #list ??
-                self.is_valid = True
-        except KeyError:
-            pass
-        except TypeError:
-            pass
-
-    def __str__(self):
-        return str(self.data)
-
-    def valid(self):
-        return self.is_valid
-
-    def request(self):
-        return self.is_request
 
 class OrcInterface:
 
     def __init__(self):
         rospy.init_node('orc_interface')
-        self.client = actionlib.SimpleActionClient('move_base', 
-                move_base_msgs.msg.MoveBaseAction)
-        self.client.wait_for_server()
+
+        # Get available robots and their controllers
+        self.targets = rospy.get_param('~targets')
+
+        # Start the orc interface server
         self.server = orc_interface.Server(self.server_callback)
-        self.requests = []
-        self.status = {}
-        self.current_request = None
-        self.request_lock = threading.Lock()
+
+        self.pending_requests = []
+        self.invoked_requests = []
+        self.interfaces = {} 
+
+        # Setup interfaces
+        self.interfaces['move'] = orc_interface.MoveInterface(self.targets)
+
+        self.modify_pending_req_lock = threading.Lock()
 
     def start(self):
         rospy.loginfo("Interface starting up...")
@@ -84,38 +33,27 @@ class OrcInterface:
         try:
             while not rospy.is_shutdown():
 
-                # Check if current request completed
-                if self.current_request != None:
-                    completed, success, ret_value, message, causes = self.check_current_status()
+                # Check new requests first in case an old request gets preempted
+                self.modify_pending_req_lock.acquire()
+                for request in self.pending_requests:
+                    rospy.loginfo("Handling request: %s"%str(request))
+                    self.handle_request(request)
+                self.pending_requests = []
+                self.modify_pending_req_lock.release()
+
+                # Check status of all invoked requests
+                completed_requests = []
+                for request in self.invoked_requests:
+                    completed, message = self.check_status(request)
                     if completed:
-                        if success:
-                            ret_msg = {'msgType': RETURN, 
-                                       'callId': self.current_request.call_id, 
-                                       'value': ret_value}
-                        else:
-                            ret_msg = {'msgType': FAILURE,
-                                       'callId': self.current_request.call_id,
-                                       'fail_type': ret_value,
-                                       'message': message,
-                                       'causes': causes}
-                        success = self.server.send_message(self.current_request.client_name, ret_msg)
-                        self.current_request = None
-
-                # Check new requests
-                self.request_lock.acquire()
-                for request in self.requests:
-                    if request.type == INVOKE:
-                        self.invoke(request)
-                    elif request.type == CANCEL:
-                        self.cancel(request)
-                self.requests = []
-                self.request_lock.release()
-
-                # Check if a request got preempted or cancelled by one of the new requests
-                for request_id, status in self.status.iteritems():
-                    rospy.loginfo("For request: %s, sending negative status %s"%(str(request_id),str(status)))
-                    self.server.send_message(status[1], status[0])
-                self.status = {}
+                        client_name = request[0]
+                        message = message.to_dict()
+                        rospy.loginfo(
+                            "Request completed, sending: %s"%str(message))
+                        self.server.send_message(client_name, message)
+                        completed_requests.append(request)
+                self.invoked_requests = [x for x in self.invoked_requests
+                                         if x not in completed_requests]
 
                 # Sleep for remaining duration
                 rate.sleep()
@@ -126,74 +64,33 @@ class OrcInterface:
         rospy.loginfo("Interface shutting down...")
 
     def server_callback(self, client_name, data):
-        message = InterfaceMessage(client_name, data)
-        if not message.valid():
+        message = orc_interface.InterfaceMessage(client_name, data)
+        if not message.is_valid():
             rospy.logerr("Received invalid message from %s"%client_name)
             return False
-        if message.request():
-            self.request_lock.acquire()
-            self.requests.append(message)
-            self.request_lock.release()
+        if message.is_request():
+            self.modify_pending_req_lock.acquire()
+            self.pending_requests.append(message)
+            self.modify_pending_req_lock.release()
             rospy.loginfo("Received valid request: %s"%str(message))
         else:
             rospy.logerr("Received response message (NOT request): %s"%str(message))
         return True
 
-    def invoke(self, request):
+    def handle_request(self, request):
+        interface = self.interfaces[request.method]
+        if request.type == orc_interface.INVOKE:
+            interface.invoke(request.call_id, request.target, request.args)
+            self.invoked_requests.append(
+                (request.client_name, request.method, request.call_id)
+            )
+        elif request.type == orc_interface.CANCEL:
+            interface.cancel(request.call_id)
 
-        rospy.loginfo("Invoking call: %s"%str(request.call_id))
-
-        if self.current_request != None:
-            rospy.loginfo("Pre-empting call: %s"%str(self.current_request.call_id))
-            self.status[self.current_request.call_id] = (self.generate_preempted_status(self.current_request.call_id), self.current_request.client_name)
-            self.current_request = None
-
-        # Invoke movement call
-        goal = move_base_msgs.msg.MoveBaseGoal()
-        goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose.header.frame_id = "/map"
-        goal.target_pose.pose.position.x = request.args[0]
-        goal.target_pose.pose.position.y = request.args[1]
-        goal.target_pose.pose.position.z = 0
-        q = tf.transformations.quaternion_from_euler(0, 0, request.args[2])
-        goal.target_pose.pose.orientation.x = q[0] 
-        goal.target_pose.pose.orientation.y = q[1] 
-        goal.target_pose.pose.orientation.z = q[2] 
-        goal.target_pose.pose.orientation.w = q[3] 
-        self.client.send_goal(goal)
-        
-        self.current_request = request
-
-    def cancel(self, request):
-        if (self.current_request != None and
-                request.call_id == self.current_request.call_id):
-            rospy.loginfo("Cancelling call: %s"%str(self.current_request.call_id))
-            self.client.cancel_goal()
-            self.current_request = None
-            self.status[request.call_id] = (self.generate_cancelled_status(self.current_request.call_id), self.current_request.client_name)
-
-    def check_current_status(self):
-        status = self.client.get_state()
-        if status == GoalStatus.PENDING or status == GoalStatus.ACTIVE:
-            return False, None, None, None, None
-        elif status == GoalStatus.SUCCEEDED:
-            return True, True, 0, None, None
-        else:
-            return True, False, -1.0, 'The request was cancelled/prempted from outside this server', []
-
-    def generate_cancelled_status(self, call_id):
-        return {'msgType': FAILURE,
-                   'callId': call_id,
-                   'fail_type': -1,
-                   'message': 'The request was cancelled through this server.',
-                   'causes': []}
-
-    def generate_preempted_status(self, call_id):
-        return {'msgType': FAILURE,
-                   'callId': call_id,
-                   'fail_type': -1,
-                   'message': 'The request was preempted through this server.',
-                   'causes': []}
+    def check_status(self, request):
+        interface = self.interfaces[request[1]]
+        call_id = request[2]
+        return interface.check_status(call_id)
 
 if __name__ == '__main__':
     try:
