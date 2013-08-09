@@ -56,9 +56,9 @@ target_link_libraries(robot_positioner
 #############
 
 ## Mark executable scripts (Python etc.) for installation
-install(PROGRAMS
-  scripts/experiment.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+## install(PROGRAMS
+##   scripts/experiment.py
+##   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 ## Mark executables and/or libraries for installation
 install(TARGETS
