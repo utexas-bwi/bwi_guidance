@@ -9,8 +9,6 @@
       <arg name="y" value="0" />
       <arg name="robotid" value="robot1" />
       <arg name="has_tf_prefix" value="false" />
-      <arg name="configuration_file" 
-           value="$(find segbot_bringup)/launch/includes/auxiliary.segbot_hokuyo.launch" />
       <arg name="launch_localization" value="true" />
       <arg name="launch_move_base" value="true" />
     </include>
