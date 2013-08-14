@@ -6,7 +6,12 @@
 
   <!-- Launch the person with their very own map server -->
   <group ns="person">
-    <include file="$(find bwi_exp1)/launch/person.launch" />
+    <arg name="personid" default="person" />
+    <include file="$(find bwi_gazebo_entities)/launch/controllable_person.launch">
+      <arg name="x" value="1.2" />
+      <arg name="y" value="1.2" />
+      <arg name="personid" default="$(arg personid)" />
+    </include>
   </group>
 
   <!-- launch the 5 robots that will be required for this experiment
@@ -122,7 +127,12 @@
   </group>
 
   <group ns="ball">
-    <include file="$(find bwi_exp1)/launch/ball.launch" />
+    <arg name="ballid" default="ball" />
+    <include file="$(find bwi_gazebo_entities)/launch/ball.launch">
+      <arg name="x" value="600" />
+      <arg name="y" value="600" />
+      <arg name="ballid" default="$(arg ballid)" />
+    </include>
   </group>
 
 </launch>
