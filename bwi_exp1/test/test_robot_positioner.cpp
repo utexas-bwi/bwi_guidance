@@ -4,7 +4,17 @@
 
 using namespace bwi_exp1;
 
-void testDirectedArrows(BaseRobotPositioner& rp) {
+class TestRobotPositioner : public BaseRobotPositioner {
+  public:
+    TestRobotPositioner(boost::shared_ptr<ros::NodeHandle>& nh) :
+        BaseRobotPositioner(nh) {}
+    virtual ~TestRobotPositioner() {}
+    virtual void startExperimentInstance(int instance_number) {}
+    virtual void finalizeExperimentInstance(int instance_number) {}
+    virtual void odometryCallback(const nav_msgs::Odometry::ConstPtr) {}
+};
+
+void testDirectedArrows(TestRobotPositioner& rp) {
   cv::Mat image;
   rp.produceDirectedArrow(M_PI/3, image);
   cv::imshow("Output", image);
@@ -16,7 +26,7 @@ int main(int argc, char *argv[]) {
   ros::init(argc, argv, "test_robot_positioner");
   boost::shared_ptr<ros::NodeHandle> nh;
   nh.reset(new ros::NodeHandle());
-  BaseRobotPositioner rp(nh);
+  TestRobotPositioner rp(nh);
   testDirectedArrows(rp);
   return 0;
 }

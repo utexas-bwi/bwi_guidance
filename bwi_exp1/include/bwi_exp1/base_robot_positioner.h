@@ -20,9 +20,9 @@ namespace bwi_exp1 {
       BaseRobotPositioner(boost::shared_ptr<ros::NodeHandle>& nh);
       virtual ~BaseRobotPositioner();
 
-      virtual void startExperimentInstance(int instance_number) {}
-      virtual void finalizeExperimentInstance(int instance_number) {}
-      virtual void odometryCallback(const nav_msgs::Odometry::ConstPtr) {}
+      virtual void startExperimentInstance(int instance_number) = 0;
+      virtual void finalizeExperimentInstance(int instance_number) = 0;
+      virtual void odometryCallback(const nav_msgs::Odometry::ConstPtr) = 0;
 
       void produceDirectedArrow(float orientation, cv::Mat& image);
 

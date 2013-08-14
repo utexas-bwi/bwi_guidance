@@ -4,6 +4,7 @@ float32 total_reward
 
 string current_display_text
 int32 instance_number
+string instance_name
 int32 total_experiments
 
 bool pause_enabled

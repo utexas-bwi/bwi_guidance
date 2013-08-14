@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 
 import bwi_tools
-import cv
-import cv2
 import math
-import numpy
 import random
 import roslib
 import rospy
@@ -12,18 +9,15 @@ import threading
 import time
 import yaml
 
-from cv_bridge import CvBridge
 from tf.transformations import quaternion_from_euler
 
 from bwi_msgs.msg import ExperimentStatus
-from bwi_msgs.srv import PositionRobot, PositionRobotRequest, \
-                         UpdateExperiment, UpdateExperimentResponse, \
+from bwi_msgs.srv import UpdateExperiment, UpdateExperimentResponse, \
                          UpdateExperimentServer, UpdateExperimentServerRequest
 from gazebo_msgs.srv import SetModelState, SetModelStateRequest, \
                             GetModelState, GetModelStateRequest
 from geometry_msgs.msg import Pose, Quaternion
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import Image
 from std_srvs.srv import Empty
 
 def get_pose_msg_from_2d(x, y, yaw):
@@ -34,9 +28,6 @@ def get_pose_msg_from_2d(x, y, yaw):
     pose.orientation = Quaternion(*quaternion_from_euler(0,0,yaw))
     return pose
 
-def readImage(location):
-    return cv2.imread(location)
-
 def distance(a, b):
     return math.sqrt(((a[1]-b[1]) * (a[1]-b[1])) + ((a[0]-b[0]) * (a[0]-b[0])))
 
@@ -45,27 +36,6 @@ def orientation(a, b):
 
 def normalize_angle(y):
     return math.atan2(math.sin(y), math.cos(y))
-
-def produce_directed_arrow(up_arrow, yaw):
-    height, width, channels = up_arrow.shape
-    center = (width / 2, height / 2)
-    rotation_matrix = cv2.getRotationMatrix2D(center, yaw * 180 / math.pi, 1.0)
-    rotated_image = cv2.warpAffine(up_arrow, rotation_matrix, (width, height))
-
-    height_ratio = 119.0 / height
-    width_ratio = 159.0 / width
-    min_ratio = min(height_ratio, width_ratio)
-
-    resized_image = cv2.resize(rotated_image, (0,0), fx=min_ratio, fy=min_ratio)
-    image = numpy.empty((120,160,3), numpy.uint8)
-    top = (image.shape[0] - resized_image.shape[0]) / 2
-    bottom = image.shape[0] - resized_image.shape[0] - top
-    left = (image.shape[1] - resized_image.shape[1]) / 2
-    right = image.shape[1] - resized_image.shape[1] - left
-
-    image = cv2.copyMakeBorder(resized_image, top, bottom, left, right, 
-                               cv2.BORDER_CONSTANT, image, (0,0,0))
-    return image
 
 def compute_average_angle(angle1, angle2):
     vec1 = [math.cos(angle1), math.sin(angle1)]
@@ -118,6 +88,12 @@ class ExperimentInterface(threading.Thread):
                 msg.total_reward = self.controller.reward
                 msg.current_display_text = self.controller.experiment_text
                 msg.instance_number = self.controller.instance_number
+                if (msg.instance_number >= 0 and 
+                    msg.instance_number < self.controller.num_instances):
+                    msg.instance_name = \
+                            self.controller.instance_names[msg.instance_number]
+                else:
+                    msg.instance_name = ''
                 msg.total_experiments = self.controller.num_instances
                 msg.pause_enabled = msg.instance_in_progress
                 msg.paused = self.controller.paused
@@ -131,42 +107,6 @@ class ExperimentInterface(threading.Thread):
         except rospy.ROSInterruptException:
             pass
         rospy.loginfo("Controller Interface thread shutting down...")
-
-class RobotScreenPublisher(threading.Thread):
-
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.robot_image_publisher = {}
-        self.robot_image = {}
-        self.robot_image_lock = {}
-        self.bridge = CvBridge()
-
-    def add_robot(self, robotid):
-        self.robot_image_publisher[robotid] = rospy.Publisher(
-                robotid + '/image', Image)
-        self.robot_image[robotid] = numpy.zeros((120,160,3), numpy.uint8)
-        self.robot_image_lock[robotid] = threading.Lock()
-
-    def update(self, robotid, new_image):
-        self.robot_image_lock[robotid].acquire()
-        self.robot_image[robotid] = new_image
-        self.robot_image_lock[robotid].release()
-
-    def run(self):
-        rate = bwi_tools.WallRate(5) # 5hz
-        try:
-            while not rospy.is_shutdown():
-                for robotid in self.robot_image_publisher.keys():
-                    self.robot_image_lock[robotid].acquire()
-                    image = self.robot_image[robotid]
-                    cv_image = cv.fromarray(image)
-                    image_msg = self.bridge.cv_to_imgmsg(cv_image, "bgr8")
-                    self.robot_image_lock[robotid].release()
-                    self.robot_image_publisher[robotid].publish(image_msg)
-                rate.sleep()
-        except rospy.ROSInterruptException:
-            pass
-        rospy.loginfo("Robot screen publisher thread shutting down...")
 
 class ExperimentController:
 
@@ -194,12 +134,6 @@ class ExperimentController:
         self.experiment_uid = rospy.get_param("~uid") 
         self.experiment_uname = rospy.get_param("~name") 
         self.experiment_uemail = rospy.get_param("~email") 
-
-        # Get ROS Services
-        rospy.loginfo("Waiting for service: position")
-        rospy.wait_for_service("position")
-        self.position_robot = rospy.ServiceProxy('position', PositionRobot)
-        rospy.loginfo("Service acquired: position")
 
         # See if an experiment server is running
         rospy.loginfo("Waiting for service: /server/update_server")
@@ -237,29 +171,11 @@ class ExperimentController:
                 rospy.ServiceProxy("/gazebo/unpause_physics", Empty)
         rospy.loginfo("Service acquired: /gazebo/unpause_physics")
 
-        # Setup components required for publishing directed arrows to the
-        # robot screens
-        images_dir = roslib.packages.get_pkg_dir("bwi_exp1") + "/images"
-        self.arrow = readImage(images_dir + "/Up.png")
-        self.image_none = numpy.zeros((120,160,3), numpy.uint8)
-
-        self.robot_image_publisher = RobotScreenPublisher()
-        self.robots = self.experiment['robots']
-        for i, robot in enumerate(self.robots):
-            robot_id = robot['id']
-            self.robot_image_publisher.add_robot(robot_id)
-
-        # Track robots currently being used in an experiment instance 
-        self.robots_in_instance = []
-        self.robot_locations = []
-        self.robot_images = []
-
         # Setup the experiment interface
         self.interface = ExperimentInterface(self)
 
         # Get some constants across all instances
         self.person_id = self.experiment['person_id']
-        self.robots = self.experiment['robots']
         self.ball_id = self.experiment['ball_id']
 
         # Initialize some variables used for the interface
@@ -292,9 +208,6 @@ class ExperimentController:
 
         self.modify_instance_lock.acquire()
 
-        # Unpause gazebo before teleportation
-        self.unpause_gazebo()
-
         # Teleport person to correct place, however pause and unpause
         start_x = experiment_data['start_x']
         start_y = experiment_data['start_y']
@@ -308,85 +221,6 @@ class ExperimentController:
         ball_pose = get_pose_msg_from_2d(ball_x, ball_y, 0)
         result = self.teleport_entity(self.ball_id, ball_pose)
         self.goal_location = [ball_x, ball_y]
-
-        # Teleport all the robots to their respective positions
-        self.path = experiment_data['path']
-        self.robots_in_instance = \
-                [{'id': p['id'], 'path_position': i} 
-                 for i, p in enumerate(self.path) if p['robot']]
-        self.extra_robots = experiment_data['extra_robots']
-        self.robot_locations = [None] * len(self.robots)
-        self.robot_images = [None] * len(self.robots)
-        for i, robot in enumerate(self.robots):
-            if i < len(self.robots_in_instance):
-                # This robit is being used in this instance
-                # Find a position for it
-                path_position = self.robots_in_instance[i]['path_position']
-
-                # Get position and orientation of robot from C++ based service
-                req = PositionRobotRequest()
-                req.from_id = -1
-                req.to_id = -1
-                req.at_id = self.robots_in_instance[i]['id']
-                if path_position != 0:
-                    req.from_id = self.path[path_position - 1]['id']
-                    arriving_from = self.get_location_at_graph_id(req.from_id)
-                else:
-                    req.from_pt.x = start_x
-                    req.from_pt.y = start_y
-                    req.from_pt.z = 0
-                    arriving_from = [start_x, start_y]
-                if path_position != len(self.path) - 1:
-                    req.to_id = self.path[path_position + 1]['id']
-                    going_to = self.get_location_at_graph_id(req.to_id)
-                else:
-                    req.to_pt.x = ball_x
-                    req.to_pt.y = ball_y
-                    req.to_pt.z = 0
-                    going_to = [ball_x, ball_y]
-
-                resp = self.position_robot(req)
-                robot_loc = [resp.loc.x, resp.loc.y]
-                robot_yaw = resp.yaw
-
-                # Get orientation of the arrow on the screen
-                # If the point in the graph is too close, select the next point
-                destination_distance = distance(going_to, robot_loc)
-                path_position = path_position + 1
-                while destination_distance < 3:
-                    if path_position != len(self.path) - 1:
-                        going_to = self.get_location_at_graph_id(
-                            self.path[path_position + 1]['id'])
-                    else:
-                        going_to = [ball_x, ball_y]
-                    destination_distance = distance(going_to, robot_loc)
-                    path_position = path_position + 1
-
-                destination_yaw = orientation(going_to, robot_loc)
-                change_in_yaw = destination_yaw - robot_yaw
-                change_in_yaw = normalize_angle(change_in_yaw) 
-
-                # Compute the arrow based on direction
-                robot_image = produce_directed_arrow(self.arrow, change_in_yaw)
-
-            elif (i - len(self.robots_in_instance)) < len(self.extra_robots): 
-                # This is an extra (distraction) robot. Move it into place
-                extra_robot = self.extra_robots[i-len(self.robots_in_instance)]
-                
-                robot_loc = [extra_robot['loc_x'], extra_robot['loc_y']]
-                robot_yaw = extra_robot['yaw']
-                robot_image = self.image_none
-
-            else: # Move a robot not used in the experiment
-                robot_loc = self.robots[i]['default_loc']
-                robot_yaw = 0
-                robot_image = self.image_none
-
-            # Perform the actual teleport and image update
-            robot_pose = get_pose_msg_from_2d(*robot_loc, yaw=robot_yaw)
-            result = self.teleport_entity(self.robots[i]['id'], robot_pose)
-            self.robot_images[i] = robot_image
-            self.robot_locations[i] = robot_loc
 
         # setup odometry thread to write out odometry values
         self.log_file = open(log_file_name, 'w')
@@ -462,14 +296,6 @@ class ExperimentController:
         self.log_file.write("success: " + str(success))
         self.log_file.close()
 
-        for robot in self.robots:
-            robot_pose = get_pose_msg_from_2d(*robot['default_loc'], yaw=0)
-            self.teleport_entity(robot['id'], robot_pose) 
-
-        # Leave gazebo paused to prevent the user from moving the character
-        # around
-        self.pause_gazebo()
-
         self.modify_instance_lock.release()
 
     def ready_the_experiment(self):
@@ -499,19 +325,6 @@ class ExperimentController:
         self.log_file.write("  - [" + str(loc[0]) + ", " + str(loc[1]) + ", "
                             + str(ros_time) + "]\n")
 
-        # check if the person is near a robot
-        for i, robot in enumerate(self.robots):
-            if i < len(self.robots_in_instance):
-                # This is non-distraction robot that is a part of the instance
-                robot_loc = self.robot_locations[i]
-                distance_from_robot = distance(loc, robot_loc)
-                if distance_from_robot < 3.0:
-                    self.robot_image_publisher.update(robot['id'],
-                                                      self.robot_images[i])
-                else:
-                    self.robot_image_publisher.update(robot['id'], 
-                                                      self.image_none)
-
         # check if the person is close to the ball
         distance_from_goal = distance(loc, self.goal_location)
         if distance_from_goal < 1.0:
@@ -521,7 +334,6 @@ class ExperimentController:
 
     def start(self):
 
-        self.robot_image_publisher.start()
         self.interface.start()
 
         # Use wall rate here as you don't want the loop to stop while gazebo is

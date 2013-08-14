@@ -34,7 +34,7 @@ add_library(bwi_exp1
   src/libbwi_exp1/users.cpp
   src/libbwi_exp1/odometry.cpp
   src/libbwi_exp1/experiment.cpp
-  src/libbwi_exp1/base_robot_positioner.cpp
+  ## src/libbwi_exp1/base_robot_positioner.cpp
   )
 target_link_libraries(bwi_exp1 
   ${catkin_LIBRARIES}
@@ -46,15 +46,15 @@ target_link_libraries(create_experiment
   ${catkin_LIBRARIES})
 
 ## Declare a cpp executable
-add_executable(robot_positioner src/nodes/robot_positioner.cpp)
-target_link_libraries(robot_positioner 
-  ${catkin_LIBRARIES})
+## add_executable(robot_positioner src/nodes/robot_positioner.cpp)
+## target_link_libraries(robot_positioner 
+##   ${catkin_LIBRARIES})
 
 #test the mdp
-add_executable(test_robot_positioner test/test_robot_positioner.cpp)
-target_link_libraries(test_robot_positioner 
-  bwi_exp1
-  ${catkin_LIBRARIES})
+## add_executable(test_robot_positioner test/test_robot_positioner.cpp)
+## target_link_libraries(test_robot_positioner 
+##   bwi_exp1
+##   ${catkin_LIBRARIES})
 
 #############
 ## Install ##
@@ -69,7 +69,7 @@ target_link_libraries(test_robot_positioner
 install(TARGETS
   bwi_exp1
   create_experiment
-  robot_positioner
+  ## robot_positioner
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 

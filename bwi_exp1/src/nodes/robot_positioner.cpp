@@ -38,32 +38,125 @@
  **/
 
 #include <ros/ros.h>
-#include <topological_mapper/map_loader.h>
-#include <topological_mapper/map_inflator.h>
 #include <topological_mapper/map_utils.h>
-#include <topological_mapper/graph.h>
-#include <topological_mapper/point_utils.h>
+#include <bwi_exp1/base_robot_positioner.h>
 
-#include <bwi_msgs/PositionRobot.h>
+using namespace bwi_exp1;
 
-#include <opencv2/highgui/highgui.hpp>
+class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
+  public:
+    DataCollectionRobotPositioner(boost::shared_ptr<ros::NodeHandle>& nh);
+    virtual ~DataCollectionRobotPositioner() {}
 
-ros::ServiceServer position_server;
-std::string map_file, graph_file;
-double search_distance;
-topological_mapper::Graph graph;
-nav_msgs::MapMetaData info;
-nav_msgs::OccupancyGrid map;
-bool debug = false;
-double robot_radius;
-double robot_padding;
-boost::shared_ptr<topological_mapper::MapLoader> mapper;
+    virtual void startExperimentInstance(int instance_number) {
+        # Teleport all the robots to their respective positions
+        self.path = experiment_data['path']
+        self.robots_in_instance = \
+                [{'id': p['id'], 'path_position': i} 
+                 for i, p in enumerate(self.path) if p['robot']]
+        self.extra_robots = experiment_data['extra_robots']
+        self.robot_locations = [None] * len(self.robots)
+        self.robot_images = [None] * len(self.robots)
+        for i, robot in enumerate(self.robots):
+            if i < len(self.robots_in_instance):
+                # This robit is being used in this instance
+                # Find a position for it
+                path_position = self.robots_in_instance[i]['path_position']
 
-topological_mapper::Point2f getLocationFromMapPose(
-    const geometry_msgs::Point32 &pt) {
-  return topological_mapper::toGrid(topological_mapper::Point2f(pt.x, pt.y), 
-      info); 
-}
+                # Get position and orientation of robot from C++ based service
+                req = PositionRobotRequest()
+                req.from_id = -1
+                req.to_id = -1
+                req.at_id = self.robots_in_instance[i]['id']
+                if path_position != 0:
+                    req.from_id = self.path[path_position - 1]['id']
+                    arriving_from = self.get_location_at_graph_id(req.from_id)
+                else:
+                    req.from_pt.x = start_x
+                    req.from_pt.y = start_y
+                    req.from_pt.z = 0
+                    arriving_from = [start_x, start_y]
+                if path_position != len(self.path) - 1:
+                    req.to_id = self.path[path_position + 1]['id']
+                    going_to = self.get_location_at_graph_id(req.to_id)
+                else:
+                    req.to_pt.x = ball_x
+                    req.to_pt.y = ball_y
+                    req.to_pt.z = 0
+                    going_to = [ball_x, ball_y]
+
+                resp = self.position_robot(req)
+                robot_loc = [resp.loc.x, resp.loc.y]
+                robot_yaw = resp.yaw
+
+                # Get orientation of the arrow on the screen
+                # If the point in the graph is too close, select the next point
+                destination_distance = distance(going_to, robot_loc)
+                path_position = path_position + 1
+                while destination_distance < 3:
+                    if path_position != len(self.path) - 1:
+                        going_to = self.get_location_at_graph_id(
+                            self.path[path_position + 1]['id'])
+                    else:
+                        going_to = [ball_x, ball_y]
+                    destination_distance = distance(going_to, robot_loc)
+                    path_position = path_position + 1
+
+                destination_yaw = orientation(going_to, robot_loc)
+                change_in_yaw = destination_yaw - robot_yaw
+                change_in_yaw = normalize_angle(change_in_yaw) 
+
+                # Compute the arrow based on direction
+                robot_image = produce_directed_arrow(self.arrow, change_in_yaw)
+
+            elif (i - len(self.robots_in_instance)) < len(self.extra_robots): 
+                # This is an extra (distraction) robot. Move it into place
+                extra_robot = self.extra_robots[i-len(self.robots_in_instance)]
+                
+                robot_loc = [extra_robot['loc_x'], extra_robot['loc_y']]
+                robot_yaw = extra_robot['yaw']
+                robot_image = self.image_none
+
+            else: # Move a robot not used in the experiment
+                robot_loc = self.robots[i]['default_loc']
+                robot_yaw = 0
+                robot_image = self.image_none
+
+            # Perform the actual teleport and image update
+            robot_pose = get_pose_msg_from_2d(*robot_loc, yaw=robot_yaw)
+            result = self.teleport_entity(self.robots[i]['id'], robot_pose)
+            self.robot_images[i] = robot_image
+            self.robot_locations[i] = robot_loc
+
+
+    }
+
+    virtual void finalizeExperimentInstance(int instance_number) = 0; {
+        for robot in self.robots:
+            robot_pose = get_pose_msg_from_2d(*robot['default_loc'], yaw=0)
+            self.teleport_entity(robot['id'], robot_pose) 
+    }
+
+    virtual void odometryCallback(const nav_msgs::Odometry::ConstPtr) {
+        # check if the person is near a robot
+        for i, robot in enumerate(self.robots):
+            if i < len(self.robots_in_instance):
+                # This is non-distraction robot that is a part of the instance
+                robot_loc = self.robot_locations[i]
+                distance_from_robot = distance(loc, robot_loc)
+                if distance_from_robot < 3.0:
+                    self.robot_image_publisher.update(robot['id'],
+                                                      self.robot_images[i])
+                else:
+                    self.robot_image_publisher.update(robot['id'], 
+                                                      self.image_none)
+
+
+    }
+
+
+
+};
 
 bool position(bwi_msgs::PositionRobot::Request &req,
     bwi_msgs::PositionRobot::Response &resp) {
