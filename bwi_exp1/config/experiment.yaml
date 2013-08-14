@@ -1,25 +1,4 @@
 person_id: person
-robots: 
-  - id: robot1
-    default_loc: [500, 500]
-  - id: robot2
-    default_loc: [502, 500]
-  - id: robot3
-    default_loc: [504, 500]
-  - id: robot4
-    default_loc: [506, 500]
-  - id: robot5
-    default_loc: [508, 500]
-  - id: robot6
-    default_loc: [510, 500]
-  - id: robot7
-    default_loc: [512, 500]
-  - id: robot8
-    default_loc: [514, 500]
-  - id: robot9
-    default_loc: [516, 500]
-  - id: robot10
-    default_loc: [518, 500]
 ball_id: ball
 instance_groups:
   - prefix: tutorial
@@ -30,16 +9,6 @@ instance_groups:
         start_yaw: 0
         ball_x: 38.15
         ball_y: 8.6
-        path:
-          - id: 3
-            robot: yes
-          - id: 4
-            robot: no
-          - id: 5
-            robot: yes
-          - id: 11
-            robot: no
-        extra_robots: []
         max_duration: 300 #seconds
         tutorial_duration: 45 #seconds
         is_tutorial: true
@@ -48,22 +17,6 @@ instance_groups:
         start_yaw: -0.0624178
         ball_x: 45.7
         ball_y: 30.85
-        path:
-          - id: 79
-            robot: yes
-          - id: 65
-            robot: yes
-          - id: 69
-            robot: yes
-          - id: 61
-            robot: no
-          - id: 59
-            robot: yes
-          - id: 56
-            robot: no
-          - id: 58
-            robot: no
-        extra_robots: []
         max_duration: 300 #seconds
         tutorial_duration: 45 #seconds
         is_tutorial: true
@@ -76,22 +29,6 @@ instance_groups:
         start_yaw: -0.0525822
         ball_x: 38.1
         ball_y: 23.8
-        path:
-          - id: 77
-            robot: yes
-          - id: 78
-            robot: no
-          - id: 79
-            robot: yes
-          - id: 65
-            robot: no
-          - id: 57
-            robot: no
-          - id: 55
-            robot: no
-          - id: 51
-            robot: no
-        extra_robots: []
         max_duration: 300 #seconds
         is_tutorial: false
       #instance 3 tests navigating a big room without directional arrows
@@ -100,18 +37,6 @@ instance_groups:
         start_yaw: 1.5708
         ball_x: 30.85
         ball_y: 35.05
-        path:
-          - id: 39
-            robot: no
-          - id: 52
-            robot: yes
-          - id: 53
-            robot: no
-          - id: 68
-            robot: no
-          - id: 65
-            robot: no
-        extra_robots: []
         max_duration: 300 #seconds
         is_tutorial: false
       #instance 5 tests distraction in presence of a robot
@@ -120,32 +45,6 @@ instance_groups:
         start_yaw: -0.0434503
         ball_x: 40.5
         ball_y: 1.4
-        path:
-          - id: 80
-            robot: yes
-          - id: 74
-            robot: no
-          - id: 61
-            robot: no
-          - id: 59
-            robot: no
-          - id: 51
-            robot: yes
-          - id: 33
-            robot: no
-          - id: 26
-            robot: no
-          - id: 11
-            robot: no
-          - id: 5
-            robot: no
-        extra_robots:
-          - loc_x: 30.5
-            loc_y: 14.9
-            yaw: -2.03444
-          - loc_x: 45.8
-            loc_y: 14.8
-            yaw: -1.0612
         max_duration: 300 #seconds
         is_tutorial: false
   - prefix: pair2
@@ -157,22 +56,6 @@ instance_groups:
         start_yaw: 3.09617
         ball_x: 15.95
         ball_y: 23.35
-        path:
-          - id: 83
-            robot: yes
-          - id: 80
-            robot: no
-          - id: 79
-            robot: yes
-          - id: 65
-            robot: no
-          - id: 57
-            robot: no
-          - id: 54
-            robot: no
-          - id: 40
-            robot: no
-        extra_robots: []
         max_duration: 300 #seconds
         is_tutorial: false
       #instance 4 (paired with 3) attempts to show that directions in big room help
@@ -181,18 +64,6 @@ instance_groups:
         start_yaw: 1.5708
         ball_x: 30.85
         ball_y: 35.05
-        path:
-          - id: 39
-            robot: no
-          - id: 52
-            robot: yes
-          - id: 53
-            robot: yes
-          - id: 68
-            robot: no
-          - id: 65
-            robot: no
-        extra_robots: []
         max_duration: 300 #seconds
         is_tutorial: false
       #instance 6 (paired with 5) tests distraction in absense of robot
@@ -201,32 +72,6 @@ instance_groups:
         start_yaw: -0.0434503
         ball_x: 40.5
         ball_y: 1.4
-        path:
-          - id: 80
-            robot: yes
-          - id: 74
-            robot: no
-          - id: 61
-            robot: no
-          - id: 59
-            robot: no
-          - id: 51
-            robot: no
-          - id: 33
-            robot: no
-          - id: 26
-            robot: no
-          - id: 11
-            robot: no
-          - id: 5
-            robot: no
-        extra_robots:
-          - loc_x: 30.5
-            loc_y: 14.9
-            yaw: -2.03444
-          - loc_x: 45.8
-            loc_y: 14.8
-            yaw: -1.0612
         max_duration: 300 #seconds
         is_tutorial: false
 

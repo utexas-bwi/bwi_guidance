@@ -1,0 +1,168 @@
+robots: 
+  - id: robot1
+    default_loc: [500, 500]
+  - id: robot2
+    default_loc: [502, 500]
+  - id: robot3
+    default_loc: [504, 500]
+  - id: robot4
+    default_loc: [506, 500]
+  - id: robot5
+    default_loc: [508, 500]
+  - id: robot6
+    default_loc: [510, 500]
+  - id: robot7
+    default_loc: [512, 500]
+  - id: robot8
+    default_loc: [514, 500]
+  - id: robot9
+    default_loc: [516, 500]
+  - id: robot10
+    default_loc: [518, 500]
+instance_groups:
+  - prefix: tutorial
+    instances:
+      - path:
+          - id: 3
+            robot: yes
+          - id: 4
+            robot: no
+          - id: 5
+            robot: yes
+          - id: 11
+            robot: no
+        extra_robots: []
+      - path:
+          - id: 79
+            robot: yes
+          - id: 65
+            robot: yes
+          - id: 69
+            robot: yes
+          - id: 61
+            robot: no
+          - id: 59
+            robot: yes
+          - id: 56
+            robot: no
+          - id: 58
+            robot: no
+        extra_robots: []
+  - prefix: pair1
+    instances:
+      # instance 1 testing directional choices
+      - path:
+          - id: 77
+            robot: yes
+          - id: 78
+            robot: no
+          - id: 79
+            robot: yes
+          - id: 65
+            robot: no
+          - id: 57
+            robot: no
+          - id: 55
+            robot: no
+          - id: 51
+            robot: no
+        extra_robots: []
+      #instance 3 tests navigating a big room without directional arrows
+      - path:
+          - id: 39
+            robot: no
+          - id: 52
+            robot: yes
+          - id: 53
+            robot: no
+          - id: 68
+            robot: no
+          - id: 65
+            robot: no
+        extra_robots: []
+      #instance 5 tests distraction in presence of a robot
+      - path:
+          - id: 80
+            robot: yes
+          - id: 74
+            robot: no
+          - id: 61
+            robot: no
+          - id: 59
+            robot: no
+          - id: 51
+            robot: yes
+          - id: 33
+            robot: no
+          - id: 26
+            robot: no
+          - id: 11
+            robot: no
+          - id: 5
+            robot: no
+        extra_robots:
+          - loc_x: 30.5
+            loc_y: 14.9
+            yaw: -2.03444
+          - loc_x: 45.8
+            loc_y: 14.8
+            yaw: -1.0612
+  - prefix: pair2
+    instances:
+      # instance 2 (paired) experiment for experiment 1 in opposite direction
+      - path:
+          - id: 83
+            robot: yes
+          - id: 80
+            robot: no
+          - id: 79
+            robot: yes
+          - id: 65
+            robot: no
+          - id: 57
+            robot: no
+          - id: 54
+            robot: no
+          - id: 40
+            robot: no
+        extra_robots: []
+      #instance 4 (paired with 3) attempts to show that directions in big room help
+      - path:
+          - id: 39
+            robot: no
+          - id: 52
+            robot: yes
+          - id: 53
+            robot: yes
+          - id: 68
+            robot: no
+          - id: 65
+            robot: no
+        extra_robots: []
+      #instance 6 (paired with 5) tests distraction in absense of robot
+      - path:
+          - id: 80
+            robot: yes
+          - id: 74
+            robot: no
+          - id: 61
+            robot: no
+          - id: 59
+            robot: no
+          - id: 51
+            robot: no
+          - id: 33
+            robot: no
+          - id: 26
+            robot: no
+          - id: 11
+            robot: no
+          - id: 5
+            robot: no
+        extra_robots:
+          - loc_x: 30.5
+            loc_y: 14.9
+            yaw: -2.03444
+          - loc_x: 45.8
+            loc_y: 14.8
+            yaw: -1.0612
