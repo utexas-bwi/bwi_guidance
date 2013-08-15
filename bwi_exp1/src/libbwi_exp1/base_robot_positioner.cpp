@@ -10,16 +10,18 @@
 namespace bwi_exp1 {
 
   BaseRobotPositioner::BaseRobotPositioner(
-      boost::shared_ptr<ros::NodeHandle>& nh) : nh_(nh) {
+      boost::shared_ptr<ros::NodeHandle>& nh) : 
+    nh_(nh), robot_screen_publisher_(nh) {
     
-    // Get private parameters
     std::string up_arrow_image_file;
+    std::string images_dir = ros::package::getPath("bwi_exp1") + "/images";
     ros::NodeHandle private_nh("~");
     private_nh.param<std::string>("up_arrow_image", up_arrow_image_file,
-        ros::package::getPath("bwi_exp1") + "/images/Up.png");
+        images_dir + "/Up.png");
     up_arrow_ = cv::imread(up_arrow_image_file);
+    blank_image_ = cv::Mat::zeros(120, 160, CV_8UC3);
 
-    std::string map_file, graph_file;
+    std::string map_file, graph_file, robot_file;
     double robot_radius, robot_padding;
     if (!private_nh.getParam("map_file", map_file)) {
       ROS_FATAL_STREAM("RobotPosition: ~map_file parameter required");
@@ -27,6 +29,10 @@ namespace bwi_exp1 {
     }
     if (!private_nh.getParam("graph_file", graph_file)) {
       ROS_FATAL_STREAM("RobotPosition: ~graph_file parameter required");
+      exit(-1);
+    }
+    if (!private_nh.getParam("robot_file", robot_file)) {
+      ROS_FATAL_STREAM("RobotPosition: ~robot_file parameter required");
       exit(-1);
     }
     private_nh.param<double>("robot_radius", robot_radius, 0.25);
@@ -61,23 +67,13 @@ namespace bwi_exp1 {
       ROS_INFO_STREAM("Gazebo is NOT AVAILABLE");
     }
 
-        # Setup components required for publishing directed arrows to the
-        # robot screens
-        images_dir = roslib.packages.get_pkg_dir("bwi_exp1") + "/images"
-        self.arrow = readImage(images_dir + "/Up.png")
-        self.image_none = numpy.zeros((120,160,3), numpy.uint8)
+    readRobotsFromFile(robot_file, experiment_robots_);
+    BOOST_FOREACH(const Robot& robot, experiment_robots_) {
+      robot_screen_publisher_.addRobot(robot.id);
+    }
 
-        self.robot_image_publisher = RobotScreenPublisher()
-        self.robots = self.experiment['robots']
-        for i, robot in enumerate(self.robots):
-            robot_id = robot['id']
-            self.robot_image_publisher.add_robot(robot_id)
-
-        # Track robots currently being used in an experiment instance 
-        self.robots_in_instance = []
-        self.robot_locations = []
-        self.robot_images = []
-
+    robot_screen_publisher_.start();
+  }
 
   BaseRobotPositioner::~BaseRobotPositioner() {}
 

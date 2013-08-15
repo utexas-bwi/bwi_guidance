@@ -1,4 +1,5 @@
 #include <bwi_exp1/experiment.h>
+#include <cstdlib>
 #include <fstream>
 #include <algorithm>
 #include <yaml-cpp/yaml.h>
@@ -6,30 +7,12 @@
 
 namespace bwi_exp1 {
 
-  void operator >> (const YAML::Node& node, PathPoint& point) {
-    node["id"] >> point.graph_id;
-    node["robot"] >> point.robot_present;
-  }
-
   void operator >> (const YAML::Node& node, Instance& exp) {
     node["start_x"] >> exp.start_loc.x;
     node["start_y"] >> exp.start_loc.y;
     node["start_yaw"] >> exp.start_loc.yaw;
     node["ball_x"] >> exp.ball_loc.x;
     node["ball_y"] >> exp.ball_loc.y;
-    exp.path.clear();
-    for (size_t i = 0; i < node["path"].size(); ++i) {
-      PathPoint path_point;
-      node["path"][i] >> path_point;
-      exp.path.push_back(path_point);
-    }
-    exp.extra_robots.clear();
-    for (size_t i = 0; i < node["extra_robots"].size(); ++i) {
-      Location extra_robot;
-      node["extra_robots"][i]["loc_x"] >> extra_robot.x;
-      node["extra_robots"][i]["loc_y"] >> extra_robot.y;
-      exp.extra_robots.push_back(extra_robot);
-    }
   }
 
   void operator >> (const YAML::Node& node, InstanceGroup& eg) {
@@ -43,21 +26,8 @@ namespace bwi_exp1 {
     }
   }
 
-  void operator >> (const YAML::Node& node, Robot& robot) {
-    node["id"] >> robot.id;
-    node["default_loc"][0] >> robot.default_loc.x;
-    node["default_loc"][1] >> robot.default_loc.y;
-    robot.default_loc.yaw = 0;
-  }
-
   void operator >> (const YAML::Node& node, Experiment& ec) {
     node["person_id"] >> ec.person_id;
-    ec.robots.clear();
-    for (size_t i = 0; i < node["robots"].size(); ++i) {
-      Robot robot;
-      node["robots"][i] >> robot;
-      ec.robots.push_back(robot);
-    }
     ec.experiments.clear();
     for (size_t i = 0; i < node["instance_groups"].size(); ++i) {
       InstanceGroup group;
@@ -136,6 +106,9 @@ namespace bwi_exp1 {
       }
     }
     // Should not get here
+    std::cout << "FATAL: The experiment does not contain an instance "
+              << "with id: " << idx;
+    exit(-1);
     return ec.experiments[0].experiments[0];
   }
 

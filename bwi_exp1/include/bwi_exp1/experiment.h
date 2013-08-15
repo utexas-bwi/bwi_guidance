@@ -42,6 +42,8 @@
 #include <string>
 #include <vector>
 
+#include <bwi_exp1/structures.h>
+
 namespace bwi_exp1 {
 
   struct Instance {

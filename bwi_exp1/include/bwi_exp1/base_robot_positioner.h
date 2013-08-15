@@ -12,6 +12,9 @@
 #include <opencv/cv.h>
 #include <ros/ros.h>
 
+#include <bwi_exp1/robot_screen_publisher.h>
+#include <bwi_exp1/robots.h>
+
 namespace bwi_exp1 {
 
   class BaseRobotPositioner {
@@ -37,7 +40,6 @@ namespace bwi_exp1 {
           const topological_mapper::Point2f& to);
 
     private:
-      cv::Mat up_arrow_;
       boost::shared_ptr<ros::NodeHandle> nh_;
 
       bool gazebo_available_;
@@ -51,8 +53,10 @@ namespace bwi_exp1 {
       nav_msgs::OccupancyGrid map_;
       nav_msgs::MapMetaData map_info_;
 
-      std::string robot_file_;
-
+      RobotScreenPublisher robot_screen_publisher_;
+      cv::Mat blank_image_;
+      cv::Mat up_arrow_;
+      ExperimentRobots experiment_robots_;
 
   };
 

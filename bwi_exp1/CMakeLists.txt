@@ -34,6 +34,7 @@ add_library(bwi_exp1
   src/libbwi_exp1/users.cpp
   src/libbwi_exp1/odometry.cpp
   src/libbwi_exp1/experiment.cpp
+  src/libbwi_exp1/robots.cpp
   ## src/libbwi_exp1/base_robot_positioner.cpp
   src/libbwi_exp1/robot_screen_publisher.cpp
   )
