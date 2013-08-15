@@ -138,7 +138,7 @@ class RobotScreenPublisher(threading.Thread):
     cv::resize(rotated_image, resized_image, 
         cv::Size(0,0), min_ratio, min_ratio);
 
-    image = cv::Mat::zeros(120, 160, 3);
+    image = cv::Mat::zeros(120, 160, CV_8UC3);
     int top = (image.rows - resized_image.rows) / 2;
     int bottom = image.rows - resized_image.rows - top;
     int left = (image.cols - resized_image.cols) / 2;

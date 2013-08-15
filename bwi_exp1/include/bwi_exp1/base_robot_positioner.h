@@ -34,7 +34,6 @@ namespace bwi_exp1 {
       geometry_msgs::Pose positionRobot(
           const topological_mapper::Point2f& from,
           const topological_mapper::Point2f& at,
-    
           const topological_mapper::Point2f& to);
 
     private:
