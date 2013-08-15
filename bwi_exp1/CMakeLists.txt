@@ -35,7 +35,7 @@ add_library(bwi_exp1
   src/libbwi_exp1/odometry.cpp
   src/libbwi_exp1/experiment.cpp
   src/libbwi_exp1/robots.cpp
-  ## src/libbwi_exp1/base_robot_positioner.cpp
+  src/libbwi_exp1/base_robot_positioner.cpp
   src/libbwi_exp1/robot_screen_publisher.cpp
   )
 target_link_libraries(bwi_exp1 
@@ -52,10 +52,10 @@ target_link_libraries(create_experiment
 ## target_link_libraries(robot_positioner 
 ##   ${catkin_LIBRARIES})
 
-## add_executable(test_robot_positioner test/test_robot_positioner.cpp)
-## target_link_libraries(test_robot_positioner 
-##   bwi_exp1
-##   ${catkin_LIBRARIES})
+add_executable(test_robot_positioner test/test_robot_positioner.cpp)
+target_link_libraries(test_robot_positioner 
+  bwi_exp1
+  ${catkin_LIBRARIES})
 
 add_executable(test_screen_publisher test/test_screen_publisher.cpp)
 target_link_libraries(test_screen_publisher 

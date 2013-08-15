@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <boost/foreach.hpp>
 #include <cstdlib>
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -68,7 +69,7 @@ namespace bwi_exp1 {
     }
 
     readRobotsFromFile(robot_file, experiment_robots_);
-    BOOST_FOREACH(const Robot& robot, experiment_robots_) {
+    BOOST_FOREACH(const Robot& robot, experiment_robots_.robots) {
       robot_screen_publisher_.addRobot(robot.id);
     }
 
