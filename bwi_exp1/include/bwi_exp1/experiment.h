@@ -44,27 +44,9 @@
 
 namespace bwi_exp1 {
 
-  struct Location {
-    float x;
-    float y;
-    float yaw;
-  };
-
-  struct Robot {
-    std::string id;
-    Location default_loc;
-  };
-
-  struct PathPoint {
-    size_t graph_id;
-    bool robot_present;
-  };
-
   struct Instance {
     Location start_loc;
     Location ball_loc;
-    std::vector<PathPoint> path;
-    std::vector<Location> extra_robots;
     float max_duration;
   };
 

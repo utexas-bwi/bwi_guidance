@@ -31,7 +31,7 @@ instance_groups:
             robot: yes
           - id: 11
             robot: no
-        extra_robots: []
+        robots: []
       - path:
           - id: 79
             robot: yes
@@ -47,7 +47,7 @@ instance_groups:
             robot: no
           - id: 58
             robot: no
-        extra_robots: []
+        robots: []
   - prefix: pair1
     instances:
       # instance 1 testing directional choices
@@ -66,7 +66,7 @@ instance_groups:
             robot: no
           - id: 51
             robot: no
-        extra_robots: []
+        robots: []
       #instance 3 tests navigating a big room without directional arrows
       - path:
           - id: 39
@@ -79,7 +79,7 @@ instance_groups:
             robot: no
           - id: 65
             robot: no
-        extra_robots: []
+        robots: []
       #instance 5 tests distraction in presence of a robot
       - path:
           - id: 80
@@ -100,7 +100,7 @@ instance_groups:
             robot: no
           - id: 5
             robot: no
-        extra_robots:
+        robots:
           - loc_x: 30.5
             loc_y: 14.9
             yaw: -2.03444
@@ -125,7 +125,7 @@ instance_groups:
             robot: no
           - id: 40
             robot: no
-        extra_robots: []
+        robots: []
       #instance 4 (paired with 3) attempts to show that directions in big room help
       - path:
           - id: 39
@@ -138,7 +138,7 @@ instance_groups:
             robot: no
           - id: 65
             robot: no
-        extra_robots: []
+        robots: []
       #instance 6 (paired with 5) tests distraction in absense of robot
       - path:
           - id: 80
@@ -159,7 +159,7 @@ instance_groups:
             robot: no
           - id: 5
             robot: no
-        extra_robots:
+        robots:
           - loc_x: 30.5
             loc_y: 14.9
             yaw: -2.03444

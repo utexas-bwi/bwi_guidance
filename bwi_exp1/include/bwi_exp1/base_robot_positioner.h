@@ -51,6 +51,9 @@ namespace bwi_exp1 {
       nav_msgs::OccupancyGrid map_;
       nav_msgs::MapMetaData map_info_;
 
+      std::string robot_file_;
+
+
   };
 
 } /* bwi_exp1 */

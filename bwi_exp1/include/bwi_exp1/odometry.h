@@ -38,14 +38,11 @@
 #ifndef ODOMETRY_LVMM1B22
 #define ODOMETRY_LVMM1B22
 
-#include <bwi_exp1/experiment.h>
+#include <bwi_exp1/structures.h>
+#include <string>
+#include <vector>
 
 namespace bwi_exp1 {
-
-  struct LocationStamped {
-    Location location;
-    float seconds_since_start;
-  };
 
   bool readOdometry(const std::string& file, 
       std::vector<LocationStamped>& path);

@@ -78,43 +78,6 @@ namespace bwi_exp1 {
         self.robot_locations = []
         self.robot_images = []
 
-class RobotScreenPublisher(threading.Thread):
-
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.robot_image_publisher = {}
-        self.robot_image = {}
-        self.robot_image_lock = {}
-        self.bridge = CvBridge()
-
-    def add_robot(self, robotid):
-        self.robot_image_publisher[robotid] = rospy.Publisher(
-                robotid + '/image', Image)
-        self.robot_image[robotid] = numpy.zeros((120,160,3), numpy.uint8)
-        self.robot_image_lock[robotid] = threading.Lock()
-
-    def update(self, robotid, new_image):
-        self.robot_image_lock[robotid].acquire()
-        self.robot_image[robotid] = new_image
-        self.robot_image_lock[robotid].release()
-
-    def run(self):
-        rate = bwi_tools.WallRate(5) # 5hz
-        try:
-            while not rospy.is_shutdown():
-                for robotid in self.robot_image_publisher.keys():
-                    self.robot_image_lock[robotid].acquire()
-                    image = self.robot_image[robotid]
-                    cv_image = cv.fromarray(image)
-                    image_msg = self.bridge.cv_to_imgmsg(cv_image, "bgr8")
-                    self.robot_image_lock[robotid].release()
-                    self.robot_image_publisher[robotid].publish(image_msg)
-                rate.sleep()
-        except rospy.ROSInterruptException:
-            pass
-        rospy.loginfo("Robot screen publisher thread shutting down...")
-
-  }
 
   BaseRobotPositioner::~BaseRobotPositioner() {}
 
