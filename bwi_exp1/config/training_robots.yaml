@@ -32,6 +32,10 @@ instance_groups:
           - id: 11
             robot: no
         robots: []
+        start_x: 20.75
+        start_y: 1.35
+        ball_x: 38.15
+        ball_y: 8.6
       - path:
           - id: 79
             robot: yes
@@ -48,6 +52,10 @@ instance_groups:
           - id: 58
             robot: no
         robots: []
+        start_x: 26.1
+        start_y: 45.45
+        ball_x: 45.7
+        ball_y: 30.85
   - prefix: pair1
     instances:
       # instance 1 testing directional choices
@@ -67,6 +75,10 @@ instance_groups:
           - id: 51
             robot: no
         robots: []
+        start_x: 14.2
+        start_y: 45.4
+        ball_x: 38.1
+        ball_y: 23.8
       #instance 3 tests navigating a big room without directional arrows
       - path:
           - id: 39
@@ -80,6 +92,10 @@ instance_groups:
           - id: 65
             robot: no
         robots: []
+        start_x: 1.35
+        start_y: 18.9
+        ball_x: 30.85
+        ball_y: 35.05
       #instance 5 tests distraction in presence of a robot
       - path:
           - id: 80
@@ -107,6 +123,10 @@ instance_groups:
           - loc_x: 45.8
             loc_y: 14.8
             yaw: -1.0612
+        start_x: 34
+        start_y: 45.45
+        ball_x: 40.5
+        ball_y: 1.4
   - prefix: pair2
     instances:
       # instance 2 (paired) experiment for experiment 1 in opposite direction
@@ -126,6 +146,10 @@ instance_groups:
           - id: 40
             robot: no
         robots: []
+        start_x: 46.15
+        start_y: 45.6
+        ball_x: 15.95
+        ball_y: 23.35
       #instance 4 (paired with 3) attempts to show that directions in big room help
       - path:
           - id: 39
@@ -139,6 +163,10 @@ instance_groups:
           - id: 65
             robot: no
         robots: []
+        start_x: 1.35
+        start_y: 18.9
+        ball_x: 30.85
+        ball_y: 35.05
       #instance 6 (paired with 5) tests distraction in absense of robot
       - path:
           - id: 80
@@ -166,3 +194,7 @@ instance_groups:
           - loc_x: 45.8
             loc_y: 14.8
             yaw: -1.0612
+        start_x: 34
+        start_y: 45.45
+        ball_x: 40.5
+        ball_y: 1.4

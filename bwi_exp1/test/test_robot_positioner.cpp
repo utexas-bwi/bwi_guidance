@@ -9,8 +9,10 @@ class TestRobotPositioner : public BaseRobotPositioner {
     TestRobotPositioner(boost::shared_ptr<ros::NodeHandle>& nh) :
         BaseRobotPositioner(nh) {}
     virtual ~TestRobotPositioner() {}
-    virtual void startExperimentInstance(int instance_number) {}
-    virtual void finalizeExperimentInstance(int instance_number) {}
+    virtual void startExperimentInstance(
+        const std::string& instance_name) {}
+    virtual void finalizeExperimentInstance(
+        const std::string& instance_name) {}
     virtual void odometryCallback(const nav_msgs::Odometry::ConstPtr) {}
 };
 

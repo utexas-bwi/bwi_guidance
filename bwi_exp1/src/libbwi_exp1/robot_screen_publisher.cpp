@@ -1,6 +1,5 @@
 #include <bwi_exp1/robot_screen_publisher.h>
 #include <boost/range/adaptor/map.hpp>
-/* #include <boost/thread/locks.hpp> */
 #include <boost/foreach.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>

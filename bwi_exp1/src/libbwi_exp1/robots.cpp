@@ -19,6 +19,10 @@ namespace bwi_exp1 {
   }
 
   void operator >> (const YAML::Node& node, InstanceRobots& instance) {
+    node["start_x"] >> instance.start_loc.x;
+    node["start_y"] >> instance.start_loc.y;
+    node["ball_x"] >> instance.ball_loc.x;
+    node["ball_y"] >> instance.ball_loc.y;
     instance.path.clear();
     for (size_t i = 0; i < node["path"].size(); ++i) {
       PathPoint path_point;
@@ -71,8 +75,8 @@ namespace bwi_exp1 {
     doc >> er;
   }
 
-  const InstanceRobots& getInstance(
-      const ExperimentRobots& er, std::string& instance_name) {
+  const InstanceRobots& getInstance(const std::string& instance_name,
+      const ExperimentRobots& er) {
 
     BOOST_FOREACH(const InstanceGroupRobots& ig, er.instance_groups) {
       std::string prefix = ig.prefix;

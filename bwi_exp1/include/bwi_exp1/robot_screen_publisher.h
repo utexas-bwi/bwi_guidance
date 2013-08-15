@@ -20,9 +20,10 @@ namespace bwi_exp1 {
       void addRobot(const std::string& robot_id);
       void updateImage(const std::string& robot_id, const cv::Mat& image);
       void start();
-      void run();
 
     private:
+
+      void run();
 
       boost::shared_ptr<boost::thread> publishing_thread_;
       boost::shared_ptr<ros::NodeHandle>& nh_;

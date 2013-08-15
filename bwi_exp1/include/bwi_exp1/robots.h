@@ -9,6 +9,8 @@
 namespace bwi_exp1 {
 
   struct InstanceRobots {
+    Location start_loc;
+    Location ball_loc;
     std::vector<PathPoint> path;
     std::vector<Location> robots;
   };
@@ -26,8 +28,8 @@ namespace bwi_exp1 {
   void readRobotsFromFile(const std::string& robot_file, 
       ExperimentRobots& experiment_robots_);
 
-  const InstanceRobots& getInstance(
-      const ExperimentRobots& er, std::string& instance_name);
+  const InstanceRobots& getInstance(const std::string& instance_name,
+      const ExperimentRobots& er);
   
 } /* bwi_exp1 */
 

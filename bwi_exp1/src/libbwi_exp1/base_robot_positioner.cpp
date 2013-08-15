@@ -7,6 +7,8 @@
 #include <tf/transform_datatypes.h>
 #include <bwi_exp1/base_robot_positioner.h>
 #include <topological_mapper/map_inflator.h>
+#include <bwi_msgs/RobotInfoArray.h>
+#include <boost/range/adaptor/map.hpp>
 
 namespace bwi_exp1 {
 
@@ -14,6 +16,7 @@ namespace bwi_exp1 {
       boost::shared_ptr<ros::NodeHandle>& nh) : 
     nh_(nh), robot_screen_publisher_(nh) {
     
+    // Read images from parameters
     std::string up_arrow_image_file;
     std::string images_dir = ros::package::getPath("bwi_exp1") + "/images";
     ros::NodeHandle private_nh("~");
@@ -22,6 +25,7 @@ namespace bwi_exp1 {
     up_arrow_ = cv::imread(up_arrow_image_file);
     blank_image_ = cv::Mat::zeros(120, 160, CV_8UC3);
 
+    // Read all other parameters
     std::string map_file, graph_file, robot_file;
     double robot_radius, robot_padding;
     if (!private_nh.getParam("map_file", map_file)) {
@@ -40,6 +44,7 @@ namespace bwi_exp1 {
     private_nh.param<double>("robot_padding", robot_padding, 0.1);
     private_nh.param<double>("search_distance", search_distance_, 0.75);
 
+    // Setup map, graph and robots
     nav_msgs::OccupancyGrid uninflated_map;
     mapper_.reset(new topological_mapper::MapLoader(map_file));
     mapper_->getMapInfo(map_info_);
@@ -49,6 +54,17 @@ namespace bwi_exp1 {
         uninflated_map, map_);
     topological_mapper::readGraphFromFile(graph_file, map_info_, graph_);
     
+    readRobotsFromFile(robot_file, experiment_robots_);
+    BOOST_FOREACH(const Robot& robot, experiment_robots_.robots) {
+      robot_screen_publisher_.addRobot(robot.id);
+      robot_locations_[robot.id] = 
+        convert2dToPose(robot.default_loc.x, robot.default_loc.y, 0);
+      assigned_robot_locations_[robot.id] = robot_locations_[robot.id]; 
+      robot_ok_[robot.id] = true;
+      robot_screen_orientations_[robot.id] = 
+        std::numeric_limits<float>::quiet_NaN(); 
+    }
+
     private_nh.param<bool>("debug", debug_, false);
 
     // Setup ros topic callbacks and services
@@ -68,15 +84,31 @@ namespace bwi_exp1 {
       ROS_INFO_STREAM("Gazebo is NOT AVAILABLE");
     }
 
-    readRobotsFromFile(robot_file, experiment_robots_);
-    BOOST_FOREACH(const Robot& robot, experiment_robots_.robots) {
-      robot_screen_publisher_.addRobot(robot.id);
-    }
+    odometry_subscriber_ = 
+      nh->subscribe("person/odom", 1, &BaseRobotPositioner::odometryCallback, 
+          this);
 
-    robot_screen_publisher_.start();
+    position_publisher_ = 
+      nh->advertise<bwi_msgs::RobotInfoArray>("robot_positions", 1, true);
   }
 
-  BaseRobotPositioner::~BaseRobotPositioner() {}
+  BaseRobotPositioner::~BaseRobotPositioner() {
+    if (publishing_thread_) {
+      publishing_thread_->join();
+    }
+    ROS_INFO_STREAM("BaseRobotPositioner shutting down...");
+  }
+
+  void BaseRobotPositioner::finalizeExperimentInstance(
+      const std::string& instance_name) {
+    boost::mutex::scoped_lock lock(robot_modification_mutex_);
+    BOOST_FOREACH(const Robot& robot, experiment_robots_.robots) {
+      robot_locations_[robot.id] = 
+        convert2dToPose(robot.default_loc.x, robot.default_loc.y, 0);
+      robot_screen_orientations_[robot.id] = 
+        std::numeric_limits<float>::quiet_NaN(); 
+    }
+  }
 
   void BaseRobotPositioner::produceDirectedArrow(float orientation,
       cv::Mat& image) {
@@ -106,6 +138,16 @@ namespace bwi_exp1 {
 
     cv::copyMakeBorder(resized_image, image, top, bottom, left, right, 
         cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
+  }
+
+  geometry_msgs::Pose BaseRobotPositioner::convert2dToPose(
+      float x, float y, float yaw) {
+    geometry_msgs::Pose pose;
+    pose.position.x = x;
+    pose.position.y = y;
+    pose.position.z = 0;
+    pose.orientation = tf::createQuaternionMsgFromYaw(yaw);
+    return pose;
   }
 
   bool BaseRobotPositioner::checkClosePoses(const geometry_msgs::Pose& p1,
@@ -257,6 +299,48 @@ namespace bwi_exp1 {
     }
 
     return resp;
+  }
+
+  void BaseRobotPositioner::start() {
+    ROS_INFO_STREAM("BaseRobotPositioner starting up...");
+    robot_screen_publisher_.start();
+    publishing_thread_.reset(
+        new boost::thread(boost::bind(&BaseRobotPositioner::run, this)));
+  }
+
+  void BaseRobotPositioner::run() {
+    ros::Rate rate(10);
+    bool first = true;
+    while (ros::ok()) {
+      boost::mutex::scoped_lock lock(robot_modification_mutex_);
+      bool change = first;
+      BOOST_FOREACH(const std::string& robot_id, 
+          robot_locations_ | boost::adaptors::map_keys) {
+        bool already_there = checkClosePoses(robot_locations_[robot_id],
+            assigned_robot_locations_[robot_id]);
+        if (!already_there) {
+          change = true;
+          robot_ok_[robot_id] = 
+            teleportEntity(robot_id, robot_locations_[robot_id]);
+          assigned_robot_locations_[robot_id] = robot_locations_[robot_id];
+        }
+      }
+      if (change) {
+        bwi_msgs::RobotInfoArray out_msg;
+        out_msg.header.frame_id = "map";
+        out_msg.header.stamp = ros::Time::now();
+        BOOST_FOREACH(const std::string& robot_id, 
+            robot_locations_ | boost::adaptors::map_keys) {
+          bwi_msgs::RobotInfo robot_info;
+          robot_info.pose = assigned_robot_locations_[robot_id];
+          robot_info.direction = robot_screen_orientations_[robot_id];
+          robot_info.is_ok = robot_ok_[robot_id];
+        }
+      }
+      first = false;
+      rate.sleep();
+    }
+    
   }
   
 } /* bwi_exp1 */            

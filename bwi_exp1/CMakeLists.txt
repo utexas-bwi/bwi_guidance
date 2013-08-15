@@ -48,9 +48,10 @@ target_link_libraries(create_experiment
   ${catkin_LIBRARIES})
 
 ## Declare a cpp executable
-## add_executable(robot_positioner src/nodes/robot_positioner.cpp)
-## target_link_libraries(robot_positioner 
-##   ${catkin_LIBRARIES})
+add_executable(robot_positioner src/nodes/robot_positioner.cpp)
+target_link_libraries(robot_positioner 
+  bwi_exp1
+  ${catkin_LIBRARIES})
 
 add_executable(test_robot_positioner test/test_robot_positioner.cpp)
 target_link_libraries(test_robot_positioner 

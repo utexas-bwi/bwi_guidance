@@ -23,12 +23,15 @@ namespace bwi_exp1 {
       BaseRobotPositioner(boost::shared_ptr<ros::NodeHandle>& nh);
       virtual ~BaseRobotPositioner();
 
-      virtual void startExperimentInstance(int instance_number) = 0;
-      virtual void finalizeExperimentInstance(int instance_number) = 0;
-      virtual void odometryCallback(const nav_msgs::Odometry::ConstPtr) = 0;
+      virtual void startExperimentInstance(
+          const std::string& instance_name) = 0;
+      virtual void odometryCallback(
+          const nav_msgs::Odometry::ConstPtr odom) = 0;
 
+      virtual void finalizeExperimentInstance(const std::string& instance_name);
       void produceDirectedArrow(float orientation, cv::Mat& image);
 
+      geometry_msgs::Pose convert2dToPose(float x, float y, float yaw);
       bool checkClosePoses(const geometry_msgs::Pose& p1,
           const geometry_msgs::Pose& p2);
       bool teleportEntity(const std::string& entity, 
@@ -39,10 +42,18 @@ namespace bwi_exp1 {
           const topological_mapper::Point2f& at,
           const topological_mapper::Point2f& to);
 
-    private:
+      void start();
+
+    protected:
+
+      void run();
+
       boost::shared_ptr<ros::NodeHandle> nh_;
+      boost::shared_ptr<boost::thread> publishing_thread_;
 
       bool gazebo_available_;
+      ros::Subscriber odometry_subscriber_;
+      ros::Publisher position_publisher_;
       ros::ServiceClient get_gazebo_model_client_;
       ros::ServiceClient set_gazebo_model_client_;
 
@@ -57,6 +68,12 @@ namespace bwi_exp1 {
       cv::Mat blank_image_;
       cv::Mat up_arrow_;
       ExperimentRobots experiment_robots_;
+
+      std::map<std::string, geometry_msgs::Pose> robot_locations_; 
+      std::map<std::string, geometry_msgs::Pose> assigned_robot_locations_;
+      std::map<std::string, float> robot_screen_orientations_;
+      std::map<std::string, bool> robot_ok_;
+      boost::mutex robot_modification_mutex_;
 
   };
 

@@ -33,9 +33,9 @@ file(GLOB_RECURSE QT_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} FOLLOW_SYMLINK
 # Binaries
 ##############################################################################
 
-add_executable(bwi_exp1_visualizer ${QT_SOURCES} ${QT_FORMS_HPP} ${QT_MOC_HPP})
-target_link_libraries(bwi_exp1_visualizer 
-  ${catkin_LIBRARIES}
-  ${QT_QTCORE_LIBRARY} 
-  ${QT_QTGUI_LIBRARY}
-)
+## add_executable(bwi_exp1_visualizer ${QT_SOURCES} ${QT_FORMS_HPP} ${QT_MOC_HPP})
+## target_link_libraries(bwi_exp1_visualizer 
+##   ${catkin_LIBRARIES}
+##   ${QT_QTCORE_LIBRARY} 
+##   ${QT_QTGUI_LIBRARY}
+## )
