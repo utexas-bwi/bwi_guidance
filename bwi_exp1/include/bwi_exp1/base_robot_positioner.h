@@ -14,6 +14,7 @@
 
 #include <bwi_exp1/robot_screen_publisher.h>
 #include <bwi_exp1/robots.h>
+#include <bwi_msgs/ExperimentStatus.h>
 
 namespace bwi_exp1 {
 
@@ -31,6 +32,7 @@ namespace bwi_exp1 {
       virtual void finalizeExperimentInstance(const std::string& instance_name);
       void produceDirectedArrow(float orientation, cv::Mat& image);
 
+      void experimentCallback(const bwi_msgs::ExperimentStatus::ConstPtr es); 
       geometry_msgs::Pose convert2dToPose(float x, float y, float yaw);
       bool checkClosePoses(const geometry_msgs::Pose& p1,
           const geometry_msgs::Pose& p2);
@@ -52,6 +54,7 @@ namespace bwi_exp1 {
       boost::shared_ptr<boost::thread> publishing_thread_;
 
       bool gazebo_available_;
+      ros::Subscriber experiment_status_subscriber_;
       ros::Subscriber odometry_subscriber_;
       ros::Publisher position_publisher_;
       ros::ServiceClient get_gazebo_model_client_;

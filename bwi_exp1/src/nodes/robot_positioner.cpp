@@ -55,7 +55,7 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
 
   public:
     DataCollectionRobotPositioner(boost::shared_ptr<ros::NodeHandle>& nh) :
-      BaseRobotPositioner(nh) {}
+      BaseRobotPositioner(nh), assigned_robots_(0) {}
     virtual ~DataCollectionRobotPositioner() {}
 
     virtual void startExperimentInstance(
@@ -174,7 +174,7 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
             robot_screen_publisher_.updateImage(robot.id, robot_images_[count]);
             robot_screen_orientations_[robot.id] = robot_orientations_[count];
           } else {
-            robot_screen_publisher_.updateImage(robot.id, robot_images_[count]);
+            robot_screen_publisher_.updateImage(robot.id, blank_image_);
             robot_screen_orientations_[robot.id] = 
                 std::numeric_limits<float>::quiet_NaN(); 
           }
