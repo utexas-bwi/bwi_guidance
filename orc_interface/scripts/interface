@@ -3,12 +3,15 @@
 import bwi_tools
 import rospy
 import threading
+from PyQt4 import QtGui
+import sys
 
 import orc_interface
 
-class OrcInterface:
+class OrcInterface(threading.Thread):
 
     def __init__(self):
+        threading.Thread.__init__(self)
         rospy.init_node('orc_interface')
 
         # Get available robots and their controllers
@@ -19,6 +22,7 @@ class OrcInterface:
 
         self.pending_requests = []
         self.invoked_requests = []
+        
         self.interfaces = {} 
 
         # Setup interfaces
@@ -29,7 +33,7 @@ class OrcInterface:
 
         self.modify_pending_req_lock = threading.Lock()
 
-    def start(self):
+    def run(self):
         rospy.loginfo("Interface starting up...")
         self.server.start()
         rate = bwi_tools.WallRate(10)
@@ -97,7 +101,11 @@ class OrcInterface:
 
 if __name__ == '__main__':
     try:
+        app = QtGui.QApplication(sys.argv)
         server = OrcInterface()
         server.start()
+        app.exec_()
+        server.join()
+        sys.exit(0)
     except rospy.ROSInterruptException:
         pass
