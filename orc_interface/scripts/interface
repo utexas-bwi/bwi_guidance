@@ -23,6 +23,9 @@ class OrcInterface:
 
         # Setup interfaces
         self.interfaces['move'] = orc_interface.MoveInterface(self.targets)
+        self.interfaces['location'] = \
+                orc_interface.LocationInterface(self.targets)
+        self.interfaces['list'] = orc_interface.ListInterface(self.targets)
 
         self.modify_pending_req_lock = threading.Lock()
 
