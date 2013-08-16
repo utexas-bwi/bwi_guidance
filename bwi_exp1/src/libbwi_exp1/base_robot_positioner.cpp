@@ -87,6 +87,11 @@ namespace bwi_exp1 {
     odometry_subscriber_ = 
       nh->subscribe("person/odom", 1, &BaseRobotPositioner::odometryCallback, 
           this);
+    current_instance_ = -1;
+    instance_in_progress_ = false;
+    experiment_status_subscriber_ = 
+      nh->subscribe("experiment_controller/experiment_status", 
+          1, &BaseRobotPositioner::experimentCallback, this);
 
     position_publisher_ = 
       nh->advertise<bwi_msgs::RobotInfoArray>("robot_positions", 1, true);
@@ -96,11 +101,9 @@ namespace bwi_exp1 {
     if (publishing_thread_) {
       publishing_thread_->join();
     }
-    ROS_INFO_STREAM("BaseRobotPositioner shutting down...");
   }
 
-  void BaseRobotPositioner::finalizeExperimentInstance(
-      const std::string& instance_name) {
+  void BaseRobotPositioner::finalizeExperimentInstance() {
     boost::mutex::scoped_lock lock(robot_modification_mutex_);
     BOOST_FOREACH(const Robot& robot, experiment_robots_.robots) {
       robot_locations_[robot.id] = 
@@ -138,6 +141,17 @@ namespace bwi_exp1 {
 
     cv::copyMakeBorder(resized_image, image, top, bottom, left, right, 
         cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
+  }
+
+  void BaseRobotPositioner::experimentCallback(
+      const bwi_msgs::ExperimentStatus::ConstPtr es) {
+    if (es->instance_in_progress && es->instance_number != current_instance_) {
+      instance_in_progress_ = true;
+      current_instance_ = es->instance_number;
+      startExperimentInstance(es->instance_name);
+    } else if (!es->instance_in_progress && instance_in_progress_) {
+      finalizeExperimentInstance();
+    }
   }
 
   geometry_msgs::Pose BaseRobotPositioner::convert2dToPose(
@@ -302,17 +316,16 @@ namespace bwi_exp1 {
   }
 
   void BaseRobotPositioner::start() {
-    ROS_INFO_STREAM("BaseRobotPositioner starting up...");
-    robot_screen_publisher_.start();
     publishing_thread_.reset(
         new boost::thread(boost::bind(&BaseRobotPositioner::run, this)));
   }
 
   void BaseRobotPositioner::run() {
+    ROS_INFO_STREAM("BaseRobotPositioner starting up...");
+    robot_screen_publisher_.start();
     ros::Rate rate(10);
     bool first = true;
     while (ros::ok()) {
-      boost::mutex::scoped_lock lock(robot_modification_mutex_);
       bool change = first;
       BOOST_FOREACH(const std::string& robot_id, 
           robot_locations_ | boost::adaptors::map_keys) {
@@ -335,12 +348,15 @@ namespace bwi_exp1 {
           robot_info.pose = assigned_robot_locations_[robot_id];
           robot_info.direction = robot_screen_orientations_[robot_id];
           robot_info.is_ok = robot_ok_[robot_id];
+          out_msg.robots.push_back(robot_info);
         }
+        position_publisher_.publish(out_msg);
       }
       first = false;
+      ros::spinOnce();
       rate.sleep();
     }
-    
+    ROS_INFO_STREAM("BaseRobotPositioner shutting down...");
   }
   
 } /* bwi_exp1 */            

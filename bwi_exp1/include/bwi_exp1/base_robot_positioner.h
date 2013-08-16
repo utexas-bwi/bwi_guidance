@@ -29,7 +29,7 @@ namespace bwi_exp1 {
       virtual void odometryCallback(
           const nav_msgs::Odometry::ConstPtr odom) = 0;
 
-      virtual void finalizeExperimentInstance(const std::string& instance_name);
+      virtual void finalizeExperimentInstance();
       void produceDirectedArrow(float orientation, cv::Mat& image);
 
       void experimentCallback(const bwi_msgs::ExperimentStatus::ConstPtr es); 
@@ -45,16 +45,14 @@ namespace bwi_exp1 {
           const topological_mapper::Point2f& to);
 
       void start();
+      void run();
 
     protected:
-
-      void run();
 
       boost::shared_ptr<ros::NodeHandle> nh_;
       boost::shared_ptr<boost::thread> publishing_thread_;
 
       bool gazebo_available_;
-      ros::Subscriber experiment_status_subscriber_;
       ros::Subscriber odometry_subscriber_;
       ros::Publisher position_publisher_;
       ros::ServiceClient get_gazebo_model_client_;
@@ -77,6 +75,10 @@ namespace bwi_exp1 {
       std::map<std::string, float> robot_screen_orientations_;
       std::map<std::string, bool> robot_ok_;
       boost::mutex robot_modification_mutex_;
+
+      int current_instance_;
+      bool instance_in_progress_;
+      ros::Subscriber experiment_status_subscriber_;
 
   };
 

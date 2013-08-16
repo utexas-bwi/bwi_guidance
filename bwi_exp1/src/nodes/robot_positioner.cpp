@@ -192,8 +192,7 @@ int main(int argc, char *argv[]) {
   boost::shared_ptr<ros::NodeHandle> nh;
   nh.reset(new ros::NodeHandle());
   DataCollectionRobotPositioner rp(nh);
-  rp.start();
-  ros::spin();
+  rp.run();
 
   return 0;
 }
