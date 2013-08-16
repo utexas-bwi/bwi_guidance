@@ -284,7 +284,7 @@ class ExperimentController:
                 self.experiment_text = "Oh no! You were unable to find the "\
                         + "ball quickly enough (" + str(time_diff) + " "\
                         + "seconds). You need to find the ball in "\
-                        + str(self.experiment_tutorial_duration) + " seconds. "\
+                        + str(self.max_tutorial_time) + " seconds. "\
                         + "Let's try the tutorial again!"
                 reward = 0
 
