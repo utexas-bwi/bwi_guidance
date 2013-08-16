@@ -91,7 +91,7 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
         topological_mapper::Point2f from_loc(
             robots_in_instance.start_loc.x,
             robots_in_instance.start_loc.y);
-        from_loc *= (1.0 / map_info_.resolution);
+        from_loc = topological_mapper::toGrid(from_loc, map_info_);
         if (path_idx != 0) {
           const PathPoint& prev_path_point = 
             robots_in_instance.path[path_idx-1];
@@ -103,7 +103,7 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
         topological_mapper::Point2f to_loc(
             robots_in_instance.ball_loc.x,
             robots_in_instance.ball_loc.y);
-        to_loc *= (1.0 / map_info_.resolution);
+        to_loc = topological_mapper::toGrid(to_loc, map_info_);
         if (path_idx != robots_in_instance.path.size() - 1) {
           const PathPoint& next_path_point = robots_in_instance.path[path_idx+1];
           to_loc = topological_mapper::getLocationFromGraphId(
@@ -112,12 +112,11 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
 
         // Get pose
         geometry_msgs::Pose pose = positionRobot(from_loc, at_loc, to_loc);
-        std::cout << pose << std::endl;
         float robot_yaw = tf::getYaw(pose.orientation);
 
         // Get arrow direction
         topological_mapper::Point2f robot_loc(pose.position.x, pose.position.y);
-        robot_loc *= (1.0 / map_info_.resolution);
+        robot_loc = topological_mapper::toGrid(robot_loc, map_info_);
         float destination_distance = 
           topological_mapper::getMagnitude(to_loc - robot_loc);
         size_t path_position = path_idx + 1;

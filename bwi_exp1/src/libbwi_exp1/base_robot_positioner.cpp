@@ -70,7 +70,7 @@ namespace bwi_exp1 {
     // Setup ros topic callbacks and services
     get_gazebo_model_client_ = nh->serviceClient<gazebo_msgs::GetModelState>(
         "/gazebo/get_model_state");
-    bool gazebo_available_ = 
+    gazebo_available_ = 
       get_gazebo_model_client_.waitForExistence(ros::Duration(30));
 
     set_gazebo_model_client_ = nh->serviceClient<gazebo_msgs::SetModelState>(

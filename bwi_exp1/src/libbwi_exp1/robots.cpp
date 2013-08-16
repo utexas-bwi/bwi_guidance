@@ -34,6 +34,7 @@ namespace bwi_exp1 {
       Location robot;
       node["robots"][i]["loc_x"] >> robot.x;
       node["robots"][i]["loc_y"] >> robot.y;
+      node["robots"][i]["yaw"] >> robot.yaw;
       instance.robots.push_back(robot);
     }
   }

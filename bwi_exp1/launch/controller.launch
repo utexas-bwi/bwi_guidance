@@ -22,6 +22,7 @@
     <param name="robot_radius" value="0.25" />
     <param name="robot_padding" value="0.1" />
     <param name="search_distance" value="0.45" />
+    <!-- <param name="debug" value="true" /> -->
   </node>
 
 </launch>
