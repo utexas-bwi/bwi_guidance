@@ -82,6 +82,9 @@ namespace topological_mapper {
   size_t getClosestIdOnGraph(const Point2f &point, 
       const Graph &graph, double threshold = 5.0);
 
+  size_t getClosestIdOnGraphFromEdge(const Point2f &point, 
+      const Graph &graph, size_t prev_graph_id);
+
   void getShortestPath(Graph &graph, size_t start_idx,
       size_t goal_idx, std::vector<size_t> &path_from_goal);
 

@@ -184,18 +184,59 @@ namespace topological_mapper {
   }
 
   size_t getClosestIdOnGraph(const Point2f &point, 
-      const Graph &graph, double threshold) {
-
+      const Graph &graph, double threshold = 0.0) {
     Graph::vertex_iterator vi, vend;
-    int count = 0;
+    size_t count = 0, min_idx = -1;
+    float min_distance = std::numeric_limits<float>::max(); 
     for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
       Point2f location = graph[*vi].location;
-      if (topological_mapper::getMagnitude(point - location) <= threshold) {
-        return count;
+      if (topological_mapper::getMagnitude(point - location) <= min_distance) {
+        min_distance =
+          topological_mapper::getMagnitude(point - location);
+        min_idx = count;
       }
       count++;
     }
-    return -1;
+    if (min_distance < threshold || threshold = 0.0) {
+      return count;
+    } else {
+      return -1;
+    }
+  }
+
+  size_t getClosestIdonGraphFromEdge(const Point2f& point, 
+      const Graph &graph, size_t prev_graph_id) {
+
+    boost::property_map<Graph, boost::vertex_index_t>::type 
+        indexmap = boost::get(boost::vertex_index, graph_);
+
+    boost::vertex_descriptor prev_vertex = boost::vertex(prev_graph_id, graph_);
+    Point2f location = graph[prev_vertex].location;
+
+    size_t min_idx = -1;
+    size_t min_distance = std::numeric_limits<float>::max();
+    Point2f other_location;
+
+    Graph::adjacency_iterator ai, aend;
+    for (boost::tie(ai, aend) = boost::adjacent_vertices(
+          (Graph::vertex_descriptor)*vi, graph); 
+        ai != aend; ++ai) {
+      Point2f location2 = graph[*ai].location;
+
+      float distance = topological_mapper::minimumDistanceToLineSegment(
+           location, location2, point);
+      if (distance < min_distance) {
+        other_location = location2;
+        min_distance = distance;
+        min_idx = indexmap[*ai]; 
+      }
+    }
+
+    if (getMagnitude(point - location) < getMagnitude(point - other_location)) {
+      return prev_graph_id;
+    } else {
+      return min_idx;
+    }
   }
 
   void getShortestPath(Graph &graph, size_t start_idx,
