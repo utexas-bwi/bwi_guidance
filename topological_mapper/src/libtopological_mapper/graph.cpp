@@ -184,7 +184,7 @@ namespace topological_mapper {
   }
 
   size_t getClosestIdOnGraph(const Point2f &point, 
-      const Graph &graph, double threshold = 0.0) {
+      const Graph &graph, double threshold) {
     Graph::vertex_iterator vi, vend;
     size_t count = 0, min_idx = -1;
     float min_distance = std::numeric_limits<float>::max(); 
@@ -197,7 +197,7 @@ namespace topological_mapper {
       }
       count++;
     }
-    if (min_distance < threshold || threshold = 0.0) {
+    if (min_distance < threshold || threshold == 0.0) {
       return count;
     } else {
       return -1;
@@ -208,9 +208,9 @@ namespace topological_mapper {
       const Graph &graph, size_t prev_graph_id) {
 
     boost::property_map<Graph, boost::vertex_index_t>::type 
-        indexmap = boost::get(boost::vertex_index, graph_);
+        indexmap = boost::get(boost::vertex_index, graph);
 
-    boost::vertex_descriptor prev_vertex = boost::vertex(prev_graph_id, graph_);
+    Graph::vertex_descriptor prev_vertex = boost::vertex(prev_graph_id, graph);
     Point2f location = graph[prev_vertex].location;
 
     size_t min_idx = -1;
@@ -218,8 +218,7 @@ namespace topological_mapper {
     Point2f other_location;
 
     Graph::adjacency_iterator ai, aend;
-    for (boost::tie(ai, aend) = boost::adjacent_vertices(
-          (Graph::vertex_descriptor)*vi, graph); 
+    for (boost::tie(ai, aend) = boost::adjacent_vertices(prev_vertex, graph); 
         ai != aend; ++ai) {
       Point2f location2 = graph[*ai].location;
 
