@@ -32,8 +32,11 @@ namespace bwi_exp1 {
       State resolveState(state_t state);
       Action resolveAction(state_t state, action_t action);
 
-    private:
+      size_t computeNextDirection(size_t dir, size_t graph_id, size_t next_graph_id);
+      size_t getDirectionFromAngle(float angle);
+      float getAngleFromDirection(size_t dir);
 
+    private:
 
       void initializeStateSpace();
       std::vector<State> state_cache_;
@@ -53,11 +56,8 @@ namespace bwi_exp1 {
       std::vector<std::vector<state_t> > next_state_cache_;
       std::vector<std::vector<std::vector<float> > > ns_distribution_cache_;
 
-      size_t computeNextDirection(size_t dir, size_t graph_id, size_t next_graph_id);
       float getAngleFromStates(size_t graph_id, size_t next_graph_id);
       float getDistanceFromStates(size_t graph_id, size_t next_graph_id);
-      size_t getDirectionFromAngle(float angle);
-      float getAngleFromDirection(size_t dir);
       uint32_t num_vertices_;
       uint32_t num_directions_;
       uint32_t max_robots_;

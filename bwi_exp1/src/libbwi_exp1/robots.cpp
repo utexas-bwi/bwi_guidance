@@ -21,6 +21,7 @@ namespace bwi_exp1 {
   void operator >> (const YAML::Node& node, InstanceRobots& instance) {
     node["start_x"] >> instance.start_loc.x;
     node["start_y"] >> instance.start_loc.y;
+    node["start_yaw"] >> instance.start_loc.yaw;
     node["ball_x"] >> instance.ball_loc.x;
     node["ball_y"] >> instance.ball_loc.y;
     instance.path.clear();
