@@ -48,13 +48,14 @@ add_executable(test_mdp
 target_link_libraries(test_mdp 
   bwi_exp1_solver
 )
-## add_executable(test_rl
-##   test/test_mdp2.cpp
-## )
-## 
-## target_link_libraries(test_rl
-##   bwi_exp1_solver
-## )
+
+add_executable(vi_robot_positioner
+  src/nodes/vi_robot_positioner.cpp
+)
+target_link_libraries(vi_robot_positioner 
+  bwi_exp1_solver
+  ${catkin_LIBRARIES}
+)
 
 #############
 ## Install ##

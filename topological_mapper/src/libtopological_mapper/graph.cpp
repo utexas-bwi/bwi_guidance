@@ -204,7 +204,7 @@ namespace topological_mapper {
     }
   }
 
-  size_t getClosestIdonGraphFromEdge(const Point2f& point, 
+  size_t getClosestIdOnGraphFromEdge(const Point2f& point, 
       const Graph &graph, size_t prev_graph_id) {
 
     boost::property_map<Graph, boost::vertex_index_t>::type 
