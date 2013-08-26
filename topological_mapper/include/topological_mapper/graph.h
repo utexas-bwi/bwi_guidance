@@ -80,7 +80,7 @@ namespace topological_mapper {
   Point2f getLocationFromGraphId(int idx, const Graph& graph);
 
   size_t getClosestIdOnGraph(const Point2f &point, 
-      const Graph &graph, double threshold = 5.0);
+      const Graph &graph, double threshold = 0.0);
 
   size_t getClosestIdOnGraphFromEdge(const Point2f &point, 
       const Graph &graph, size_t prev_graph_id);

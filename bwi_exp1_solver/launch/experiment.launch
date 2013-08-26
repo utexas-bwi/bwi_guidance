@@ -1,0 +1,13 @@
+<launch>
+  <arg name="uid" />
+  <arg name="email" />
+  <arg name="name" />
+
+  <include file="$(find bwi_exp1)/launch/environment.launch" />
+  <include file="$(find bwi_exp1_solver)/launch/controller.launch">
+    <arg name="uid" value="$(arg uid)"/>
+    <arg name="email" value="$(arg email)"/>
+    <arg name="name" value="$(arg name)"/>
+  </include>
+
+</launch>

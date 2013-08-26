@@ -5,6 +5,7 @@
 #include <bwi_exp1_solver/person_model.h>
 #include <topological_mapper/map_loader.h>
 #include <bwi_exp1/base_robot_positioner.h>
+#include <tf/transform_datatypes.h>
 
 using namespace bwi_exp1;
 
@@ -22,8 +23,10 @@ class VIRobotPositioner : public BaseRobotPositioner {
     int vi_max_iterations_;
     bool recompute_policy_;
 
+    std::string instance_name_;
     state_t current_state_;
     unsigned int robots_at_next_state_;
+    size_t assigned_robots_;
 
   public:
 
@@ -66,8 +69,11 @@ class VIRobotPositioner : public BaseRobotPositioner {
     virtual void startExperimentInstance(
         const std::string& instance_name) {
 
+      instance_name_ = instance_name;
+      assigned_robots_ = 0;
+
       const Instance& instance = 
-        getInstance(experiment_, instance_name);
+        getInstance(experiment_, instance_name_);
 
       topological_mapper::Point2f start_point(instance.start_loc.x,
           instance.start_loc.y);
@@ -78,30 +84,80 @@ class VIRobotPositioner : public BaseRobotPositioner {
       size_t direction = 
         model_->getDirectionFromAngle(instance.start_loc.yaw);
 
+      ROS_INFO_STREAM("Start: " << prev_graph_id << 
+          ", direction: " << direction << 
+          ", num_robots: " << num_robots_available_);
       current_state_ = model_->canonicalizeState(prev_graph_id, 
           direction, num_robots_available_);
       checkRobotPlacementAtCurrentState();
 
     }
 
-    virtual void checkRobotPlacementAtCurrentState() {
+    virtual void checkRobotPlacementAtCurrentState(
+        size_t prev_graph_id = (size_t)-1) {
+
       boost::mutex::scoped_lock lock(robot_modification_mutex_);
 
+      const Instance& instance = 
+        getInstance(experiment_, instance_name_);
+
       // First check if we need to place a robot according to VI policy
-      State previous_state = model_->resolveState(current_state_);
+      State current_state = model_->resolveState(current_state_);
 
       action_t action_idx = vi_->getBestAction(current_state_);
       Action action = model_->resolveAction(current_state_, action_idx);
       if (action.type == PLACE_ROBOT) {
-        std::cout << "FOUND ROBOT. Robot points towards " << action.graph_id << std::endl;
+
+        topological_mapper::Point2f at_loc = 
+          topological_mapper::getLocationFromGraphId(
+              current_state.graph_id, graph_);
+
+        topological_mapper::Point2f from_loc(
+            instance.start_loc.x,
+            instance.start_loc.y);
+        from_loc = topological_mapper::toGrid(from_loc, map_info_);
+        if (prev_graph_id != (size_t)-1) {
+          // A prev_idx is available, use it instead of the starting location
+          from_loc = topological_mapper::getLocationFromGraphId(
+              prev_graph_id, graph_);
+        }
+
+        topological_mapper::Point2f to_loc = 
+          topological_mapper::getLocationFromGraphId(
+              action.graph_id, graph_);
+
+        // Compute robot pose
+        geometry_msgs::Pose pose = positionRobot(from_loc, at_loc, to_loc);
+        float robot_yaw = tf::getYaw(pose.orientation);
+
+        // Compute arrow pose
+        topological_mapper::Point2f robot_loc(pose.position.x, pose.position.y);
+        topological_mapper::Point2f change_loc = to_loc - robot_loc;
+        float destination_yaw = atan2(change_loc.y, change_loc.x);
+        float change_in_yaw = destination_yaw - robot_yaw;
+        cv::Mat robot_image;
+        produceDirectedArrow(change_in_yaw, robot_image);
+
+        // Teleport the robot and assign a direction
+        std::string robot_id = default_robots_.robots[assigned_robots_].id;
+        robot_locations_[robot_id] = pose;
+        robot_screen_orientations_[robot_id] = destination_yaw;
+        robot_screen_publisher_.updateImage(robot_id, robot_image);
+        ++assigned_robots_;
+        robots_at_next_state_ = current_state.num_robots_left - 1;
+      } else {
+        robots_at_next_state_ = current_state.num_robots_left;
       }
 
-      robots_at_next_state_ = previous_state.num_robots_left - 1;
+
     }
 
     virtual void odometryCallback(const nav_msgs::Odometry::ConstPtr odom) {
+      
+      if (!instance_in_progress_)
+        return;
 
-      State previous_state = model_->resolveState(current_state_);
+      State current_state = model_->resolveState(current_state_);
 
       topological_mapper::Point2f person_loc(
           odom->pose.pose.position.x,
@@ -110,14 +166,17 @@ class VIRobotPositioner : public BaseRobotPositioner {
 
       size_t current_graph_id =
         topological_mapper::getClosestIdOnGraphFromEdge(person_loc,
-            graph_, previous_state.graph_id);
+            graph_, current_state.graph_id);
 
-      if (current_graph_id != previous_state.graph_id) {
+      if (current_graph_id != current_state.graph_id) {
         // A transition has happened. Compute next state and check if robot 
         // needs to be placed.
         size_t next_direction = model_->computeNextDirection(
-            previous_state.direction, previous_state.graph_id, 
+            current_state.direction, current_state.graph_id, 
             current_graph_id);
+        ROS_INFO_STREAM("Transitioning to: " << current_graph_id << 
+            ", direction: " << next_direction << 
+            ", num_robots: " << robots_at_next_state_);
         current_state_ = model_->canonicalizeState(current_graph_id,
             next_direction, robots_at_next_state_);
         checkRobotPlacementAtCurrentState();

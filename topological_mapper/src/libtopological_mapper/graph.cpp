@@ -198,7 +198,7 @@ namespace topological_mapper {
       count++;
     }
     if (min_distance < threshold || threshold == 0.0) {
-      return count;
+      return min_idx;
     } else {
       return -1;
     }
@@ -214,7 +214,7 @@ namespace topological_mapper {
     Point2f location = graph[prev_vertex].location;
 
     size_t min_idx = -1;
-    size_t min_distance = std::numeric_limits<float>::max();
+    float min_distance = std::numeric_limits<float>::max();
     Point2f other_location;
 
     Graph::adjacency_iterator ai, aend;
@@ -230,6 +230,9 @@ namespace topological_mapper {
         min_idx = indexmap[*ai]; 
       }
     }
+
+    // std::cout << "Loc: " << point << "to1: " << location << "(" << getMagnitude(point - location) << ")"
+    //   << "to2: " << other_location << "(" << getMagnitude(point - other_location) << ")" << std::endl;
 
     if (getMagnitude(point - location) < getMagnitude(point - other_location)) {
       return prev_graph_id;
