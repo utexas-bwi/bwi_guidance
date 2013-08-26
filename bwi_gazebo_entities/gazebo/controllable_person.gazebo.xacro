@@ -18,7 +18,7 @@
             <format>R8G8B8</format>
           </image>
           <clip>
-            <near>0.55</near>
+            <near>0.01</near>
             <far>30.0</far>
           </clip>
         </camera>
