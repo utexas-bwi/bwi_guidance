@@ -75,6 +75,8 @@ namespace bwi_exp1 {
       std::vector< std::vector<std::string> >& orderings); 
 
   Instance& getInstance(Experiment& ec, size_t idx);
+
+  Instance& getInstance(Experiment& ec, std::string instance_name);
   
 } /* bwi_exp1 */
 

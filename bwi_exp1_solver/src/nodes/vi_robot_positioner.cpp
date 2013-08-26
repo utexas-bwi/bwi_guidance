@@ -66,17 +66,17 @@ class VIRobotPositioner : public BaseRobotPositioner {
     virtual void startExperimentInstance(
         const std::string& instance_name) {
 
-      const InstanceRobots& robots_in_instance = 
-        getInstance(instance_name, experiment_robots_);
+      const Instance& instance = 
+        getInstance(experiment_, instance_name);
 
-      topological_mapper::Point2f start_point(robots_in_instance.start_loc.x,
-          robots_in_instance.start_loc.y);
+      topological_mapper::Point2f start_point(instance.start_loc.x,
+          instance.start_loc.y);
       start_point = topological_mapper::toGrid(start_point, map_info_);
 
       size_t prev_graph_id = 
         topological_mapper::getClosestIdOnGraph(start_point, graph_);
       size_t direction = 
-        model_->getDirectionFromAngle(robots_in_instance.start_loc.yaw);
+        model_->getDirectionFromAngle(instance.start_loc.yaw);
 
       current_state_ = model_->canonicalizeState(prev_graph_id, 
           direction, num_robots_available_);

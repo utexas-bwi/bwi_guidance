@@ -53,9 +53,23 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
     std::vector<float> robot_orientations_;
     size_t assigned_robots_;
 
+    DCExperimentRobots experiment_robots_;
+
   public:
     DataCollectionRobotPositioner(boost::shared_ptr<ros::NodeHandle>& nh) :
-      BaseRobotPositioner(nh), assigned_robots_(0) {}
+        BaseRobotPositioner(nh), assigned_robots_(0) {
+
+      std::string robot_file;
+      ros::NodeHandle private_nh("~");
+      if (!private_nh.getParam("experiment_robot_file", robot_file)) {
+        ROS_FATAL_STREAM("RobotPosition: ~experiment_robot_file parameter " <<
+            "required");
+        exit(-1);
+      }
+
+      readDCExperimentRobotsFromFile(robot_file, experiment_robots_);
+    }
+
     virtual ~DataCollectionRobotPositioner() {}
 
     virtual void startExperimentInstance(
@@ -68,8 +82,10 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
       robot_orientations_.clear();
       assigned_robots_ = 0;
 
-      const InstanceRobots& robots_in_instance = 
-        getInstance(instance_name, experiment_robots_);
+      const Instance& instance = 
+        getInstance(experiment_, instance_name);
+      const DCInstanceRobots& robots_in_instance = 
+        getDCInstance(instance_name, experiment_robots_);
 
       // First assign robots in the path
       for (size_t path_idx = 0; path_idx < robots_in_instance.path.size();
@@ -89,8 +105,8 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
 
         // Coming from location
         topological_mapper::Point2f from_loc(
-            robots_in_instance.start_loc.x,
-            robots_in_instance.start_loc.y);
+            instance.start_loc.x,
+            instance.start_loc.y);
         from_loc = topological_mapper::toGrid(from_loc, map_info_);
         if (path_idx != 0) {
           const PathPoint& prev_path_point = 
@@ -101,8 +117,8 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
 
         // Going to location
         topological_mapper::Point2f to_loc(
-            robots_in_instance.ball_loc.x,
-            robots_in_instance.ball_loc.y);
+            instance.ball_loc.x,
+            instance.ball_loc.y);
         to_loc = topological_mapper::toGrid(to_loc, map_info_);
         if (path_idx != robots_in_instance.path.size() - 1) {
           const PathPoint& next_path_point = robots_in_instance.path[path_idx+1];
@@ -139,7 +155,7 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
         produceDirectedArrow(change_in_yaw, robot_image);
 
         // Teleport the robot and assign a direction
-        std::string robot_id = experiment_robots_.robots[assigned_robots_].id;
+        std::string robot_id = default_robots_.robots[assigned_robots_].id;
         robot_locations_[robot_id] = pose;
         robot_images_.push_back(robot_image);
         robot_orientations_.push_back(destination_yaw);
@@ -148,7 +164,7 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
 
       // Assign robots not controlled by the path
       BOOST_FOREACH(const Location& location, robots_in_instance.robots) {
-        std::string robot_id = experiment_robots_.robots[assigned_robots_].id;
+        std::string robot_id = default_robots_.robots[assigned_robots_].id;
         robot_locations_[robot_id] = 
           convert2dToPose(location.x, location.y, location.yaw);
         robot_images_.push_back(blank_image_);
@@ -166,7 +182,7 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
       boost::mutex::scoped_lock lock(robot_modification_mutex_);
 
       size_t count = 0;
-      BOOST_FOREACH(const Robot& robot, experiment_robots_.robots) {
+      BOOST_FOREACH(const Robot& robot, default_robots_.robots) {
         if (count < assigned_robots_) {
           topological_mapper::Point2f robot_loc(
             assigned_robot_locations_[robot.id].position.x,

@@ -12,6 +12,7 @@
 #include <opencv/cv.h>
 #include <ros/ros.h>
 
+#include <bwi_exp1/experiment.h>
 #include <bwi_exp1/robot_screen_publisher.h>
 #include <bwi_exp1/robots.h>
 #include <bwi_msgs/ExperimentStatus.h>
@@ -68,7 +69,8 @@ namespace bwi_exp1 {
       RobotScreenPublisher robot_screen_publisher_;
       cv::Mat blank_image_;
       cv::Mat up_arrow_;
-      ExperimentRobots experiment_robots_;
+      DefaultRobots default_robots_;
+      Experiment experiment_;
 
       std::map<std::string, geometry_msgs::Pose> robot_locations_; 
       std::map<std::string, geometry_msgs::Pose> assigned_robot_locations_;

@@ -112,4 +112,20 @@ namespace bwi_exp1 {
     return ec.experiments[0].experiments[0];
   }
 
+  Instance& getInstance(Experiment& ec, std::string instance_name) {
+    std::vector<std::string> names;
+    getInstanceNames(ec, names);
+    for (size_t i = 0; i < names.size(); ++i) {
+      if (names[i] == instance_name) {
+        return getInstance(ec, i);
+      }
+    }
+
+    // Should not get here
+    std::cout << "FATAL: The experiment does not contain an instance "
+              << "with name: " << instance_name;
+    exit(-1);
+    return ec.experiments[0].experiments[0];
+  }
+
 } /* bwi_exp1 */

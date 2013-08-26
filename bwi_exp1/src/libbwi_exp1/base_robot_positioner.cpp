@@ -26,7 +26,7 @@ namespace bwi_exp1 {
     blank_image_ = cv::Mat::zeros(120, 160, CV_8UC3);
 
     // Read all other parameters
-    std::string map_file, graph_file, robot_file;
+    std::string map_file, graph_file, robot_file, experiment_file;
     double robot_radius, robot_padding;
     if (!private_nh.getParam("map_file", map_file)) {
       ROS_FATAL_STREAM("RobotPosition: ~map_file parameter required");
@@ -36,8 +36,12 @@ namespace bwi_exp1 {
       ROS_FATAL_STREAM("RobotPosition: ~graph_file parameter required");
       exit(-1);
     }
-    if (!private_nh.getParam("robot_file", robot_file)) {
-      ROS_FATAL_STREAM("RobotPosition: ~robot_file parameter required");
+    if (!private_nh.getParam("default_robot_file", robot_file)) {
+      ROS_FATAL_STREAM("RobotPosition: ~default_robot_file parameter required");
+      exit(-1);
+    }
+    if (!private_nh.getParam("experiment_file", experiment_file)) {
+      ROS_FATAL_STREAM("RobotPosition: ~experiment_file parameter required");
       exit(-1);
     }
     private_nh.param<double>("robot_radius", robot_radius, 0.25);
@@ -54,8 +58,8 @@ namespace bwi_exp1 {
         uninflated_map, map_);
     topological_mapper::readGraphFromFile(graph_file, map_info_, graph_);
     
-    readRobotsFromFile(robot_file, experiment_robots_);
-    BOOST_FOREACH(const Robot& robot, experiment_robots_.robots) {
+    readDefaultRobotsFromFile(robot_file, default_robots_);
+    BOOST_FOREACH(const Robot& robot, default_robots_.robots) {
       robot_screen_publisher_.addRobot(robot.id);
       robot_locations_[robot.id] = 
         convert2dToPose(robot.default_loc.x, robot.default_loc.y, 0);
@@ -64,6 +68,8 @@ namespace bwi_exp1 {
       robot_screen_orientations_[robot.id] = 
         std::numeric_limits<float>::quiet_NaN(); 
     }
+
+    readExperimentFromFile(experiment_file, experiment_);
 
     private_nh.param<bool>("debug", debug_, false);
 
@@ -105,7 +111,7 @@ namespace bwi_exp1 {
 
   void BaseRobotPositioner::finalizeExperimentInstance() {
     boost::mutex::scoped_lock lock(robot_modification_mutex_);
-    BOOST_FOREACH(const Robot& robot, experiment_robots_.robots) {
+    BOOST_FOREACH(const Robot& robot, default_robots_.robots) {
       robot_locations_[robot.id] = 
         convert2dToPose(robot.default_loc.x, robot.default_loc.y, 0);
       robot_screen_orientations_[robot.id] = 

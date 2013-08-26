@@ -18,12 +18,27 @@ namespace bwi_exp1 {
     robot.default_loc.yaw = 0;
   }
 
-  void operator >> (const YAML::Node& node, InstanceRobots& instance) {
-    node["start_x"] >> instance.start_loc.x;
-    node["start_y"] >> instance.start_loc.y;
-    node["start_yaw"] >> instance.start_loc.yaw;
-    node["ball_x"] >> instance.ball_loc.x;
-    node["ball_y"] >> instance.ball_loc.y;
+  void operator >> (const YAML::Node& node, DefaultRobots& er) {
+    er.robots.clear();
+    for (size_t i = 0; i < node["robots"].size(); ++i) {
+      Robot robot;
+      node["robots"][i] >> robot;
+      er.robots.push_back(robot);
+    }
+  }
+
+  void readDefaultRobotsFromFile(const std::string& file, 
+      DefaultRobots& er) {
+
+    std::ifstream fin(file.c_str());
+    YAML::Parser parser(fin);
+
+    YAML::Node doc;
+    parser.GetNextDocument(doc);
+    doc >> er;
+  }
+
+  void operator >> (const YAML::Node& node, DCInstanceRobots& instance) {
     instance.path.clear();
     for (size_t i = 0; i < node["path"].size(); ++i) {
       PathPoint path_point;
@@ -41,33 +56,27 @@ namespace bwi_exp1 {
   }
 
   void operator >> (const YAML::Node& node, 
-      InstanceGroupRobots& instance_group) {
+      DCInstanceGroupRobots& instance_group) {
     node["prefix"] >> instance_group.prefix;
     instance_group.instances.clear();
     for (size_t i = 0; i < node["instances"].size(); ++i) {
-      InstanceRobots instance;
+      DCInstanceRobots instance;
       node["instances"][i] >> instance;
       instance_group.instances.push_back(instance);
     }
   }
 
-  void operator >> (const YAML::Node& node, ExperimentRobots& er) {
-    er.robots.clear();
-    for (size_t i = 0; i < node["robots"].size(); ++i) {
-      Robot robot;
-      node["robots"][i] >> robot;
-      er.robots.push_back(robot);
-    }
+  void operator >> (const YAML::Node& node, DCExperimentRobots& er) {
     er.instance_groups.clear();
     for (size_t i = 0; i < node["instance_groups"].size(); ++i) {
-      InstanceGroupRobots group;
+      DCInstanceGroupRobots group;
       node["instance_groups"][i] >> group;
       er.instance_groups.push_back(group);
     }
   }
 
-  void readRobotsFromFile(const std::string& file, 
-      ExperimentRobots& er) {
+  void readDCExperimentRobotsFromFile(const std::string& file, 
+      DCExperimentRobots& er) {
 
     std::ifstream fin(file.c_str());
     YAML::Parser parser(fin);
@@ -77,10 +86,10 @@ namespace bwi_exp1 {
     doc >> er;
   }
 
-  const InstanceRobots& getInstance(const std::string& instance_name,
-      const ExperimentRobots& er) {
+  const DCInstanceRobots& getDCInstance(const std::string& instance_name,
+      const DCExperimentRobots& er) {
 
-    BOOST_FOREACH(const InstanceGroupRobots& ig, er.instance_groups) {
+    BOOST_FOREACH(const DCInstanceGroupRobots& ig, er.instance_groups) {
       std::string prefix = ig.prefix;
       for (size_t i = 0; i < ig.instances.size(); ++i) {
         std::string compound_name = prefix + "_" + 

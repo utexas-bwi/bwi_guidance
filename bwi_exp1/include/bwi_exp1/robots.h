@@ -8,28 +8,32 @@
 
 namespace bwi_exp1 {
 
-  struct InstanceRobots {
-    Location start_loc;
-    Location ball_loc;
+  struct DefaultRobots {
+    std::vector<Robot> robots;
+  };
+
+  void readDefaultRobotsFromFile(const std::string& robot_file, 
+      DefaultRobots& default_robots);
+
+  struct DCInstanceRobots {
     std::vector<PathPoint> path;
     std::vector<Location> robots;
   };
 
-  struct InstanceGroupRobots {
+  struct DCInstanceGroupRobots {
     std::string prefix;
-    std::vector<InstanceRobots> instances;
+    std::vector<DCInstanceRobots> instances;
   };
 
-  struct ExperimentRobots {
-    std::vector<Robot> robots;
-    std::vector<InstanceGroupRobots> instance_groups;
+  struct DCExperimentRobots {
+    std::vector<DCInstanceGroupRobots> instance_groups;
   };
 
-  void readRobotsFromFile(const std::string& robot_file, 
-      ExperimentRobots& experiment_robots_);
+  void readDCExperimentRobotsFromFile(const std::string& robot_file,
+      DCExperimentRobots& er);
 
-  const InstanceRobots& getInstance(const std::string& instance_name,
-      const ExperimentRobots& er);
+  const DCInstanceRobots& getDCInstance(const std::string& instance_name,
+      const DCExperimentRobots& er);
   
 } /* bwi_exp1 */
 
