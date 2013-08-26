@@ -122,6 +122,53 @@ namespace bwi_exp1 {
   void BaseRobotPositioner::produceDirectedArrow(float orientation,
       cv::Mat& image) {
 
+    orientation = atan2f(sinf(orientation), cosf(orientation)); //normalize
+
+    cv::Mat arrow = cv::Mat::zeros(120, 160, CV_8UC3);
+    cv::Scalar color(0, 215, 255);
+
+    // Draw the first part of the line (always same)
+    cv::line(arrow, cv::Point(80, 60), cv::Point(80, 100), 
+        color, 10);
+
+    // Check if we need the second part
+    cv::Point third_point_start(80, 60);
+    if (fabs(orientation) > (2.0 * M_PI) / 3.0) {
+      float direction = 1.0;
+      if (orientation < 0) {
+        direction = -1.0;
+      }
+      cv::line(arrow, cv::Point(80, 60), cv::Point(80 - 20 * direction, 60),
+          color, 10);
+      third_point_start = cv::Point(80 - 20 * direction, 60);
+    }
+
+    cv::Point third_point_end = third_point_start + 
+      cv::Point(-40.0 * sinf(orientation), -40.0 * cosf(orientation));
+    cv::line(arrow, third_point_start, third_point_end,
+        color, 10);
+
+    // http://mlikihazar.blogspot.com/2013/02/draw-arrow-opencv.html
+    cv::Point p(third_point_start), q(third_point_end);
+    //compute the angle alpha
+    double angle = atan2((double)p.y-q.y, (double)p.x-q.x);
+    //compute the coordinates of the first segment
+    p.x = (int) (q.x + 20 * cos(angle + M_PI/4));
+    p.y = (int) (q.y + 20 * sin(angle + M_PI/4));
+    //Draw the first segment
+    cv::line(arrow, p, q, color, 10);
+    //compute the coordinates of the second segment
+    p.x=(int)(q.x+20*cos(angle-M_PI/4));
+    p.y=(int)(q.y+20*sin(angle-M_PI/4));
+    //Draw the second segment
+    cv::line(arrow, p, q, color, 10);
+    
+    image = arrow;
+  }
+
+  void BaseRobotPositioner::produceDirectedArrowAlt(float orientation,
+      cv::Mat& image) {
+
     int height = up_arrow_.rows, width = up_arrow_.cols;
     cv::Point2f center(width/2, height/2);
     cv::Mat rotation_matrix = 

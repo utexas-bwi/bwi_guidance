@@ -32,6 +32,7 @@ namespace bwi_exp1 {
 
       virtual void finalizeExperimentInstance();
       void produceDirectedArrow(float orientation, cv::Mat& image);
+      void produceDirectedArrowAlt(float orientation, cv::Mat& image);
 
       void experimentCallback(const bwi_msgs::ExperimentStatus::ConstPtr es); 
       geometry_msgs::Pose convert2dToPose(float x, float y, float yaw);
