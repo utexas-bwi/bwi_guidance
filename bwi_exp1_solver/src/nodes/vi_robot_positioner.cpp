@@ -132,6 +132,7 @@ class VIRobotPositioner : public BaseRobotPositioner {
 
         // Compute arrow pose
         topological_mapper::Point2f robot_loc(pose.position.x, pose.position.y);
+        robot_loc = topological_mapper::toGrid(robot_loc, map_info_);
         topological_mapper::Point2f change_loc = to_loc - robot_loc;
         float destination_yaw = atan2(change_loc.y, change_loc.x);
         float change_in_yaw = destination_yaw - robot_yaw;

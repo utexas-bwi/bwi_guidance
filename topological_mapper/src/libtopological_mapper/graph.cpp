@@ -231,9 +231,6 @@ namespace topological_mapper {
       }
     }
 
-    // std::cout << "Loc: " << point << "to1: " << location << "(" << getMagnitude(point - location) << ")"
-    //   << "to2: " << other_location << "(" << getMagnitude(point - other_location) << ")" << std::endl;
-
     if (getMagnitude(point - location) < getMagnitude(point - other_location)) {
       return prev_graph_id;
     } else {
