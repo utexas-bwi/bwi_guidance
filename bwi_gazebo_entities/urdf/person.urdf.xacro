@@ -134,10 +134,15 @@
 
     <!-- camera -->
     <joint name="camera_joint" type="fixed">
-      <origin xyz="-1.0 0 0.25" rpy="0 ${M_PI/12} 0" />
+      <origin xyz="0.151 0 0" rpy="0 ${M_PI/12} 0" />
       <parent link="head_link"/>
       <child link="camera_link" />
     </joint>
+    <!-- <joint name="camera_joint" type="fixed"> -->
+    <!--   <origin xyz="-1.0 0 0.25" rpy="0 ${M_PI/12} 0" /> -->
+    <!--   <parent link="head_link"/> -->
+    <!--   <child link="camera_link" /> -->
+    <!-- </joint> -->
     <link name="camera_link">
       <inertial>
         <mass value="0.001" />

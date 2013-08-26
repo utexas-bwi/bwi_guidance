@@ -8,7 +8,7 @@
   <node name="experiment_controller" pkg="bwi_exp1" type="controller.py" output="screen">
     <param name="graph_file" value="$(find bwi_exp1)/maps/graph.yaml" />
     <param name="experiment_file" 
-           value="$(find bwi_exp1)/config/data_collection_experiment.yaml" />
+           value="$(find bwi_exp1_solver)/config/experiment.yaml" />
     <param name="user_file" value="$(find bwi_exp1_solver)/data/users.yaml" />
     <param name="data_dir" value="$(find bwi_exp1_solver)/data" />
     <param name="uid" value="$(arg uid)"/>
@@ -17,11 +17,11 @@
   </node>
 
   <node name="robot_positioner" pkg="bwi_exp1_solver" 
-        type="vi_robot_positioner" launch-prefix="gdb -ex run --args">
+        type="vi_robot_positioner">
     <param name="map_file" value="$(find bwi_exp1)/maps/exp1.yaml" />
     <param name="graph_file" value="$(find bwi_exp1)/maps/graph.yaml" />
     <param name="experiment_file" 
-           value="$(find bwi_exp1)/config/data_collection_experiment.yaml" />
+           value="$(find bwi_exp1_solver)/config/experiment.yaml" />
     <param name="default_robot_file" 
            value="$(find bwi_exp1)/config/default_robots.yaml" />
     <param name="robot_radius" value="0.25" />
