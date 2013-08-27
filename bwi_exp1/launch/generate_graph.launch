@@ -1,6 +1,6 @@
 <launch>
   <arg name="map_file" default="$(find bwi_exp1)/maps/exp1.yaml" />
-  <arg name="graph_file" default="$(find bwi_exp1)/maps/graph.yaml" />
+  <arg name="graph_file" default="$(find bwi_exp1)/maps/new_graph.yaml" />
   <node name="generate_graph" pkg="topological_mapper" type="generate_graph"
     args="$(arg map_file) $(arg graph_file)" />
 </launch>

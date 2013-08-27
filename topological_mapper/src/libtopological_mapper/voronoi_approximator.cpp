@@ -67,6 +67,7 @@ namespace topological_mapper {
       std::max(inflated_map_.info.height, inflated_map_.info.width);
 
     for (uint32_t j = 0; j < inflated_map_.info.height; j++) {
+      std::cout << "findVoronoiPoints(): On row : " << j << std::endl;
       for (uint32_t i = 0; i < inflated_map_.info.width; i++) {
 
         Point2d center_pt(i, j);

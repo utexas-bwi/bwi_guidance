@@ -43,7 +43,7 @@
 
 int main(int argc, char** argv) {
 
-  if (argc != 3) {
+  if (argc < 4) {
     std::cerr << "USAGE: " << argv[0] 
         << " <yaml-map-file> <yaml-graph-file>" << std::endl;
     return -1;

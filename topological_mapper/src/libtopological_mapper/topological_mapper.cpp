@@ -55,8 +55,11 @@ namespace topological_mapper {
   void TopologicalMapper::computeTopologicalGraph(double threshold, 
       double critical_epsilon, double merge_threshold) {
 
+    std::cout << "computeTopologicalGraph(): find voronoi points" << std::endl;
     findVoronoiPoints(threshold);
+    std::cout << "computeTopologicalGraph(): compute critical regions" << std::endl;
     computeCriticalRegions(critical_epsilon);
+    std::cout << "computeTopologicalGraph(): compute ze graph" << std::endl;
     computeGraph(merge_threshold);
   }
 
