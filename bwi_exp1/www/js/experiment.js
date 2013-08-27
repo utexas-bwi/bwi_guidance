@@ -243,16 +243,16 @@ function start() {
   document.onkeydown = function(event) {
     var keyCode = event.keyCode || event.which;
     if (keyCode === keycode.up) {
-      publishVelocity({velx: 1.5});
+      publishVelocity({velx: 1.0});
     }
     else if (keyCode === keycode.down) {
-      publishVelocity({velx: -1.5});
+      publishVelocity({velx: -0.5});
     }
     else if (keyCode === keycode.left) {
-      publishVelocity({vely: 1.5});
+      publishVelocity({vely: 0.5});
     }
     else if (keyCode === keycode.right) {
-      publishVelocity({vely: -1.5});
+      publishVelocity({vely: -0.5});
     }
     else if (keyCode === keycode.turn_left) {
       publishVelocity({vela: 1.5});

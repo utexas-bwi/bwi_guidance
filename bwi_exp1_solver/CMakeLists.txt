@@ -57,6 +57,14 @@ target_link_libraries(vi_robot_positioner
   ${catkin_LIBRARIES}
 )
 
+add_executable(heuristic_robot_positioner
+  src/nodes/heuristic_robot_positioner.cpp
+)
+target_link_libraries(heuristic_robot_positioner 
+  bwi_exp1_solver
+  ${catkin_LIBRARIES}
+)
+
 #############
 ## Install ##
 #############

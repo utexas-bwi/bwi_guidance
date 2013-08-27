@@ -238,6 +238,22 @@ namespace topological_mapper {
     }
   }
 
+  void getAdjacentVertices(size_t graph_id, const Graph& graph,
+      std::vector<size_t>& adjacent_vertices) {
+
+    adjacent_vertices.clear();
+    boost::property_map<Graph, boost::vertex_index_t>::type 
+        indexmap = boost::get(boost::vertex_index, graph);
+    Graph::vertex_descriptor vertex = boost::vertex(graph_id, graph);
+
+    Graph::adjacency_iterator ai, aend;
+    for (boost::tie(ai, aend) = boost::adjacent_vertices(vertex, graph); 
+        ai != aend; ++ai) {
+      adjacent_vertices.push_back(indexmap[*ai]);
+    }
+
+  }
+
   void getShortestPath(Graph &graph, size_t start_idx,
       size_t goal_idx, std::vector<size_t> &path_from_goal) {
 

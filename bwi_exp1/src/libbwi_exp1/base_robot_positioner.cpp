@@ -351,7 +351,6 @@ namespace bwi_exp1 {
     // Calculate yaw
     yaw1 = atan2(resp.position.y - at_map.y, resp.position.x - at_map.x); 
     yaw2 = atan2(resp.position.y - from_map.y, resp.position.x - from_map.x);
-    std::cout << resp.position << " " << from_map << std::endl;
 
     yaw1_pt = topological_mapper::Point2f(cosf(yaw1),sinf(yaw1));
     yaw2_pt = topological_mapper::Point2f(cosf(yaw2),sinf(yaw2));

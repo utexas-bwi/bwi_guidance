@@ -85,6 +85,9 @@ namespace topological_mapper {
   size_t getClosestIdOnGraphFromEdge(const Point2f &point, 
       const Graph &graph, size_t prev_graph_id);
 
+  void getAdjacentVertices(size_t graph_id, const Graph& graph,
+      std::vector<size_t>& adjacent_vertices);
+
   void getShortestPath(Graph &graph, size_t start_idx,
       size_t goal_idx, std::vector<size_t> &path_from_goal);
 
