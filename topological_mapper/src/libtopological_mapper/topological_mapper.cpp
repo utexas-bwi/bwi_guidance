@@ -424,6 +424,18 @@ namespace topological_mapper {
               }
             }
           }
+        } else if (count <= 1) {
+          // TODO HACK that works since we don't have corridors that end in nothingness
+          // This is a bad idea, but should work for now
+          for (size_t i = 0; i < critical_points_.size(); ++i) {
+            if (point_neighbours[i].size() == 2) {
+              if (point_neighbours[i].count(region_count)) {
+                // This critical point needs to be mapped to this region
+                critical_pt_to_region_map[i] = (size_t) -2;
+                std::cout << "dropping critical pt " << i << std::endl;
+              }
+            }
+          }
         }
       }
     }
@@ -442,7 +454,7 @@ namespace topological_mapper {
         critical_pt_map[i] = vertex_count;
         std::cout << "mapping critical pt " << i << " to vertex " << vertex_count << std::endl;
         vertex_count++;
-      } else {
+      } else if (critical_pt_to_region_map[i] != (size_t) -2) {
         if (std::find(regions_added.begin(), regions_added.end(), 
               critical_pt_to_region_map[i]) == regions_added.end()) {
           Graph::vertex_descriptor vi = boost::add_vertex(point_graph_);
