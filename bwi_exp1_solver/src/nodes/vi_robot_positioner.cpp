@@ -180,7 +180,7 @@ class VIRobotPositioner : public BaseRobotPositioner {
             ", num_robots: " << robots_at_next_state_);
         current_state_ = model_->canonicalizeState(current_graph_id,
             next_direction, robots_at_next_state_);
-        checkRobotPlacementAtCurrentState();
+        checkRobotPlacementAtCurrentState(current_state.graph_id);
       }
     }
 

@@ -17,12 +17,15 @@ namespace bwi_exp1 {
     nh_(nh), robot_screen_publisher_(nh) {
     
     // Read images from parameters
-    std::string up_arrow_image_file;
+    std::string up_arrow_image_file, u_turn_image_file;
     std::string images_dir = ros::package::getPath("bwi_exp1") + "/images";
     ros::NodeHandle private_nh("~");
     private_nh.param<std::string>("up_arrow_image", up_arrow_image_file,
         images_dir + "/Up.png");
     up_arrow_ = cv::imread(up_arrow_image_file);
+    private_nh.param<std::string>("u_turn_image", u_turn_image_file,
+        images_dir + "/UTurn.png");
+    u_turn_image_ = cv::imread(u_turn_image_file);
     blank_image_ = cv::Mat::zeros(120, 160, CV_8UC3);
 
     // Read all other parameters
@@ -119,7 +122,7 @@ namespace bwi_exp1 {
     }
   }
 
-  void BaseRobotPositioner::produceDirectedArrow(float orientation,
+  void BaseRobotPositioner::produceDirectedArrowAlt(float orientation,
       cv::Mat& image) {
 
     orientation = atan2f(sinf(orientation), cosf(orientation)); //normalize
@@ -166,17 +169,24 @@ namespace bwi_exp1 {
     image = arrow;
   }
 
-  void BaseRobotPositioner::produceDirectedArrowAlt(float orientation,
+  void BaseRobotPositioner::produceDirectedArrow(float orientation,
       cv::Mat& image) {
 
-    int height = up_arrow_.rows, width = up_arrow_.cols;
-    cv::Point2f center(width/2, height/2);
-    cv::Mat rotation_matrix = 
-      cv::getRotationMatrix2D(center, orientation * 180 / M_PI, 1.0);
+    orientation = atan2f(sinf(orientation), cosf(orientation)); //normalize
 
     cv::Mat rotated_image;
-    cv::warpAffine(up_arrow_, rotated_image, rotation_matrix, 
-        cv::Size(width, height)); 
+    int height = u_turn_image_.rows, width = u_turn_image_.cols;
+    if (fabs(orientation) > 5.0 * M_PI / 6.0) {
+      rotated_image = u_turn_image_;
+    } else {
+      height = up_arrow_.rows, width = up_arrow_.cols;
+      cv::Point2f center(width/2, height/2);
+      cv::Mat rotation_matrix = 
+        cv::getRotationMatrix2D(center, orientation * 180 / M_PI, 1.0);
+
+      cv::warpAffine(up_arrow_, rotated_image, rotation_matrix, 
+          cv::Size(width, height)); 
+    }
 
     float height_ratio = 119.0 / height;
     float width_ratio = 159.0 / width;
@@ -220,8 +230,8 @@ namespace bwi_exp1 {
 
   bool BaseRobotPositioner::checkClosePoses(const geometry_msgs::Pose& p1,
       const geometry_msgs::Pose& p2) {
-    if (fabs(p1.position.x - p2.position.x) > 0.1 ||
-        fabs(p1.position.y - p2.position.y) > 0.1) {
+    if (fabs(p1.position.x - p2.position.x) > 0.05 ||
+        fabs(p1.position.y - p2.position.y) > 0.05) {
       return false;
     }
     double yaw1 = tf::getYaw(p1.orientation);
@@ -340,12 +350,14 @@ namespace bwi_exp1 {
     // Calculate yaw
     yaw1 = atan2(resp.position.y - at_map.y, resp.position.x - at_map.x); 
     yaw2 = atan2(resp.position.y - from_map.y, resp.position.x - from_map.x);
+    std::cout << resp.position << " " << from_map << std::endl;
 
     yaw1_pt = topological_mapper::Point2f(cosf(yaw1),sinf(yaw1));
     yaw2_pt = topological_mapper::Point2f(cosf(yaw2),sinf(yaw2));
     yawmid_pt = 0.5 * (yaw1_pt + yaw2_pt);
 
-    float resp_yaw = atan2f(yawmid_pt.y, yawmid_pt.x); 
+    /* float resp_yaw = atan2f(yawmid_pt.y, yawmid_pt.x);  */
+    float resp_yaw = yaw2; 
     resp.orientation = tf::createQuaternionMsgFromYaw(resp_yaw);
 
     if (debug_) {

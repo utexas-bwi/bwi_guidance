@@ -70,6 +70,7 @@ namespace bwi_exp1 {
       RobotScreenPublisher robot_screen_publisher_;
       cv::Mat blank_image_;
       cv::Mat up_arrow_;
+      cv::Mat u_turn_image_;
       DefaultRobots default_robots_;
       Experiment experiment_;
 
