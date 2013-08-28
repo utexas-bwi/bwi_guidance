@@ -399,41 +399,49 @@ namespace topological_mapper {
     for (boost::tie(vi, vend) = boost::vertices(region_graph_); vi != vend;
         ++vi, ++region_count) {
 
-      // Now check whether all the critical points associated with this region
-      // really close
-      if (region_graph_[*vi].pixels < pixel_threshold) {
+      // Check if this region interacts with more than 2 other regions
+      Graph::adjacency_iterator ai, aend;
+      size_t count = 0;
+      for (boost::tie(ai, aend) = boost::adjacent_vertices(
+            (Graph::vertex_descriptor)*vi, region_graph_); 
+          ai != aend; ++ai) {
+        count++;
+      }
 
-        // Check if this region interacts with more than 2 other regions
-        Graph::adjacency_iterator ai, aend;
-        size_t count = 0;
-        for (boost::tie(ai, aend) = boost::adjacent_vertices(
-              (Graph::vertex_descriptor)*vi, region_graph_); 
-            ai != aend; ++ai) {
-          count++;
+      std::cout << "Region " << region_count << " has " << count << " neighbours" << std::endl;
+      for (size_t i = 0; i < critical_points_.size(); ++i) {
+        if (point_neighbours[i].size() == 2) {
+          if (point_neighbours[i].count(region_count)) {
+            // This critical point needs to be mapped to this region
+            std::cout << " contains critical pt " << i << std::endl;
+          }
         }
+      }
 
-        if (count > 2) {
-          // This node needs to be added into the point graph instead of 
-          // individual critical points
-          for (size_t i = 0; i < critical_points_.size(); ++i) {
-            if (point_neighbours[i].size() == 2) {
-              if (point_neighbours[i].count(region_count)) {
-                // This critical point needs to be mapped to this region
-                critical_pt_to_region_map[i] = region_count;
-                std::cout << "mapping critical pt " << i << " to region" << region_count << std::endl;
-              }
+      if (count <= 1) {
+        // TODO HACK that works since we don't have corridors that end in nothingness
+        // This is a bad idea, but should work for now
+        for (size_t i = 0; i < critical_points_.size(); ++i) {
+          if (point_neighbours[i].size() == 2) {
+            if (point_neighbours[i].count(region_count)) {
+              // This critical point needs to be mapped to this region
+              critical_pt_to_region_map[i] = (size_t) -2;
+              std::cout << "dropping critical pt " << i << std::endl;
             }
           }
-        } else if (count <= 1) {
-          // TODO HACK that works since we don't have corridors that end in nothingness
-          // This is a bad idea, but should work for now
-          for (size_t i = 0; i < critical_points_.size(); ++i) {
-            if (point_neighbours[i].size() == 2) {
-              if (point_neighbours[i].count(region_count)) {
-                // This critical point needs to be mapped to this region
-                critical_pt_to_region_map[i] = (size_t) -2;
-                std::cout << "dropping critical pt " << i << std::endl;
-              }
+        }
+      } else if (count > 2 && region_graph_[*vi].pixels < pixel_threshold) {
+      // Now check whether all the critical points associated with this region
+      // really close
+
+      // This node needs to be added into the point graph instead of 
+      // individual critical points
+        for (size_t i = 0; i < critical_points_.size(); ++i) {
+          if (point_neighbours[i].size() == 2) {
+            if (point_neighbours[i].count(region_count)) {
+              // This critical point needs to be mapped to this region
+              critical_pt_to_region_map[i] = region_count;
+              std::cout << "mapping critical pt " << i << " to region" << region_count << std::endl;
             }
           }
         }
