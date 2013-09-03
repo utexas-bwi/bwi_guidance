@@ -46,6 +46,9 @@
 
 namespace topological_mapper {
 
+  bool locationsInDirectLineOfSight(const Point2f& pt1, const Point2f& pt2, 
+      const nav_msgs::OccupancyGrid map);
+
   Point2f toMap(const Point2f& pt, const nav_msgs::MapMetaData& info);
 
   Point2f toGrid(const Point2f& pt, const nav_msgs::MapMetaData& info);
