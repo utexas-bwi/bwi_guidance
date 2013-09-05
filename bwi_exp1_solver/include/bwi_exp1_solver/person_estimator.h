@@ -24,9 +24,9 @@ namespace bwi_exp1 {
         best_action_cache_(state_space_size) {}
       virtual ~PersonEstimator () {}
 
-      virtual float getValue(const state_t &state) const;
+      virtual float getValue(const state_t &state);
       virtual void updateValue(const state_t &state, float value);
-      virtual action_t getBestAction(const state_t &state) const;
+      virtual action_t getBestAction(const state_t &state);
       virtual void setBestAction(const state_t &state, const action_t& action);
 
       virtual void saveEstimatedValues(const std::string& file);

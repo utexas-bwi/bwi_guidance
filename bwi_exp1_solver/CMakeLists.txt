@@ -36,6 +36,7 @@ add_library(bwi_exp1_solver
   src/person_model.cpp
   src/person_model2.cpp
   src/person_estimator.cpp
+  src/person_estimator2.cpp
   src/structures.cpp
 )
 target_link_libraries(bwi_exp1_solver 

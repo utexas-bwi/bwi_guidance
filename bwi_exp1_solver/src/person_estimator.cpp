@@ -7,7 +7,7 @@
 
 namespace bwi_exp1 {
 
-  float PersonEstimator::getValue(const state_t &state) const {
+  float PersonEstimator::getValue(const state_t &state) {
     if (state > value_cache_.size()) {
       throw std::runtime_error("Estimator getValue() error. Requested idx: " +
           boost::lexical_cast<std::string>(state) + " from total size: " + 
@@ -25,7 +25,7 @@ namespace bwi_exp1 {
     value_cache_[state] = value;
   }
 
-  action_t PersonEstimator::getBestAction(const state_t &state) const {
+  action_t PersonEstimator::getBestAction(const state_t &state) {
     if (state > best_action_cache_.size()) {
       throw std::runtime_error("Estimator getAction() error. Requested idx: " +
           boost::lexical_cast<std::string>(state) + " from total size: " + 
