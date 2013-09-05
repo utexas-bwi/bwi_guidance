@@ -72,6 +72,7 @@ namespace bwi_exp1 {
 
   // This can often be seen written as
   bool operator<(const State2& l, const State2& r); 
+  bool operator==(const State2& l, const State2& r);
 
 } /* bwi_exp1 */
 

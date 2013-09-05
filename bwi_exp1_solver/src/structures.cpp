@@ -29,4 +29,12 @@ namespace bwi_exp1 {
     return false;
   }
 
+  bool operator==(const State2& l, const State2& r ) {
+    return (l.graph_id == r.graph_id &&
+        l.direction == r.direction &&
+        l.num_robots_left == r.num_robots_left &&
+        l.current_robot_direction == r.current_robot_direction &&
+        l.next_robot_location == r.next_robot_location);
+  }
+
 } /* bwi_exp1 */

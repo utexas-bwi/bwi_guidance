@@ -101,11 +101,11 @@ namespace bwi_exp1 {
         }
       }
 
-      std::cout << graph_id << " -> ";
-      BOOST_FOREACH(int rv, robot_vertices) {
-        std::cout << rv << " ";
-      }
-      std::cout << std::endl;
+      // std::cout << graph_id << " -> ";
+      // BOOST_FOREACH(int rv, robot_vertices) {
+      //   std::cout << rv << " ";
+      // }
+      // std::cout << std::endl;
       
     }
   }
@@ -124,44 +124,47 @@ namespace bwi_exp1 {
     std::cout << "Precaching state space... " << std::endl;
 
     state_cache_.clear();
-    size_t size = 0;
-    for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
-      std::vector<int>& adjacent_vertices = adjacent_vertices_map_[graph_id];
-      std::vector<int>& robot_vertices = robot_vertices_map_[graph_id];
-      size += num_directions_ * (max_robots_ + 1) * 
-        (adjacent_vertices.size() + 2) * (robot_vertices.size() + 1) *
-        (robot_vertices.size() + 1);
-    }
-    state_cache_.resize(size);
-
-    size_t count = 0;
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
       std::vector<int>& adjacent_vertices = adjacent_vertices_map_[graph_id];
       std::vector<int>& robot_vertices = robot_vertices_map_[graph_id];
       for (int direction = 0; direction < num_directions_; ++direction) {
         for (int robots = 0; robots <= max_robots_; ++robots) {
-          for (int rd = NO_DIRECTION_ON_ROBOT; 
-              rd < adjacent_vertices.size(); ++rd) {
-            for (int nrl = NO_ROBOT; nrl < robot_vertices.size(); ++nrl) {
-              state_cache_[count].graph_id = graph_id;
-              state_cache_[count].direction = direction;
-              state_cache_[count].num_robots_left = robots;
-              if (rd < 0) {
-                state_cache_[count].current_robot_direction = rd;
-              } else {
-                state_cache_[count].current_robot_direction = 
-                  adjacent_vertices[rd];
-              }
-              if (nrl < 0) {
-                state_cache_[count].next_robot_location = nrl;
-              } else {
-                state_cache_[count].next_robot_location = robot_vertices[nrl];
+          if (robots != max_robots_) {
+            std::cout << NO_DIRECTION_ON_ROBOT << " " << adjacent_vertices.size() << std::endl;
+            for (int rd = NO_DIRECTION_ON_ROBOT; 
+                rd < (int)adjacent_vertices.size(); ++rd) {
+              for (int nrl = NO_ROBOT; nrl < (int)robot_vertices.size(); ++nrl) {
+                State2 state; 
+                state.graph_id = graph_id;
+                state.direction = direction;
+                state.num_robots_left = robots;
+                if (rd < 0) {
+                  state.current_robot_direction = rd;
+                } else {
+                  state.current_robot_direction = 
+                    adjacent_vertices[rd];
+                }
+                if (nrl < 0) {
+                  state.next_robot_location = nrl;
+                } else {
+                  state.next_robot_location = robot_vertices[nrl];
+                }
+                state_cache_.push_back(state);
               }
             }
+          } else {
+            State2 state;
+            state.graph_id = graph_id;
+            state.direction = direction;
+            state.num_robots_left = robots;
+            state.current_robot_direction = NO_ROBOT;
+            state.next_robot_location = NO_ROBOT;
+            state_cache_.push_back(state);
           }
         }
       }
     }
+    std::cout << "Number of states: " << state_cache_.size() << std::endl;
   }
 
   void PersonModel2::initializeActionCache() {
@@ -202,7 +205,10 @@ namespace bwi_exp1 {
 
   void PersonModel2::initializeNextStateCache() {
 
+    std::cout << "Initializing next state cache" << std::endl;
+
     next_state_cache_.clear();
+    next_state_cache_.resize(num_vertices_ * num_directions_);
     for (int i = 0; i < num_vertices_; ++i) {
       for (int j = 0; j < num_directions_; ++j) {
         BOOST_FOREACH(int id, adjacent_vertices_map_[i]) {
@@ -212,6 +218,10 @@ namespace bwi_exp1 {
         }
       }
     }
+
+    std::cout << "Next state cache size: " << next_state_cache_.size() << std::endl; 
+
+    std::cout << "Initializing next state distribution cache" << std::endl;
     
     ns_distribution_cache_.clear();
     BOOST_FOREACH(const State2& state, state_cache_) {
@@ -279,6 +289,7 @@ namespace bwi_exp1 {
       }
       states.push_back(next_state);
     }
+
   }
 
   void PersonModel2::constructTransitionProbabilities(const State2& state, 
@@ -319,6 +330,7 @@ namespace bwi_exp1 {
     // and compute transition probabilities
     std::vector<State2> next_states;
     getNextStates(state, action, next_states);
+
     float probability_sum = 0;
     size_t last_non_zero_probability = 0;
     int next_state_counter = 0;
