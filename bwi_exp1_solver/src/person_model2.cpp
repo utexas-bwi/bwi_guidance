@@ -10,8 +10,11 @@ namespace bwi_exp1 {
   PersonModel2::PersonModel2(const topological_mapper::Graph& graph, 
       const nav_msgs::OccupancyGrid& map,  
       size_t goal_idx) : graph_(graph), map_(map), goal_idx_(goal_idx) {
+    std::cout << "Initializing state space..." << std::endl;
     initializeStateSpace();
+    std::cout << "Initializing action space..." << std::endl;
     initializeActionCache();
+    std::cout << "Initializing next state space..." << std::endl;
     initializeNextStateCache();
   }
 
@@ -97,6 +100,13 @@ namespace bwi_exp1 {
           }
         }
       }
+
+      std::cout << graph_id << " -> ";
+      BOOST_FOREACH(int rv, robot_vertices) {
+        std::cout << rv << " ";
+      }
+      std::cout << std::endl;
+      
     }
   }
 
@@ -106,8 +116,12 @@ namespace bwi_exp1 {
     num_directions_ = 16;
     max_robots_ = 5;
 
+    std::cout << "Computing adjacent vertices... " << std::endl;
     computeAdjacentVertices();
+    std::cout << "Computing robot vertices... " << std::endl;
     computeRobotVertices();
+
+    std::cout << "Precaching state space... " << std::endl;
 
     state_cache_.clear();
     size_t size = 0;

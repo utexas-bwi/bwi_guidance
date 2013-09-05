@@ -42,26 +42,23 @@ namespace topological_mapper {
   bool locationsInDirectLineOfSight(const Point2f& pt1, const Point2f& pt2,
       const nav_msgs::OccupancyGrid map) {
 
-    Point2f pt1_grid = toGrid(pt1, map.info);
-    Point2f pt2_grid = toGrid(pt2, map.info);
-
-    int x0 = lrint(pt1_grid.x), y0 = lrint(pt1_grid.y);
-    int x1 = lrint(pt2_grid.x), y1 = lrint(pt2_grid.y);
+    int x0 = lrint(pt1.x), y0 = lrint(pt1.y);
+    int x1 = lrint(pt2.x), y1 = lrint(pt2.y);
     int dx = abs(x1-x0), dy = abs(y1-y0);
     int sx = (x0 < x1) ? 1 : -1;
     int sy = (y0 < y1) ? 1 : -1;
     float err = dx - dy;
     bool is_occupied = false;
     while (!is_occupied) {
-      is_occupied &= MAP_IDX(map.info.width, x0, y0) > 50;
+      is_occupied = map.data[MAP_IDX(map.info.width, x0, y0)] > 50;
       if (x0 == x1 && y0 == y1) break;
       float e2 = 2 * err;
       if (e2 > -dy) {
         err -= dy;
-        x0 -= sx;
+        x0 += sx;
       }
       if (x0 == x1 && y0 == y1) {
-        is_occupied &= MAP_IDX(map.info.width, x0, y0) > 50;
+        is_occupied = map.data[MAP_IDX(map.info.width, x0, y0)] > 50;
         break;
       }
       if (e2 < dx) {
