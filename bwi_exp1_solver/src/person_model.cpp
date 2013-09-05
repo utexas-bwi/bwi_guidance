@@ -5,9 +5,6 @@
 
 namespace bwi_exp1 {
 
-  Action::Action() : type(DO_NOTHING), graph_id(0) {}
-  Action::Action(ActionType a, size_t g) : type(a), graph_id(g) {}
-
   PersonModel::PersonModel(const topological_mapper::Graph& graph, size_t goal_idx) : graph_(graph), goal_idx_(goal_idx) {
     initializeStateSpace();
     initializeActionCache();

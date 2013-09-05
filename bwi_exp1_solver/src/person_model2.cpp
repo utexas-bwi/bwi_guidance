@@ -7,11 +7,9 @@
 
 namespace bwi_exp1 {
 
-  Action::Action() : type(DO_NOTHING), graph_id(0) {}
-  Action::Action(ActionType a, size_t g) : type(a), graph_id(g) {}
-
   PersonModel2::PersonModel2(const topological_mapper::Graph& graph, 
-      size_t goal_idx) : graph_(graph), goal_idx_(goal_idx) {
+      const nav_msgs::OccupancyGrid& map,  
+      size_t goal_idx) : graph_(graph), map_(map), goal_idx_(goal_idx) {
     initializeStateSpace();
     initializeActionCache();
     initializeNextStateCache();
@@ -85,7 +83,7 @@ namespace bwi_exp1 {
         int graph_id_2 = *(open_set.begin());
         open_set.erase(open_set.begin());
         closed_set.insert(graph_id_2);
-        if (topological_mapper::locationInDirectLineOfSight(
+        if (topological_mapper::locationsInDirectLineOfSight(
               graph_location, 
               topological_mapper::getLocationFromGraphId(graph_id_2, graph_),
               map_)) {
@@ -170,7 +168,7 @@ namespace bwi_exp1 {
     // location
     if (state.next_robot_location == NO_ROBOT) {
       BOOST_FOREACH(int id, robot_vertices_map_[state.graph_id]) {
-        actions.push_back(Action(PLACE_FUTURE_ROBOT, id); 
+        actions.push_back(Action(PLACE_FUTURE_ROBOT, id)); 
       }
     }
 
@@ -202,7 +200,7 @@ namespace bwi_exp1 {
     }
     
     ns_distribution_cache_.clear();
-    BOOST_FOREACH(const State& state, state_cache_) {
+    BOOST_FOREACH(const State2& state, state_cache_) {
       std::vector<Action>& actions = getActionsAtState(state);
       BOOST_FOREACH(const Action& action, actions) {
         constructTransitionProbabilities(state, action, 
@@ -212,7 +210,7 @@ namespace bwi_exp1 {
 
   }
 
-  void getNextStates(const State2& state, const Action& action, 
+  void PersonModel2::getNextStates(const State2& state, const Action& action, 
       std::vector<State2>& states) {
 
     states.clear();
@@ -238,12 +236,12 @@ namespace bwi_exp1 {
     // If the person is actually planning on moving, this one is going to be fun 
     // Get all adjacent ids and the directions if we move to those ids
     std::vector<std::pair<int, int> >& next_states = 
-      next_state_cache_[state.graph_id * num_directions_ + state.directions];
+      next_state_cache_[state.graph_id * num_directions_ + state.direction];
     typedef std::pair<int, int> int2pair;
     BOOST_FOREACH(int2pair& next_loc, next_states) {
       State2 next_state;
-      next_state.graph_id = next_loc.first();
-      next_state.direction = next_loc.second();
+      next_state.graph_id = next_loc.first;
+      next_state.direction = next_loc.second;
       next_state.num_robots_left = state.num_robots_left;
 
       // See if the location we moved to is where the next robot is
@@ -269,8 +267,8 @@ namespace bwi_exp1 {
     }
   }
 
-  void PersonModel2::constructTransitionProbabilities(State2 state, 
-      Action action, std::vector<float>& probabilities) {
+  void PersonModel2::constructTransitionProbabilities(const State2& state, 
+      const Action& action, std::vector<float>& probabilities) {
 
     probabilities.clear();
 
@@ -309,6 +307,7 @@ namespace bwi_exp1 {
     getNextStates(state, action, next_states);
     float probability_sum = 0;
     size_t last_non_zero_probability = 0;
+    int next_state_counter = 0;
     BOOST_FOREACH(const State2& next_state, next_states) {
 
       float next_state_direction = 
@@ -328,6 +327,7 @@ namespace bwi_exp1 {
       probability_sum += probability;
 
       last_non_zero_probability = next_state_counter;
+      ++next_state_counter;
     }
 
     // Normalize probabilities. Ensure sum == 1 with last non zero probability 

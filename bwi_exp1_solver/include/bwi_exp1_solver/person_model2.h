@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include <nav_msgs/OccupancyGrid.h>
 #include <bwi_exp1_solver/PredictiveModel.h>
 #include <bwi_exp1_solver/structures.h>
 #include <topological_mapper/graph.h>
@@ -13,7 +14,8 @@ namespace bwi_exp1 {
 
     public:
 
-      PersonModel2(const topological_mapper::Graph& graph, size_t goal_idx);
+      PersonModel2(const topological_mapper::Graph& graph, 
+          const nav_msgs::OccupancyGrid& map, size_t goal_idx);
 
       virtual bool isTerminalState(const State2& state) const;
       virtual void getStateVector(std::vector<State2>& states);
@@ -43,7 +45,8 @@ namespace bwi_exp1 {
       std::vector<State2> state_cache_;
 
       void initializeActionCache();
-      void constructActionsAtState(State2 state, std::vector<Action>& actions);
+      void constructActionsAtState(const State2& state, 
+          std::vector<Action>& actions);
       std::vector<Action>& getActionsAtState(const State2 &state);
       std::map<State2, std::vector<Action> > action_cache_;
 
@@ -66,6 +69,7 @@ namespace bwi_exp1 {
       uint32_t max_robots_;
 
       topological_mapper::Graph graph_;
+      nav_msgs::OccupancyGrid map_;
       size_t goal_idx_;
 
   };

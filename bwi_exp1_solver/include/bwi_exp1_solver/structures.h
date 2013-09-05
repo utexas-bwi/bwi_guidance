@@ -2,6 +2,7 @@
 #define STRUCTURES_HDY3OBT2
 
 #include <stdint.h>
+#include <cstddef>
 
 namespace bwi_exp1 {
 
@@ -27,6 +28,8 @@ namespace bwi_exp1 {
       size_t graph_id; // with PLACE ROBOT, identifies the direction pointed to
   };
 
+  bool operator<(const Action& l, const Action& r);
+
   // Simple model has a very clean tabular representation, use idx instead
   typedef uint32_t state_t;
   typedef uint32_t action_t;
@@ -44,6 +47,9 @@ namespace bwi_exp1 {
     int current_robot_direction; // ~8
     int next_robot_location; // ~10
   };
+
+  // This can often be seen written as
+  bool operator<(const State2& l, const State2& r); 
 
 } /* bwi_exp1 */
 
