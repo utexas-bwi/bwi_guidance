@@ -40,6 +40,7 @@
 
 #include <topological_mapper/structures/point.h>
 #include <nav_msgs/MapMetaData.h>
+#include <nav_msgs/OccupancyGrid.h>
 
 // compute linear index for given map coords
 #define MAP_IDX(sx, i, j) ((sx) * (j) + (i))

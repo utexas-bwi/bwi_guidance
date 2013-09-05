@@ -15,19 +15,21 @@ namespace bwi_exp1 {
 
       PersonModel2(const topological_mapper::Graph& graph, size_t goal_idx);
 
-      virtual bool isTerminalState(const state_t& state) const;
-      virtual void getStateVector(std::vector<state_t>& states);
-      virtual void getActionsAtState(const state_t &state, std::vector<action_t>& actions);
-      virtual void getTransitionDynamics(const state_t &s, 
-          const action_t &a, std::vector<state_t> &next_states, 
+      virtual bool isTerminalState(const State2& state) const;
+      virtual void getStateVector(std::vector<State2>& states);
+      virtual void getActionsAtState(const State2 &state, 
+          std::vector<Action>& actions);
+      virtual void getTransitionDynamics(const State2 &s, 
+          const Action &a, std::vector<State2> &next_states, 
           std::vector<float> &rewards, std::vector<float> &probabilities);
 
-      virtual ~PersonModel() {};
+      virtual ~PersonModel2() {};
       virtual std::string generateDescription(unsigned int indentation = 0) {
         return std::string("stub");
       }
 
-      size_t computeNextDirection(size_t dir, size_t graph_id, size_t next_graph_id);
+      size_t computeNextDirection(size_t dir, 
+          size_t graph_id, size_t next_graph_id);
       size_t getDirectionFromAngle(float angle);
       float getAngleFromDirection(size_t dir);
 
@@ -41,19 +43,21 @@ namespace bwi_exp1 {
       std::vector<State2> state_cache_;
 
       void initializeActionCache();
-      void constructActionsAtState(state_t state, std::vector<Action>& actions);
-      std::vector<Action>& getActionsAtState(const state_t &state);
-      std::vector<std::vector<Action> > action_cache_;
+      void constructActionsAtState(State2 state, std::vector<Action>& actions);
+      std::vector<Action>& getActionsAtState(const State2 &state);
+      std::map<State2, std::vector<Action> > action_cache_;
 
       void initializeNextStateCache();
-      void constructNextStatesAtState(state_t state, 
-          std::vector<state_t>& next_states);
-      std::vector<state_t>& getNextStatesAtState(state_t state);
-      void constructTransitionProbabilities(state_t state_id, action_t action_id, 
-        std::vector<float>& probabilities);
-      std::vector<float>& getTransitionProbabilities(state_t state_id, action_t action_id);
-      std::vector<std::vector<state_t> > next_state_cache_;
-      std::vector<std::vector<std::vector<float> > > ns_distribution_cache_;
+      // maps a direction, graph id to all possible next states and graph id
+      std::vector<std::vector<std::pair<int, int> > > next_state_cache_; 
+      void getNextStates(const State2& state, const Action& action, 
+          std::vector<State2>& next_states);
+      void constructTransitionProbabilities(const State2& state, 
+          const Action& action, std::vector<float>& probabilities);
+      std::vector<float>& getTransitionProbabilities(const State2& state,
+          const Action& action);
+      std::map<State2, std::map<Action, std::vector<float> > > 
+        ns_distribution_cache_;
 
       float getAngleFromStates(size_t graph_id, size_t next_graph_id);
       float getDistanceFromStates(size_t graph_id, size_t next_graph_id);

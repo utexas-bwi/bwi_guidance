@@ -43,7 +43,6 @@ namespace bwi_exp1 {
     int num_robots_left; // ~6
     int current_robot_direction; // ~8
     int next_robot_location; // ~10
-    int prev_robot_location; // ~10
   };
 
 } /* bwi_exp1 */

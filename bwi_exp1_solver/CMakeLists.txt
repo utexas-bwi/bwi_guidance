@@ -34,6 +34,7 @@ include_directories(
 ## Declare a cpp library
 add_library(bwi_exp1_solver
   src/person_model.cpp
+  src/person_model2.cpp
   src/person_estimator.cpp
 )
 target_link_libraries(bwi_exp1_solver 
