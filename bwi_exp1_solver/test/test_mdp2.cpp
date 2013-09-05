@@ -35,45 +35,58 @@ void testValueIteration(topological_mapper::Graph& graph,
   }
 
   // Now perform a max walk from start state to goal state
-  // while(true) {
-  //   size_t start_idx, starting_robots, start_direction;
-  //   std::cout << "Enter start idx: ";
-  //   std::cin >> start_idx;
-  //   std::cout << "Enter start direction: ";
-  //   std::cin >> start_direction;
-  //   std::cout << "Enter robots remaining: ";
-  //   std::cin >> starting_robots;
-  //   state_t current_state_idx = 
-  //     model->canonicalizeState(start_idx, start_direction, starting_robots);
-  //   State current_state = 
-  //     model->resolveState(current_state_idx); 
-  //   while (current_state.graph_id != goal_idx) {
-  //     std::cout << "At State (" << current_state.graph_id << ", " << current_state.direction << ", " << current_state.num_robots_left << ")" << std::endl;
-  //     std::cout << "Value of this state: " << estimator->getValue(current_state_idx) << std::endl;
-  //     action_t action_idx = vi.getBestAction(current_state_idx);
-  //     Action action = model->resolveAction(current_state_idx, action_idx);
-  //     if (action.type == PLACE_ROBOT) {
-  //       std::cout << "FOUND ROBOT. Robot points towards " << action.graph_id << std::endl;
-  //     }
-  //     std::vector<state_t> next_states;
-  //     std::vector<float> probabilities;
-  //     std::vector<float> rewards;
-  //     model->getTransitionDynamics(current_state_idx, action_idx, next_states, 
-  //         rewards, probabilities);
+  while(true) {
+    size_t start_idx, starting_robots, start_direction;
+    std::cout << "Enter start idx: ";
+    std::cin >> start_idx;
+    std::cout << "Enter start direction: ";
+    std::cin >> start_direction;
+    std::cout << "Enter robots remaining: ";
+    std::cin >> starting_robots;
+    State2 current_state; 
+    current_state.graph_id = start_idx;
+    current_state.direction = start_direction;
+    current_state.num_robots_left = starting_robots;
+    current_state.current_robot_direction = NO_ROBOT;
+    current_state.next_robot_location = NO_ROBOT;
+    while (current_state.graph_id != goal_idx) {
 
-  //     for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
-  //       state_t next_state_idx = next_states[next_state_counter];
-  //       State next_state = model->resolveState(next_state_idx);
-  //       std::cout << "  - #" << next_state_counter << " Leads to State (" << next_state.graph_id << ", " << next_state.direction << ", " << next_state.num_robots_left << ") with probability " << probabilities[next_state_counter] << std::endl;
-  //     }
-  //     std::cout << "Choice: ";
-  //     int choice;
-  //     std::cin >> choice;
-  //     current_state_idx = next_states[choice];
-  //     current_state = model->resolveState(current_state_idx);
-  //   }
-  //   std::cout << "VALUE of final state: " << estimator->getValue(current_state_idx) << std::endl;
-  // }
+      std::cout << "At State (" << current_state.graph_id << ", " << current_state.direction << ", " << current_state.num_robots_left << ", " << current_state.current_robot_direction << ", " << current_state.next_robot_location << ")" << std::endl;
+      std::cout << "Value of this state: " << estimator->getValue(current_state) << std::endl;
+
+      Action action = vi.getBestAction(current_state);
+      std::vector<State2> next_states;
+      std::vector<float> probabilities;
+      std::vector<float> rewards;
+      model->getTransitionDynamics(current_state, action, next_states, 
+          rewards, probabilities);
+
+      while (action.type != DO_NOTHING) {
+        // The human does not move for this action, and a single next state is present
+        if (action.type == PLACE_ROBOT) {
+          std::cout << "Robot points towards " << action.graph_id << std::endl;
+        } else {
+          std::cout << "See robot at " << action.graph_id << std::endl;
+        }
+        current_state = next_states[0];
+        action = vi.getBestAction(current_state);
+        model->getTransitionDynamics(current_state, action, next_states, 
+            rewards, probabilities);
+      }
+
+      std::cout << "AUTO TRANSITION TO (" << current_state.graph_id << ", " << current_state.direction << ", " << current_state.num_robots_left << ", " << current_state.current_robot_direction << ", " << current_state.next_robot_location << ")" << std::endl;
+
+      for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
+        State2& next_state = next_states[next_state_counter];
+        std::cout << "  - #" << next_state_counter << " Leads to State (" << next_state.graph_id << ", " << next_state.direction << ", " << next_state.num_robots_left << ", " << next_state.current_robot_direction << ", " << next_state.next_robot_location << ") with probability " << probabilities[next_state_counter] << std::endl;
+      }
+      std::cout << "Choice: ";
+      int choice;
+      std::cin >> choice;
+      current_state = next_states[choice];
+    }
+    std::cout << "VALUE of final state: " << estimator->getValue(current_state) << std::endl;
+  }
 
 }
 

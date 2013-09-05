@@ -114,7 +114,7 @@ namespace bwi_exp1 {
 
     num_vertices_ = boost::num_vertices(graph_);
     num_directions_ = 16;
-    max_robots_ = 5;
+    max_robots_ = 1;
 
     std::cout << "Computing adjacent vertices... " << std::endl;
     computeAdjacentVertices();
@@ -130,7 +130,6 @@ namespace bwi_exp1 {
       for (int direction = 0; direction < num_directions_; ++direction) {
         for (int robots = 0; robots <= max_robots_; ++robots) {
           if (robots != max_robots_) {
-            std::cout << NO_DIRECTION_ON_ROBOT << " " << adjacent_vertices.size() << std::endl;
             for (int rd = NO_DIRECTION_ON_ROBOT; 
                 rd < (int)adjacent_vertices.size(); ++rd) {
               for (int nrl = NO_ROBOT; nrl < (int)robot_vertices.size(); ++nrl) {
@@ -179,21 +178,26 @@ namespace bwi_exp1 {
       std::vector<Action>& actions) {
 
     actions.clear();
-    actions.push_back(Action(DO_NOTHING,0));
-
-    // If state does not have a future robot, allow placing a robot in a future
-    // location
-    if (state.next_robot_location == NO_ROBOT) {
-      BOOST_FOREACH(int id, robot_vertices_map_[state.graph_id]) {
-        actions.push_back(Action(PLACE_FUTURE_ROBOT, id)); 
-      }
+    if (state.current_robot_direction != NO_DIRECTION_ON_ROBOT) {
+      actions.push_back(Action(DO_NOTHING,0));
     }
 
-    // If state has a robot at its current location, but the robot is not 
-    // pointing to a graph id, allow placing a direction on that robot
-    if (state.current_robot_direction == NO_DIRECTION_ON_ROBOT) {
-      BOOST_FOREACH(int id, adjacent_vertices_map_[state.graph_id]) {
-        actions.push_back(Action(PLACE_ROBOT, id));
+    if (state.num_robots_left != 0) {
+
+      // If state does not have a future robot, allow placing a robot in a future
+      // location
+      if (state.next_robot_location == NO_ROBOT) {
+        BOOST_FOREACH(int id, robot_vertices_map_[state.graph_id]) {
+          actions.push_back(Action(PLACE_FUTURE_ROBOT, id)); 
+        }
+      }
+
+      // If state has a robot at its current location, but the robot is not 
+      // pointing to a graph id, allow placing a direction on that robot
+      if (state.current_robot_direction == NO_DIRECTION_ON_ROBOT) {
+        BOOST_FOREACH(int id, adjacent_vertices_map_[state.graph_id]) {
+          actions.push_back(Action(PLACE_ROBOT, id));
+        }
       }
     }
   }
@@ -268,24 +272,29 @@ namespace bwi_exp1 {
       next_state.direction = next_loc.second;
       next_state.num_robots_left = state.num_robots_left;
 
-      // See if the location we moved to is where the next robot is
-      if (next_state.graph_id == state.next_robot_location) {
-        // Transition to the state where the current location has a robot, but
-        // no direction
-        next_state.current_robot_direction = NO_DIRECTION_ON_ROBOT;
-        next_state.next_robot_location = NO_ROBOT; // This robot no longer needs to be tracked
-      } else {
-        // See if the robot is still visible from the current location - you do not want to move
-        // to a state where the robot is not visible
-        if (std::find(robot_vertices_map_[next_state.graph_id].begin(),
-              robot_vertices_map_[next_state.graph_id].end(), state.next_robot_location) 
-            == robot_vertices_map_[next_state.graph_id].end()) { 
-          // The person moved in an unexpected manner, the robot gets decommisioned
-          next_state.next_robot_location == NO_ROBOT;
-        } else {
-          next_state.next_robot_location == state.next_robot_location;
-        }
+      if (state.next_robot_location == NO_ROBOT) {
+        next_state.next_robot_location = NO_ROBOT;
         next_state.current_robot_direction = NO_ROBOT;
+      } else {
+        // See if the location we moved to is where the next robot is
+        if (next_state.graph_id == state.next_robot_location) {
+          // Transition to the state where the current location has a robot, but
+          // no direction
+          next_state.current_robot_direction = NO_DIRECTION_ON_ROBOT;
+          next_state.next_robot_location = NO_ROBOT; // This robot no longer needs to be tracked
+        } else {
+          // See if the robot is still visible from the current location - you do not want to move
+          // to a state where the robot is not visible
+          if (std::find(robot_vertices_map_[next_state.graph_id].begin(),
+                robot_vertices_map_[next_state.graph_id].end(), state.next_robot_location) 
+              == robot_vertices_map_[next_state.graph_id].end()) { 
+            // The person moved in an unexpected manner, the robot gets decommisioned
+            next_state.next_robot_location == NO_ROBOT;
+          } else {
+            next_state.next_robot_location == state.next_robot_location;
+          }
+          next_state.current_robot_direction = NO_ROBOT;
+        }
       }
       states.push_back(next_state);
     }
@@ -314,11 +323,11 @@ namespace bwi_exp1 {
     // direction for the person to be walking to.
     // TODO: Take into account the location of next_robot_location
     float expected_direction, sigma_sq;
-    if (state.current_robot_direction != NO_ROBOT || 
+    if (state.current_robot_direction != NO_ROBOT && 
         state.current_robot_direction != NO_DIRECTION_ON_ROBOT // shouldn't really happen - VI messed up
         ) {
       expected_direction = 
-        getAngleFromStates(state.graph_id, action.graph_id);
+        getAngleFromStates(state.graph_id, state.current_robot_direction);
       sigma_sq = 0.05;
     } else {
       expected_direction = 
