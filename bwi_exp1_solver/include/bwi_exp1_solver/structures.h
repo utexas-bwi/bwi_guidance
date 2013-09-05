@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <cstddef>
+#include <ostream>
 
 namespace boost {
   namespace serialization {
@@ -73,6 +74,7 @@ namespace bwi_exp1 {
   // This can often be seen written as
   bool operator<(const State2& l, const State2& r); 
   bool operator==(const State2& l, const State2& r);
+  std::ostream& operator<<(std::ostream& stream, const State2& s);
 
 } /* bwi_exp1 */
 

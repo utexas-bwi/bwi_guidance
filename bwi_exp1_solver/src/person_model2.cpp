@@ -180,23 +180,18 @@ namespace bwi_exp1 {
     actions.clear();
     if (state.current_robot_direction != NO_DIRECTION_ON_ROBOT) {
       actions.push_back(Action(DO_NOTHING,0));
+    } else {
+      BOOST_FOREACH(int id, adjacent_vertices_map_[state.graph_id]) {
+        actions.push_back(Action(PLACE_ROBOT, id));
+      }
     }
 
     if (state.num_robots_left != 0) {
-
       // If state does not have a future robot, allow placing a robot in a future
       // location
       if (state.next_robot_location == NO_ROBOT) {
         BOOST_FOREACH(int id, robot_vertices_map_[state.graph_id]) {
           actions.push_back(Action(PLACE_FUTURE_ROBOT, id)); 
-        }
-      }
-
-      // If state has a robot at its current location, but the robot is not 
-      // pointing to a graph id, allow placing a direction on that robot
-      if (state.current_robot_direction == NO_DIRECTION_ON_ROBOT) {
-        BOOST_FOREACH(int id, adjacent_vertices_map_[state.graph_id]) {
-          actions.push_back(Action(PLACE_ROBOT, id));
         }
       }
     }
@@ -289,9 +284,9 @@ namespace bwi_exp1 {
                 robot_vertices_map_[next_state.graph_id].end(), state.next_robot_location) 
               == robot_vertices_map_[next_state.graph_id].end()) { 
             // The person moved in an unexpected manner, the robot gets decommisioned
-            next_state.next_robot_location == NO_ROBOT;
+            next_state.next_robot_location = NO_ROBOT;
           } else {
-            next_state.next_robot_location == state.next_robot_location;
+            next_state.next_robot_location = state.next_robot_location;
           }
           next_state.current_robot_direction = NO_ROBOT;
         }

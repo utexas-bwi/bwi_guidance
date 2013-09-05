@@ -37,4 +37,12 @@ namespace bwi_exp1 {
         l.next_robot_location == r.next_robot_location);
   }
 
+  std::ostream& operator<<(std::ostream& stream, const State2& s) {
+    stream << "[" << s.graph_id << ", " 
+        << s.direction << ", " 
+        << s.num_robots_left << ", " 
+        << s.current_robot_direction << ", " << 
+        s.next_robot_location << "]";
+  }
+
 } /* bwi_exp1 */

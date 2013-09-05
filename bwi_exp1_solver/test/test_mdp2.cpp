@@ -51,7 +51,7 @@ void testValueIteration(topological_mapper::Graph& graph,
     current_state.next_robot_location = NO_ROBOT;
     while (current_state.graph_id != goal_idx) {
 
-      std::cout << "At State (" << current_state.graph_id << ", " << current_state.direction << ", " << current_state.num_robots_left << ", " << current_state.current_robot_direction << ", " << current_state.next_robot_location << ")" << std::endl;
+      std::cout << "At State " << current_state << std::endl; 
       std::cout << "Value of this state: " << estimator->getValue(current_state) << std::endl;
 
       Action action = vi.getBestAction(current_state);
@@ -69,16 +69,15 @@ void testValueIteration(topological_mapper::Graph& graph,
           std::cout << "See robot at " << action.graph_id << std::endl;
         }
         current_state = next_states[0];
+        std::cout << " - auto transition to " << current_state << std::endl;
         action = vi.getBestAction(current_state);
         model->getTransitionDynamics(current_state, action, next_states, 
             rewards, probabilities);
       }
 
-      std::cout << "AUTO TRANSITION TO (" << current_state.graph_id << ", " << current_state.direction << ", " << current_state.num_robots_left << ", " << current_state.current_robot_direction << ", " << current_state.next_robot_location << ")" << std::endl;
-
       for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
         State2& next_state = next_states[next_state_counter];
-        std::cout << "  - #" << next_state_counter << " Leads to State (" << next_state.graph_id << ", " << next_state.direction << ", " << next_state.num_robots_left << ", " << next_state.current_robot_direction << ", " << next_state.next_robot_location << ") with probability " << probabilities[next_state_counter] << std::endl;
+        std::cout << "  - #" << next_state_counter << " Leads to State " << next_state << " with probability " << probabilities[next_state_counter] << std::endl;
       }
       std::cout << "Choice: ";
       int choice;
@@ -94,16 +93,13 @@ void testModel2(topological_mapper::Graph& graph, const nav_msgs::OccupancyGrid 
   PersonModel2 model(graph, map, 33);
 
   State2 s;
-  s.graph_id = 22;
-  s.direction = 4;
-  s.num_robots_left = 5;
-  s.current_robot_direction = -1;
+  s.graph_id = 54;
+  s.direction = 0;
+  s.num_robots_left = 0;
+  s.current_robot_direction = 42;
   s.next_robot_location = -1;
 
-  std::vector<State2> states;
-  model.getStateVector(states);
-
-  std::cout << (std::find(states.begin(), states.end(), s) != states.end()) << std::endl;
+  std::cout << "At state " << s << std::endl;
   std::vector<Action> actions;
   model.getActionsAtState(s, actions);
 
@@ -112,7 +108,15 @@ void testModel2(topological_mapper::Graph& graph, const nav_msgs::OccupancyGrid 
   str[1] = "DIRECT_ROBOT";
   str[2] = "PLACE_FUTURE_ROBOT";
   BOOST_FOREACH(const Action& a, actions) {
-    std::cout << str[a.type] << " " << a.graph_id << std::endl;
+    std::cout << "ACTION: " << str[a.type] << " " << a.graph_id << std::endl;
+    std::vector<State2> next_states;
+    std::vector<float> probabilities;
+    std::vector<float> rewards;
+    model.getTransitionDynamics(s, a, next_states, rewards, probabilities);
+    for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
+      State2& next_state = next_states[next_state_counter];
+      std::cout << "  - #" << next_state_counter << " Leads to State " << next_state << " with probability " << probabilities[next_state_counter] << " and reward " << rewards[next_state_counter] << std::endl;
+    }
   }
 
 }
@@ -136,7 +140,7 @@ int main(int argc, char** argv) {
   } else {
     testValueIteration(graph, map);
   }
-  // testModel2(graph, map);
+//  testModel2(graph, map);
 
   return 0;
 }
