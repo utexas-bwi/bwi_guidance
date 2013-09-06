@@ -34,6 +34,10 @@ namespace bwi_exp1 {
           size_t graph_id, size_t next_graph_id);
       size_t getDirectionFromAngle(float angle);
       float getAngleFromDirection(size_t dir);
+      float getAngleFromStates(size_t graph_id, size_t next_graph_id);
+      float getDistanceFromStates(size_t graph_id, size_t next_graph_id);
+      void getNextStates(const State2& state, const Action& action, 
+          std::vector<State2>& next_states);
 
     private:
 
@@ -53,8 +57,6 @@ namespace bwi_exp1 {
       void initializeNextStateCache();
       // maps a direction, graph id to all possible next states and graph id
       std::vector<std::vector<std::pair<int, int> > > next_state_cache_; 
-      void getNextStates(const State2& state, const Action& action, 
-          std::vector<State2>& next_states);
       void constructTransitionProbabilities(const State2& state, 
           const Action& action, std::vector<float>& probabilities);
       std::vector<float>& getTransitionProbabilities(const State2& state,
@@ -62,8 +64,6 @@ namespace bwi_exp1 {
       std::map<State2, std::map<Action, std::vector<float> > > 
         ns_distribution_cache_;
 
-      float getAngleFromStates(size_t graph_id, size_t next_graph_id);
-      float getDistanceFromStates(size_t graph_id, size_t next_graph_id);
       uint32_t num_vertices_;
       uint32_t num_directions_;
       uint32_t max_robots_;

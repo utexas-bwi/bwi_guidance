@@ -66,6 +66,14 @@ target_link_libraries(vi_robot_positioner
   ${catkin_LIBRARIES}
 )
 
+add_executable(vi_robot_positioner2
+  src/nodes/vi_robot_positioner2.cpp
+)
+target_link_libraries(vi_robot_positioner2 
+  bwi_exp1_solver
+  ${catkin_LIBRARIES}
+)
+
 add_executable(heuristic_robot_positioner
   src/nodes/heuristic_robot_positioner.cpp
 )
