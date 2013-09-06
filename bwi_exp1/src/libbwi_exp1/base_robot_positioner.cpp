@@ -52,13 +52,12 @@ namespace bwi_exp1 {
     private_nh.param<double>("search_distance", search_distance_, 0.75);
 
     // Setup map, graph and robots
-    nav_msgs::OccupancyGrid uninflated_map;
     mapper_.reset(new topological_mapper::MapLoader(map_file));
     mapper_->getMapInfo(map_info_);
-    mapper_->getMap(uninflated_map);
+    mapper_->getMap(map_);
    
     topological_mapper::inflateMap(robot_radius + robot_padding, 
-        uninflated_map, map_);
+        map_, inflated_map_);
     topological_mapper::readGraphFromFile(graph_file, map_info_, graph_);
     
     readDefaultRobotsFromFile(robot_file, default_robots_);
@@ -314,7 +313,7 @@ namespace bwi_exp1 {
         
         // Check if x_test, y_test is free.
         size_t map_idx = MAP_IDX(map_info_.width, x_test, y_test);
-        if (map_.data[map_idx] != 0) {
+        if (inflated_map_.data[map_idx] != 0) {
           x_test++;
           continue;
         }
@@ -362,7 +361,7 @@ namespace bwi_exp1 {
 
     if (debug_) {
       cv::Mat image;
-      mapper_->drawMap(image, map_);
+      mapper_->drawMap(image, inflated_map_);
 
       cv::circle(image, from, 5, cv::Scalar(255, 0, 0), -1);
       cv::circle(image, at, 5, cv::Scalar(255, 0, 255), 2);

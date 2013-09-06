@@ -65,6 +65,7 @@ namespace bwi_exp1 {
       boost::shared_ptr<topological_mapper::MapLoader> mapper_;
       topological_mapper::Graph graph_;
       nav_msgs::OccupancyGrid map_;
+      nav_msgs::OccupancyGrid inflated_map_;
       nav_msgs::MapMetaData map_info_;
 
       RobotScreenPublisher robot_screen_publisher_;
