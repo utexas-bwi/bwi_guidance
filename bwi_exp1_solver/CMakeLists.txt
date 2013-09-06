@@ -23,7 +23,7 @@ catkin_package(
 ## Build ##
 ###########
 
-add_definitions(-DVI_DEBUG)
+#add_definitions(-DVI_DEBUG)
 
 include_directories(
   include
@@ -45,6 +45,12 @@ target_link_libraries(bwi_exp1_solver
 )
 
 ## Declare a cpp executable
+add_executable(test_vi 
+  test/test_vi.cpp
+)
+target_link_libraries(test_vi 
+  bwi_exp1_solver
+)
 add_executable(test_mdp 
   test/test_mdp.cpp
 )

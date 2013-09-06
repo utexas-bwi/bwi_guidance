@@ -11,6 +11,7 @@ Created:  2013-07-23
 #include <boost/shared_ptr.hpp>
 #include <limits>
 #include <stdexcept>
+#include <cmath>
 
 #include "PredictiveModel.h"
 #include "VIEstimator.h"
@@ -26,7 +27,7 @@ class ValueIteration {
 public:
   ValueIteration (boost::shared_ptr<PredictiveModel<State, Action> > model,
       boost::shared_ptr<VIEstimator<State, Action> > value_estimator,
-      float gamma, unsigned int max_iter);
+      float gamma = 1.0, float epsilon = 1e-2, unsigned int max_iter = 1000);
   virtual ~ValueIteration () {}
 
   void computePolicy();
@@ -44,6 +45,7 @@ private:
   boost::shared_ptr<VIEstimator<State, Action> > value_estimator_;
 
   float gamma_;
+  float epsilon_;
   float max_iter_;
 
   bool policy_available_;
@@ -54,8 +56,8 @@ template<class State, class Action>
 ValueIteration<State, Action>::ValueIteration(
     boost::shared_ptr<PredictiveModel<State, Action> > model,
     boost::shared_ptr<VIEstimator<State, Action> > value_estimator,
-    float gamma, unsigned int max_iter) : model_(model), 
-  value_estimator_(value_estimator), gamma_(gamma), 
+    float gamma, float epsilon, unsigned int max_iter) : model_(model), 
+  value_estimator_(value_estimator), gamma_(gamma), epsilon_(epsilon), 
   max_iter_(max_iter), policy_available_(false) {}
 
 template<class State, class Action>
@@ -64,7 +66,7 @@ void ValueIteration<State,Action>::computePolicy() {
   bool change = true;
   size_t count = 0;
   while(change && count < max_iter_) {
-    change = false;
+    float max_value_change = -std::numeric_limits<float>::max();
     count++;
     VI_OUTPUT("Iteration #" << count);
     std::vector<State> states;
@@ -102,10 +104,14 @@ void ValueIteration<State,Action>::computePolicy() {
           best_action = action;
         }
       }
-      change = change || (value_estimator_->getValue(state) != value);
+      float value_change = fabs(value_estimator_->getValue(state) - value);
+      max_value_change = std::max(max_value_change, value_change);
       value_estimator_->updateValue(state, value);
       value_estimator_->setBestAction(state, best_action);
+      VI_OUTPUT("  State #" << state << " value is " << value);
     }
+    VI_OUTPUT("  max change = " << max_value_change);
+    change = max_value_change > epsilon_;
   }
   policy_available_ = true;
 }

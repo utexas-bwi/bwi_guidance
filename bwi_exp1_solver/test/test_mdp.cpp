@@ -14,7 +14,7 @@ void testValueIteration(topological_mapper::Graph& graph, const std::string& fil
   boost::shared_ptr<PersonModel> model(new PersonModel(graph, goal_idx));
   boost::shared_ptr<PersonEstimator> estimator(
       new PersonEstimator(model->getStateSpaceSize(), 0));
-  ValueIteration<state_t, action_t> vi(model, estimator, 1.0, 1000);
+  ValueIteration<state_t, action_t> vi(model, estimator, 1.0, 1.0, 1000);
 
   bool policyAvailable = false;
   if (!file.empty()) {

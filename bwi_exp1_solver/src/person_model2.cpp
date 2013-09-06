@@ -55,6 +55,9 @@ namespace bwi_exp1 {
         rewards[ns - next_states.begin()] = 
           -getDistanceFromStates(state.graph_id, ns->graph_id);
       }
+    } else if (action.type == PLACE_FUTURE_ROBOT) {
+      // break ties between doing nothing and placing robots to doing nothing
+      rewards.push_back(-10.0);
     } else {
       // Single transition, no reward
       rewards.push_back(0.0);

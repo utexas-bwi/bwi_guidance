@@ -44,7 +44,7 @@ class VIRobotPositioner : public BaseRobotPositioner {
       model_.reset(new PersonModel(graph_, goal_idx_));
       estimator_.reset(new PersonEstimator(model_->getStateSpaceSize(), 0));
       vi_.reset(new ValueIteration<state_t, action_t>(
-            model_, estimator_, vi_gamma_, vi_max_iterations_));
+            model_, estimator_, vi_gamma_, 1.0, vi_max_iterations_));
 
       bool policyAvailable = false;
       std::ifstream fin(policy_file_.c_str());
