@@ -326,11 +326,11 @@ namespace bwi_exp1 {
         ) {
       expected_direction = 
         getAngleFromStates(state.graph_id, state.current_robot_direction);
-      sigma_sq = 0.05;
+      sigma_sq = 0.2;
     } else {
       expected_direction = 
         getAngleFromDirection(state.direction);
-      sigma_sq = 0.05;
+      sigma_sq = 0.2;
     }
 
     // Now compute the weight of each next state. Get the favored direction
@@ -368,7 +368,9 @@ namespace bwi_exp1 {
     for (size_t probability_counter = 0; 
         probability_counter < probabilities.size();
         ++probability_counter) {
-      probabilities[probability_counter] /= probability_sum;
+      probabilities[probability_counter] =
+        0.90 * (probabilities[probability_counter] / probability_sum) +
+        0.10 * (1.0f / probabilities.size());
       normalized_probability_sum += probabilities[probability_counter];
     }
     probabilities[last_non_zero_probability] += 1 - normalized_probability_sum;
