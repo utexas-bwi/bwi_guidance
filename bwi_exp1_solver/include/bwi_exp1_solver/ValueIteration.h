@@ -27,7 +27,9 @@ class ValueIteration {
 public:
   ValueIteration (boost::shared_ptr<PredictiveModel<State, Action> > model,
       boost::shared_ptr<VIEstimator<State, Action> > value_estimator,
-      float gamma = 1.0, float epsilon = 1e-2, unsigned int max_iter = 1000);
+      float gamma = 1.0, float epsilon = 1e-2, unsigned int max_iter = 1000,
+      float max_value = std::numeric_limits<float>::max(),
+      float min_value = -std::numeric_limits<float>::max());
   virtual ~ValueIteration () {}
 
   void computePolicy();
@@ -47,6 +49,8 @@ private:
   float gamma_;
   float epsilon_;
   float max_iter_;
+  float max_value_;
+  float min_value_;
 
   bool policy_available_;
 
@@ -56,9 +60,11 @@ template<class State, class Action>
 ValueIteration<State, Action>::ValueIteration(
     boost::shared_ptr<PredictiveModel<State, Action> > model,
     boost::shared_ptr<VIEstimator<State, Action> > value_estimator,
-    float gamma, float epsilon, unsigned int max_iter) : model_(model), 
+    float gamma, float epsilon, unsigned int max_iter,
+    float max_value, float min_value) : model_(model), 
   value_estimator_(value_estimator), gamma_(gamma), epsilon_(epsilon), 
-  max_iter_(max_iter), policy_available_(false) {}
+  max_iter_(max_iter), max_value_(max_value), min_value_(min_value),
+  policy_available_(false) {}
 
 template<class State, class Action>
 void ValueIteration<State,Action>::computePolicy() {
@@ -104,11 +110,13 @@ void ValueIteration<State,Action>::computePolicy() {
           best_action = action;
         }
       }
+      value = std::max(min_value_, value);
+      value = std::min(max_value_, value);
       float value_change = fabs(value_estimator_->getValue(state) - value);
       max_value_change = std::max(max_value_change, value_change);
       value_estimator_->updateValue(state, value);
       value_estimator_->setBestAction(state, best_action);
-      VI_OUTPUT("  State #" << state << " value is " << value);
+      /* VI_OUTPUT("  State #" << state << " value is " << value); */
     }
     VI_OUTPUT("  max change = " << max_value_change);
     change = max_value_change > epsilon_;
