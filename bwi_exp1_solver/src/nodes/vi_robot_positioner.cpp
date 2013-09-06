@@ -38,7 +38,7 @@ class VIRobotPositioner : public BaseRobotPositioner {
       private_nh.getParam("goal_idx", goal_idx_);
       private_nh.param("num_robots_available", num_robots_available_, 5);
       private_nh.param<bool>("recompute_policy", recompute_policy_, false);
-      private_nh.param<double>("vi_gamma", vi_gamma_, 0.98);
+      private_nh.param<double>("vi_gamma", vi_gamma_, 1.0);
       private_nh.param<int>("vi_max_iterations_", vi_max_iterations_, 1000);
 
       model_.reset(new PersonModel(graph_, goal_idx_));
