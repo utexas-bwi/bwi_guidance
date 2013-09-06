@@ -16,7 +16,7 @@ void testValueIteration(topological_mapper::Graph& graph,
 
   boost::shared_ptr<PersonModel2> model(new PersonModel2(graph, map, goal_idx));
   boost::shared_ptr<PersonEstimator2> estimator(new PersonEstimator2);
-  ValueIteration<State2, Action> vi(model, estimator, 1.0, 1.0, 1000);
+  ValueIteration<State2, Action> vi(model, estimator, 1.0, 1.0, 1000, 0.0, -10000.0);
 
   bool policyAvailable = false;
   if (!file.empty()) {
@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
   } else {
     testValueIteration(graph, map);
   }
-//  testModel2(graph, map);
+  /* testModel2(graph, map); */
 
   return 0;
 }
