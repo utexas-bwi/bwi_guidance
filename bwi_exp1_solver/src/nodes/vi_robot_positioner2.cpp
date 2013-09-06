@@ -87,12 +87,12 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       size_t direction = 
         model_->getDirectionFromAngle(instance.start_loc.yaw);
 
-      ROS_INFO_STREAM("Start at: " << current_state_);
       current_state_.graph_id = prev_graph_id;
       current_state_.direction = direction;
       current_state_.num_robots_left = num_robots_available_;
       current_state_.current_robot_direction = NO_ROBOT;
       current_state_.next_robot_location = NO_ROBOT;
+      ROS_INFO_STREAM("Start at: " << current_state_);
       checkRobotPlacementAtCurrentState();
     }
 
@@ -119,10 +119,11 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           // DIRECT ROBOT HERE
           topological_mapper::Point2f to_loc = 
             topological_mapper::getLocationFromGraphId(
-                current_state_.graph_id, graph_);
+                current_state_.current_robot_direction, graph_);
           topological_mapper::Point2f change_loc = to_loc - assigned_robot_loc_;
           float destination_yaw = atan2(change_loc.y, change_loc.x);
           float change_in_yaw = destination_yaw - assigned_robot_yaw_;
+          ROS_INFO_STREAM("  " << to_loc << " " << assigned_robot_loc_ << " " << assigned_robot_yaw_);
           cv::Mat robot_image;
           produceDirectedArrow(change_in_yaw, robot_image);
 
@@ -134,12 +135,12 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           // PLACE ROBOT HERE
           assigned_robot_loc_ = 
             topological_mapper::getLocationFromGraphId(
-                current_state_.graph_id, graph_);
-          assigned_robot_loc_ =
+                current_state_.next_robot_location, graph_);
+          topological_mapper::Point2f robot_map_loc =
             topological_mapper::toMap(assigned_robot_loc_, map_.info);
           geometry_msgs::Pose pose;
-          pose.position.x = assigned_robot_loc_.x;
-          pose.position.y = assigned_robot_loc_.y;
+          pose.position.x = robot_map_loc.x;
+          pose.position.y = robot_map_loc.y;
           pose.position.z = 0;
           assigned_robot_yaw_ = 
             model_->getAngleFromStates(
@@ -181,7 +182,8 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         BOOST_FOREACH(const State2& state, next_states) {
           if (state.graph_id == current_graph_id) {
             current_state_ = state;
-            ROS_INFO_STREAM("AUTO transition to: " << current_state_);
+            ROS_INFO_STREAM("MANUAL transition to: " << current_state_);
+            checkRobotPlacementAtCurrentState();
           }
         }
       }
