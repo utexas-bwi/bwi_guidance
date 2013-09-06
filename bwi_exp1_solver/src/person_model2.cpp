@@ -114,7 +114,7 @@ namespace bwi_exp1 {
 
     num_vertices_ = boost::num_vertices(graph_);
     num_directions_ = 16;
-    max_robots_ = 1;
+    max_robots_ = 5;
 
     std::cout << "Computing adjacent vertices... " << std::endl;
     computeAdjacentVertices();
