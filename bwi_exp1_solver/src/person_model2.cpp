@@ -87,12 +87,17 @@ namespace bwi_exp1 {
       closed_set.insert(graph_id);
       while (open_set.size() != 0) {
         int graph_id_2 = *(open_set.begin());
+        topological_mapper::Point2f graph_location_2 = 
+          topological_mapper::getLocationFromGraphId(graph_id_2, graph_); 
         open_set.erase(open_set.begin());
         closed_set.insert(graph_id_2);
-        if (topological_mapper::locationsInDirectLineOfSight(
-              graph_location, 
-              topological_mapper::getLocationFromGraphId(graph_id_2, graph_),
-              map_)) {
+        bool location_2_visible = 
+          topological_mapper::locationsInDirectLineOfSight(                    
+              graph_location, graph_location_2, map_);
+        bool location_close = 
+          topological_mapper::getMagnitude(graph_location - graph_location_2) <
+          (25.0 / map_.info.resolution);
+        if (location_2_visible && location_close) {
           // Location is visible from original vertex
           robot_vertices.push_back(graph_id_2);
           // Push all new adjacent vertices into the open set if not in closed
@@ -319,7 +324,6 @@ namespace bwi_exp1 {
     
     // In this simple MDP formulation, the action should induce a desired 
     // direction for the person to be walking to.
-    // TODO: Take into account the location of next_robot_location
     float expected_direction, sigma_sq, random_probability;
     if (state.current_robot_direction != NO_ROBOT && 
         state.current_robot_direction != NO_DIRECTION_ON_ROBOT // shouldn't really happen - VI messed up
