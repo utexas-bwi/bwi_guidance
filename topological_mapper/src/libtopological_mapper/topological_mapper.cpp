@@ -457,19 +457,27 @@ namespace topological_mapper {
           topological_mapper::getMagnitude(region_graph_[vi].location - region_graph_[vj].location);
     }
 
-
     // Refine the region graph into the point graph:
     //  - remove any unnecessary vertices
     //  - resolve all large regions into critical point based vertices
     int pixel_threshold = merge_threshold / map_resp_.map.info.resolution;
     Graph::vertex_iterator vi, vend;
     vertex_count = 0;
-    std::vector<int> critical_points_in_graph;
+    enum {
+      PRESENT = 0,
+      REMOVED_REGION_VERTEX = 1,
+      CONVERT_TO_CRITICAL_POINT = 2,
+    };
+    std::vector<int> region_vertex_status(boost::num_vertices(region_graph_), PRESENT);
+    std::map<int, int> point_vertex_to_region_vertex_map;
+    std::map<int, int> region_vertex_to_point_vertex_map;
+    int point_vertex_count = 0;
     for (boost::tie(vi, vend) = boost::vertices(region_graph_); vi != vend;
         ++vi, ++vertex_count) {
       
       // See if this only has 2 neighbours, and the 2 neighbours are visible to
       // each other
+      // This has to be done in a loop!!!
       Graph::adjacency_iterator ai, aend;
       std::vector<Point2f> adjacent_vertices;
       for (boost::tie(ai, aend) = boost::adjacent_vertices(
@@ -483,6 +491,7 @@ namespace topological_mapper {
           topological_mapper::locationsInDirectLineOfSight(
             adjacent_vertices[0], adjacent_vertices[1], map_resp_.map);
         if (locations_visible) {
+          region_vertex_status[vertex_count] = REMOVED_REGION_VERTEX;
           continue;
         }
       }
@@ -490,22 +499,21 @@ namespace topological_mapper {
       // See if the area of this region is too big to be in the point map
       if (region_graph_[*vi].pixels >= pixel_threshold) {
         // Get underlying region
-        int region = vertex_to_region_map[vertex_count];
-        for (size_t i = 0; i < critical_points_.size(); ++i) {
-          if (point_neighbour_sets[i].count(region)) {
-            critical_points_in_graph.push_back(i);
-          }
-        }
+        region_vertex_status[vertex_count] = CONVERT_TO_CRITICAL_POINT;
         continue;
       }
-
+      
       // Otherwise insert this as is into the point graph
       Graph::vertex_descriptor point_vi = boost::add_vertex(point_graph_);
       point_graph_[point_vi] = region_graph_[*vi];
+      point_vertex_to_region_vertex_map[point_vertex_count] = vertex_count;
+      region_vertex_to_point_vertex_map[vertex_count] = point_vertex_count;
+      ++point_vertex_count;
+      
     }
 
+    // Insert all edges that can be inserted
 
-     
 
     // Initialize the critical point arrays for forming the graph
     // std::vector<size_t> critical_pt_to_region_map;
