@@ -320,17 +320,51 @@ namespace bwi_exp1 {
     // In this simple MDP formulation, the action should induce a desired 
     // direction for the person to be walking to.
     // TODO: Take into account the location of next_robot_location
-    float expected_direction, sigma_sq;
+    float expected_direction, sigma_sq, random_probability;
     if (state.current_robot_direction != NO_ROBOT && 
         state.current_robot_direction != NO_DIRECTION_ON_ROBOT // shouldn't really happen - VI messed up
         ) {
       expected_direction = 
         getAngleFromStates(state.graph_id, state.current_robot_direction);
-      sigma_sq = 0.2;
+      sigma_sq = 0.1;
+      random_probability = 0.1;
     } else {
       expected_direction = 
         getAngleFromDirection(state.direction);
-      sigma_sq = 0.2;
+      sigma_sq = 0.1;
+      random_probability = 0.1;
+    }
+
+    // In case the next robot is somewhere in the direction of where the person
+    // wants to go, this should significantly increase the probablity of seeing
+    // the next robot and moving towards it.
+    topological_mapper::Point2f graph_location =
+      topological_mapper::getLocationFromGraphId(state.graph_id, graph_);
+    topological_mapper::Point2f goal_location =
+      topological_mapper::getLocationFromGraphId(goal_idx_, graph_);
+    bool goal_idx_visible = topological_mapper::locationsInDirectLineOfSight(
+        graph_location,
+        goal_location,
+        map_);
+    int next_identifier_location = state.next_robot_location;
+    next_identifier_location = 
+      (next_identifier_location == NO_ROBOT && goal_idx_visible) ?
+      goal_idx_ : next_identifier_location;
+    if (next_identifier_location != NO_ROBOT) {
+      float next_robot_direction = 
+        getAngleFromStates(state.graph_id, next_identifier_location);
+      while (next_robot_direction <= expected_direction - M_PI) {
+        next_robot_direction += 2 * M_PI;
+      }
+      while (next_robot_direction > expected_direction + M_PI) {
+        next_robot_direction -= 2 * M_PI;
+      }
+      float difference = fabs(next_robot_direction - expected_direction);
+      if (difference < M_PI / 12) {
+        sigma_sq = 0.01;
+        expected_direction = next_robot_direction;
+        random_probability = 0.01;
+      }
     }
 
     // Now compute the weight of each next state. Get the favored direction
@@ -369,8 +403,9 @@ namespace bwi_exp1 {
         probability_counter < probabilities.size();
         ++probability_counter) {
       probabilities[probability_counter] =
-        0.90 * (probabilities[probability_counter] / probability_sum) +
-        0.10 * (1.0f / probabilities.size());
+        (1.0 - random_probability)
+           * (probabilities[probability_counter] / probability_sum) +
+        random_probability * (1.0f / probabilities.size());
       normalized_probability_sum += probabilities[probability_counter];
     }
     probabilities[last_non_zero_probability] += 1 - normalized_probability_sum;

@@ -90,13 +90,13 @@ void testValueIteration(topological_mapper::Graph& graph,
 }
 
 void testModel2(topological_mapper::Graph& graph, const nav_msgs::OccupancyGrid &map) {
-  PersonModel2 model(graph, map, 33);
+  PersonModel2 model(graph, map, 22);
 
   State2 s;
-  s.graph_id = 54;
-  s.direction = 0;
+  s.graph_id = 33;
+  s.direction = 12;
   s.num_robots_left = 0;
-  s.current_robot_direction = 42;
+  s.current_robot_direction = -1;
   s.next_robot_location = -1;
 
   std::cout << "At state " << s << std::endl;
