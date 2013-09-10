@@ -40,6 +40,8 @@
 #include <topological_mapper/map_utils.h>
 #include <topological_mapper/point_utils.h>
 
+#include <boost/foreach.hpp>
+
 namespace topological_mapper {
 
   /**
@@ -334,6 +336,7 @@ namespace topological_mapper {
 
     std::vector<std::vector<uint32_t> > point_neighbours;
     point_neighbours.resize(critical_points_.size());
+    std::vector<int> remove_crit_points;
     for (size_t i = 0; i < critical_points_.size(); ++i) {
       if (point_neighbour_sets[i].size() == 2) {
         point_neighbours[i] = 
@@ -343,7 +346,14 @@ namespace topological_mapper {
         std::cout << "ERROR: one of the critical points has " << 
           point_neighbour_sets[i].size() << " neighbours. This means that " <<
           "the critical lines algorithm has failed.";
+        remove_crit_points.push_back(i);
       }
+    }
+
+    for (int i = remove_crit_points.size() - 1; i >=0 ; --i) {
+      critical_points_.erase(critical_points_.begin() + i);
+      point_neighbour_sets.erase(point_neighbour_sets.begin() + i);
+      point_neighbours.erase(point_neighbours.begin() + i);
     }
 
     // Find connectivity to remove any isolated sub-graphs
@@ -391,20 +401,10 @@ namespace topological_mapper {
       master_region_set = graph_sets[0];
     }
     
-    // Print neighbours
-    // for (size_t i = 0; i < critical_points_.size(); ++i) {
-    //   std::cout << i << " -> ";
-    //   for (std::set<uint32_t>::iterator it = point_neighbours[i].begin();
-    //       it != point_neighbours[i].end(); ++it) {
-    //
-    //     std::cout << *it << " ";
-    //   }
-    //   std::cout << std::endl;
-    // }
-    
     // Create the region graph next
     std::map<int, int> region_to_vertex_map;
-    std::map<int, int> vertex_to_region_map;
+    std::map<int, std::vector<VoronoiPoint> > region_vertex_crit_points;
+    std::map<int, std::vector<int> > region_vertex_other_neighbour;
     int vertex_count = 0;
     for (size_t r = 0; r < num_components_; ++r) { 
       if (std::find(master_region_set.begin(), master_region_set.end(), r) ==
@@ -432,9 +432,35 @@ namespace topological_mapper {
       region_graph_[vi].location.y = ((float) avg_j) / pixel_count;
       region_graph_[vi].pixels = floor(sqrt(pixel_count));
       std::cout << "mapping " << r << " to " << vertex_count << std::endl;
+
+      // This map is only required till the point we form edges on this graph 
       region_to_vertex_map[r] = vertex_count;
-      vertex_to_region_map[vertex_count] = r;
+
       ++vertex_count;
+    }
+
+    // Now that region_to_vertex_map is complete, 
+    // forward critical points to next graph
+    for (size_t r = 0; r < num_components_; ++r) { 
+      if (std::find(master_region_set.begin(), master_region_set.end(), r) ==
+          master_region_set.end()) {
+        region_to_vertex_map[r] = -1;
+        continue;
+      }
+      // Store the critical points corresponding to this vertex
+      for (int j = 0; j < critical_points_.size(); ++j) {
+        for (int k = 0; k < 2; ++k) {
+          if (point_neighbours[j][k] == r) {
+            int region_vertex = region_to_vertex_map[r];
+            region_vertex_crit_points[region_vertex].push_back(
+                critical_points_[j]);
+            // Get the neighbouring regions for this critical point
+            region_vertex_other_neighbour[region_vertex].push_back(
+                region_to_vertex_map[point_neighbours[j][1-k]]);
+            break;
+          }
+        }
+      }
     }
 
     // Create 1 edge per critical point
@@ -453,67 +479,264 @@ namespace topological_mapper {
       vj = boost::vertex(region2, region_graph_);
       Graph::edge_descriptor e; bool b;
       boost::tie(e,b) = boost::add_edge(vi, vj, region_graph_);
-      region_graph_[e].weight = 
-          topological_mapper::getMagnitude(region_graph_[vi].location - region_graph_[vj].location);
+      region_graph_[e].weight = topological_mapper::getMagnitude(
+          region_graph_[vi].location - region_graph_[vj].location);
     }
 
     // Refine the region graph into the point graph:
     //  - remove any unnecessary vertices
-    //  - resolve all large regions into critical point based vertices
     int pixel_threshold = merge_threshold / map_resp_.map.info.resolution;
     Graph::vertex_iterator vi, vend;
-    vertex_count = 0;
+    
     enum {
       PRESENT = 0,
       REMOVED_REGION_VERTEX = 1,
       CONVERT_TO_CRITICAL_POINT = 2,
     };
+
+
+    Graph pass_2_graph;
+
     std::vector<int> region_vertex_status(boost::num_vertices(region_graph_), PRESENT);
-    std::map<int, int> point_vertex_to_region_vertex_map;
+    std::vector<std::pair<int, int> > rr_extra_edges;
+    std::map<int, std::pair<int, int> > removed_vertex_map;
     std::map<int, int> region_vertex_to_point_vertex_map;
+    std::map<int, std::vector<VoronoiPoint> > point_vertex_crit_points;
+    std::map<int, std::vector<int> > point_vertex_other_neigbhour;
+
+    int region_vertex_count = 0;
     int point_vertex_count = 0;
     for (boost::tie(vi, vend) = boost::vertices(region_graph_); vi != vend;
-        ++vi, ++vertex_count) {
-      
-      // See if this only has 2 neighbours, and the 2 neighbours are visible to
-      // each other
-      // This has to be done in a loop!!!
-      Graph::adjacency_iterator ai, aend;
-      std::vector<Point2f> adjacent_vertices;
-      for (boost::tie(ai, aend) = boost::adjacent_vertices(
-            (Graph::vertex_descriptor)*vi, region_graph_); 
-          ai != aend; ++ai) {
-        adjacent_vertices.push_back(region_graph_[*ai].location);
-      }
-      if (adjacent_vertices.size() == 2) {
-        // Check if the 2 adjacent vertices are visible
-        bool locations_visible = 
-          topological_mapper::locationsInDirectLineOfSight(
-            adjacent_vertices[0], adjacent_vertices[1], map_resp_.map);
-        if (locations_visible) {
-          region_vertex_status[vertex_count] = REMOVED_REGION_VERTEX;
-          continue;
-        }
-      }
+        ++vi, ++region_vertex_count) {
 
-      // See if the area of this region is too big to be in the point map
-      if (region_graph_[*vi].pixels >= pixel_threshold) {
-        // Get underlying region
-        region_vertex_status[vertex_count] = CONVERT_TO_CRITICAL_POINT;
+      std::cout << "Analyzing region graph vertex: " << region_vertex_count << std::endl;
+
+      if (region_vertex_status[region_vertex_count] != PRESENT) {
+        std::cout << " - the vertex has been thrown out already " << std::endl;
         continue;
       }
       
+      // See if this only has 2 neighbours, and the 2 neighbours are visible to
+      // each other
+      std::vector<size_t> open_vertices;
+      int current_vertex = region_vertex_count;
+      getAdjacentVertices(current_vertex, region_graph_, open_vertices);
+      std::vector<int> removed_vertices;
+      std::pair<int, int> edge;
+      if (open_vertices.size() == 2 &&
+          region_vertex_status[open_vertices[0]] == PRESENT &&
+          region_vertex_status[open_vertices[1]] == PRESENT) {
+        while(true) {
+          std::cout << " - has 2 adjacent vertices " << open_vertices[0] << ", " 
+            << open_vertices[1] << std::endl;
+          // Check if the 2 adjacent vertices are visible
+          Point2f location1 = 
+            getLocationFromGraphId(open_vertices[0], region_graph_);
+          Point2f location2 = 
+            getLocationFromGraphId(open_vertices[1], region_graph_);
+          bool locations_visible = 
+            locationsInDirectLineOfSight(location1, location2, map_resp_.map);
+          if (locations_visible) {
+            std::cout << " - the 2 adjacent vertices are visible " << std::endl; 
+            region_vertex_status[current_vertex] = REMOVED_REGION_VERTEX;
+            removed_vertices.push_back(current_vertex);
+            edge = std::make_pair(open_vertices[0], open_vertices[1]);
+            bool replacement_found = false;
+            for (int i = 0; i < 2; ++i) {
+              std::vector<size_t> adj_vertices;
+              getAdjacentVertices(open_vertices[i], region_graph_, 
+                  adj_vertices);
+              if (adj_vertices.size() == 2) {
+                size_t new_vertex = (adj_vertices[0] == current_vertex) ? 
+                  adj_vertices[1] : adj_vertices[0];
+                if (region_vertex_status[new_vertex] == PRESENT) {
+                  current_vertex = open_vertices[i];
+                  open_vertices[i] = new_vertex;
+                  replacement_found = true;
+                  break;
+                }
+              }
+            }
+            if (!replacement_found) {
+              // Both neighbours on either side had 1 or more than 2 adjacent 
+              // vertices
+              break;
+            }
+          } else {
+            // left and right vertices not visible
+            break;
+          }
+        }
+      }
+
+      BOOST_FOREACH(int removed_vertex, removed_vertices) {
+        removed_vertex_map[removed_vertex] = edge;
+      }
+
+      if (removed_vertices.size() != 0) {
+        // Add the extra edge
+        std::cout << " - adding extra edge between " << edge.first <<
+          " " << edge.second << std::endl;
+        rr_extra_edges.push_back(edge);
+        continue;
+      }
+
       // Otherwise insert this as is into the point graph
-      Graph::vertex_descriptor point_vi = boost::add_vertex(point_graph_);
-      point_graph_[point_vi] = region_graph_[*vi];
-      point_vertex_to_region_vertex_map[point_vertex_count] = vertex_count;
-      region_vertex_to_point_vertex_map[vertex_count] = point_vertex_count;
+      Graph::vertex_descriptor point_vi = boost::add_vertex(pass_2_graph);
+      pass_2_graph[point_vi] = region_graph_[*vi];
+      region_vertex_to_point_vertex_map[region_vertex_count] = 
+        point_vertex_count;
+
       ++point_vertex_count;
       
     }
 
-    // Insert all edges that can be inserted
+    // Now that all vertices are known, forward critical points for all vertices
+    // where there were more than 2 critical points
+    region_vertex_count = 0;
+    for (boost::tie(vi, vend) = boost::vertices(region_graph_); vi != vend;
+        ++vi, ++region_vertex_count) {
+      if (region_vertex_status[region_vertex_count] != PRESENT) {
+          /* region_vertex_crit_points[region_vertex_count].size() <= 2) { */
+        continue;
+      }
+      int point_vertex = region_vertex_to_point_vertex_map[region_vertex_count];
+      // Get underlying critical points and forward mapping
+      for (int i = 0; 
+          i < region_vertex_crit_points[region_vertex_count].size(); ++i) {
+        const VoronoiPoint& vp = 
+          region_vertex_crit_points[region_vertex_count][i];
+        point_vertex_crit_points[point_vertex].push_back(vp);
+        int other_region_vertex = 
+          region_vertex_other_neighbour[region_vertex_count][i];
+        // Check what the status of the other region is
+        if (region_vertex_status[other_region_vertex] != PRESENT) {
+          // Vertex got removed, find vertex it got removed for
+          int removed_for_1 = removed_vertex_map[other_region_vertex].first;
+          int removed_for_2 = removed_vertex_map[other_region_vertex].second;
+          if (removed_for_1 != region_vertex_count &&
+              removed_for_2 != region_vertex_count) {
+            std::cout << "ERROR: Tried to resolved a removed vertex, did not work" << std::endl;
+          }
+          other_region_vertex = (removed_for_1 == region_vertex_count) ?
+            removed_for_2 : removed_for_1;
+        }
+        point_vertex_other_neigbhour[point_vertex].push_back(
+            region_vertex_to_point_vertex_map[other_region_vertex]);
+      }
+    }
 
+    // Insert all edges that can be inserted
+    
+    // Add edges from the region graph that can be placed as is
+    region_vertex_count = 0;
+    for (boost::tie(vi, vend) = boost::vertices(region_graph_); vi != vend;
+        ++vi, ++region_vertex_count) {
+      if (region_vertex_status[region_vertex_count] == PRESENT) {
+        std::vector<size_t> adj_vertices;
+        getAdjacentVertices(region_vertex_count, region_graph_, adj_vertices);
+        BOOST_FOREACH(size_t adj_vertex, adj_vertices) {
+          if (region_vertex_status[adj_vertex] == PRESENT) {
+            Graph::vertex_descriptor vi,vj;
+            int vertex1 = 
+              region_vertex_to_point_vertex_map[region_vertex_count];
+            int vertex2 = region_vertex_to_point_vertex_map[adj_vertex];
+            vi = boost::vertex(vertex1, pass_2_graph);
+            vj = boost::vertex(vertex2, pass_2_graph);
+            Graph::edge_descriptor e; bool b;
+            boost::tie(e,b) = boost::add_edge(vi, vj, pass_2_graph);
+          }
+        }
+      }
+    }
+
+    // Add all the extra edges
+    typedef std::pair<int, int> int2pair;
+    BOOST_FOREACH(const int2pair& edge, rr_extra_edges) {
+      Graph::vertex_descriptor vi,vj;
+      int vertex1 = 
+        region_vertex_to_point_vertex_map[edge.first];
+      int vertex2 = region_vertex_to_point_vertex_map[edge.second];
+      vi = boost::vertex(vertex1, pass_2_graph);
+      vj = boost::vertex(vertex2, pass_2_graph);
+      Graph::edge_descriptor e; bool b;
+      boost::tie(e,b) = boost::add_edge(vi, vj, pass_2_graph);
+    }
+
+    // PASS 3 - resolve all vertices that are too big and have more than 2 
+    // critical points to their underlying critical points
+    std::cout << std::endl << "==============================" << std::endl;
+    std::cout << "PASS 3" << std::endl;
+    std::cout << "==============================" << std::endl << std::endl;
+    Graph pass_3_graph;
+    int pass_2_count = 0;
+    int pass_3_count = 0;
+    std::vector<int> pass_2_vertex_status(
+        boost::num_vertices(pass_2_graph), PRESENT);
+    std::map<int, int> pass_2_vertex_to_pass_3_map;
+    for (boost::tie(vi, vend) = boost::vertices(pass_2_graph); vi != vend;
+        ++vi, ++pass_2_count) {
+
+      std::cout << "Analyzing pass 2 graph vertex: " << pass_2_count << std::endl;
+
+      if (pass_2_vertex_status[pass_2_count] != PRESENT) {
+        std::cout << " - the vertex has been thrown out already " << std::endl;
+        continue;
+      }
+      
+      std::vector<size_t> adj_vertices;
+      getAdjacentVertices(pass_2_count, pass_2_graph, adj_vertices);
+      // See if the area of this region is too big to be directly pushed into 
+      // the pass 3 graph
+      if (pass_2_graph[*vi].pixels >= pixel_threshold &&
+          adj_vertices.size() > 2) {
+        pass_2_vertex_status[pass_2_count] = CONVERT_TO_CRITICAL_POINT;
+        continue;
+      }
+
+      // Otherwise insert this as is into the point graph
+      Graph::vertex_descriptor point_vi = boost::add_vertex(pass_3_graph);
+      pass_3_graph[point_vi] = pass_2_graph[*vi];
+      pass_2_vertex_to_pass_3_map[pass_2_count] = pass_3_count;
+
+      ++pass_3_count;
+    }
+
+    // Now for each vertex that needs to be resolved into critical points, 
+    // check neighbours to and loop to convert these vertices into critical
+    // points
+    point_graph_ = pass_3_graph;
+    
+    //   
+    // BOOST_FOREACH(const int2pair& edge, rp_extra_edges) {
+    //   Graph::vertex_descriptor vi,vj;
+    //   int region1 = edge.first;
+    //   int vertex1 = 0;
+    //   if (region_vertex_status[region1] == REMOVED_REGION_VERTEX) {
+    //     int2pair edge = removed_vertex_map[region1];
+    //     region1 = 
+    //     
+
+    //     
+    //   } else if (region_vertex_status[region1] == CONVERT_TO_CRITICAL_POINT) {
+    //     // TODO: Handle this case
+    //     continue;
+    //   } else {
+    //     vertex1 = region_vertex_to_point_vertex_map[region1];
+    //   }
+    //   int vertex2 = edge.second;
+    //   vi = boost::vertex(vertex1, point_graph_);
+    //   vj = boost::vertex(vertex2, point_graph_);
+    //   Graph::edge_descriptor e; bool b;
+    //   boost::tie(e,b) = boost::add_edge(vi, vj, point_graph_);
+    // }
+    // BOOST_FOREACH(const int2pair& edge, pp_extra_edges) {
+    //   Graph::vertex_descriptor vi,vj;
+    //   vi = boost::vertex(edge.first, point_graph_);
+    //   vj = boost::vertex(edge.second, point_graph_);
+    //   Graph::edge_descriptor e; bool b;
+    //   boost::tie(e,b) = boost::add_edge(vi, vj, point_graph_);
+    // }
 
     // Initialize the critical point arrays for forming the graph
     // std::vector<size_t> critical_pt_to_region_map;
