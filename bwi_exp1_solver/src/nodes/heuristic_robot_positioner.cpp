@@ -19,6 +19,7 @@ class HeuristicRobotPositioner : public BaseRobotPositioner {
 
     std::string instance_name_;
     size_t current_graph_idx_;
+    int current_robot_idx_;
     size_t assigned_robots_;
 
   public:
@@ -47,6 +48,7 @@ class HeuristicRobotPositioner : public BaseRobotPositioner {
 
       current_graph_idx_ = 
         topological_mapper::getClosestIdOnGraph(start_point, graph_);
+      current_robot_idx_ = -1;
       float direction = instance.start_loc.yaw;
 
       ROS_INFO_STREAM("Start: " << current_graph_idx_ << 
@@ -145,11 +147,24 @@ class HeuristicRobotPositioner : public BaseRobotPositioner {
       }
 
       // If the minimum idx is the current location, place a robot here
-      if (min_graph_idx == current_graph_idx_) {
+      if (min_graph_idx != current_robot_idx_) {
+
+        if (assigned_robots_ > 0) {
+          int robot_number = assigned_robots_ - 1;
+          std::string old_robot_id = 
+            default_robots_.robots[robot_number].id;
+          robot_locations_[old_robot_id] = 
+            convert2dToPose(
+                default_robots_.robots[robot_number].default_loc.x,
+                default_robots_.robots[robot_number].default_loc.y,
+                0);
+        }
+
+        current_robot_idx_ = min_graph_idx;
 
         topological_mapper::Point2f at_loc = 
           topological_mapper::getLocationFromGraphId(
-              current_graph_idx_, graph_);
+              current_robot_idx_, graph_);
 
         topological_mapper::Point2f from_loc =
           at_loc - topological_mapper::Point2f(
