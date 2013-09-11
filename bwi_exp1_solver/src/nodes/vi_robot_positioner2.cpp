@@ -30,6 +30,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
     size_t assigned_robots_;
     topological_mapper::Point2f assigned_robot_loc_;
     float assigned_robot_yaw_;
+    std::map<int, int> graph_id_to_robot_map_;
 
   public:
 
@@ -151,6 +152,9 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
             tf::createQuaternionMsgFromYaw(assigned_robot_yaw_);
           std::string robot_id = default_robots_.robots[assigned_robots_].id;
           robot_locations_[robot_id] = pose;
+          graph_id_to_robot_map_[current_state_.next_robot_location] =
+            assigned_robots_;
+
           ++assigned_robots_;
         }
         action = vi_->getBestAction(current_state_);
@@ -179,11 +183,40 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         Action a(DO_NOTHING, 0);
         std::vector<State2> next_states; 
         model_->getNextStates(current_state_, a, next_states); 
+        int old_robot_status = current_state_.current_robot_direction;
+        if (old_robot_status != NO_ROBOT) {
+          boost::mutex::scoped_lock lock(robot_modification_mutex_);
+          int robot_number = 
+            graph_id_to_robot_map_[current_state_.graph_id];
+          std::string old_robot_id = 
+            default_robots_.robots[robot_number].id;
+          robot_locations_[old_robot_id] = 
+            convert2dToPose(
+                default_robots_.robots[robot_number].default_loc.x,
+                default_robots_.robots[robot_number].default_loc.y,
+                0);
+        }
+
         BOOST_FOREACH(const State2& state, next_states) {
           if (state.graph_id == current_graph_id) {
+            int old_robot_state = current_state_.next_robot_location;
             current_state_ = state;
+            if (old_robot_state != NO_ROBOT && 
+                current_state_.next_robot_location == NO_ROBOT &&
+                current_state_.current_robot_direction == NO_ROBOT) {
+              int robot_number = 
+                graph_id_to_robot_map_[old_robot_state];
+              std::string old_robot_id = 
+                default_robots_.robots[robot_number].id;
+              robot_locations_[old_robot_id] = 
+                convert2dToPose(
+                    default_robots_.robots[robot_number].default_loc.x,
+                    default_robots_.robots[robot_number].default_loc.y,
+                    0);
+            }
             ROS_INFO_STREAM("MANUAL transition to: " << current_state_);
             checkRobotPlacementAtCurrentState();
+            break;
           }
         }
       }

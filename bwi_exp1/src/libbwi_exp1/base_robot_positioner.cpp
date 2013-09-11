@@ -118,6 +118,7 @@ namespace bwi_exp1 {
         convert2dToPose(robot.default_loc.x, robot.default_loc.y, 0);
       robot_screen_orientations_[robot.id] = 
         std::numeric_limits<float>::quiet_NaN(); 
+      robot_screen_publisher_.updateImage(robot.id, blank_image_);
     }
   }
 
