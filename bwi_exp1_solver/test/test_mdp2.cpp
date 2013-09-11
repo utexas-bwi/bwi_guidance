@@ -12,7 +12,7 @@ using namespace bwi_exp1;
 void testValueIteration(topological_mapper::Graph& graph, 
     nav_msgs::OccupancyGrid& map, const std::string& file = "") {
 
-  size_t goal_idx = 22;
+  size_t goal_idx = 46;
 
   boost::shared_ptr<PersonModel2> model(new PersonModel2(graph, map, goal_idx));
   boost::shared_ptr<PersonEstimator2> estimator(new PersonEstimator2);
@@ -90,7 +90,7 @@ void testValueIteration(topological_mapper::Graph& graph,
 }
 
 void testModel2(topological_mapper::Graph& graph, const nav_msgs::OccupancyGrid &map) {
-  PersonModel2 model(graph, map, 22);
+  PersonModel2 model(graph, map, 46);
 
   State2 s;
   s.graph_id = 33;
