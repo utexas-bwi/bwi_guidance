@@ -484,6 +484,7 @@ namespace topological_mapper {
       PRESENT = 0,
       REMOVED_REGION_VERTEX = 1,
       CONVERT_TO_CRITICAL_POINT = 2,
+      MERGE_VERTEX = 3
     };
     Graph::vertex_iterator vi, vend;
 
@@ -624,14 +625,14 @@ namespace topological_mapper {
     std::vector<std::pair<int, int> > rr_extra_edges;
     std::map<int, std::pair<int, int> > removed_vertex_map;
 
-    int pass_1_vertex_count = 0;
+    pass_1_count = 0;
     int pass_2_count = 0;
     for (boost::tie(vi, vend) = boost::vertices(pass_1_graph); vi != vend;
-        ++vi, ++pass_1_vertex_count) {
+        ++vi, ++pass_1_count) {
 
-      std::cout << "Analyzing pass_1 graph vertex: " << pass_1_vertex_count << std::endl;
+      std::cout << "Analyzing pass_1 graph vertex: " << pass_1_count << std::endl;
 
-      if (pass_1_vertex_status[pass_1_vertex_count] != PRESENT) {
+      if (pass_1_vertex_status[pass_1_count] != PRESENT) {
         std::cout << " - the vertex has been thrown out already " << std::endl;
         continue;
       }
@@ -639,7 +640,7 @@ namespace topological_mapper {
       // See if this only has 2 neighbours, and the 2 neighbours are visible to
       // each other
       std::vector<size_t> open_vertices;
-      int current_vertex = pass_1_vertex_count;
+      int current_vertex = pass_1_count;
       getAdjacentVertices(current_vertex, pass_1_graph, open_vertices);
       std::vector<int> removed_vertices;
       std::pair<int, int> edge;
@@ -707,7 +708,7 @@ namespace topological_mapper {
       // Otherwise insert this as is into the point graph
       Graph::vertex_descriptor point_vi = boost::add_vertex(pass_2_graph);
       pass_2_graph[point_vi] = pass_1_graph[*vi];
-      pass_1_vertex_to_pass_2_vertex_map[pass_1_vertex_count] = 
+      pass_1_vertex_to_pass_2_vertex_map[pass_1_count] = 
         pass_2_count;
 
       ++pass_2_count;
@@ -716,18 +717,18 @@ namespace topological_mapper {
     // Insert all edges that can be inserted
     
     // Add edges from the pass_1 graph that can be placed as is
-    pass_1_vertex_count = 0;
+    pass_1_count = 0;
     for (boost::tie(vi, vend) = boost::vertices(pass_1_graph); vi != vend;
-        ++vi, ++pass_1_vertex_count) {
-      if (pass_1_vertex_status[pass_1_vertex_count] == PRESENT) {
+        ++vi, ++pass_1_count) {
+      if (pass_1_vertex_status[pass_1_count] == PRESENT) {
         std::vector<size_t> adj_vertices;
-        getAdjacentVertices(pass_1_vertex_count, pass_1_graph, adj_vertices);
+        getAdjacentVertices(pass_1_count, pass_1_graph, adj_vertices);
         BOOST_FOREACH(size_t adj_vertex, adj_vertices) {
           if (pass_1_vertex_status[adj_vertex] == PRESENT &&
-              adj_vertex > pass_1_vertex_count) {
+              adj_vertex > pass_1_count) {
             Graph::vertex_descriptor vi,vj;
             int vertex1 = 
-              pass_1_vertex_to_pass_2_vertex_map[pass_1_vertex_count];
+              pass_1_vertex_to_pass_2_vertex_map[pass_1_count];
             int vertex2 = pass_1_vertex_to_pass_2_vertex_map[adj_vertex];
             vi = boost::vertex(vertex1, pass_2_graph);
             vj = boost::vertex(vertex2, pass_2_graph);
@@ -751,31 +752,95 @@ namespace topological_mapper {
       boost::tie(e,b) = boost::add_edge(vi, vj, pass_2_graph);
     }
 
-    point_graph_ = pass_2_graph;
-
     // Pass 3 - Merge all close vertices and remove any edges that can be
     // replaced by 2 edges of marginally longer length
+    int vertex_merge_threshold = 2.0f / map_resp_.map.info.resolution;
     std::cout << std::endl << "==============================" << std::endl;
     std::cout << "PASS 3" << std::endl;
     std::cout << "==============================" << std::endl << std::endl;
     Graph pass_3_graph;
+    pass_2_count = 0;
     int pass_3_count = 0;
-    std::vector<int> pass_2_vertex_status(boost::num_vertices(pass_2_graph), PRESENT);
     std::map<int, int> pass_2_vertex_to_pass_3_vertex_map;
+    std::vector<int> pass_2_vertex_status(
+        boost::num_vertices(pass_2_graph), PRESENT);
     for (boost::tie(vi, vend) = boost::vertices(pass_2_graph); vi != vend;
         ++vi, ++pass_2_count) {
 
+      std::cout << "Analyzing pass 2 graph vtx: " << pass_2_count << std::endl;
       if (pass_2_vertex_status[pass_2_count] != PRESENT) {
+        std::cout << " - vtx already thrown out " << std::endl;
         continue;
       }
 
-      std::set<size_t> vertices_to_merge;
-      int current_vertex = pass_2_count;
-      while(true) {
+      std::set<int> open_set;
+      std::set<int> closed_set;
+      open_set.insert(pass_2_count);
+      while(open_set.size() != 0) {
+        int current_vertex = *open_set.begin();
+        open_set.erase(open_set.begin());
+        closed_set.insert(current_vertex);
         std::vector<size_t> adj_vertices;
         getAdjacentVertices(current_vertex, pass_2_graph, adj_vertices);
+        BOOST_FOREACH(size_t vtx, adj_vertices) {
+          if (closed_set.count(vtx) || open_set.count(vtx)) {
+            continue;
+          }
+          std::cout << " - checking " << current_vertex << ", " << vtx;
+          Point2f l1 = getLocationFromGraphId(current_vertex, pass_2_graph);
+          Point2f l2 = getLocationFromGraphId(vtx, pass_2_graph);
+          float distance = getMagnitude(l1-l2);
+          std::cout << " - " << distance;
+          if (distance < vertex_merge_threshold) {
+            open_set.insert(vtx);
+            std::cout << " - WILL MERGE";
+          }
+          std::cout << std::endl;
+        }
+      }
+
+      Point2f vertex_location = pass_2_graph[*vi].location;
+      if (closed_set.size() != 1) {
+        Point2f sum(0,0);
+        BOOST_FOREACH(int vtx, closed_set) {
+          pass_2_vertex_status[vtx] = MERGE_VERTEX;
+          pass_2_vertex_to_pass_3_vertex_map[vtx] = pass_3_count;
+          sum += getLocationFromGraphId(vtx, pass_2_graph); 
+        }
+        vertex_location = (1.0f / closed_set.size()) * sum;
+      } else {
+        pass_2_vertex_to_pass_3_vertex_map[pass_2_count] = pass_3_count;
+      }
         
-      
+      Graph::vertex_descriptor point_vi = boost::add_vertex(pass_3_graph);
+      pass_3_graph[point_vi].location = vertex_location;
+      ++pass_3_count;
+    }
+
+    // Add edges from the pass_1 graph that can be placed as is
+    pass_2_count = 0;
+    for (boost::tie(vi, vend) = boost::vertices(pass_2_graph); vi != vend;
+        ++vi, ++pass_2_count) {
+      std::cout << "Gen edges pass 2 graph vtx: " << pass_2_count << std::endl;
+      std::vector<size_t> adj_vertices;
+      getAdjacentVertices(pass_2_count, pass_2_graph, adj_vertices);
+      BOOST_FOREACH(size_t adj_vertex, adj_vertices) {
+        if (adj_vertex > pass_2_count) {
+          Graph::vertex_descriptor vi,vj;
+          int vertex1 = pass_2_vertex_to_pass_3_vertex_map[pass_2_count];
+          int vertex2 = pass_2_vertex_to_pass_3_vertex_map[adj_vertex];
+          if (vertex1 != vertex2) {
+            vi = boost::vertex(vertex1, pass_3_graph);
+            vj = boost::vertex(vertex2, pass_3_graph);
+            Graph::edge_descriptor e; bool b;
+            boost::tie(e,b) = boost::edge(vi, vj, pass_3_graph);
+            if (!b) {
+              boost::tie(e,b) = boost::add_edge(vi, vj, pass_3_graph);
+              std::cout << " - gen edge " << vertex1 << " " << vertex2 << std::endl;
+            }
+          }
+        }
+      }
     }
 
     point_graph_ = pass_3_graph;
