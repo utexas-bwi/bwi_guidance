@@ -147,6 +147,8 @@ namespace topological_mapper {
       size_t num_components_;
 
       Graph region_graph_;
+      Graph pass_1_graph_;
+      Graph pass_2_graph_;
       Graph point_graph_;
 
   }; /* TopologicalMapper */
