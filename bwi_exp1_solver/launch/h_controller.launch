@@ -29,7 +29,7 @@
     <param name="search_distance" value="0.45" />
     <!-- <param name="debug" value="true" /> -->
     <!-- <param name="policy_file" value="$(find bwi_exp1)/policy.txt" /> -->
-    <param name="goal_idx" value="22" />
+    <param name="goal_idx" value="46" />
   </node>
 
 </launch>
