@@ -51,8 +51,38 @@ namespace topological_mapper {
    *          thrown out.
    */
   void VoronoiPoint::addBasisCandidate(const Point2d& candidate, 
-      uint32_t threshold, const nav_msgs::OccupancyGrid& map) {
+      uint32_t threshold, const nav_msgs::OccupancyGrid& map, bool is_naive) {
 
+    if (is_naive) {
+      if (basis_points.size() == 0) {
+        basis_points.push_back(candidate);
+        basis_distance = candidate.distance_from_ref;
+        return;
+      }
+      if (candidate.distance_from_ref > basis_distance + 0.01) {
+        return;
+      }
+      if (candidate.distance_from_ref <= basis_distance - 0.01) {
+        basis_points.clear();
+        basis_points.push_back(candidate);
+        basis_distance = candidate.distance_from_ref;
+        return;
+      }
+      
+      // Check if the point we are adding is next to an existing basis point 
+      if (basis_points.size() == 1) {
+        Point2d basis = basis_points[0];
+        int diff_x = abs(basis.x - candidate.x);
+        int diff_y = abs(basis.y - candidate.y);
+        if (diff_x <= 1 && diff_y <= 1) {
+          // Point is from the same site
+          return;
+        }
+      }
+      basis_points.push_back(candidate);
+      return;
+    }
+    
     if (basis_points.size() == 0) {
       basis_points.push_back(candidate);
       basis_distance = candidate.distance_from_ref;
@@ -105,11 +135,11 @@ namespace topological_mapper {
 
         // See if these basis points are really close by searching for a
         // short path in the walls
-        if (dfs.searchForPath(basis_points[i], basis_points[j], 
-              2 * basis_distance)) {
-          elements_to_erase.push_back(i);
-          break;
-        }
+        // if (dfs.searchForPath(basis_points[i], basis_points[j], 
+        //       2 * basis_distance)) {
+        //   elements_to_erase.push_back(i);
+        //   break;
+        // }
       }
     }
 

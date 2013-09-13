@@ -83,7 +83,7 @@ namespace topological_mapper {
        *          voronoi point
        */
       void addBasisCandidate(const Point2d& candidate, uint32_t threshold, 
-          const nav_msgs::OccupancyGrid& map);
+          const nav_msgs::OccupancyGrid& map, bool use_naive);
 
   }; /* VoronoiPoint */
   

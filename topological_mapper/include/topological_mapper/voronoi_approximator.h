@@ -76,7 +76,7 @@ namespace topological_mapper {
        *          voronoi candidate. This allows for not caring about minor
        *          breaks in a wall which can happen for any SLAM algorithm
        */
-      void findVoronoiPoints(double threshold); 
+      void findVoronoiPoints(double threshold, bool use_naive = false); 
 
       /**
        * \brief   Draws the base map and voronoi points on to image. Should be
