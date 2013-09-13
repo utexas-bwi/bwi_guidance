@@ -334,6 +334,8 @@ namespace topological_mapper {
       }
     }
 
+    // Throw out any critical points that do not have 2 adjoining regions.
+    // This can happen if the regions are too small
     std::vector<std::vector<uint32_t> > point_neighbours;
     point_neighbours.resize(critical_points_.size());
     std::vector<int> remove_crit_points;
@@ -343,9 +345,6 @@ namespace topological_mapper {
           std::vector<uint32_t>(point_neighbour_sets[i].begin(),
               point_neighbour_sets[i].end());
       } else {
-        std::cout << "ERROR: one of the critical points has " << 
-          point_neighbour_sets[i].size() << " neighbours. This means that " <<
-          "the critical lines algorithm has failed.";
         remove_crit_points.push_back(i);
       }
     }
@@ -403,7 +402,6 @@ namespace topological_mapper {
     
     // Create the region graph next
     std::map<int, int> region_to_vertex_map;
-    std::map<int, std::map<int, VoronoiPoint> > region_vertex_crit_points;
     int vertex_count = 0;
     for (size_t r = 0; r < num_components_; ++r) { 
       if (std::find(master_region_set.begin(), master_region_set.end(), r) ==
@@ -439,6 +437,8 @@ namespace topological_mapper {
 
     // Now that region_to_vertex_map is complete, 
     // forward critical points to next graph
+    std::map<int, std::map<int, VoronoiPoint> > 
+      region_vertex_crit_points;
     for (size_t r = 0; r < num_components_; ++r) { 
       if (std::find(master_region_set.begin(), master_region_set.end(), r) ==
           master_region_set.end()) {
@@ -450,10 +450,16 @@ namespace topological_mapper {
         for (int k = 0; k < 2; ++k) {
           if (point_neighbours[j][k] == r) {
             int region_vertex = region_to_vertex_map[r];
+            int other_region_vertex = region_to_vertex_map[point_neighbours[j][1-k]];
+            if (region_vertex == 192 && other_region_vertex == 202) {
+              std::cout << "192-202: " << r << " " << point_neighbours[j][1-k] << " " << critical_points_[j] << std::endl;
+            }
+            if (region_vertex == 202 && other_region_vertex == 192) {
+              std::cout << "192-202: " << r << " " << point_neighbours[j][1-k] << " " << critical_points_[j] << std::endl;
+            }
             region_vertex_crit_points[region_vertex]
-              [region_to_vertex_map[point_neighbours[j][1-k]]] = 
+              [region_to_vertex_map[point_neighbours[j][1-k]]] =  
                 critical_points_[j];
-            break;
           }
         }
       }
@@ -472,9 +478,13 @@ namespace topological_mapper {
       vi = boost::vertex(region1, region_graph_);
       vj = boost::vertex(region2, region_graph_);
       Graph::edge_descriptor e; bool b;
-      boost::tie(e,b) = boost::add_edge(vi, vj, region_graph_);
-      region_graph_[e].weight = topological_mapper::getMagnitude(
-          region_graph_[vi].location - region_graph_[vj].location);
+      boost::tie(e,b) = boost::edge(vi, vj, region_graph_);
+      if (!b) {
+        boost::tie(e,b) = boost::add_edge(vi, vj, region_graph_);
+      }
+      /* boost::tie(e,b) = boost::add_edge(vi, vj, region_graph_); */
+      // region_graph_[e].weight = topological_mapper::getMagnitude(
+      //     region_graph_[vi].location - region_graph_[vj].location);
     }
 
     // Refine the region graph into the point graph:
@@ -550,7 +560,7 @@ namespace topological_mapper {
             << std::endl;
           int pass_1_vertex = pass_0_vertex_to_pass_1_map[vtx];
           std::cout << " - connecting vtx to pass_1_vertex: " << pass_1_vertex
-            << std::endl;
+            << " (pass0 = " << vtx << ")" << std::endl;
           Graph::vertex_descriptor vj;
           vj = boost::vertex(pass_1_vertex, pass_1_graph);
           Graph::edge_descriptor e; bool b;
@@ -565,16 +575,16 @@ namespace topological_mapper {
           std::cout << " - added shared cp with " << vtx << " at " 
             << pass_1_graph[point_vi].location << std::endl;
           pass_0_vertex_to_cp_map[pass_0_count][vtx] = pass_1_count;
-          connect_edges.push_back(pass_1_count);
+          //connect_edges.push_back(pass_1_count);
           ++pass_1_count;
         } else {
           // Retrieve existing CP
           int cp_vtx = pass_0_vertex_to_cp_map[vtx][pass_0_count];
-          connect_edges.push_back(cp_vtx);
+          //connect_edges.push_back(cp_vtx);
         }
       }
 
-      // Connect all the edges
+      /* Connect all the edges */
       for (int i = 0; i < connect_edges.size(); ++i) {
         for (int j = 0; j < i; ++j) {
           Graph::vertex_descriptor vi, vj;
@@ -611,6 +621,9 @@ namespace topological_mapper {
         }
       }
     }
+
+    point_graph_ = pass_1_graph;
+    return;
     
     // PASS 2 - remove any vertices that are adjacent to only 2 other vertices,
     // where both those vertices are visible to each other
