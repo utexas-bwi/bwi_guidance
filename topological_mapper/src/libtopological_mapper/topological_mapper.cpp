@@ -42,6 +42,8 @@
 
 #include <boost/foreach.hpp>
 
+#include <opencv/highgui.h>
+
 namespace topological_mapper {
 
   /**
@@ -167,6 +169,27 @@ namespace topological_mapper {
     drawPointGraph(image, 4 * map_resp_.map.info.width);
   }
 
+  void TopologicalMapper::saveOutput() {
+    cv::Mat image;
+    drawMap(image);
+    drawConnectedComponents(image);
+    drawCriticalPoints(image);
+    cv::imwrite("graph_critical.png", image);
+    drawMap(image);
+    drawGraph(image, region_graph_);
+    cv::imwrite("graph_original.png", image);
+    drawMap(image);
+    drawGraph(image, pass_1_graph_);
+    cv::imwrite("graph_pass1.png", image);
+    drawMap(image);
+    drawGraph(image, pass_2_graph_);
+    cv::imwrite("graph_pass2.png", image);
+    drawMap(image);
+    drawGraph(image, point_graph_);
+    cv::imwrite("graph_final.png", image);
+
+  }
+
   /**
    * \brief   Compute critical regions once the voronoi points have been
    *          calculated
@@ -216,9 +239,12 @@ namespace topological_mapper {
       // Check if the point is indeed better than the neighbourhood
       // This can happen is any 2 walls of the map are too straight
       average_neighbourhood_clearance /= neighbour_count;
-      if (vpi.average_clearance >= average_neighbourhood_clearance) {
+      if (vpi.average_clearance >= 0.999 * average_neighbourhood_clearance) {
         continue;
       }
+
+      /* std::cout << "Check1: VP at " << vpi << " with clearance " << vpi.average_clearance << " and avg neighbourhood clearance " << average_neighbourhood_clearance << std::endl; */
+
       vpi.critical_clearance_diff = 
         average_neighbourhood_clearance - vpi.average_clearance;
 
@@ -575,12 +601,12 @@ namespace topological_mapper {
           std::cout << " - added shared cp with " << vtx << " at " 
             << pass_1_graph[point_vi].location << std::endl;
           pass_0_vertex_to_cp_map[pass_0_count][vtx] = pass_1_count;
-          //connect_edges.push_back(pass_1_count);
+          connect_edges.push_back(pass_1_count);
           ++pass_1_count;
         } else {
           // Retrieve existing CP
           int cp_vtx = pass_0_vertex_to_cp_map[vtx][pass_0_count];
-          //connect_edges.push_back(cp_vtx);
+          connect_edges.push_back(cp_vtx);
         }
       }
 
@@ -622,9 +648,8 @@ namespace topological_mapper {
       }
     }
 
-    point_graph_ = pass_1_graph;
-    return;
-    
+    pass_1_graph_ = pass_1_graph;
+
     // PASS 2 - remove any vertices that are adjacent to only 2 other vertices,
     // where both those vertices are visible to each other
     std::cout << std::endl << "==============================" << std::endl;
@@ -764,6 +789,8 @@ namespace topological_mapper {
       Graph::edge_descriptor e; bool b;
       boost::tie(e,b) = boost::add_edge(vi, vj, pass_2_graph);
     }
+
+    pass_2_graph_ = pass_2_graph;
 
     // Pass 3 - Merge all close vertices and remove any edges that can be
     // replaced by 2 edges of marginally longer length

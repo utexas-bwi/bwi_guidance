@@ -110,6 +110,7 @@ namespace topological_mapper {
        * \param   image OpenCV image we are drawing output on 
        */
       void drawOutput(cv::Mat &image); 
+      void saveOutput(); 
 
     protected:
       

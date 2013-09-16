@@ -185,6 +185,7 @@ namespace topological_mapper {
         basis_distance_sum += vp.basis_points[j].distance_from_ref;
       }
       vp.average_clearance = basis_distance_sum / vp.basis_points.size();
+      std::cout << "Found VP at " << vp << " with clearance " << vp.average_clearance << std::endl;
     }
 
     // Label the voronoi diagram as being available

@@ -56,6 +56,7 @@ int main(int argc, char** argv) {
   mapper.computeTopologicalGraph(0.3, 0.5, 3.0);
   
   mapper.drawOutput(image);
+  mapper.saveOutput();
 
   cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
   cv::imshow("Display window", image);                
