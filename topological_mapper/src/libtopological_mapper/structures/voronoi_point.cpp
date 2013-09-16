@@ -135,11 +135,11 @@ namespace topological_mapper {
 
         // See if these basis points are really close by searching for a
         // short path in the walls
-        // if (dfs.searchForPath(basis_points[i], basis_points[j], 
-        //       2 * basis_distance)) {
-        //   elements_to_erase.push_back(i);
-        //   break;
-        // }
+        if (dfs.searchForPath(basis_points[i], basis_points[j], 
+              2 * basis_distance)) {
+          elements_to_erase.push_back(i);
+          break;
+        }
       }
     }
 

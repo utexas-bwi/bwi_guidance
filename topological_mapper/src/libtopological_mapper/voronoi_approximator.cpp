@@ -55,9 +55,7 @@ namespace topological_mapper {
    *          breaks in a wall which can happen for any SLAM algorithm
    */
   void VoronoiApproximator::findVoronoiPoints(double threshold, 
-      bool is_naive) {
-
-    is_naive = false;
+      bool is_naive, int sub_pixel_sampling) {
 
     // Get the inflated cost map
     inflateMap(threshold, map_resp_.map, inflated_map_);
@@ -69,19 +67,15 @@ namespace topological_mapper {
     uint32_t max_dimension = 
       std::max(inflated_map_.info.height, inflated_map_.info.width);
 
-    int sub_pixel_resolution = 1;
-    if (is_naive) {
-      sub_pixel_resolution = 8;
-    }
-    for (int j = 0; j < sub_pixel_resolution * (inflated_map_.info.height - 1); ++j) {
-      if (j % sub_pixel_resolution == 0) {
-        std::cout << "findVoronoiPoints(): On row : " << j / sub_pixel_resolution << std::endl;
+    for (int j = 0; j < sub_pixel_sampling * (inflated_map_.info.height - 1); ++j) {
+      if (j % sub_pixel_sampling == 0) {
+        std::cout << "findVoronoiPoints(): On row : " << j / sub_pixel_sampling << std::endl;
       }
-      for (int i = 0; i < sub_pixel_resolution * (inflated_map_.info.width - 1); 
+      for (int i = 0; i < sub_pixel_sampling * (inflated_map_.info.width - 1); 
           ++i) {
 
-        Point2f center_pt((i + ((float)sub_pixel_resolution / 2)) / ((float)sub_pixel_resolution),
-            (j + ((float)sub_pixel_resolution / 2)) / ((float)sub_pixel_resolution));
+        Point2f center_pt((i + ((float)sub_pixel_sampling / 2)) / ((float)sub_pixel_sampling) + 0.001,
+            (j + ((float)sub_pixel_sampling / 2)) / ((float)sub_pixel_sampling) + 0.001);
 
         // if (center_pt.x < inflated_map_.info.width / 2 ||
         //     i >= inflated_map_.info.width / 2 + 1)
@@ -121,9 +115,9 @@ namespace topological_mapper {
 
           // If we hit the side of the images + 1, we've seen all possible
           // sites
-          if (low_i < -1 || low_j < -1 || 
-              high_i > inflated_map_.info.width 
-              || high_j > inflated_map_.info.height) {
+          if (low_i < 0 || low_j < 0 || 
+              high_i >= inflated_map_.info.width 
+              || high_j >= inflated_map_.info.height) {
             break;
           }
 
@@ -133,10 +127,7 @@ namespace topological_mapper {
                 i_box += high_i - low_i) {
               uint32_t map_idx_box = 
                 MAP_IDX(inflated_map_.info.width, i_box, j_box);
-              bool occupied = j_box == -1 || i_box == -1 ||
-                j_box == inflated_map_.info.height || 
-                i_box == inflated_map_.info.width;
-              occupied = occupied || map_resp_.map.data[map_idx_box];
+              bool occupied = map_resp_.map.data[map_idx_box];
               if (occupied) {
                 Point2d p(i_box, j_box);
                 Point2f f(i_box + 0.5, j_box + 0.5);
@@ -152,10 +143,7 @@ namespace topological_mapper {
             for (int i_box = low_i + 1; i_box < high_i + 1; ++i_box) {
               uint32_t map_idx_box = 
                 MAP_IDX(inflated_map_.info.width, i_box, j_box);
-              bool occupied = j_box == -1 || i_box == -1 ||
-                j_box == inflated_map_.info.height || 
-                i_box == inflated_map_.info.width;
-              occupied = occupied || map_resp_.map.data[map_idx_box];
+              bool occupied = map_resp_.map.data[map_idx_box];
               if (occupied) {
                 Point2d p(i_box, j_box);
                 Point2f f(i_box + 0.5, j_box + 0.5);

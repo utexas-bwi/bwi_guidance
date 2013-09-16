@@ -51,10 +51,27 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  topological_mapper::VoronoiApproximator voronoi(argv[1]);
   cv::Mat image;
+  cv::Mat display_image, image;
+  std::cout << "Computing Voronoi Points using new approach" << std::endl;
+  topological_mapper::VoronoiApproximator voronoi(argv[1]);
   voronoi.findVoronoiPoints(0.3);
   voronoi.drawOutput(image);
+
+  std::cout << "Computing Voronoi Points using naive approach and no sub pixel sampling" << std::endl;
+  topological_mapper::VoronoiApproximator voronoi2(argv[1]);
+  voronoi2.findVoronoiPoints(0.3, true, 1);
+  voronoi2.drawOutput(image);
+
+  std::cout << "Computing Voronoi Points using naive approach and sub pixel sampling of 2" << std::endl;
+  topological_mapper::VoronoiApproximator voronoi3(argv[1]);
+  voronoi3.findVoronoiPoints(0.3, true, 2);
+  voronoi3.drawOutput(image);
+
+  std::cout << "Computing Voronoi Points using naive approach and sub pixel sampling of 4" << std::endl;
+  topological_mapper::VoronoiApproximator voronoi4(argv[1]);
+  voronoi4.findVoronoiPoints(0.3, true, 4);
+  voronoi4.drawOutput(image);
 
   cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
   cv::imshow("Display window", image);                
