@@ -51,30 +51,47 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  cv::Mat image;
   cv::Mat display_image, image;
+  nav_msgs::OccupancyGrid map;
   std::cout << "Computing Voronoi Points using new approach" << std::endl;
   topological_mapper::VoronoiApproximator voronoi(argv[1]);
   voronoi.findVoronoiPoints(0.3);
-  voronoi.drawOutput(image);
+  voronoi.getMap(map);
+  voronoi.drawMap(display_image, map, 0, 0);
+  voronoi.drawVoronoiPoints(display_image, 0, 0);
+  voronoi.drawMap(image);
+  voronoi.drawVoronoiPoints(image);
+  cv::imwrite("voronoi_new.png", image);
 
   std::cout << "Computing Voronoi Points using naive approach and no sub pixel sampling" << std::endl;
   topological_mapper::VoronoiApproximator voronoi2(argv[1]);
   voronoi2.findVoronoiPoints(0.3, true, 1);
-  voronoi2.drawOutput(image);
+  voronoi2.drawMap(display_image, map, map.info.width, 0);
+  voronoi2.drawVoronoiPoints(display_image, map.info.width, 0);
+  voronoi2.drawMap(image);
+  voronoi2.drawVoronoiPoints(image);
+  cv::imwrite("voronoi_naive_1.png", image);
 
   std::cout << "Computing Voronoi Points using naive approach and sub pixel sampling of 2" << std::endl;
   topological_mapper::VoronoiApproximator voronoi3(argv[1]);
   voronoi3.findVoronoiPoints(0.3, true, 2);
-  voronoi3.drawOutput(image);
+  voronoi3.drawMap(display_image, map, 2*map.info.width, 0);
+  voronoi3.drawVoronoiPoints(display_image, 2*map.info.width, 0);
+  voronoi3.drawMap(image);
+  voronoi3.drawVoronoiPoints(image);
+  cv::imwrite("voronoi_naive_2.png", image);
 
   std::cout << "Computing Voronoi Points using naive approach and sub pixel sampling of 4" << std::endl;
   topological_mapper::VoronoiApproximator voronoi4(argv[1]);
   voronoi4.findVoronoiPoints(0.3, true, 4);
-  voronoi4.drawOutput(image);
+  voronoi4.drawMap(display_image, map, 3*map.info.width, 0);
+  voronoi4.drawVoronoiPoints(display_image, 3*map.info.width, 0);
+  voronoi4.drawMap(image);
+  voronoi4.drawVoronoiPoints(image);
+  cv::imwrite("voronoi_naive_4.png", image);
 
   cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
-  cv::imshow("Display window", image);                
+  cv::imshow("Display window", display_image);                
 
   cv::waitKey(0); // Wait for a keystroke in the window
   return 0;
