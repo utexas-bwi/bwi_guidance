@@ -55,18 +55,7 @@ namespace topological_mapper {
     Graph::vertex_iterator vi, vend;
     size_t count = 0;
     for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
-
-      // Draw this vertex
       Point2f location = graph[*vi].location;
-      size_t vertex_size = 3; // + graph[*vi].pixels / 10;
-      cv::Point vertex_loc(orig_x + (uint32_t)location.x, 
-          orig_y + (uint32_t)location.y);
-      cv::circle(image, vertex_loc, vertex_size, cv::Scalar(0,0,255), -1);
-      if (put_text) {
-        cv::Point text_loc = vertex_loc + cv::Point(4,4);
-        cv::putText(image, boost::lexical_cast<std::string>(count), text_loc,
-            cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cvScalar(0,0,255), 1, CV_AA);
-      }
 
       // Draw the edges from this vertex
       Graph::adjacency_iterator ai, aend;
@@ -74,11 +63,29 @@ namespace topological_mapper {
             (Graph::vertex_descriptor)*vi, graph); 
           ai != aend; ++ai) {
         Point2f location2 = graph[*ai].location;
-        cv::line(image, 
-            cv::Point(orig_x + location.x, orig_y + location.y),
-            cv::Point(orig_x + location2.x, orig_y + location2.y),
-            cv::Scalar(0, 0, 255),
-            1, 4); // draw a 4 connected line
+        // Simple weak ordering check to ensure that this is drawn only once
+        if (location2.x < location.x ||
+            location2.x == location.x && location2.y < location.y) {
+          cv::line(image, 
+              cv::Point(orig_x + location.x, orig_y + location.y),
+              cv::Point(orig_x + location2.x, orig_y + location2.y),
+              cv::Scalar(160, 160, 255),
+              1, 4); // draw a 4 connected line
+        }
+      }
+    }
+
+    for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
+      Point2f location = graph[*vi].location;
+      // Draw this vertex
+      size_t vertex_size = 3; // + graph[*vi].pixels / 10;
+      cv::Point vertex_loc(orig_x + (uint32_t)location.x, 
+          orig_y + (uint32_t)location.y);
+      cv::circle(image, vertex_loc, vertex_size, cv::Scalar(0,0,255), -1);
+      if (put_text) {
+        cv::Point text_loc = vertex_loc + cv::Point(-8,-3);
+        cv::putText(image, boost::lexical_cast<std::string>(count), text_loc,
+            cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cvScalar(0,0,255), 1, CV_AA);
       }
 
       count++;

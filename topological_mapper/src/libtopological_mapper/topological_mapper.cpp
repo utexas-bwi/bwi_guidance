@@ -876,9 +876,57 @@ namespace topological_mapper {
             boost::tie(e,b) = boost::edge(vi, vj, pass_3_graph);
             if (!b) {
               boost::tie(e,b) = boost::add_edge(vi, vj, pass_3_graph);
+              pass_3_graph[e].weight = getMagnitude(
+                  getLocationFromGraphId(vertex1, pass_3_graph) - 
+                  getLocationFromGraphId(vertex2, pass_3_graph));
               std::cout << " - gen edge " << vertex1 << " " << vertex2 << std::endl;
             }
           }
+        }
+      }
+    }
+
+    // Once all the edges have been added, remove edges that fail traingle inequality
+    pass_3_count = 0;
+    for (boost::tie(vi, vend) = boost::vertices(pass_3_graph); vi != vend;
+        ++vi, ++pass_3_count) {
+      std::cout << "Analyzing edges on vtx " << pass_3_count << std::endl;
+      std::vector<size_t> adj_vertices;
+      getAdjacentVertices(pass_3_count, pass_3_graph, adj_vertices);
+      Point2f vtx1 = getLocationFromGraphId(pass_3_count, pass_3_graph);
+      BOOST_FOREACH(size_t adj_vertex, adj_vertices) {
+        if (adj_vertex < pass_3_count)
+          continue;
+        std::cout << " - analyzing edge between " << pass_3_count << " and " <<
+          adj_vertex << std::endl;
+        Point2f vtx2 = getLocationFromGraphId(adj_vertex, pass_3_graph);
+        float edge_length = getMagnitude(vtx1 - vtx2);
+        Graph::vertex_descriptor vi,vj;
+        vi = boost::vertex(pass_3_count, pass_3_graph);
+        vj = boost::vertex(adj_vertex, pass_3_graph);
+        boost::remove_edge(vi, vj, pass_3_graph);
+        std::vector<size_t> replacement_path;
+        getShortestPath(pass_3_graph, pass_3_count, adj_vertex, replacement_path);
+        replacement_path.insert(replacement_path.begin(), adj_vertex);
+        float path_cost = 0;
+        for (int i = 1; i < replacement_path.size(); ++i) {
+          std::cout << replacement_path[i-1] << "-" << replacement_path[i] << std::endl;
+          Point2f vtx3 = getLocationFromGraphId(replacement_path[i-1], pass_3_graph);
+          Point2f vtx4 = getLocationFromGraphId(replacement_path[i], pass_3_graph);
+          path_cost += getMagnitude(vtx3 - vtx4);
+        } 
+        if (replacement_path.size() >= 2) {
+          std::cout << " - fount alternate path cost: " << path_cost << std::endl;
+        }
+        if (replacement_path.size() < 2 || path_cost > 1.1 * edge_length) {
+          Graph::edge_descriptor e; bool b;
+          boost::tie(e,b) = boost::add_edge(vi, vj, pass_3_graph);
+          pass_3_graph[e].weight = getMagnitude(
+              getLocationFromGraphId(pass_3_count, pass_3_graph) - 
+              getLocationFromGraphId(adj_vertex, pass_3_graph));
+        } else {
+          std::cout << " - removing edge between " << pass_3_count << " and " <<
+            adj_vertex << std::endl;
         }
       }
     }
