@@ -25,7 +25,7 @@ bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const {
     return bwi_exp1::Action(DO_NOTHING, 0);
   }
 
-  if (state.current_robot_status == NO_DIRECTION_ON_ROBOT) {
+  if (state.current_robot_status == DIR_UNASSIGNED) {
     // Find shortest path to goal. Point in direction of this path
 
   }

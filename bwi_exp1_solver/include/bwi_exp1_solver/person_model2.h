@@ -45,7 +45,7 @@ namespace bwi_exp1 {
       void computeRobotVertices();
       void initializeStateSpace();
       std::map<int, std::vector<int> > adjacent_vertices_map_;
-      std::map<int, std::vector<int> > robot_vertices_map_;
+      std::map<int, std::vector<int> > visible_vertices_map_;
       std::vector<State2> state_cache_;
 
       void initializeActionCache();

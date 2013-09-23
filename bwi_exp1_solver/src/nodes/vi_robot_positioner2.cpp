@@ -116,7 +116,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       while (action.type != DO_NOTHING) {
         current_state_ = next_states[0];
         ROS_INFO_STREAM("AUTO transition to: " << current_state_);
-        if (action.type == PLACE_ROBOT) {
+        if (action.type == DIRECT_PERSON) {
           // DIRECT ROBOT HERE
           topological_mapper::Point2f to_loc = 
             topological_mapper::getLocationFromGraphId(

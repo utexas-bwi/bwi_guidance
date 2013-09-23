@@ -106,7 +106,7 @@ class VIRobotPositioner : public BaseRobotPositioner {
 
       action_t action_idx = vi_->getBestAction(current_state_);
       Action action = model_->resolveAction(current_state_, action_idx);
-      if (action.type == PLACE_ROBOT) {
+      if (action.type == DIRECT_PERSON) {
 
         topological_mapper::Point2f at_loc = 
           topological_mapper::getLocationFromGraphId(

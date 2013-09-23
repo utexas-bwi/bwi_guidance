@@ -63,7 +63,7 @@ void testValueIteration(topological_mapper::Graph& graph,
 
       while (action.type != DO_NOTHING) {
         // The human does not move for this action, and a single next state is present
-        if (action.type == PLACE_ROBOT) {
+        if (action.type == DIRECT_PERSON) {
           std::cout << "Robot points towards " << action.graph_id << std::endl;
         } else {
           std::cout << "See robot at " << action.graph_id << std::endl;
@@ -106,7 +106,7 @@ void testModel2(topological_mapper::Graph& graph, const nav_msgs::OccupancyGrid 
   std::string str[3];
   str[0] = "NOOP";
   str[1] = "DIRECT_ROBOT";
-  str[2] = "PLACE_FUTURE_ROBOT";
+  str[2] = "PLACE_ROBOT";
   BOOST_FOREACH(const Action& a, actions) {
     std::cout << "ACTION: " << str[a.type] << " " << a.graph_id << std::endl;
     std::vector<State2> next_states;

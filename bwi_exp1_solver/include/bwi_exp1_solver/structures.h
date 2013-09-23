@@ -15,8 +15,8 @@ namespace bwi_exp1 {
 
   enum ActionType {
     DO_NOTHING = 0,
-    PLACE_ROBOT = 1,
-    PLACE_FUTURE_ROBOT = 2
+    DIRECT_PERSON = 1,
+    PLACE_ROBOT = 2
   };
 
   // Simple model stuff
@@ -49,7 +49,7 @@ namespace bwi_exp1 {
 
   enum RobotStatus {
     NO_ROBOT = -1,
-    NO_DIRECTION_ON_ROBOT = -2
+    DIR_UNASSIGNED = -2
   };
 
   // Model 2 - now with lookahead

@@ -50,7 +50,7 @@ void testValueIteration(topological_mapper::Graph& graph, const std::string& fil
       std::cout << "Value of this state: " << estimator->getValue(current_state_idx) << std::endl;
       action_t action_idx = vi.getBestAction(current_state_idx);
       Action action = model->resolveAction(current_state_idx, action_idx);
-      if (action.type == PLACE_ROBOT) {
+      if (action.type == DIRECT_PERSON) {
         std::cout << "FOUND ROBOT. Robot points towards " << action.graph_id << std::endl;
       }
       std::vector<state_t> next_states;

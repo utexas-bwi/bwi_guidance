@@ -57,7 +57,7 @@ namespace bwi_exp1 {
       State &ns_deref = state_cache_[*ns];
       rewards[ns - next_states.begin()] = 
         -getDistanceFromStates(s_deref.graph_id, ns_deref.graph_id);
-      if (a_deref.type == PLACE_ROBOT) { 
+      if (a_deref.type == DIRECT_PERSON) { 
         rewards[ns - next_states.begin()] -= 500; 
       }
     }
@@ -126,7 +126,7 @@ namespace bwi_exp1 {
       topological_mapper::Graph::adjacency_iterator ai, aend;
       for (boost::tie(ai, aend) = boost::adjacent_vertices(v, graph_); 
           ai != aend; ++ai) {
-        actions.push_back(Action(PLACE_ROBOT, indexmap[*ai]));
+        actions.push_back(Action(DIRECT_PERSON, indexmap[*ai]));
       }
     }
   }
@@ -209,7 +209,7 @@ namespace bwi_exp1 {
     // In this simple MDP formulation, the action should induce a desired 
     // direction for the person to be walking to.
     float expected_direction, sigma_sq;
-    if (action.type == PLACE_ROBOT) {
+    if (action.type == DIRECT_PERSON) {
       expected_direction = 
         getAngleFromStates(state.graph_id, action.graph_id);
       sigma_sq = 0.05;
@@ -232,7 +232,7 @@ namespace bwi_exp1 {
       // Some next states cannot be produced by certain actions
       if ((action.type == DO_NOTHING && 
             next_state.num_robots_left == state.num_robots_left - 1) ||
-          (action.type == PLACE_ROBOT &&
+          (action.type == DIRECT_PERSON &&
            next_state.num_robots_left == state.num_robots_left)) {
 
         probabilities.push_back(0);
