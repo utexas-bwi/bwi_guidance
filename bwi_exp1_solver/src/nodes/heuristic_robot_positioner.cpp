@@ -146,7 +146,7 @@ class HeuristicRobotPositioner : public BaseRobotPositioner {
         }
       }
 
-      // If the minimum idx is the current location, place a robot here
+      // If no robot at the current idx, then place a robot there
       if (min_graph_idx != current_robot_idx_) {
 
         if (assigned_robots_ > 0) {
