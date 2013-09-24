@@ -102,19 +102,20 @@ void test(topological_mapper::Graph& graph,
         }
         Action vi_action = vi.getBestAction(current_state);
         Action hi_action = hi.getBestAction(current_state);
-        std::cout << "VI picks: " << str[vi_action.type] << " " << vi_action.graph_id << std::endl;
-        std::cout << "Heuristic picks: " << str[hi_action.type] << " " << hi_action.graph_id << std::endl;
         Action action;
         if (use_heuristic) {
           action = hi_action;
         } else if (use_vi) {
           action = vi_action;
         } else {
+          std::cout << "VI picks: " << str[vi_action.type] << " " << vi_action.graph_id << std::endl;
+          std::cout << "Heuristic picks: " << str[hi_action.type] << " " << hi_action.graph_id << std::endl;
           std::cout << "Choice: ";
           int choice;
           std::cin >> choice;
           action = actions[choice];
         }
+        std::cout << "Selected: " << str[action.type] << " " << action.graph_id << std::endl;
 
         model->getTransitionDynamics(current_state, action, next_states, 
             rewards, probabilities);

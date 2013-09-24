@@ -50,11 +50,11 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
   float current_direction = 
     ((2 * M_PI) / 16) * state.direction;
 
-  std::cout << "Forward path: ";
+  /* std::cout << "Forward path: "; */
   while(true) {
 
     states.push_back(current_id);
-    std::cout << current_id << " ";
+    /* std::cout << current_id << " "; */
 
     // Compute all adjacent vertices from this location
     topological_mapper::Graph::vertex_descriptor vd = 
@@ -95,7 +95,7 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
     current_direction = atan2f(sinf(next_angle), cosf(next_angle)); 
     current_id = next_vertex;
   }
-  std::cout << std::endl;
+  /* std::cout << std::endl; */
 
   // Now for each state in the forward path, see which is the closest
   size_t min_graph_idx = (size_t) -1;
