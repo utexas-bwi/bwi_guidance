@@ -26,11 +26,8 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
     std::vector<size_t> path_from_goal;
     topological_mapper::getShortestPath(
         graph_, goal_idx_, state.graph_id, path_from_goal);
-    std::cout << "CurId: " << state.graph_id
-      << ", 1: " << path_from_goal[path_from_goal.size() - 1]
-      << ", 2: " << path_from_goal[path_from_goal.size() - 2] << std::endl;
     return bwi_exp1::Action(DIRECT_PERSON, 
-        path_from_goal[path_from_goal.size() - 2]);
+        path_from_goal[0]);
   }
 
   if (state.current_robot_status != NO_ROBOT) {
@@ -50,11 +47,14 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
   // is moving in, compute the expected forward locations of the person
   std::vector<size_t> states;
   size_t current_id = state.graph_id;
-  float current_direction = state.direction;
+  float current_direction = 
+    ((2 * M_PI) / 16) * state.direction;
 
+  std::cout << "Forward path: ";
   while(true) {
 
     states.push_back(current_id);
+    std::cout << current_id << " ";
 
     // Compute all adjacent vertices from this location
     topological_mapper::Graph::vertex_descriptor vd = 
@@ -95,6 +95,7 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
     current_direction = atan2f(sinf(next_angle), cosf(next_angle)); 
     current_id = next_vertex;
   }
+  std::cout << std::endl;
 
   // Now for each state in the forward path, see which is the closest
   size_t min_graph_idx = (size_t) -1;
@@ -104,7 +105,7 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
     std::vector<size_t> path_from_goal;
     topological_mapper::getShortestPath(
         graph_, goal_idx_, *si, path_from_goal);
-    path_from_goal.insert(path_from_goal.begin(), goal_idx_);
+    path_from_goal.insert(path_from_goal.begin(), *si);
     float distance = 0;
     for (size_t pp = 0; pp < path_from_goal.size() - 1; ++pp) {
       topological_mapper::Graph::vertex_descriptor vd1 = 
@@ -121,7 +122,9 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
   }
 
   if (min_graph_idx != state.graph_id || allow_robot_current_idx_) {
-    return bwi_exp1::Action(PLACE_ROBOT, min_graph_idx);
+    if (min_graph_idx != goal_idx_) {
+      return bwi_exp1::Action(PLACE_ROBOT, min_graph_idx);
+    }
   }
 
   // This means that placing a robot on the current vertex is not allowed, and 

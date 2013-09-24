@@ -94,16 +94,16 @@ void test(topological_mapper::Graph& graph,
         BOOST_FOREACH(const Action& action, actions) {
           std::cout << "#" << count << " Action: " << str[action.type] << " " << action.graph_id << std::endl;
           model->getTransitionDynamics(current_state, action, next_states, rewards, probabilities);
-          for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
-            State2& next_state = next_states[next_state_counter];
-            std::cout << "  - #" << next_state_counter << " Leads to State " << next_state << " with probability " << probabilities[next_state_counter] << " and reward " << rewards[next_state_counter] << std::endl;
-          }
+          // for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
+          //   State2& next_state = next_states[next_state_counter];
+          //   std::cout << "  - #" << next_state_counter << " Leads to State " << next_state << " with probability " << probabilities[next_state_counter] << " and reward " << rewards[next_state_counter] << std::endl;
+          // }
           ++count;
         }
         Action vi_action = vi.getBestAction(current_state);
         Action hi_action = hi.getBestAction(current_state);
         std::cout << "VI picks: " << str[vi_action.type] << " " << vi_action.graph_id << std::endl;
-        std::cout << "Heuristic picks: " << str[vi_action.type] << " " << vi_action.graph_id << std::endl;
+        std::cout << "Heuristic picks: " << str[hi_action.type] << " " << hi_action.graph_id << std::endl;
         Action action;
         if (use_heuristic) {
           action = hi_action;
@@ -164,8 +164,8 @@ int processOptions(int argc, char** argv) {
     ("heuristic,h", "Use heuristic to auto-select best option") 
     ("vi,v", "Use VI to auto-select best option") 
     ("map_file,M", po::value<std::string>(&map_file)->required(), "YAML map file") 
-    ("graph_file,G", po::value<std::string>(&graph_file)->required(), "YAML graph file"); 
-    ("allow_robot_current,a", "Allow robot to be placed at current index"); 
+    ("graph_file,G", po::value<std::string>(&graph_file)->required(), "YAML graph file") 
+    ("allow_robot_current,a", "Allow robot to be placed at current index") 
     ("goal_idx,g", po::value<int>(&goal_idx), "Goal index location"); 
 
   po::positional_options_description positionalOptions; 

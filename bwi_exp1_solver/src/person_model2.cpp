@@ -174,7 +174,7 @@ namespace bwi_exp1 {
             for (int rd = DIR_UNASSIGNED; 
                 rd < (int)adjacent_vertices.size(); ++rd) {
               for (int nrl = NO_ROBOT; nrl < (int)robot_vertices.size(); ++nrl) {
-                if (nrl == graph_id) {
+                if (nrl >= 0 && robot_vertices[nrl] == graph_id) {
                   continue;
                 }
                 State2 state; 
@@ -222,13 +222,13 @@ namespace bwi_exp1 {
       std::vector<Action>& actions) {
 
     actions.clear();
-    if (state.current_robot_status != DIR_UNASSIGNED) {
-      actions.push_back(Action(DO_NOTHING,0));
-    } else {
+    if (state.current_robot_status == DIR_UNASSIGNED) {
       BOOST_FOREACH(int id, adjacent_vertices_map_[state.graph_id]) {
         actions.push_back(Action(DIRECT_PERSON, id));
       }
       return;
+    } else {
+      actions.push_back(Action(DO_NOTHING,0));
     }
 
     if (state.num_robots_left != 0) {
