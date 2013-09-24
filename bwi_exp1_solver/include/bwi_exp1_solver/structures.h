@@ -71,6 +71,11 @@ namespace bwi_exp1 {
     }
   };
 
+  void getArrow(float angle = 0);
+  void getCross();
+  void drawObject();
+  void drawState();
+
   // This can often be seen written as
   bool operator<(const State2& l, const State2& r); 
   bool operator==(const State2& l, const State2& r);
