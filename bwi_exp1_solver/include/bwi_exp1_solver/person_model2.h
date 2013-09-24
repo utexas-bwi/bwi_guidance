@@ -8,6 +8,12 @@
 #include <bwi_exp1_solver/structures.h>
 #include <topological_mapper/graph.h>
 
+namespace boost {
+  namespace serialization {
+    class access;
+  }
+}
+
 namespace bwi_exp1 {
 
   class PersonModel2 : public PredictiveModel<State2, Action> {
@@ -15,7 +21,8 @@ namespace bwi_exp1 {
     public:
 
       PersonModel2(const topological_mapper::Graph& graph, 
-          const nav_msgs::OccupancyGrid& map, size_t goal_idx);
+          const nav_msgs::OccupancyGrid& map, size_t goal_idx, 
+          const std::string& file = "", bool allow_robot_current_idx = false);
 
       virtual bool isTerminalState(const State2& state) const;
       virtual void getStateVector(std::vector<State2>& states);
@@ -42,7 +49,7 @@ namespace bwi_exp1 {
     private:
 
       void computeAdjacentVertices();
-      void computeRobotVertices();
+      void computeVisibleVertices();
       void initializeStateSpace();
       std::map<int, std::vector<int> > adjacent_vertices_map_;
       std::map<int, std::vector<int> > visible_vertices_map_;
@@ -68,12 +75,29 @@ namespace bwi_exp1 {
       uint32_t num_directions_;
       uint32_t max_robots_;
 
+      friend class boost::serialization::access;
+      template<class Archive>
+      void serialize(Archive & ar, const unsigned int version) {
+        ar & BOOST_SERIALIZATION_NVP(adjacent_vertices_map_);
+        ar & BOOST_SERIALIZATION_NVP(visible_vertices_map_);
+        ar & BOOST_SERIALIZATION_NVP(state_cache_);
+        ar & BOOST_SERIALIZATION_NVP(action_cache_);
+        ar & BOOST_SERIALIZATION_NVP(next_state_cache_);
+        ar & BOOST_SERIALIZATION_NVP(ns_distribution_cache_);
+        ar & num_vertices_;
+        ar & num_directions_;
+        ar & max_robots_;
+      }
+
       topological_mapper::Graph graph_;
       nav_msgs::OccupancyGrid map_;
       size_t goal_idx_;
+      bool allow_robot_current_idx_;
 
   };
   
 } /* bwi_exp1 */
+
+BOOST_CLASS_TRACKING(bwi_exp1::PersonModel2, boost::serialization::track_never)
 
 #endif /* end of include guard: PERSON_MODEL_2 */

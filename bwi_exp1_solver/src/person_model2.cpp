@@ -1,5 +1,11 @@
 #include <boost/foreach.hpp>
 #include <cmath>
+#include <fstream>
+
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/vector.hpp>
 
 #include <bwi_exp1_solver/person_model2.h>
 #include <topological_mapper/point_utils.h>
@@ -9,13 +15,37 @@ namespace bwi_exp1 {
 
   PersonModel2::PersonModel2(const topological_mapper::Graph& graph, 
       const nav_msgs::OccupancyGrid& map,  
-      size_t goal_idx) : graph_(graph), map_(map), goal_idx_(goal_idx) {
+      size_t goal_idx, const std::string& file, 
+      bool allow_robot_current_idx) : graph_(graph), 
+      map_(map), goal_idx_(goal_idx), 
+      allow_robot_current_idx_(allow_robot_current_idx) {
+
+    if (!file.empty()) {
+      std::ifstream ifs(file.c_str());
+      if (ifs.is_open()) {
+        std::cout << "Loaded model from file: " << file << std::endl;
+        boost::archive::text_iarchive ia(ifs);
+        ia >> *this;
+        return;
+      }
+    }
+
     std::cout << "Initializing state space..." << std::endl;
     initializeStateSpace();
     std::cout << "Initializing action space..." << std::endl;
     initializeActionCache();
     std::cout << "Initializing next state space..." << std::endl;
     initializeNextStateCache();
+
+    std::ofstream ofs;
+    if (file.empty()) {
+      ofs.open("model.txt");
+    } else {
+      ofs.open(file.c_str());
+    }
+    boost::archive::text_oarchive oa(ofs);
+    oa << *this;
+    std::cout << "Saved model to file: " << file << std::endl;
   }
 
   bool PersonModel2::isTerminalState(const State2& state) const {
@@ -56,8 +86,8 @@ namespace bwi_exp1 {
           -getDistanceFromStates(state.graph_id, ns->graph_id);
       }
     } else if (action.type == PLACE_ROBOT) {
-      // break ties between doing nothing and placing robots to doing nothing
-      rewards.push_back(-10.0);
+      // Single transition, no reward
+      rewards.push_back(0.0);
     } else {
       // Single transition, no reward
       rewards.push_back(0.0);
@@ -75,7 +105,7 @@ namespace bwi_exp1 {
     }
   }
 
-  void PersonModel2::computeRobotVertices() {
+  void PersonModel2::computeVisibleVertices() {
     visible_vertices_map_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
       topological_mapper::Point2f graph_location =
@@ -108,6 +138,9 @@ namespace bwi_exp1 {
           }
         }
       }
+      
+      // Push this vertex into the visible vertices map
+      robot_vertices.push_back(graph_id);
 
       // std::cout << graph_id << " -> ";
       // BOOST_FOREACH(int rv, robot_vertices) {
@@ -127,7 +160,7 @@ namespace bwi_exp1 {
     std::cout << "Computing adjacent vertices... " << std::endl;
     computeAdjacentVertices();
     std::cout << "Computing robot vertices... " << std::endl;
-    computeRobotVertices();
+    computeVisibleVertices();
 
     std::cout << "Precaching state space... " << std::endl;
 
@@ -141,20 +174,23 @@ namespace bwi_exp1 {
             for (int rd = DIR_UNASSIGNED; 
                 rd < (int)adjacent_vertices.size(); ++rd) {
               for (int nrl = NO_ROBOT; nrl < (int)robot_vertices.size(); ++nrl) {
+                if (nrl == graph_id) {
+                  continue;
+                }
                 State2 state; 
                 state.graph_id = graph_id;
                 state.direction = direction;
                 state.num_robots_left = robots;
                 if (rd < 0) {
-                  state.current_robot_direction = rd;
+                  state.current_robot_status = rd;
                 } else {
-                  state.current_robot_direction = 
+                  state.current_robot_status = 
                     adjacent_vertices[rd];
                 }
                 if (nrl < 0) {
-                  state.next_robot_location = nrl;
+                  state.visible_robot_location = nrl;
                 } else {
-                  state.next_robot_location = robot_vertices[nrl];
+                  state.visible_robot_location = robot_vertices[nrl];
                 }
                 state_cache_.push_back(state);
               }
@@ -164,8 +200,8 @@ namespace bwi_exp1 {
             state.graph_id = graph_id;
             state.direction = direction;
             state.num_robots_left = robots;
-            state.current_robot_direction = NO_ROBOT;
-            state.next_robot_location = NO_ROBOT;
+            state.current_robot_status = NO_ROBOT;
+            state.visible_robot_location = NO_ROBOT;
             state_cache_.push_back(state);
           }
         }
@@ -186,21 +222,28 @@ namespace bwi_exp1 {
       std::vector<Action>& actions) {
 
     actions.clear();
-    if (state.current_robot_direction != DIR_UNASSIGNED) {
+    if (state.current_robot_status != DIR_UNASSIGNED) {
       actions.push_back(Action(DO_NOTHING,0));
     } else {
       BOOST_FOREACH(int id, adjacent_vertices_map_[state.graph_id]) {
         actions.push_back(Action(DIRECT_PERSON, id));
       }
+      return;
     }
 
     if (state.num_robots_left != 0) {
       // If state does not have a future robot, allow placing a robot in a future
       // location
-      if (state.next_robot_location == NO_ROBOT) {
+      if (state.visible_robot_location == NO_ROBOT) {
         BOOST_FOREACH(int id, visible_vertices_map_[state.graph_id]) {
-          actions.push_back(Action(PLACE_ROBOT, id)); 
+          if (state.graph_id != id) {
+            actions.push_back(Action(PLACE_ROBOT, id)); 
+          }
         }
+      }
+
+      if (allow_robot_current_idx_ && state.current_robot_status == NO_ROBOT) {
+        actions.push_back(Action(PLACE_ROBOT, state.graph_id));
       }
     }
   }
@@ -252,16 +295,24 @@ namespace bwi_exp1 {
 
     if (action.type == DIRECT_PERSON) {
       State2 next_state = state;
-      next_state.current_robot_direction = action.graph_id;
+      next_state.current_robot_status = action.graph_id;
       states.push_back(next_state);
       return;
     }
     if (action.type == PLACE_ROBOT) {
-      State2 next_state = state;
-      next_state.next_robot_location = action.graph_id;
-      next_state.num_robots_left--;
-      states.push_back(next_state);
-      return;
+      if (action.graph_id != state.graph_id) {
+        State2 next_state = state;
+        next_state.visible_robot_location = action.graph_id;
+        next_state.num_robots_left--;
+        states.push_back(next_state);
+        return;
+      } else {
+        State2 next_state = state;
+        next_state.current_robot_status = DIR_UNASSIGNED;
+        next_state.num_robots_left--;
+        states.push_back(next_state);
+        return;
+      }
     }
    
     // If the person is actually planning on moving, this one is going to be fun 
@@ -275,28 +326,28 @@ namespace bwi_exp1 {
       next_state.direction = next_loc.second;
       next_state.num_robots_left = state.num_robots_left;
 
-      if (state.next_robot_location == NO_ROBOT) {
-        next_state.next_robot_location = NO_ROBOT;
-        next_state.current_robot_direction = NO_ROBOT;
+      if (state.visible_robot_location == NO_ROBOT) {
+        next_state.visible_robot_location = NO_ROBOT;
+        next_state.current_robot_status = NO_ROBOT;
       } else {
         // See if the location we moved to is where the next robot is
-        if (next_state.graph_id == state.next_robot_location) {
+        if (next_state.graph_id == state.visible_robot_location) {
           // Transition to the state where the current location has a robot, but
           // no direction
-          next_state.current_robot_direction = DIR_UNASSIGNED;
-          next_state.next_robot_location = NO_ROBOT; // This robot no longer needs to be tracked
+          next_state.current_robot_status = DIR_UNASSIGNED;
+          next_state.visible_robot_location = NO_ROBOT; // This robot no longer needs to be tracked
         } else {
           // See if the robot is still visible from the current location - you do not want to move
           // to a state where the robot is not visible
           if (std::find(visible_vertices_map_[next_state.graph_id].begin(),
-                visible_vertices_map_[next_state.graph_id].end(), state.next_robot_location) 
+                visible_vertices_map_[next_state.graph_id].end(), state.visible_robot_location) 
               == visible_vertices_map_[next_state.graph_id].end()) { 
             // The person moved in an unexpected manner, the robot gets decommisioned
-            next_state.next_robot_location = NO_ROBOT;
+            next_state.visible_robot_location = NO_ROBOT;
           } else {
-            next_state.next_robot_location = state.next_robot_location;
+            next_state.visible_robot_location = state.visible_robot_location;
           }
-          next_state.current_robot_direction = NO_ROBOT;
+          next_state.current_robot_status = NO_ROBOT;
         }
       }
       states.push_back(next_state);
@@ -325,11 +376,11 @@ namespace bwi_exp1 {
     // In this simple MDP formulation, the action should induce a desired 
     // direction for the person to be walking to.
     float expected_direction, sigma_sq, random_probability;
-    if (state.current_robot_direction != NO_ROBOT && 
-        state.current_robot_direction != DIR_UNASSIGNED // shouldn't really happen - VI messed up
+    if (state.current_robot_status != NO_ROBOT && 
+        state.current_robot_status != DIR_UNASSIGNED // shouldn't really happen - VI messed up
         ) {
       expected_direction = 
-        getAngleFromStates(state.graph_id, state.current_robot_direction);
+        getAngleFromStates(state.graph_id, state.current_robot_status);
       sigma_sq = 0.1;
       random_probability = 0.1;
     } else {
@@ -350,7 +401,7 @@ namespace bwi_exp1 {
         graph_location,
         goal_location,
         map_);
-    int next_identifier_location = state.next_robot_location;
+    int next_identifier_location = state.visible_robot_location;
     next_identifier_location = 
       (next_identifier_location == NO_ROBOT && goal_idx_visible) ?
       goal_idx_ : next_identifier_location;
@@ -420,6 +471,7 @@ namespace bwi_exp1 {
       const State2& state, const Action& action) {
     return ns_distribution_cache_[state][action];
   }
+
 
   size_t PersonModel2::computeNextDirection(size_t dir, size_t graph_id, 
       size_t next_graph_id) {

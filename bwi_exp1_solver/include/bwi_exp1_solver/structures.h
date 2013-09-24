@@ -57,8 +57,8 @@ namespace bwi_exp1 {
     int graph_id; // ~50
     int direction; // ~8 
     int num_robots_left; // ~6
-    int current_robot_direction; // ~8
-    int next_robot_location; // ~10
+    int current_robot_status; // ~8
+    int visible_robot_location; // ~10
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -66,8 +66,8 @@ namespace bwi_exp1 {
       ar & graph_id;
       ar & direction;
       ar & num_robots_left;
-      ar & current_robot_direction;
-      ar & next_robot_location;
+      ar & current_robot_status;
+      ar & visible_robot_location;
     }
   };
 

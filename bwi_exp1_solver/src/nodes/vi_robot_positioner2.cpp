@@ -91,8 +91,8 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       current_state_.graph_id = prev_graph_id;
       current_state_.direction = direction;
       current_state_.num_robots_left = num_robots_available_;
-      current_state_.current_robot_direction = NO_ROBOT;
-      current_state_.next_robot_location = NO_ROBOT;
+      current_state_.current_robot_status = NO_ROBOT;
+      current_state_.visible_robot_location = NO_ROBOT;
       ROS_INFO_STREAM("Start at: " << current_state_);
       checkRobotPlacementAtCurrentState();
     }
@@ -120,7 +120,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           // DIRECT ROBOT HERE
           topological_mapper::Point2f to_loc = 
             topological_mapper::getLocationFromGraphId(
-                current_state_.current_robot_direction, graph_);
+                current_state_.current_robot_status, graph_);
           topological_mapper::Point2f change_loc = to_loc - assigned_robot_loc_;
           float destination_yaw = atan2(change_loc.y, change_loc.x);
           float change_in_yaw = destination_yaw - assigned_robot_yaw_;
@@ -136,7 +136,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           // PLACE ROBOT HERE
           assigned_robot_loc_ = 
             topological_mapper::getLocationFromGraphId(
-                current_state_.next_robot_location, graph_);
+                current_state_.visible_robot_location, graph_);
           topological_mapper::Point2f robot_map_loc =
             topological_mapper::toMap(assigned_robot_loc_, map_.info);
           geometry_msgs::Pose pose;
@@ -146,13 +146,13 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           assigned_robot_yaw_ = 
             model_->getAngleFromStates(
                 current_state_.graph_id, 
-                current_state_.next_robot_location
+                current_state_.visible_robot_location
                 );
           pose.orientation =
             tf::createQuaternionMsgFromYaw(assigned_robot_yaw_);
           std::string robot_id = default_robots_.robots[assigned_robots_].id;
           robot_locations_[robot_id] = pose;
-          graph_id_to_robot_map_[current_state_.next_robot_location] =
+          graph_id_to_robot_map_[current_state_.visible_robot_location] =
             assigned_robots_;
 
           ++assigned_robots_;
@@ -183,7 +183,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         Action a(DO_NOTHING, 0);
         std::vector<State2> next_states; 
         model_->getNextStates(current_state_, a, next_states); 
-        int old_robot_status = current_state_.current_robot_direction;
+        int old_robot_status = current_state_.current_robot_status;
         if (old_robot_status != NO_ROBOT) {
           boost::mutex::scoped_lock lock(robot_modification_mutex_);
           int robot_number = 
@@ -199,11 +199,11 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
         BOOST_FOREACH(const State2& state, next_states) {
           if (state.graph_id == current_graph_id) {
-            int old_robot_state = current_state_.next_robot_location;
+            int old_robot_state = current_state_.visible_robot_location;
             current_state_ = state;
             if (old_robot_state != NO_ROBOT && 
-                current_state_.next_robot_location == NO_ROBOT &&
-                current_state_.current_robot_direction == NO_ROBOT) {
+                current_state_.visible_robot_location == NO_ROBOT &&
+                current_state_.current_robot_status == NO_ROBOT) {
               int robot_number = 
                 graph_id_to_robot_map_[old_robot_state];
               std::string old_robot_id = 

@@ -1,22 +1,25 @@
+#include <fstream>
 #include <bwi_exp1_solver/heuristic_solver.h>
 #include <topological_mapper/map_utils.h>
-#include <topological_mapper/graph_utils.h>
+#include <topological_mapper/point_utils.h>
+
+using namespace bwi_exp1;
 
 HeuristicSolver::HeuristicSolver(const nav_msgs::OccupancyGrid& map, 
-    const topological_mapper::Graph& graph, 
+    const topological_mapper::Graph& graph, int goal_idx,
     bool allow_robot_current_idx) : map_(map), graph_(graph),
   goal_idx_(goal_idx), allow_robot_current_idx_(allow_robot_current_idx) {}
 
   HeuristicSolver::~HeuristicSolver() {}
 
   void HeuristicSolver::computePolicy() {}
-  void loadPolicy(const std::string& file) {}
-  void savePolicy(const std::string& file) {
+  void HeuristicSolver::loadPolicy(const std::string& file) {}
+  void HeuristicSolver::savePolicy(const std::string& file) {
     std::ofstream fout(file.c_str());
     fout.close();
   }
 
-bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const {
+Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
 
   if (state.current_robot_status == DIR_UNASSIGNED) {
     // Find shortest path to goal. Point in direction of this path
@@ -38,7 +41,7 @@ bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const {
   // Otherwise, see if we can place a robot
   if (state.num_robots_left == 0 ||
       state.graph_id == goal_idx_ || 
-      state.next_robot_location != NO_ROBOT) {
+      state.visible_robot_location != NO_ROBOT) {
     // Already placed all available robots or no need to
     return bwi_exp1::Action(DO_NOTHING, 0);
   }
@@ -54,7 +57,8 @@ bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const {
     states.push_back(current_id);
 
     // Compute all adjacent vertices from this location
-    Graph::vertex_descriptor vd = boost::vertex(current_id, graph_);
+    topological_mapper::Graph::vertex_descriptor vd = 
+      boost::vertex(current_id, graph_);
     topological_mapper::Point2f loc = graph_[vd].location;
     std::vector<size_t> adjacent_vertices;
     topological_mapper::getAdjacentVertices(
@@ -66,7 +70,8 @@ bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const {
     float next_angle = 0;
     for (std::vector<size_t>::const_iterator av = adjacent_vertices.begin();
         av != adjacent_vertices.end(); ++av) {
-      Graph::vertex_descriptor next_vd = boost::vertex(*av, graph_);
+      topological_mapper::Graph::vertex_descriptor next_vd = 
+        boost::vertex(*av, graph_);
       topological_mapper::Point2f next_loc = graph_[next_vd].location;
       float angle = atan2f((next_loc-loc).y, (next_loc-loc).x);
       // Wrap angle around direction
@@ -102,9 +107,9 @@ bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const {
     path_from_goal.insert(path_from_goal.begin(), goal_idx_);
     float distance = 0;
     for (size_t pp = 0; pp < path_from_goal.size() - 1; ++pp) {
-      Graph::vertex_descriptor vd1 = 
+      topological_mapper::Graph::vertex_descriptor vd1 = 
         boost::vertex(path_from_goal[pp], graph_);
-      Graph::vertex_descriptor vd2 = 
+      topological_mapper::Graph::vertex_descriptor vd2 = 
         boost::vertex(path_from_goal[pp + 1], graph_);
       distance += topological_mapper::getMagnitude(
           graph_[vd1].location - graph_[vd2].location);
@@ -115,7 +120,7 @@ bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const {
     }
   }
 
-  if (min_graph_idx != state.graph_id || allow_robot_current_idx) {
+  if (min_graph_idx != state.graph_id || allow_robot_current_idx_) {
     return bwi_exp1::Action(PLACE_ROBOT, min_graph_idx);
   }
 

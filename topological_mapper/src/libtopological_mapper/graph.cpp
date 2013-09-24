@@ -260,23 +260,25 @@ namespace topological_mapper {
 
   }
 
-  void getShortestPath(Graph &graph, size_t start_idx,
+  void getShortestPath(const Graph &graph, size_t start_idx,
       size_t goal_idx, std::vector<size_t> &path_from_goal) {
 
+    topological_mapper::Graph graph_copy(graph);
     // Perform Dijakstra from start_idx
     std::vector<Graph::vertex_descriptor> 
-      p(boost::num_vertices(graph));
-    std::vector<double> d(boost::num_vertices(graph));
+      p(boost::num_vertices(graph_copy));
+    std::vector<double> d(boost::num_vertices(graph_copy));
     Graph::vertex_descriptor s = 
-      boost::vertex(start_idx, graph);
+      boost::vertex(start_idx, graph_copy);
 
     boost::property_map<Graph, boost::vertex_index_t>::type 
-        indexmap = boost::get(boost::vertex_index, graph);
+        indexmap = boost::get(boost::vertex_index, graph_copy);
     boost::property_map<
       Graph, 
       double Edge::*
-    >::type weightmap = boost::get(&Edge::weight, graph);
-    boost::dijkstra_shortest_paths(graph, s, &p[0], &d[0], weightmap, indexmap, 
+    >::type weightmap = boost::get(&Edge::weight, graph_copy);
+    boost::dijkstra_shortest_paths(graph_copy, 
+        s, &p[0], &d[0], weightmap, indexmap, 
                               std::less<double>(), boost::closed_plus<double>(), 
                               (std::numeric_limits<double>::max)(), 0,
                               boost::default_dijkstra_visitor());
@@ -285,7 +287,7 @@ namespace topological_mapper {
     path_from_goal.clear();
 
     Graph::vertex_descriptor g = 
-      boost::vertex(goal_idx, graph);
+      boost::vertex(goal_idx, graph_copy);
     while (indexmap[p[g]] != start_idx) {
       path_from_goal.push_back(indexmap[p[g]]);
       g = p[g];

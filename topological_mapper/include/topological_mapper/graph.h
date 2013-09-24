@@ -88,7 +88,7 @@ namespace topological_mapper {
   void getAdjacentVertices(size_t graph_id, const Graph& graph,
       std::vector<size_t>& adjacent_vertices);
 
-  void getShortestPath(Graph &graph, size_t start_idx,
+  void getShortestPath(const Graph &graph, size_t start_idx,
       size_t goal_idx, std::vector<size_t> &path_from_goal);
 
 } /* topological_mapper */

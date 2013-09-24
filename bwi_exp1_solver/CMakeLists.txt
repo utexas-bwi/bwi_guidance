@@ -3,7 +3,7 @@ project(bwi_exp1_solver)
 
 ## Find catkin and external packages
 find_package(catkin REQUIRED COMPONENTS bwi_exp1 topological_mapper)
-find_package(Boost REQUIRED COMPONENTS serialization)
+find_package(Boost REQUIRED COMPONENTS serialization program_options)
 
 ###################################
 ## catkin specific configuration ##
@@ -33,6 +33,7 @@ include_directories(
 
 ## Declare a cpp library
 add_library(bwi_exp1_solver
+  src/heuristic_solver.cpp
   src/person_model.cpp
   src/person_model2.cpp
   src/person_estimator.cpp
