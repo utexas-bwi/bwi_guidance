@@ -18,16 +18,16 @@ HeuristicSolver::HeuristicSolver(const nav_msgs::OccupancyGrid& map,
 
 bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const {
 
-  if (state.num_robots_left == 0 ||
-      state.graph_id == goal_idx_ || 
-      state.next_robot_location != NO_ROBOT) {
-    // Already placed all available robots or no need to
-    return bwi_exp1::Action(DO_NOTHING, 0);
-  }
-
   if (state.current_robot_status == DIR_UNASSIGNED) {
     // Find shortest path to goal. Point in direction of this path
-
+    std::vector<size_t> path_from_goal;
+    topological_mapper::getShortestPath(
+        graph_, goal_idx_, state.graph_id, path_from_goal);
+    std::cout << "CurId: " << state.graph_id
+      << ", 1: " << path_from_goal[path_from_goal.size() - 1]
+      << ", 2: " << path_from_goal[path_from_goal.size() - 2] << std::endl;
+    return bwi_exp1::Action(DIRECT_PERSON, 
+        path_from_goal[path_from_goal.size() - 2]);
   }
 
   if (state.current_robot_status != NO_ROBOT) {
@@ -35,7 +35,13 @@ bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const {
     return bwi_exp1::Action(DO_NOTHING, 0);
   }
 
-  // Otherwise, it is time to place a robot!
+  // Otherwise, see if we can place a robot
+  if (state.num_robots_left == 0 ||
+      state.graph_id == goal_idx_ || 
+      state.next_robot_location != NO_ROBOT) {
+    // Already placed all available robots or no need to
+    return bwi_exp1::Action(DO_NOTHING, 0);
+  }
 
   // Given the current graph id of the person and the direction the person
   // is moving in, compute the expected forward locations of the person
@@ -87,7 +93,6 @@ bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const {
 
   // Now for each state in the forward path, see which is the closest
   size_t min_graph_idx = (size_t) -1;
-  size_t point_to_vertex = (size_t) - 1;
   float min_distance = std::numeric_limits<float>::max();
   for (std::vector<size_t>::iterator si = states.begin(); 
       si != states.end(); ++si) {
@@ -106,9 +111,17 @@ bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const {
     }
     if (distance < min_distance) {
       min_graph_idx = *si;
-      point_to_vertex = path_from_goal[1];
       min_distance = distance;
     }
   }
+
+  if (min_graph_idx != state.graph_id || allow_robot_current_idx) {
+    return bwi_exp1::Action(PLACE_ROBOT, min_graph_idx);
+  }
+
+  // This means that placing a robot on the current vertex is not allowed, and 
+  // the current vertex is the closest vertex to the goal on the forward path
+  return bwi_exp1::Action(DO_NOTHING, 0);
+
 }
 
