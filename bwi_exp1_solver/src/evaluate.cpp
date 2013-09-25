@@ -1,0 +1,242 @@
+#include<fstream>
+#include<cstdlib>
+
+#include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
+#include <boost/random/uniform_real.hpp>
+#include <boost/random/variate_generator.hpp>
+#include <boost/random/mersenne_twister.hpp>
+
+#include <bwi_exp1_solver/ValueIteration.h>
+#include <bwi_exp1_solver/heuristic_solver.h>
+#include <bwi_exp1_solver/person_estimator2.h>
+#include <bwi_exp1_solver/person_model2.h>
+#include <topological_mapper/map_loader.h>
+#include <topological_mapper/map_utils.h>
+
+using namespace bwi_exp1;
+
+boost::shared_ptr<
+  boost::variate_generator<boost::mt19937&, boost::uniform_real<float> > 
+  > rng;
+
+std::string data_directory = "";
+std::string vi_policy_file = "vi.txt";
+std::string model_file = "model.txt";
+std::string map_file = "";
+std::string graph_file = "";
+int seed = 12345;
+bool allow_robot_current_idx = false;
+
+struct InstanceResult {
+  float avg_vi_distance[5];
+  float percent_vi_completion[5]; 
+  float avg_hi_distance[5];
+  float percent_hi_completion[5];
+};
+
+std::ostream& operator<< (std::ostream& stream, const InstanceResult& ir) {
+  for (int i = 0; i < 5; ++i) {
+    stream << "VI\t" << i+1 << "r\t" << ir.avg_vi_distance[i] << "\t" 
+      << ir.percent_vi_completion[i] << "%" << std::endl;
+    stream << "HS\t" << i+1 << "r\t" << ir.avg_hi_distance[i] << "\t" 
+      << ir.percent_hi_completion[i] << "%" << std::endl;
+  }
+  return stream;
+}
+
+int select(std::vector<float>& probabilities) {
+  float random_value = (*rng)();
+  float prob_sum = probabilities[0];
+  for (int i = 1; i < probabilities.size(); ++i) {
+    if (random_value < prob_sum) return i - 1;
+    prob_sum += probabilities[i];
+  }
+  return probabilities.size() - 1;
+}
+
+InstanceResult testInstance(topological_mapper::Graph& graph, 
+    nav_msgs::OccupancyGrid& map, int start_idx, int start_direction, 
+    int goal_idx) {
+
+  InstanceResult result;
+
+  std::string indexed_model_file = data_directory 
+    + boost::lexical_cast<std::string>(goal_idx)
+    + "_" + model_file;
+  std::string indexed_vi_file = data_directory
+    + boost::lexical_cast<std::string>(goal_idx)
+    + "_" + vi_policy_file;
+
+  boost::shared_ptr<PersonModel2> model(
+      new PersonModel2(graph, map, goal_idx, indexed_model_file, 
+        allow_robot_current_idx));
+  boost::shared_ptr<PersonEstimator2> estimator(new PersonEstimator2);
+  ValueIteration<State2, Action> vi(model, estimator, 
+      1.0, 1.0, 1000, 0.0, -10000.0);
+  HeuristicSolver hi(map, graph, goal_idx, allow_robot_current_idx); 
+
+  std::ifstream vi_ifs(indexed_vi_file.c_str());
+  if (vi_ifs.good()) {
+    vi.loadPolicy(indexed_vi_file);
+  } else {
+    vi.computePolicy();
+    vi.savePolicy(indexed_vi_file);
+    std::cout << "Computed and saved policy for " << goal_idx << " to file: " 
+      << indexed_vi_file << std::endl;
+  }
+
+  for (int method = 0; method < 2; ++method) {
+    for (int starting_robots = 1; starting_robots <= 5; ++starting_robots) {
+
+      float sum_instance_distance = 0;
+      int count_successful = 0;
+
+      for (int run = 0; run < 100; ++run) {
+
+        State2 current_state; 
+        current_state.graph_id = start_idx;
+        current_state.direction = start_direction;
+        current_state.num_robots_left = starting_robots;
+        current_state.current_robot_status = NO_ROBOT;
+        current_state.visible_robot_location = NO_ROBOT;
+
+        float reward = 0;
+        float reward_limit = -300.0 / map.info.resolution;
+
+        while (current_state.graph_id != goal_idx && reward >= reward_limit) {
+
+          std::vector<State2> next_states;
+          std::vector<float> probabilities;
+          std::vector<float> rewards;
+
+          // Deterministic system transitions
+          while (true) {
+
+            Action action;
+            if (method == 0) {
+              action = vi.getBestAction(current_state);
+            } else {
+              action = hi.getBestAction(current_state);
+            }
+
+            model->getTransitionDynamics(current_state, action, next_states, 
+                rewards, probabilities);
+            if (probabilities.size() == 0) { 
+              std::cout << current_state << " " << action.type << " " << action.graph_id << std::endl;
+            }
+
+            if (action.type == DO_NOTHING) {
+              // Manual transition
+              break;
+            }
+
+            // The human does not move for this action, and a single next state is present
+            current_state = next_states[0];
+          }
+
+          // Select next state choice based on probabilities
+          int choice = select(probabilities);
+          current_state = next_states[choice];
+          reward += rewards[choice];
+        }
+
+        if (current_state.graph_id == goal_idx) {
+          ++count_successful;
+        }
+        sum_instance_distance += -reward;
+      }
+
+      if (method == 0) {
+        result.avg_vi_distance[starting_robots - 1] = 
+          sum_instance_distance / 100.0f;
+        result.avg_vi_distance[starting_robots - 1] *= map.info.resolution;
+        result.percent_vi_completion[starting_robots - 1] =
+          ((float) count_successful);
+      } else {
+        result.avg_hi_distance[starting_robots - 1] = 
+          sum_instance_distance / 100.0f;
+        result.avg_hi_distance[starting_robots - 1] *= map.info.resolution;
+        result.percent_hi_completion[starting_robots - 1] =
+          ((float) count_successful);
+      }
+
+    }
+  }
+
+  return result;
+
+}
+
+int processOptions(int argc, char** argv) {
+
+  std::string appName = boost::filesystem::basename(argv[0]); 
+  std::vector<std::string> sentence; 
+
+  /** Define and parse the program options 
+  */ 
+  namespace po = boost::program_options; 
+  po::options_description desc("Options"); 
+  desc.add_options() 
+    ("map-file,M", po::value<std::string>(&map_file)->required(), "YAML map file") 
+    ("graph-file,G", po::value<std::string>(&graph_file)->required(), "YAML graph file") 
+    ("data-directory,G", po::value<std::string>(&data_directory), "Data directory (defaults to runtime directory)") 
+    ("allow-robot-current,a", "Allow robot to be placed at current index") 
+    ("seed,s", po::value<int>(&seed), "Random seed"); 
+
+  po::positional_options_description positionalOptions; 
+  positionalOptions.add("map-file", 1); 
+  positionalOptions.add("graph-file", 1); 
+
+  po::variables_map vm; 
+
+  try { 
+    po::store(po::command_line_parser(argc, argv).options(desc) 
+        .positional(positionalOptions).run(), 
+        vm); // throws on error 
+
+    po::notify(vm); // throws on error, so do after help in case 
+    // there are any problems 
+  } catch(boost::program_options::required_option& e) { 
+    std::cerr << "ERROR: " << e.what() << std::endl << std::endl; 
+    std::cout << desc << std::endl;
+    return -1; 
+  } catch(boost::program_options::error& e) { 
+    std::cerr << "ERROR: " << e.what() << std::endl << std::endl; 
+    std::cout << desc << std::endl;
+    return -1; 
+  } 
+
+  if (vm.count("allow_robot_current")) {
+    allow_robot_current_idx = true;
+  }
+
+  return 0;
+}
+
+int main(int argc, char** argv) {
+
+  int ret = processOptions(argc, argv);
+  if (ret != 0) {
+    return ret;
+  }
+
+  std::cout << "Using random seed: " << seed << std::endl;
+  boost::mt19937 mt(seed);
+  boost::uniform_real<float> u(0.0f, 1.0f);
+  rng.reset(new boost::variate_generator<
+      boost::mt19937&, 
+      boost::uniform_real<float> >(mt, u));
+
+  topological_mapper::MapLoader mapper(argv[1]);
+  topological_mapper::Graph graph;
+  nav_msgs::OccupancyGrid map;
+  mapper.getMap(map);
+  topological_mapper::readGraphFromFile(argv[2], map.info, graph);
+
+  InstanceResult res = testInstance(graph, map, 2, 12, 10);
+  std::cout << res << std::endl;
+
+  return 0;
+}
