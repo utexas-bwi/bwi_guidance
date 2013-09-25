@@ -25,6 +25,7 @@ boost::shared_ptr<
 std::string data_directory = "";
 std::string vi_policy_file = "vi.txt";
 std::string model_file = "model.txt";
+std::string results_file = "result.txt";
 std::string map_file = "";
 std::string graph_file = "";
 int seed = 12345;
@@ -252,6 +253,7 @@ int main(int argc, char** argv) {
   boost::variate_generator<boost::mt19937&, boost::uniform_int<int> >
     direction_gen(mt, direction_dist);
   
+  std::ofstream fout((data_directory + results_file).c_str());
   for (int i = 0; i < num_instances; ++i) {
     int start_idx = idx_gen();
     int goal_idx = idx_gen();
@@ -259,11 +261,14 @@ int main(int argc, char** argv) {
       goal_idx = idx_gen();
     }
     int start_direction = direction_gen();
-    std::cout << "Test [" << start_idx << "," << start_direction << "," << goal_idx
-      << "]: ";
     InstanceResult res = testInstance(graph, map, start_idx, start_direction, goal_idx);
-    std::cout << res << std::endl;
+    // std::cout << "Test [" << start_idx << "," << start_direction << "," << goal_idx
+    //   << "]: ";
+    // std::cout << res << std::endl;
+    fout << i << "," << start_idx << "," << start_direction << "," << goal_idx
+      << res << std::endl;
   }
+  fout.close();
 
   return 0;
 }
