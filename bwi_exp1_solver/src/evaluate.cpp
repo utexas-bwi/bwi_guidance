@@ -5,6 +5,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/random/uniform_real.hpp>
+#include <boost/random/uniform_int.hpp>
 #include <boost/random/variate_generator.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
@@ -27,6 +28,9 @@ std::string model_file = "model.txt";
 std::string map_file = "";
 std::string graph_file = "";
 int seed = 12345;
+int num_instances = 10;
+int runs_per_instance = 1;
+float distance_limit = 300.f;
 bool allow_robot_current_idx = false;
 
 struct InstanceResult {
@@ -38,10 +42,13 @@ struct InstanceResult {
 
 std::ostream& operator<< (std::ostream& stream, const InstanceResult& ir) {
   for (int i = 0; i < 5; ++i) {
-    stream << "VI\t" << i+1 << "r\t" << ir.avg_vi_distance[i] << "\t" 
-      << ir.percent_vi_completion[i] << "%" << std::endl;
-    stream << "HS\t" << i+1 << "r\t" << ir.avg_hi_distance[i] << "\t" 
-      << ir.percent_hi_completion[i] << "%" << std::endl;
+    stream << ir.avg_vi_distance[i] << "," << ir.percent_vi_completion[i] << "," << ir.avg_hi_distance[i] << "," << ir.percent_hi_completion[i];
+    if (i!=4) 
+      stream << ",";
+    // stream << "VI\t" << i+1 << "r\t" << ir.avg_vi_distance[i] << "\t" 
+    //   << ir.percent_vi_completion[i] << "%" << std::endl;
+    // stream << "HS\t" << i+1 << "r\t" << ir.avg_hi_distance[i] << "\t" 
+    //   << ir.percent_hi_completion[i] << "%" << std::endl;
   }
   return stream;
 }
@@ -93,7 +100,7 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
       float sum_instance_distance = 0;
       int count_successful = 0;
 
-      for (int run = 0; run < 100; ++run) {
+      for (int run = 0; run < runs_per_instance; ++run) {
 
         State2 current_state; 
         current_state.graph_id = start_idx;
@@ -103,7 +110,7 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
         current_state.visible_robot_location = NO_ROBOT;
 
         float reward = 0;
-        float reward_limit = -300.0 / map.info.resolution;
+        float reward_limit = -((float)distance_limit) / map.info.resolution;
 
         while (current_state.graph_id != goal_idx && reward >= reward_limit) {
 
@@ -150,16 +157,16 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
 
       if (method == 0) {
         result.avg_vi_distance[starting_robots - 1] = 
-          sum_instance_distance / 100.0f;
+          sum_instance_distance / runs_per_instance;
         result.avg_vi_distance[starting_robots - 1] *= map.info.resolution;
         result.percent_vi_completion[starting_robots - 1] =
-          ((float) count_successful);
+          ((float) count_successful * 100.0f) / runs_per_instance;
       } else {
         result.avg_hi_distance[starting_robots - 1] = 
-          sum_instance_distance / 100.0f;
+          sum_instance_distance / runs_per_instance;
         result.avg_hi_distance[starting_robots - 1] *= map.info.resolution;
         result.percent_hi_completion[starting_robots - 1] =
-          ((float) count_successful);
+          ((float) count_successful * 100.0f) / runs_per_instance;
       }
 
     }
@@ -181,9 +188,12 @@ int processOptions(int argc, char** argv) {
   desc.add_options() 
     ("map-file,M", po::value<std::string>(&map_file)->required(), "YAML map file") 
     ("graph-file,G", po::value<std::string>(&graph_file)->required(), "YAML graph file") 
-    ("data-directory,G", po::value<std::string>(&data_directory), "Data directory (defaults to runtime directory)") 
+    ("data-directory,D", po::value<std::string>(&data_directory), "Data directory (defaults to runtime directory)") 
     ("allow-robot-current,a", "Allow robot to be placed at current index") 
-    ("seed,s", po::value<int>(&seed), "Random seed"); 
+    ("seed,s", po::value<int>(&seed), "Random seed")  
+    ("num-instances,n", po::value<int>(&num_instances), "Number of Instances") 
+    ("runs-per-instance,r", po::value<int>(&runs_per_instance), "Averge each instance over these many runs") 
+    ("distance-limit,d", po::value<float>(&distance_limit), "Max distance at which to terminate episode"); 
 
   po::positional_options_description positionalOptions; 
   positionalOptions.add("map-file", 1); 
@@ -235,8 +245,25 @@ int main(int argc, char** argv) {
   mapper.getMap(map);
   topological_mapper::readGraphFromFile(argv[2], map.info, graph);
 
-  InstanceResult res = testInstance(graph, map, 2, 12, 10);
-  std::cout << res << std::endl;
+  boost::uniform_int<int> idx_dist(0, boost::num_vertices(graph) - 1);
+  boost::variate_generator<boost::mt19937&, boost::uniform_int<int> >
+    idx_gen(mt, idx_dist);
+  boost::uniform_int<int> direction_dist(0, 15);
+  boost::variate_generator<boost::mt19937&, boost::uniform_int<int> >
+    direction_gen(mt, direction_dist);
+  
+  for (int i = 0; i < num_instances; ++i) {
+    int start_idx = idx_gen();
+    int goal_idx = idx_gen();
+    while (goal_idx == start_idx) {
+      goal_idx = idx_gen();
+    }
+    int start_direction = direction_gen();
+    std::cout << "Test [" << start_idx << "," << start_direction << "," << goal_idx
+      << "]: ";
+    InstanceResult res = testInstance(graph, map, start_idx, start_direction, goal_idx);
+    std::cout << res << std::endl;
+  }
 
   return 0;
 }

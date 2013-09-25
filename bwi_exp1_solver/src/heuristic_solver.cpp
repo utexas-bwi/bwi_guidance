@@ -98,13 +98,15 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
     bool next_visible = 
       topological_mapper::locationsInDirectLineOfSight(                    
           start_location, next_location, map_);
+    bool next_close = 
+      topological_mapper::getMagnitude(next_location - start_location) <
+      (25.0 / map_.info.resolution);
 
-    if (!next_visible) {
+    if (!next_visible || !next_close) {
       // The most probable location in path is no longer visible, hence no longer
       // probable
       break;
     }
-
 
     // get normalize direction and id
     current_direction = atan2f(sinf(next_angle), cosf(next_angle)); 
