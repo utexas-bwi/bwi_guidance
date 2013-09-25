@@ -23,18 +23,15 @@ namespace bwi_exp1 {
     if (!file.empty()) {
       std::ifstream ifs(file.c_str());
       if (ifs.is_open()) {
-        std::cout << "Loaded model from file: " << file << std::endl;
+        /* std::cout << "Loaded model from file: " << file << std::endl; */
         boost::archive::text_iarchive ia(ifs);
         ia >> *this;
         return;
       }
     }
 
-    std::cout << "Initializing state space..." << std::endl;
     initializeStateSpace();
-    std::cout << "Initializing action space..." << std::endl;
     initializeActionCache();
-    std::cout << "Initializing next state space..." << std::endl;
     initializeNextStateCache();
 
     std::ofstream ofs;
@@ -45,7 +42,7 @@ namespace bwi_exp1 {
     }
     boost::archive::text_oarchive oa(ofs);
     oa << *this;
-    std::cout << "Saved model to file: " << file << std::endl;
+    /* std::cout << "Saved model to file: " << file << std::endl; */
   }
 
   bool PersonModel2::isTerminalState(const State2& state) const {
@@ -157,12 +154,12 @@ namespace bwi_exp1 {
     num_directions_ = 16;
     max_robots_ = 5;
 
-    std::cout << "Computing adjacent vertices... " << std::endl;
+    /* std::cout << "Computing adjacent vertices... " << std::endl; */
     computeAdjacentVertices();
-    std::cout << "Computing robot vertices... " << std::endl;
+    /* std::cout << "Computing robot vertices... " << std::endl; */
     computeVisibleVertices();
 
-    std::cout << "Precaching state space... " << std::endl;
+    /* std::cout << "Precaching state space... " << std::endl; */
 
     state_cache_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
@@ -207,7 +204,7 @@ namespace bwi_exp1 {
         }
       }
     }
-    std::cout << "Number of states: " << state_cache_.size() << std::endl;
+    /* std::cout << "Number of states: " << state_cache_.size() << std::endl; */
   }
 
   void PersonModel2::initializeActionCache() {
@@ -255,7 +252,7 @@ namespace bwi_exp1 {
 
   void PersonModel2::initializeNextStateCache() {
 
-    std::cout << "Initializing next state cache" << std::endl;
+    /* std::cout << "Initializing next state cache" << std::endl; */
 
     next_state_cache_.clear();
     next_state_cache_.resize(num_vertices_ * num_directions_);
@@ -269,9 +266,9 @@ namespace bwi_exp1 {
       }
     }
 
-    std::cout << "Next state cache size: " << next_state_cache_.size() << std::endl; 
+    /* std::cout << "Next state cache size: " << next_state_cache_.size() << std::endl;  */
 
-    std::cout << "Initializing next state distribution cache" << std::endl;
+    /* std::cout << "Initializing next state distribution cache" << std::endl; */
     
     ns_distribution_cache_.clear();
     BOOST_FOREACH(const State2& state, state_cache_) {

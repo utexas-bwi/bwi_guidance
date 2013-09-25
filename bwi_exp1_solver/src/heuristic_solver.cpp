@@ -49,6 +49,8 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
   size_t current_id = state.graph_id;
   float current_direction = 
     ((2 * M_PI) / 16) * state.direction;
+  topological_mapper::Point2f start_location = 
+    topological_mapper::getLocationFromGraphId(state.graph_id, graph_); 
 
   /* std::cout << "Forward path: "; */
   while(true) {
@@ -90,6 +92,19 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
       // No close vertices found, break
       break;
     }
+
+    topological_mapper::Point2f next_location = 
+      topological_mapper::getLocationFromGraphId(next_vertex, graph_); 
+    bool next_visible = 
+      topological_mapper::locationsInDirectLineOfSight(                    
+          start_location, next_location, map_);
+
+    if (!next_visible) {
+      // The most probable location in path is no longer visible, hence no longer
+      // probable
+      break;
+    }
+
 
     // get normalize direction and id
     current_direction = atan2f(sinf(next_angle), cosf(next_angle)); 
