@@ -49,6 +49,11 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       private_nh.param<bool>("allow_robot_current", allow_robot_current_idx_, 
           false);
 
+      if (use_heuristic_)
+        ROS_INFO_STREAM("Using heuristic!");
+      else
+        ROS_INFO_STREAM("Using VI!");
+
     }
 
     virtual ~VIRobotPositioner2() {}
@@ -198,6 +203,8 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           assigned_robot_yaw_ = tf::getYaw(pose.orientation);
           assigned_robot_loc_ = 
             topological_mapper::Point2f(pose.position.x, pose.position.y);
+          assigned_robot_loc_ = 
+            topological_mapper::toGrid(assigned_robot_loc_, map_info_);
 
           // Teleport the robot and forward this information
           std::string robot_id = default_robots_.robots[assigned_robots_].id;
