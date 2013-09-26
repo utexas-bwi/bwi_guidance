@@ -196,15 +196,16 @@ int processOptions(int argc, char** argv) {
     ("runs-per-instance,r", po::value<int>(&runs_per_instance), "Averge each instance over these many runs") 
     ("distance-limit,d", po::value<float>(&distance_limit), "Max distance at which to terminate episode"); 
 
-  po::positional_options_description positionalOptions; 
-  positionalOptions.add("map-file", 1); 
-  positionalOptions.add("graph-file", 1); 
+  // po::positional_options_description positionalOptions; 
+  // positionalOptions.add("map-file", 1); 
+  // positionalOptions.add("graph-file", 1); 
 
   po::variables_map vm; 
 
   try { 
     po::store(po::command_line_parser(argc, argv).options(desc) 
-        .positional(positionalOptions).run(), 
+        /* .positional(positionalOptions).allow_unregistered().run(),  */
+        .allow_unregistered().run(), 
         vm); // throws on error 
 
     po::notify(vm); // throws on error, so do after help in case 
@@ -240,11 +241,11 @@ int main(int argc, char** argv) {
       boost::mt19937&, 
       boost::uniform_real<float> >(mt, u));
 
-  topological_mapper::MapLoader mapper(argv[1]);
+  topological_mapper::MapLoader mapper(map_file);
   topological_mapper::Graph graph;
   nav_msgs::OccupancyGrid map;
   mapper.getMap(map);
-  topological_mapper::readGraphFromFile(argv[2], map.info, graph);
+  topological_mapper::readGraphFromFile(graph_file, map.info, graph);
 
   boost::uniform_int<int> idx_dist(0, boost::num_vertices(graph) - 1);
   boost::variate_generator<boost::mt19937&, boost::uniform_int<int> >
