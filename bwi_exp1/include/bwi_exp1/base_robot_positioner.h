@@ -83,6 +83,7 @@ namespace bwi_exp1 {
 
       int current_instance_;
       bool instance_in_progress_;
+      bool prev_msg_ready_;
       ros::Subscriber experiment_status_subscriber_;
 
   };

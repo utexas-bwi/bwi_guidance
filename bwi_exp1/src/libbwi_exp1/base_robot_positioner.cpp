@@ -101,6 +101,7 @@ namespace bwi_exp1 {
       nh->subscribe("experiment_controller/experiment_status", 
           1, &BaseRobotPositioner::experimentCallback, this);
 
+    prev_msg_ready_ = false;
     position_publisher_ = 
       nh->advertise<bwi_msgs::RobotInfoArray>("robot_positions", 1, true);
   }
@@ -404,6 +405,7 @@ namespace bwi_exp1 {
           assigned_robot_locations_[robot_id] = robot_locations_[robot_id];
         }
       }
+      change = change || (instance_in_progress_ != prev_msg_ready_);
       if (change) {
         bwi_msgs::RobotInfoArray out_msg;
         out_msg.header.frame_id = "map";
@@ -416,6 +418,9 @@ namespace bwi_exp1 {
           robot_info.is_ok = robot_ok_[robot_id];
           out_msg.robots.push_back(robot_info);
         }
+        out_msg.ready = instance_in_progress_;
+        out_msg.instance_number = current_instance_;
+        prev_msg_ready_ = out_msg.ready;
         position_publisher_.publish(out_msg);
       }
       first = false;
