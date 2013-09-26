@@ -1,0 +1,7 @@
+<launch>
+  <arg name="map_file" default="$(find bwi_exp1)/maps/map2.yaml" />
+  <arg name="graph_file" default="$(find bwi_exp1)/maps/graph_map2.yaml" />
+  <arg name="data_dir" default="$(find bwi_exp1_solver)/data/exp1/map2/" />
+  <node name="evaluate" pkg="bwi_exp1_solver" type="evaluate"  output="screen"
+    args="--map-file $(arg map_file) --graph-file $(arg graph_file) -D $(arg data_dir) -a --num-instances 1000" />
+</launch>

@@ -42,6 +42,7 @@ namespace bwi_exp1 {
   };
 
   bool operator<(const Action& l, const Action& r);
+  std::ostream& operator<<(std::ostream& stream, const Action& a);
 
   // Simple model has a very clean tabular representation, use idx instead
   typedef uint32_t state_t;

@@ -10,6 +10,20 @@ namespace bwi_exp1 {
       ((l.type == r.type) && (l.graph_id < r.graph_id)); 
   }
 
+  std::ostream& operator<<(std::ostream& stream, const Action& a) {
+    std::string action_str[3];
+    action_str[DO_NOTHING] = "DO_NOTHING";
+    action_str[PLACE_ROBOT] = "PLACE_ROBOT";
+    action_str[DIRECT_PERSON] = "DIRECT_PERSON";
+
+    stream << "[" << action_str[a.type];
+    if (a.type != DO_NOTHING)
+      stream << " " << a.graph_id;
+    stream << "]";
+
+    return stream;
+  }
+
   bool operator<(const State2& l, const State2& r ) {
     if (l.graph_id < r.graph_id) return true;
     if (l.graph_id > r.graph_id) return false;
@@ -43,6 +57,7 @@ namespace bwi_exp1 {
         << s.num_robots_left << ", " 
         << s.current_robot_status << ", " << 
         s.visible_robot_location << "]";
+    return stream;
   }
 
 } /* bwi_exp1 */

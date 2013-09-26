@@ -110,6 +110,8 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
         current_state.current_robot_status = NO_ROBOT;
         current_state.visible_robot_location = NO_ROBOT;
 
+        /* std::cout << " - start " << current_state << std::endl; */
+
         float reward = 0;
         float reward_limit = -((float)distance_limit) / map.info.resolution;
 
@@ -128,12 +130,10 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
             } else {
               action = hi.getBestAction(current_state);
             }
+            /* std::cout << "   action: " << action << std::endl; */
 
             model->getTransitionDynamics(current_state, action, next_states, 
                 rewards, probabilities);
-            if (probabilities.size() == 0) { 
-              std::cout << current_state << " " << action.type << " " << action.graph_id << std::endl;
-            }
 
             if (action.type == DO_NOTHING) {
               // Manual transition
@@ -142,11 +142,13 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
 
             // The human does not move for this action, and a single next state is present
             current_state = next_states[0];
+            /* std::cout << " - auto " << current_state << std::endl; */
           }
 
           // Select next state choice based on probabilities
           int choice = select(probabilities);
           current_state = next_states[choice];
+          /* std::cout << " - manual " << current_state << std::endl; */
           reward += rewards[choice];
         }
 
@@ -220,7 +222,7 @@ int processOptions(int argc, char** argv) {
     return -1; 
   } 
 
-  if (vm.count("allow_robot_current")) {
+  if (vm.count("allow-robot-current")) {
     allow_robot_current_idx = true;
   }
 
@@ -235,6 +237,8 @@ int main(int argc, char** argv) {
   }
 
   std::cout << "Using random seed: " << seed << std::endl;
+  std::cout << "Number of instances: " << num_instances << std::endl;
+  std::cout << "Allowing robot at current idx: " << allow_robot_current_idx << std::endl;
   boost::mt19937 mt(seed);
   boost::uniform_real<float> u(0.0f, 1.0f);
   rng.reset(new boost::variate_generator<
@@ -263,11 +267,11 @@ int main(int argc, char** argv) {
     }
     int start_direction = direction_gen();
     InstanceResult res = testInstance(graph, map, start_idx, start_direction, goal_idx);
-    // std::cout << "Test [" << start_idx << "," << start_direction << "," << goal_idx
-    //   << "]: ";
+    std::cout << "#" << i << " Testing [" << start_idx << "," << start_direction << "," << goal_idx
+      << "]: " << std::endl;
     // std::cout << res << std::endl;
     fout << i << "," << start_idx << "," << start_direction << "," << goal_idx
-      << res << std::endl;
+      << "," << res << std::endl;
   }
   fout.close();
 
