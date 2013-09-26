@@ -2,8 +2,8 @@
 #include <cmath>
 #include <fstream>
 
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
 
@@ -23,9 +23,10 @@ namespace bwi_exp1 {
     if (!file.empty()) {
       std::ifstream ifs(file.c_str());
       if (ifs.is_open()) {
-        /* std::cout << "Loaded model from file: " << file << std::endl; */
-        boost::archive::text_iarchive ia(ifs);
+        std::cout << "Loading model from file: " << file << std::endl;
+        boost::archive::binary_iarchive ia(ifs);
         ia >> *this;
+        std::cout << "Model loaded!" << std::endl;
         return;
       }
     }
@@ -40,7 +41,7 @@ namespace bwi_exp1 {
     } else {
       ofs.open(file.c_str());
     }
-    boost::archive::text_oarchive oa(ofs);
+    boost::archive::binary_oarchive oa(ofs);
     oa << *this;
     /* std::cout << "Saved model to file: " << file << std::endl; */
   }

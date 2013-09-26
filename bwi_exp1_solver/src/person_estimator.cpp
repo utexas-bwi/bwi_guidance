@@ -1,5 +1,5 @@
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include <fstream> 
 
@@ -47,13 +47,13 @@ namespace bwi_exp1 {
 
   void PersonEstimator::loadEstimatedValues(const std::string& file) {
     std::ifstream ifs(file.c_str());
-    boost::archive::text_iarchive ia(ifs);
+    boost::archive::binary_iarchive ia(ifs);
     ia >> *this;
   }
 
   void PersonEstimator::saveEstimatedValues(const std::string& file) {
     std::ofstream ofs(file.c_str());
-    boost::archive::text_oarchive oa(ofs);
+    boost::archive::binary_oarchive oa(ofs);
     oa << *this;
   }
 

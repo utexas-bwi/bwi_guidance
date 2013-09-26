@@ -3,6 +3,7 @@
 #include <bwi_exp1_solver/ValueIteration.h>
 #include <bwi_exp1_solver/person_estimator2.h>
 #include <bwi_exp1_solver/person_model2.h>
+#include <bwi_exp1_solver/heuristic_solver.h>
 #include <topological_mapper/map_loader.h>
 #include <bwi_exp1/base_robot_positioner.h>
 #include <tf/transform_datatypes.h>
@@ -16,15 +17,17 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
     boost::shared_ptr<PersonModel2> model_;
     boost::shared_ptr<PersonEstimator2> estimator_;
     boost::shared_ptr<ValueIteration<State2, Action> > vi_;
+    boost::shared_ptr<HeuristicSolver> hs_;
 
-    std::string policy_file_;
-    int num_robots_available_;
-    int goal_idx_;
     double vi_gamma_;
     int vi_max_iterations_;
-    bool recompute_policy_;
+    double vi_min_value_;
+    std::string data_directory_;
+    bool use_heuristic_;
+    bool allow_robot_current_idx_;
 
     std::string instance_name_;
+    int goal_idx_;
     State2 current_state_;
 
     size_t assigned_robots_;
@@ -38,33 +41,13 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         BaseRobotPositioner(nh) {
 
       ros::NodeHandle private_nh("~");
-      private_nh.getParam("policy_file", policy_file_);
-      private_nh.getParam("goal_idx", goal_idx_);
-      private_nh.param("num_robots_available", num_robots_available_, 5);
-      private_nh.param<bool>("recompute_policy", recompute_policy_, false);
+      private_nh.param<std::string>("data_directory", data_directory_, "");
       private_nh.param<double>("vi_gamma", vi_gamma_, 1.0);
-      private_nh.param<int>("vi_max_iterations_", vi_max_iterations_, 1000);
-
-      model_.reset(new PersonModel2(graph_, map_, goal_idx_));
-      estimator_.reset(new PersonEstimator2);
-      vi_.reset(new ValueIteration<State2, Action>(
-            model_, estimator_, vi_gamma_, 1.0, vi_max_iterations_));
-
-      bool policyAvailable = false;
-      std::ifstream fin(policy_file_.c_str());
-      if (fin.good()) {
-        policyAvailable = true;
-      }
-      if (policyAvailable && !recompute_policy_) {
-        vi_->loadPolicy(policy_file_);
-        ROS_INFO_STREAM("VIRobotPositioner2: Read policy from file: " << 
-            policy_file_);
-      } else {
-        vi_->computePolicy();
-        vi_->savePolicy(policy_file_);
-        ROS_INFO_STREAM("VIRobotPositioner2: Computed policy and saved it " <<
-            "to file: " <<  policy_file_);
-      }
+      private_nh.param<int>("vi_max_iterations", vi_max_iterations_, 1000);
+      private_nh.param<double>("vi_min_value", vi_min_value_, -10000.0);
+      private_nh.param<bool>("use_heuristic", use_heuristic_, false);
+      private_nh.param<bool>("allow_robot_current", allow_robot_current_idx_, 
+          false);
 
     }
 
@@ -82,23 +65,60 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       topological_mapper::Point2f start_point(instance.start_loc.x,
           instance.start_loc.y);
       start_point = topological_mapper::toGrid(start_point, map_info_);
-
-      size_t prev_graph_id = 
+      size_t start_idx = 
         topological_mapper::getClosestIdOnGraph(start_point, graph_);
+
+      topological_mapper::Point2f goal_point(instance.ball_loc.x,
+          instance.ball_loc.y);
+      goal_point = topological_mapper::toGrid(goal_point, map_info_);
+      goal_idx_ = 
+        topological_mapper::getClosestIdOnGraph(goal_point, graph_);
+
+      // Compute model file
+      std::string model_file = data_directory_
+        + boost::lexical_cast<std::string>(goal_idx_) + "_model.txt";
+      std::string vi_file = data_directory_
+        + boost::lexical_cast<std::string>(goal_idx_) + "_vi.txt";
+
+      // Setup the model and the heuristic solver to read from file
+      model_.reset(new PersonModel2(graph_, map_, goal_idx_, model_file, 
+            allow_robot_current_idx_));
+      estimator_.reset(new PersonEstimator2);
+      vi_.reset(new ValueIteration<State2, Action>(
+            model_, estimator_, vi_gamma_, 1.0, vi_max_iterations_,
+            0.0, vi_min_value_));
+      hs_.reset(new HeuristicSolver(map_, graph_, goal_idx_,
+            allow_robot_current_idx_)); 
+
+      // Setup the VI policy file
+      bool policy_available = false;
+      std::ifstream fin(vi_file.c_str());
+      if (fin.good()) {
+        policy_available = true;
+      }
+      if (policy_available) {
+        vi_->loadPolicy(vi_file);
+        ROS_INFO_STREAM("VIRobotPositioner2: Loaded policy from " << vi_file);
+      } else {
+        ROS_INFO_STREAM("VIRobotPositioner2: Computing policy...");
+        vi_->computePolicy();
+        vi_->savePolicy(vi_file);
+        ROS_INFO_STREAM("VIRobotPositioner2: Saved policy to " << vi_file);
+      }
+
       size_t direction = 
         model_->getDirectionFromAngle(instance.start_loc.yaw);
 
-      current_state_.graph_id = prev_graph_id;
+      current_state_.graph_id = start_idx;
       current_state_.direction = direction;
-      current_state_.num_robots_left = num_robots_available_;
+      current_state_.num_robots_left = 5;
       current_state_.current_robot_status = NO_ROBOT;
       current_state_.visible_robot_location = NO_ROBOT;
       ROS_INFO_STREAM("Start at: " << current_state_);
       checkRobotPlacementAtCurrentState();
     }
 
-    virtual void checkRobotPlacementAtCurrentState(
-        size_t prev_graph_id = (size_t)-1) {
+    virtual void checkRobotPlacementAtCurrentState() {
 
       boost::mutex::scoped_lock lock(robot_modification_mutex_);
 
@@ -106,7 +126,12 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         getInstance(experiment_, instance_name_);
 
       // First check if we need to place a robot according to VI policy
-      Action action = vi_->getBestAction(current_state_);
+      Action action;
+      if (use_heuristic_) {
+        action = hs_->getBestAction(current_state_);
+      } else {
+        action = vi_->getBestAction(current_state_);
+      }
       std::vector<State2> next_states;
       std::vector<float> probabilities;
       std::vector<float> rewards;
@@ -117,14 +142,14 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         current_state_ = next_states[0];
         ROS_INFO_STREAM("AUTO transition to: " << current_state_);
         if (action.type == DIRECT_PERSON) {
-          // DIRECT ROBOT HERE
+
+          // Figure out direction to point towards here
           topological_mapper::Point2f to_loc = 
             topological_mapper::getLocationFromGraphId(
                 current_state_.current_robot_status, graph_);
           topological_mapper::Point2f change_loc = to_loc - assigned_robot_loc_;
           float destination_yaw = atan2(change_loc.y, change_loc.x);
           float change_in_yaw = destination_yaw - assigned_robot_yaw_;
-          ROS_INFO_STREAM("  " << to_loc << " " << assigned_robot_loc_ << " " << assigned_robot_yaw_);
           cv::Mat robot_image;
           produceDirectedArrow(change_in_yaw, robot_image);
 
@@ -132,24 +157,49 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           std::string robot_id = default_robots_.robots[assigned_robots_ - 1].id;
           robot_screen_orientations_[robot_id] = destination_yaw;
           robot_screen_publisher_.updateImage(robot_id, robot_image);
+
         } else {
-          // PLACE ROBOT HERE
-          assigned_robot_loc_ = 
+
+          // Place a robot here. Use lookahead to determine the best positioning
+          // around the node
+          topological_mapper::Point2f at_loc = 
             topological_mapper::getLocationFromGraphId(
                 current_state_.visible_robot_location, graph_);
-          topological_mapper::Point2f robot_map_loc =
-            topological_mapper::toMap(assigned_robot_loc_, map_.info);
-          geometry_msgs::Pose pose;
-          pose.position.x = robot_map_loc.x;
-          pose.position.y = robot_map_loc.y;
-          pose.position.z = 0;
-          assigned_robot_yaw_ = 
-            model_->getAngleFromStates(
+
+          float angle = model_->getAngleFromStates(
                 current_state_.graph_id, 
                 current_state_.visible_robot_location
                 );
-          pose.orientation =
-            tf::createQuaternionMsgFromYaw(assigned_robot_yaw_);
+          topological_mapper::Point2f from_loc =
+            at_loc - topological_mapper::Point2f(
+                50.0 * cosf(angle),
+                50.0 * sinf(angle));
+
+          // Perform lookahead to see best location to place robot
+          size_t direction_idx = model_->getDirectionFromAngle(angle);
+          State2 robot_state;
+          robot_state.graph_id = current_state_.visible_robot_location;
+          robot_state.direction = direction_idx;
+          robot_state.num_robots_left = current_state_.num_robots_left;
+          robot_state.current_robot_status = DIR_UNASSIGNED;
+          robot_state.visible_robot_location = NO_ROBOT;
+          Action robot_action;
+          if (use_heuristic_) {
+            robot_action = hs_->getBestAction(robot_state);
+          } else {
+            robot_action = vi_->getBestAction(robot_state);
+          }
+          topological_mapper::Point2f to_loc = 
+            topological_mapper::getLocationFromGraphId(
+                robot_action.graph_id, graph_);
+
+          // Compute robot pose
+          geometry_msgs::Pose pose = positionRobot(from_loc, at_loc, to_loc);
+          assigned_robot_yaw_ = tf::getYaw(pose.orientation);
+          assigned_robot_loc_ = 
+            topological_mapper::Point2f(pose.position.x, pose.position.y);
+
+          // Teleport the robot and forward this information
           std::string robot_id = default_robots_.robots[assigned_robots_].id;
           robot_locations_[robot_id] = pose;
           graph_id_to_robot_map_[current_state_.visible_robot_location] =

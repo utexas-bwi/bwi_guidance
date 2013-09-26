@@ -1,13 +1,15 @@
 <launch>
   <arg name="uid" />
-  <arg name="email" />
-  <arg name="name" />
+  <arg name="email" default="" />
+  <arg name="name" default="" />
+  <arg name="use_heuristic" default="true" />
 
   <include file="$(find bwi_exp1)/launch/environment.launch" />
   <include file="$(find bwi_exp1_solver)/launch/controller.launch">
     <arg name="uid" value="$(arg uid)"/>
     <arg name="email" value="$(arg email)"/>
     <arg name="name" value="$(arg name)"/>
+    <arg name="use_heuristic" value="$(arg use_heuristic)" />
   </include>
 
 </launch>

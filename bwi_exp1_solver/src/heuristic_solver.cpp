@@ -114,6 +114,13 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
   }
   /* std::cout << std::endl; */
 
+  // If the current vertex can't be used for robot placement, remove it from the
+  // set
+  if (!allow_robot_current_idx_) {
+    // The first one is the current location
+    states.erase(states.begin());
+  }
+
   // Now for each state in the forward path, see which is the closest
   size_t min_graph_idx = (size_t) -1;
   float min_distance = std::numeric_limits<float>::max();
@@ -138,10 +145,9 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
     }
   }
 
-  if (min_graph_idx != state.graph_id || allow_robot_current_idx_) {
-    if (min_graph_idx != goal_idx_) {
-      return bwi_exp1::Action(PLACE_ROBOT, min_graph_idx);
-    }
+  if (min_graph_idx != goal_idx_ && min_graph_idx != (size_t)-1) {
+    // The user is expected to pass through the goal
+    return bwi_exp1::Action(PLACE_ROBOT, min_graph_idx);
   }
 
   // This means that placing a robot on the current vertex is not allowed, and 

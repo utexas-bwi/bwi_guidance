@@ -1,16 +1,17 @@
 <launch>
 
   <arg name="uid" />
-  <arg name="email" />
-  <arg name="name" />
+  <arg name="email" default=""/>
+  <arg name="name" default=""/>
+  <arg name="use_heuristic" default="true"/>
 
   <!-- launch the experiment controller node -->
   <node name="experiment_controller" pkg="bwi_exp1" type="controller.py" output="screen">
     <param name="graph_file" value="$(find bwi_exp1)/maps/graph.yaml" />
     <param name="experiment_file" 
            value="$(find bwi_exp1_solver)/config/experiment.yaml" />
-    <param name="user_file" value="$(find bwi_exp1_solver)/data/users.yaml" />
-    <param name="data_dir" value="$(find bwi_exp1_solver)/data" />
+    <param name="user_file" value="$(find bwi_exp1_solver)/data/exp2/users/users.yaml" />
+    <param name="data_dir" value="$(find bwi_exp1_solver)/data/exp2/users" />
     <param name="uid" value="$(arg uid)"/>
     <param name="email" value="$(arg email)"/>
     <param name="name" value="$(arg name)"/>
@@ -28,8 +29,8 @@
     <param name="robot_padding" value="0.1" />
     <param name="search_distance" value="0.45" />
     <!-- <param name="debug" value="true" /> -->
-    <param name="policy_file" value="$(find bwi_exp1)/policy.txt" />
-    <param name="goal_idx" value="46" />
+    <param name="data_directory" value="$(find bwi_exp1_solver)/data/exp2/cache/" />
+    <param name="use_heuristic" value="$(arg use_heuristic)" />
   </node>
 
 </launch>
