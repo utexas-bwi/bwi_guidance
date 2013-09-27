@@ -11,13 +11,23 @@
   </head>
 
   <body onload="instructions()" style="font-family: arial;">
+
     <h2> Instructions </h2>
     Please read the instructions thoroughly before proceeding.
+
     <h4> Experiment Server </h4>
     <ul>
       <li>
-      The experiment server can only support 1 person at a time. To start the experiment, enter your name and email address and lock the server below. <br />
-      <form > 
+      The experiment server can only support 1 person at a time. 
+      </li>
+      <li>
+      It may take up to 15-20 minutes to complete the entire set of
+      experiments, so make sure you have enough time to proceed.
+      </li>
+      <li>
+      To start the experiment, enter your name and email address and lock the
+      server below. <br/>
+      <form> 
         <!--onSubmit="attemptExperimentLock(); return false;">-->
         Enter full name here: <input id="name" type="text" name="name" /> <br />
         Enter email address here: <input id="email" type="text" name="email" /> <br />
@@ -26,32 +36,32 @@
       </form>
       </li>
     </ul>
+
     <h4> Experiment Goal </h4>
     <ul> 
       <li>
       In these experiments, you'll be controlling a simulated person to find a 
-      red ball located somewhere on the floor. The floor is approximately 50m by 50m in size. Images of the simulated person and the ball are below. <br />
-      <img height="200" src="images/person.png" /> <img height="100" src="images/ball.png" />
+      red ball. Your goal will be to find the ball as quickly as possible. <br />
+      <!-- <img height="200" src="images/person.png" /> <img height="100" src="images/ball.png" /> -->
       </li>
       <li>
-      The ball you are trying to locate should be in an open area. Once you find
-      the ball, run into it to proceed to the next experiment.
+      Once you find the ball, run (crash) into it to proceed to the next experiment.
       </li>
       <li>
-      Your goal will be to find the ball as quickly as possible. At the end of 
-      each experiment, you will receive a score based on how fast you were 
-      able to locate the ball. Your score for that experiment will be added to
-      your total.
+      At the end of each experiment, you will receive a score based on how fast
+      you were able to locate the ball. Your score for that experiment will be
+      added to your total.
       </li>
       <li>
-      We'll begin with a couple of tutorials to get you started. After that
-      there will be 6 experiments.
+      We'll begin with 2 tutorials to get you acquainted with the controls.
+      After that we'll proceed with 5 actual experiments.
       </li>
     </ul>
-    <h4> Robots </h4>
+    
+    <h4> Assistance through Robots </h4>
     <ul>
       <li>
-      There will be some robots in the environment that will try and help you
+      Some robots in the environment will try and help you
       reach the destination. These robots are pictured below: <br />
       <img height="150" src="images/robot.png" />
       </li>
@@ -66,16 +76,20 @@
       there performing some other task, and you should ignore that robot.
       </li>
     </ul>
+
+    <h4> Controls </h4>
+    <img height="350" src="images/controls.svg" /><br/>
     <h4> Using the mouse to look </h4>
     <ul>
       <li>
       You can use the mouse to look around if your browser supports it. Hit the 
       "Use Mouse!" button when you enter the experiment.
       </li>
+      <li>
+      Hitting the Esc key will give control of the mouse back to you.
+      </li>
     </ul>
     <p>
-    It will take you between 15-30 minutes to complete the entire set of
-    experiments, so make sure you have enough time to proceed. <br/>
     <form onSubmit="continueToExperiment(); return false;">
       <button id="continue_button" type="submit" disabled>Continue to Experiment!</button>
       <span id="continue_instructions">You don't have a lock on the experiment!</span>
