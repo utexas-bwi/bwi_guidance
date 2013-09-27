@@ -559,6 +559,7 @@ class ExperimentController:
             if count != len(self.instance_times) - 1:
                 result_file.write(",")
             count = count + 1
+        result_file.write('\n')
         result_file.close()
 
         rospy.loginfo("Finalized instances for user: " + self.experiment_uid)

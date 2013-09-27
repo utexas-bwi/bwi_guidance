@@ -5,6 +5,7 @@
 
   <!-- load the server -->
   <node name="server" pkg="bwi_exp1" type="server.py" output="screen">
+    <param name="package" value="bwi_exp1_solver" />
     <param name="script" value="experiment.launch" />
   </node>
 
