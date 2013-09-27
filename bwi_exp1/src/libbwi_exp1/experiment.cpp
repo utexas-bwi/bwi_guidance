@@ -13,6 +13,9 @@ namespace bwi_exp1 {
     node["start_yaw"] >> exp.start_loc.yaw;
     node["ball_x"] >> exp.ball_loc.x;
     node["ball_y"] >> exp.ball_loc.y;
+    node["max_duration"] >> exp.max_duration;
+    node["max_robots"] >> exp.max_robots;
+    node["is_tutorial"] >> exp.is_tutorial;
   }
 
   void operator >> (const YAML::Node& node, InstanceGroup& eg) {

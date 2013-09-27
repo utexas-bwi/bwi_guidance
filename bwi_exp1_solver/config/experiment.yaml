@@ -9,6 +9,7 @@ instance_groups:
         start_yaw: 0
         ball_x: 38.2
         ball_y: 13.9
+        max_robots: 1
         max_duration: 300 #seconds
         is_tutorial: false
       - start_x: 5.7
@@ -16,6 +17,7 @@ instance_groups:
         start_yaw: -0.0475823
         ball_x: 38.1
         ball_y: 13.65
+        max_robots: 2
         max_duration: 300 #seconds
         is_tutorial: false
       - start_x: 1.4
@@ -23,5 +25,6 @@ instance_groups:
         start_yaw: -1.60782
         ball_x: 38.2
         ball_y: 13.7
+        max_robots: 3
         max_duration: 300 #seconds
         is_tutorial: false

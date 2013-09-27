@@ -11,10 +11,12 @@
     <param name="experiment_file" 
            value="$(find bwi_exp1_solver)/config/experiment.yaml" />
     <param name="user_file" value="$(find bwi_exp1_solver)/data/exp2/users/users.yaml" />
+    <param name="result_file" value="$(find bwi_exp1_solver)/data/exp2/users/results.txt" />
     <param name="data_dir" value="$(find bwi_exp1_solver)/data/exp2/users" />
     <param name="uid" value="$(arg uid)"/>
     <param name="email" value="$(arg email)"/>
     <param name="name" value="$(arg name)"/>
+    <param name="use_heuristic" value="$(arg use_heuristic)" />
   </node>
 
   <node name="robot_positioner" pkg="bwi_exp1_solver" 

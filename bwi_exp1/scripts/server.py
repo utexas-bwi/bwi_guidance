@@ -123,9 +123,12 @@ class ExperimentServer:
             log_file = self.logs_folder + "/" + uid + ".log"
             self.log = open(log_file, "w")
             rospy.loginfo("  Log at: " + log_file)
+            use_heuristic = random.choice(['true','false'])
+            rospy.loginfo("  use heuristic: " + use_heuristic)
             process = bwi_exp1.start_roslaunch_process(
                     self.package, self.script,
-                    args={'uid': uid, 'name': name, 'email': email},
+                    args={'uid': uid, 'name': name, 'email': email, 
+                          'use_heuristic': use_heuristic},
                     log=self.log)
             self.processes.append(process)
             self.experiment_server_locked = True

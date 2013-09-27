@@ -50,6 +50,8 @@ namespace bwi_exp1 {
     Location start_loc;
     Location ball_loc;
     float max_duration;
+    int max_robots;
+    bool is_tutorial;
   };
 
   struct InstanceGroup {

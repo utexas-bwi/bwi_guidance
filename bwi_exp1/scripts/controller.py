@@ -130,12 +130,14 @@ class ExperimentController:
             rospy.logerr("Unable to open experiment file: %s"%e.what())
 
         self.user_file = rospy.get_param("~user_file")
+        self.result_file = rospy.get_param("~result_file")
         self.data_directory = rospy.get_param("~data_dir",
                 roslib.packages.get_pkg_dir("bwi_exp1") + "/data")
 
         self.experiment_uid = rospy.get_param("~uid") 
         self.experiment_uname = rospy.get_param("~name") 
         self.experiment_uemail = rospy.get_param("~email") 
+        self.use_heuristic = rospy.get_param("~use_heuristic")
 
         # See if an experiment server is running
         rospy.loginfo("Waiting for service: /server/update_server")
@@ -272,6 +274,7 @@ class ExperimentController:
                 self.experiment_text = "Oh no! It looks like you ran out of "\
                         + "time with this experiment. We've awarded you "\
                         + str(reward) + " points."
+            self.instance_times.append(time_diff)
         else:
             if (success):
                 if self.instances[self.instance_number + 1]['is_tutorial']:
@@ -297,7 +300,6 @@ class ExperimentController:
         self.reward += reward
 
         # Write log file
-        print self.robot_log
         log_data = {'odometry': self.odometry_log,
                     'robots': self.robot_log}
         with open(self.log_file_name, 'w') as log_file:
@@ -501,6 +503,7 @@ class ExperimentController:
         # Load instances based on the instance group order
         self.instance_names = []
         self.instances = []
+        self.instance_times = []
         self.instance_group_count = []
         for instance_group_name in self.instance_group_order:
             for instance_group in self.experiment['instance_groups']:
@@ -530,6 +533,8 @@ class ExperimentController:
         rospy.loginfo("Starting experiment for user: " + self.experiment_uid)
 
     def finalize_experiment(self):
+
+        # Write users file for visualization
         user_file = open(self.user_file, "a")
         user_file.write("- user: " + self.experiment_uid + "\n")
         user_file.write("  name: " + self.experiment_uname + "\n")
@@ -541,6 +546,21 @@ class ExperimentController:
             user_file.write("      num: " + 
                             str(self.instance_group_count[i]) + "\n")
         user_file.close()
+
+        # Write results file for graph computation
+        result_file = open(self.result_file, "a")
+        if self.use_heuristic:
+            result_file.write("heuristic,")
+        else:
+            result_file.write("vi,")
+        count = 0
+        for instance_time in self.instance_times:
+            result_file.write(str(instance_time))
+            if count != len(self.instance_times) - 1:
+                result_file.write(",")
+            count = count + 1
+        result_file.close()
+
         rospy.loginfo("Finalized instances for user: " + self.experiment_uid)
         self.experiment_success = True
         self.experiment_text = "Huzzah. You are all done. Thanks for "\

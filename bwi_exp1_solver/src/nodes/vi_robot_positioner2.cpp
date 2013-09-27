@@ -116,7 +116,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
       current_state_.graph_id = start_idx;
       current_state_.direction = direction;
-      current_state_.num_robots_left = 5;
+      current_state_.num_robots_left = instance.max_robots;
       current_state_.current_robot_status = NO_ROBOT;
       current_state_.visible_robot_location = NO_ROBOT;
       ROS_INFO_STREAM("Start at: " << current_state_);
