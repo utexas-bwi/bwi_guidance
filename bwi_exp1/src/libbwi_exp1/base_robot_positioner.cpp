@@ -209,12 +209,12 @@ namespace bwi_exp1 {
 
   void BaseRobotPositioner::experimentCallback(
       const bwi_msgs::ExperimentStatus::ConstPtr es) {
-    if (es->instance_in_progress && es->instance_number != current_instance_ &&
+    if (es->robot_positioning_enabled && es->instance_number != current_instance_ &&
         es->instance_number != es->total_experiments) {
       startExperimentInstance(es->instance_name);
       current_instance_ = es->instance_number;
       instance_in_progress_ = true;
-    } else if (!es->instance_in_progress && instance_in_progress_) {
+    } else if (!es->robot_positioning_enabled && instance_in_progress_) {
       finalizeExperimentInstance();
       instance_in_progress_ = false;
     }

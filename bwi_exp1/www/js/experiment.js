@@ -200,7 +200,7 @@ function start() {
   /* Publishers */
 
   /* Velocity stuff */
-  var cmd_vel_publisher = null;
+  var cmd_vel_publisher = null; //pub
   ros.on('connection', function() {
     cmd_vel_publisher = new ros.Topic({
       name        : '/person/cmd_vel',
@@ -232,7 +232,23 @@ function start() {
           z: prev_vela
         }
       });
-      cmd_vel_publisher.publish(twist);
+      if (pause_button.disabled == false) {
+        cmd_vel_publisher.publish(twist);
+      } else {
+        var zero_twist = new ros.Message({
+          linear: {
+            x: 0,
+            y: 0,
+            z: 0
+          },
+          angular: {
+            x: 0,
+            y: 0,
+            z: 0
+          }
+        });
+        cmd_vel_publisher.publish(zero_twist);
+      } 
     }
   }
 

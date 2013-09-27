@@ -1,4 +1,5 @@
 bool instance_in_progress
+bool robot_positioning_enabled
 string uid
 float32 total_reward
 

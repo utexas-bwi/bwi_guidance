@@ -11,7 +11,7 @@ import yaml
 
 from tf.transformations import quaternion_from_euler
 
-from bwi_msgs.msg import ExperimentStatus
+from bwi_msgs.msg import ExperimentStatus, RobotInfoArray
 from bwi_msgs.srv import UpdateExperiment, UpdateExperimentResponse, \
                          UpdateExperimentServer, UpdateExperimentServerRequest
 from gazebo_msgs.srv import SetModelState, SetModelStateRequest, \
@@ -84,6 +84,8 @@ class ExperimentInterface(threading.Thread):
                 self.interface_lock.acquire()
                 msg = ExperimentStatus()
                 msg.instance_in_progress = self.controller.instance_in_progress
+                msg.robot_positioning_enabled = \
+                        self.controller.robot_positioning_enabled
                 msg.uid = self.controller.experiment_uid
                 msg.total_reward = self.controller.reward
                 msg.current_display_text = self.controller.experiment_text
@@ -189,6 +191,7 @@ class ExperimentController:
         self.instance_number = 0
         self.num_instances = 0
         self.instance_in_progress = False
+        self.robot_positioning_enabled = False
         self.instance_success = False
         self.start_next_instance = False
         self.paused = False
@@ -196,6 +199,10 @@ class ExperimentController:
         # Setup the odometry subscriber
         self.odometry_subscriber = rospy.Subscriber(self.person_id + '/odom', 
                 Odometry, self.odometry_callback)
+
+        # Setup the robot positioner subscriber
+        self.robot_positioner_subscriber = rospy.Subscriber('/robot_positions',
+                RobotInfoArray, self.robot_positioner_callback)
 
         # A couple of locks
         self.modify_experiment_lock = threading.Lock()
@@ -223,26 +230,22 @@ class ExperimentController:
         self.goal_location = [ball_x, ball_y]
 
         # setup odometry thread to write out odometry values
-        self.log_file = open(log_file_name, 'w')
-        self.log_file.write("odometry: \n")
+        self.log_file_name = log_file_name
+        self.odometry_log = []
+        self.robot_log = []
 
         # Save experiment start time
-        self.experiment_start_time = rospy.get_time()
+        # self.experiment_start_time = rospy.get_time()
         self.experiment_max_duration = experiment_data['max_duration']
 
         # Setup interactions with user
         self.experiment_tutorial = experiment_data['is_tutorial']
         if self.experiment_tutorial:
             self.max_tutorial_time = experiment_data['tutorial_duration']
-            self.experiment_text = "#" + str(instance_number + 1) + " "\
-                    + "The TUTORIAL has started! Use this tutorial to become "\
-                    + "comfortable with moving the person around."
-        else:
-            self.experiment_text = "#" + str(instance_number + 1) + " "\
-                    + "The EXPERIMENT has started! Find the red ball as "\
-                    + "quickly as possible!"
+        self.experiment_text = "Loading..."
 
-        self.instance_in_progress = True
+        # self.instance_in_progress = True
+        self.robot_positioning_enabled = True
         self.instance_success = False
 
         self.modify_instance_lock.release()
@@ -251,6 +254,7 @@ class ExperimentController:
 
         self.modify_instance_lock.acquire()
         self.instance_in_progress = False
+        self.robot_positioning_enabled = False
 
         if not self.experiment_tutorial:
             current_time = rospy.get_time()
@@ -292,9 +296,13 @@ class ExperimentController:
                 " Hit the ENTER key or press Continue to try again!"
         self.reward += reward
 
-        # setup odometry thread to stop writing out odometry values
-        self.log_file.write("success: " + str(success))
-        self.log_file.close()
+        # Write log file
+        print self.robot_log
+        log_data = {'odometry': self.odometry_log,
+                    'robots': self.robot_log}
+        with open(self.log_file_name, 'w') as log_file:
+            log_file.write(yaml.dump(log_data, default_flow_style=False))
+            log_file.close()
 
         self.modify_instance_lock.release()
 
@@ -305,16 +313,15 @@ class ExperimentController:
 
         self.modify_instance_lock.acquire()
 
-        # Once first odometry message is received, ready the experiment in 10s
+        # Once first odometry message is received, ready the experiment in 20s
         if not self.experiment_ready_timer_started:
             self.experiment_ready_timer_started = True
             self.experiment_ready_timer = \
-                threading.Timer(10.0, self.ready_the_experiment)
+                threading.Timer(20.0, self.ready_the_experiment)
             self.experiment_ready_timer.start()
 
         if (not self.instance_in_progress):
-            # This instance has completed. We just received an extra odom 
-            # message from Gazebo before it got completely paused.
+            # Instance not ready 
             self.modify_instance_lock.release()
             return
 
@@ -322,14 +329,47 @@ class ExperimentController:
         loc = [odom.pose.pose.position.x, odom.pose.pose.position.y]
 
         # record position
-        self.log_file.write("  - [" + str(loc[0]) + ", " + str(loc[1]) + ", "
-                            + str(ros_time) + "]\n")
+        self.odometry_log.append([loc[0],loc[1],ros_time]);
 
         # check if the person is close to the ball
         distance_from_goal = distance(loc, self.goal_location)
         if distance_from_goal < 1.0:
             self.instance_success = True
 
+        self.modify_instance_lock.release()
+
+    def robot_positioner_callback(self, msg):
+
+        self.modify_instance_lock.acquire()
+
+        if self.robot_positioning_enabled and not self.instance_in_progress:
+            if msg.ready:
+                # Robot positioning is now ready. Start the experiment
+                self.instance_in_progress = True
+                self.experiment_start_time = rospy.get_time()
+                if self.experiment_tutorial:
+                    self.experiment_text = "#" + str(self.instance_number + 1) + " "\
+                            + "The TUTORIAL has started! Use this tutorial to become "\
+                            + "comfortable with moving the person around."
+                else:
+                    self.experiment_text = "#" + str(self.instance_number + 1) + " "\
+                            + "The EXPERIMENT has started! Find the red ball as "\
+                            + "quickly as possible!"
+                self.ping_server()
+            else:
+                self.modify_instance_lock.release()
+                return
+
+        if not self.instance_in_progress:
+            self.modify_instance_lock.release()
+            return
+
+        ros_time = msg.header.stamp.to_sec()
+        robots = [{'loc': [r.pose.position.x, r.pose.position.y],
+                   'direction': r.direction,
+                   'is_ok': r.is_ok} for r in msg.robots]
+        self.robot_log.append({'time': ros_time, 'robots': robots})
+            
         self.modify_instance_lock.release()
 
     def start(self):
