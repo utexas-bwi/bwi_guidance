@@ -275,7 +275,9 @@ namespace bwi_exp1 {
     if (!location_verified) {
       ROS_ERROR_STREAM("Unable to teleport " << entity << " to " << pose
           << " despite " << attempts << " attempts.");
+      return false;
     }
+    return true;
   }
 
   geometry_msgs::Pose BaseRobotPositioner::positionRobot(
@@ -404,6 +406,8 @@ namespace bwi_exp1 {
             teleportEntity(robot_id, robot_locations_[robot_id]);
           assigned_robot_locations_[robot_id] = robot_locations_[robot_id];
         }
+        change = change || (prev_orientation_[robot_id] != 
+          robot_screen_orientations_[robot_id]);
       }
       change = change || (instance_in_progress_ != prev_msg_ready_);
       if (change) {
@@ -415,6 +419,7 @@ namespace bwi_exp1 {
           bwi_msgs::RobotInfo robot_info;
           robot_info.pose = assigned_robot_locations_[robot_id];
           robot_info.direction = robot_screen_orientations_[robot_id];
+          prev_orientation_[robot_id] = robot_screen_orientations_[robot_id];
           robot_info.is_ok = robot_ok_[robot_id];
           out_msg.robots.push_back(robot_info);
         }

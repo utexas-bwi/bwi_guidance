@@ -78,6 +78,7 @@ namespace bwi_exp1 {
       std::map<std::string, geometry_msgs::Pose> robot_locations_; 
       std::map<std::string, geometry_msgs::Pose> assigned_robot_locations_;
       std::map<std::string, float> robot_screen_orientations_;
+      std::map<std::string, float> prev_orientation_;
       std::map<std::string, bool> robot_ok_;
       boost::mutex robot_modification_mutex_;
 
