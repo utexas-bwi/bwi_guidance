@@ -39,11 +39,13 @@ struct InstanceResult {
   float percent_vi_completion[5]; 
   float avg_hi_distance[5];
   float percent_hi_completion[5];
+  float true_vi_value[5];
 };
 
 std::ostream& operator<< (std::ostream& stream, const InstanceResult& ir) {
   for (int i = 0; i < 5; ++i) {
-    stream << ir.avg_vi_distance[i] << "," << ir.percent_vi_completion[i] << "," << ir.avg_hi_distance[i] << "," << ir.percent_hi_completion[i];
+    stream << ir.avg_vi_distance[i] << "," << ir.avg_hi_distance[i] << "," << ir.true_vi_value[i];
+    /* stream << ir.avg_vi_distance[i] << "," << ir.percent_vi_completion[i] << "," << ir.avg_hi_distance[i] << "," << ir.percent_hi_completion[i]; */
     if (i!=4) 
       stream << ",";
     // stream << "VI\t" << i+1 << "r\t" << ir.avg_vi_distance[i] << "\t" 
@@ -88,6 +90,7 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
   std::ifstream vi_ifs(indexed_vi_file.c_str());
   if (vi_ifs.good()) {
     vi.loadPolicy(indexed_vi_file);
+    vi.savePolicy(indexed_vi_file);
   } else {
     vi.computePolicy();
     vi.savePolicy(indexed_vi_file);
@@ -100,6 +103,7 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
 
       float sum_instance_distance = 0;
       int count_successful = 0;
+      float true_distance = 0;
 
       for (int run = 0; run < runs_per_instance; ++run) {
 
@@ -109,6 +113,7 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
         current_state.num_robots_left = starting_robots;
         current_state.current_robot_status = NO_ROBOT;
         current_state.visible_robot_location = NO_ROBOT;
+        true_distance = -estimator->getValue(current_state);
 
         /* std::cout << " - start " << current_state << std::endl; */
 
@@ -164,6 +169,8 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
         result.avg_vi_distance[starting_robots - 1] *= map.info.resolution;
         result.percent_vi_completion[starting_robots - 1] =
           ((float) count_successful * 100.0f) / runs_per_instance;
+        result.true_vi_value[starting_robots - 1] = true_distance;
+        result.true_vi_value[starting_robots - 1] *= map.info.resolution;
       } else {
         result.avg_hi_distance[starting_robots - 1] = 
           sum_instance_distance / runs_per_instance;
