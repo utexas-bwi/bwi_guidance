@@ -14,6 +14,7 @@ def mean_confidence_interval(data, confidence=0.95):
     return m, h
 
 hs = [[], [], [], [], []]
+hs_vals = [[], [], [], [], []]
 vi = [[], [], [], [], []] 
 
 print 'Reading from: ' + sys.argv[1]
@@ -23,6 +24,11 @@ with open(sys.argv[1], 'rb') as csvfile:
         for i in range(5):
             vi[i].append(float(line[4 + 3*i]) / float(line[18]))
             hs[i].append(float(line[5 + 3*i]) / float(line[18]))
+            hs_vals[i].append([vi[i][-1], [line[1], line[2], line[3]]])
+
+for i in range(5):
+    hs_vals[i].sort(reverse=True, key=lambda x: x[0])
+    print hs_vals[i][0:5]
 
 vi_means = []
 vi_conf = []
