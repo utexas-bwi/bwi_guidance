@@ -886,7 +886,66 @@ namespace topological_mapper {
       }
     }
 
-    // Once all the edges have been added, remove edges that fail traingle inequality
+    // Now, nudge all vertices to see if you can increase visibility.
+    pass_3_count = 0;
+    int neighbourhood = 0.5 / map_resp_.map.info.resolution;
+    int num_vertices_pass_3 = boost::num_vertices(pass_3_graph);
+    for (boost::tie(vi, vend) = boost::vertices(pass_3_graph); vi != vend;
+        ++vi, ++pass_3_count) {
+      std::cout << "Attempting nudge on vtx: " << pass_3_count << std::endl;
+      Point2f vtx_loc = getLocationFromGraphId(pass_3_count, pass_3_graph);
+      int max_visibility = 0, best_i = vtx_loc.x, best_j = vtx_loc.y; 
+      for (int k = 0; k < num_vertices_pass_3; ++k) {
+        Point2f k_loc = getLocationFromGraphId(k, pass_3_graph);
+        if (locationsInDirectLineOfSight(vtx_loc, k_loc, map_resp_.map)) {
+          ++max_visibility;
+        }
+      }
+      for (int j = vtx_loc.y - neighbourhood / 2; 
+          j <= vtx_loc.y + neighbourhood / 2; ++j) {
+        for (int i = vtx_loc.x - neighbourhood / 2; 
+            i <= vtx_loc.x + neighbourhood / 2; ++i) {
+          Point2f point_loc(i, j); 
+          int visibility = 0;
+          for (int k = 0; k < num_vertices_pass_3; ++k) {
+            Point2f k_loc = getLocationFromGraphId(k, pass_3_graph);
+            if (locationsInDirectLineOfSight(point_loc, k_loc, map_resp_.map)) {
+              ++visibility;
+            }
+          }
+          if (visibility > max_visibility) {
+            max_visibility = visibility;
+            best_i = i;
+            best_j = j;
+          }
+        }
+      }
+      pass_3_graph[*vi].location = Point2f(best_i, best_j);
+    }
+
+    // Recompute edge weights
+    pass_3_count = 0;
+    for (boost::tie(vi, vend) = boost::vertices(pass_3_graph); vi != vend;
+        ++vi, ++pass_3_count) {
+      Point2f vtx1 = getLocationFromGraphId(pass_3_count, pass_3_graph);
+      std::vector<size_t> adj_vertices;
+      getAdjacentVertices(pass_3_count, pass_3_graph, adj_vertices);
+      BOOST_FOREACH(size_t adj_vertex, adj_vertices) {
+        if (adj_vertex > pass_3_count) {
+          Point2f vtx2 = getLocationFromGraphId(adj_vertex, pass_3_graph);
+          Graph::vertex_descriptor vi,vj;
+          vi = boost::vertex(pass_3_count, pass_3_graph);
+          vj = boost::vertex(adj_vertex, pass_3_graph);
+          Graph::edge_descriptor e; bool b;
+          boost::tie(e,b) = boost::edge(vi, vj, pass_3_graph);
+          if (b) {
+            pass_3_graph[e].weight = getMagnitude(vtx1 - vtx2);
+          }
+        }
+      }
+    }
+
+    // Once all the edges have been added, remove edges that fail triangle inequality
     pass_3_count = 0;
     for (boost::tie(vi, vend) = boost::vertices(pass_3_graph); vi != vend;
         ++vi, ++pass_3_count) {
