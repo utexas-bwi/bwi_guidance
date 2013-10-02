@@ -56,7 +56,6 @@ namespace topological_mapper {
     size_t count = 0;
     for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
       Point2f location = graph[*vi].location;
-
       // Draw the edges from this vertex
       Graph::adjacency_iterator ai, aend;
       for (boost::tie(ai, aend) = boost::adjacent_vertices(
@@ -66,11 +65,16 @@ namespace topological_mapper {
         // Simple weak ordering check to ensure that this is drawn only once
         if (location2.x < location.x ||
             location2.x == location.x && location2.y < location.y) {
-          cv::line(image, 
-              cv::Point(orig_x + location.x, orig_y + location.y),
-              cv::Point(orig_x + location2.x, orig_y + location2.y),
+          cv::Point start_pt = 
+            cv::Point(orig_x + location.x, orig_y + location.y);
+          cv::Point end_pt = 
+            cv::Point(orig_x + location2.x, orig_y + location2.y);
+          float shift_ratio = 15.0f / cv::norm(start_pt - end_pt);
+          cv::Point start_shift = start_pt + shift_ratio * (end_pt - start_pt); 
+          cv::Point end_shift = end_pt + shift_ratio * (start_pt - end_pt); 
+          cv::line(image, start_shift, end_shift, 
               cv::Scalar(160, 160, 255),
-              1, 4); // draw a 4 connected line
+              2, 4); // draw a 4 connected line
         }
       }
     }
@@ -81,11 +85,14 @@ namespace topological_mapper {
       size_t vertex_size = 3; // + graph[*vi].pixels / 10;
       cv::Point vertex_loc(orig_x + (uint32_t)location.x, 
           orig_y + (uint32_t)location.y);
-      cv::circle(image, vertex_loc, vertex_size, cv::Scalar(0,0,255), -1);
+      /* cv::circle(image, vertex_loc, vertex_size, cv::Scalar(0,0,255), -1); */
       if (put_text) {
-        cv::Point text_loc = vertex_loc + cv::Point(-8,-3);
+        cv::Point text_loc = vertex_loc + cv::Point(-7,7);
+        if (count >= 10) {
+          text_loc = text_loc + cv::Point(-7,0);
+        }
         cv::putText(image, boost::lexical_cast<std::string>(count), text_loc,
-            cv::FONT_HERSHEY_COMPLEX_SMALL, 0.5, cvScalar(0,0,255), 1, CV_AA);
+            cv::FONT_HERSHEY_SIMPLEX, 0.7, cvScalar(0,0,255), 2, CV_AA);
       }
 
       count++;

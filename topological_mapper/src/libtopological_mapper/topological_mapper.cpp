@@ -172,22 +172,30 @@ namespace topological_mapper {
   void TopologicalMapper::saveOutput() {
     cv::Mat image;
     drawMap(image);
+    drawVoronoiPoints(image);
+    cv::imwrite("graphvoronoi.png", image);
+    drawMap(image);
     drawConnectedComponents(image);
     drawCriticalPoints(image);
-    cv::imwrite("graph_critical.png", image);
+    cv::imwrite("graphcritical.png", image);
     drawMap(image);
     drawGraph(image, region_graph_);
-    cv::imwrite("graph_original.png", image);
+    cv::imwrite("graphoriginal.png", image);
     drawMap(image);
     drawGraph(image, pass_1_graph_);
-    cv::imwrite("graph_pass1.png", image);
+    cv::imwrite("graphpass1.png", image);
     drawMap(image);
     drawGraph(image, pass_2_graph_);
-    cv::imwrite("graph_pass2.png", image);
+    cv::imwrite("graphpass2.png", image);
+    drawMap(image);
+    drawGraph(image, pass_3_graph_);
+    cv::imwrite("graphpass3.png", image);
+    drawMap(image);
+    drawGraph(image, pass_4_graph_);
+    cv::imwrite("graphpass4.png", image);
     drawMap(image);
     drawGraph(image, point_graph_);
-    cv::imwrite("graph_final.png", image);
-
+    cv::imwrite("graphfinal.png", image);
   }
 
   /**
@@ -886,6 +894,8 @@ namespace topological_mapper {
       }
     }
 
+    pass_3_graph_ = pass_3_graph;
+
     // Now, nudge all vertices to see if you can increase visibility.
     pass_3_count = 0;
     int neighbourhood = 0.5 / map_resp_.map.info.resolution;
@@ -944,6 +954,8 @@ namespace topological_mapper {
         }
       }
     }
+
+    pass_4_graph_ = pass_3_graph;
 
     // Once all the edges have been added, remove edges that fail triangle inequality
     pass_3_count = 0;

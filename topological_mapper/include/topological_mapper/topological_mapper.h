@@ -150,6 +150,8 @@ namespace topological_mapper {
       Graph region_graph_;
       Graph pass_1_graph_;
       Graph pass_2_graph_;
+      Graph pass_3_graph_;
+      Graph pass_4_graph_;
       Graph point_graph_;
 
   }; /* TopologicalMapper */
