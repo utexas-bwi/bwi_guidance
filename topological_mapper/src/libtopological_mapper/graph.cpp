@@ -38,6 +38,7 @@
 #include <yaml-cpp/yaml.h>
 #include <fstream>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
+#include <boost/foreach.hpp>
 
 #include <topological_mapper/graph.h>
 #include <topological_mapper/map_utils.h>
@@ -50,35 +51,44 @@ namespace topological_mapper {
    *          (orig_x, orig_y)
    */
   void drawGraph(cv::Mat &image, const Graph& graph,
-      uint32_t orig_x, uint32_t orig_y, bool put_text) {
+      uint32_t orig_x, uint32_t orig_y, bool put_text, bool put_all_edges,
+      std::vector<std::pair<size_t, size_t> > specific_edges) {
 
     Graph::vertex_iterator vi, vend;
     size_t count = 0;
-    for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
+    for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; 
+        ++vi, ++count) {
       Point2f location = graph[*vi].location;
       // Draw the edges from this vertex
-      Graph::adjacency_iterator ai, aend;
-      for (boost::tie(ai, aend) = boost::adjacent_vertices(
-            (Graph::vertex_descriptor)*vi, graph); 
-          ai != aend; ++ai) {
-        Point2f location2 = graph[*ai].location;
-        // Simple weak ordering check to ensure that this is drawn only once
-        if (location2.x < location.x ||
-            location2.x == location.x && location2.y < location.y) {
-          cv::Point start_pt = 
-            cv::Point(orig_x + location.x, orig_y + location.y);
-          cv::Point end_pt = 
-            cv::Point(orig_x + location2.x, orig_y + location2.y);
-          float shift_ratio = 15.0f / cv::norm(start_pt - end_pt);
-          cv::Point start_shift = start_pt + shift_ratio * (end_pt - start_pt); 
-          cv::Point end_shift = end_pt + shift_ratio * (start_pt - end_pt); 
-          cv::line(image, start_shift, end_shift, 
-              cv::Scalar(160, 160, 255),
-              2, 4); // draw a 4 connected line
+      std::vector<size_t> adj_vertices;
+      getAdjacentVertices(count, graph, adj_vertices);
+      BOOST_FOREACH(size_t adj_vtx, adj_vertices) {
+        if (adj_vtx > count) {
+          bool allow_edge = put_all_edges;
+          allow_edge = allow_edge || 
+            std::find(specific_edges.begin(), specific_edges.end(), 
+                std::make_pair(count, adj_vtx)) != specific_edges.end();
+          allow_edge = allow_edge || 
+            std::find(specific_edges.begin(), specific_edges.end(), 
+                std::make_pair(adj_vtx, count)) != specific_edges.end();
+          if (allow_edge) {
+            Point2f location2 = getLocationFromGraphId(adj_vtx, graph);
+            cv::Point start_pt = 
+              cv::Point(orig_x + location.x, orig_y + location.y);
+            cv::Point end_pt = 
+              cv::Point(orig_x + location2.x, orig_y + location2.y);
+            float shift_ratio = 15.0f / cv::norm(start_pt - end_pt);
+            cv::Point start_shift = start_pt + shift_ratio * (end_pt - start_pt); 
+            cv::Point end_shift = end_pt + shift_ratio * (start_pt - end_pt); 
+            cv::line(image, start_shift, end_shift, 
+                cv::Scalar(160, 160, 255),
+                2, CV_AA); // draw an anti aliased line
+          }
         }
       }
     }
 
+    count = 0;
     for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
       Point2f location = graph[*vi].location;
       // Draw this vertex
@@ -97,6 +107,57 @@ namespace topological_mapper {
 
       count++;
     }
+  }
+
+  void drawArrowOnGraph(cv::Mat &image, const Graph& graph, 
+      std::pair<size_t, float> arrow, cv::Scalar color,
+      uint32_t orig_x, uint32_t orig_y) {
+
+    float orientation = arrow.second;
+    Point2f loc = getLocationFromGraphId(arrow.first, graph);
+    cv::Point node_loc(loc.x + orig_x, loc.y + orig_y); 
+    cv::Point arrow_center = node_loc + 
+      cv::Point(20 * cosf(orientation), 20 * sinf(orientation));
+
+    cv::Point arrow_start = arrow_center +
+      cv::Point(15 * cosf(orientation + M_PI/2), 
+                15 * sinf(orientation + M_PI/2));
+    cv::Point arrow_end = arrow_center -
+      cv::Point(15 * cosf(orientation + M_PI/2), 
+                15 * sinf(orientation + M_PI/2));
+
+    cv::line(image, arrow_start, arrow_end, color, 2, CV_AA);
+
+    // http://mlikihazar.blogspot.com/2013/02/draw-arrow-opencv.html
+    cv::Point p(arrow_start), q(arrow_end);
+
+    //Draw the first segment
+    float angle = atan2f(p.y - q.y, p.x - q.x);
+    p.x = (int) (q.x + 6 * cos(angle + M_PI/4));
+    p.y = (int) (q.y + 6 * sin(angle + M_PI/4));
+    cv::line(image, p, q, color, 2, CV_AA);
+
+    //Draw the second segment
+    p.x = (int) (q.x + 8 * cos(angle - M_PI/4));
+    p.y = (int) (q.y + 8 * sin(angle - M_PI/4));
+    cv::line(image, p, q, color, 2, CV_AA);
+  }
+
+  void drawCircleOnGraph(cv::Mat &image, const Graph& graph, 
+      size_t node, cv::Scalar color,
+      uint32_t orig_x, uint32_t orig_y) {
+    Point2f loc = getLocationFromGraphId(node, graph);
+    cv::Point circle_loc(loc.x + orig_x, loc.y + orig_y); 
+    cv::circle(image, circle_loc, 15, color, 2, CV_AA); 
+  }
+
+  void drawSquareOnGraph(cv::Mat &image, const Graph& graph, 
+      size_t node, cv::Scalar color,
+      uint32_t orig_x, uint32_t orig_y) {
+    Point2f loc = getLocationFromGraphId(node, graph);
+    cv::Point square_loc(loc.x + orig_x, loc.y + orig_y); 
+    cv::Rect rect(square_loc.x - 15, square_loc.y - 15, 30, 30);
+    cv::rectangle(image, rect, color, 2, CV_AA); 
   }
 
   void writeGraphToFile(const std::string &filename, 

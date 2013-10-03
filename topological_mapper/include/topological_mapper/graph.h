@@ -69,7 +69,22 @@ namespace topological_mapper {
    *          (orig_x, orig_y)
    */
   void drawGraph(cv::Mat &image, const Graph& graph,
-      uint32_t orig_x = 0, uint32_t orig_y = 0, bool put_text = true);
+      uint32_t orig_x = 0, uint32_t orig_y = 0, 
+      bool put_text = true, bool put_all_edges = true, 
+      std::vector<std::pair<size_t, size_t> > specific_edges = 
+      std::vector<std::pair<size_t, size_t> >());
+
+  void drawArrowOnGraph(cv::Mat &image, const Graph& graph, 
+      std::pair<size_t, float> arrow, cv::Scalar color = cv::Scalar(0,0,255),
+      uint32_t orig_x = 0, uint32_t orig_y = 0);
+
+  void drawCircleOnGraph(cv::Mat &image, const Graph& graph, 
+      size_t node, cv::Scalar color = cv::Scalar(0,0,255),
+      uint32_t orig_x = 0, uint32_t orig_y = 0);
+
+  void drawSquareOnGraph(cv::Mat &image, const Graph& graph, 
+      size_t node, cv::Scalar color = cv::Scalar(0,0,255),
+      uint32_t orig_x = 0, uint32_t orig_y = 0);
 
   void writeGraphToFile(const std::string &filename, 
       const Graph& graph, const nav_msgs::MapMetaData& info); 

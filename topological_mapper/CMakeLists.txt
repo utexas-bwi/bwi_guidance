@@ -71,6 +71,9 @@ target_link_libraries(generate_graph topological_mapper)
 add_executable(view_graph src/nodes/view_graph.cpp)
 target_link_libraries(view_graph topological_mapper)
 
+add_executable(prepare_graph src/nodes/prepare_graph.cpp)
+target_link_libraries(prepare_graph topological_mapper)
+
 #test binaries
 add_executable(test_circle test/test_circle.cpp)
 target_link_libraries(test_circle topological_mapper)
@@ -103,6 +106,7 @@ install(TARGETS
   topological_mapper
   generate_graph
   view_graph
+  prepare_graph
   test_circle
   test_map_loader
   test_voronoi
