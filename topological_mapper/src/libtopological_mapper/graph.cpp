@@ -92,10 +92,8 @@ namespace topological_mapper {
     for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
       Point2f location = graph[*vi].location;
       // Draw this vertex
-      size_t vertex_size = 3; // + graph[*vi].pixels / 10;
       cv::Point vertex_loc(orig_x + (uint32_t)location.x, 
           orig_y + (uint32_t)location.y);
-      /* cv::circle(image, vertex_loc, vertex_size, cv::Scalar(0,0,255), -1); */
       if (put_text) {
         cv::Point text_loc = vertex_loc + cv::Point(-7,7);
         if (count >= 10) {
@@ -103,8 +101,10 @@ namespace topological_mapper {
         }
         cv::putText(image, boost::lexical_cast<std::string>(count), text_loc,
             cv::FONT_HERSHEY_SIMPLEX, 0.7, cvScalar(0,0,255), 2, CV_AA);
+      } else {
+        size_t vertex_size = 15; // + graph[*vi].pixels / 10;
+        cv::circle(image, vertex_loc, vertex_size, cv::Scalar(0,0,255), -1);
       }
-
       count++;
     }
   }

@@ -14,49 +14,66 @@ void drawElementsFile(const std::string& elements_file, cv::Mat& image,
   YAML::Parser parser(fin);
 
   YAML::Node node;
+  bool put_text = true;
+  bool put_all_edges = true;
   std::vector<std::pair<size_t, size_t> > edges;
   std::vector<std::pair<size_t, float> > arrows;
   std::vector<int> circles, squares;
   while(parser.GetNextDocument(node)) {
 
     // Get Edges
-    const YAML::Node& edges_node = node["edges"];
-    for(unsigned i = 0; i < edges_node.size(); ++i) {
-      std::pair<size_t, size_t> edge;
-      edges_node[i][0] >> edge.first;
-      edges_node[i][1] >> edge.second;
-      edges.push_back(edge);
+    if (node.FindValue("edges")) {
+      put_all_edges = false;
+      const YAML::Node& edges_node = node["edges"];
+      for(unsigned i = 0; i < edges_node.size(); ++i) {
+        std::pair<size_t, size_t> edge;
+        edges_node[i][0] >> edge.first;
+        edges_node[i][1] >> edge.second;
+        edges.push_back(edge);
+      }
     }
 
     // Get Circles
-    const YAML::Node& circles_node = node["circles"];
-    for(unsigned i = 0; i < circles_node.size(); ++i) {
-      int circle;
-      circles_node[i] >> circle;
-      circles.push_back(circle);
+    if (node.FindValue("circles")) {
+      const YAML::Node& circles_node = node["circles"];
+      for(unsigned i = 0; i < circles_node.size(); ++i) {
+        int circle;
+        circles_node[i] >> circle;
+        circles.push_back(circle);
+      }
     }
 
     // Get Squares
-    const YAML::Node& squares_node = node["squares"];
-    for(unsigned i = 0; i < squares_node.size(); ++i) {
-      int square;
-      squares_node[i] >> square;
-      squares.push_back(square);
+    if (node.FindValue("squares")) {
+      const YAML::Node& squares_node = node["squares"];
+      for(unsigned i = 0; i < squares_node.size(); ++i) {
+        int square;
+        squares_node[i] >> square;
+        squares.push_back(square);
+      }
     }
 
     // Get Directional arrows
-    const YAML::Node& arrows_node = node["arrows"];
-    for(unsigned i = 0; i < arrows_node.size(); ++i) {
-      std::pair<size_t, float> arrow;
-      arrows_node[i][0] >> arrow.first;
-      size_t direction;
-      arrows_node[i][1] >> direction;
-      arrow.second = ((2 * M_PI) / 16) * direction + M_PI/2;
-      arrows.push_back(arrow);
+    if (node.FindValue("arrows")) {
+      const YAML::Node& arrows_node = node["arrows"];
+      for(unsigned i = 0; i < arrows_node.size(); ++i) {
+        std::pair<size_t, float> arrow;
+        arrows_node[i][0] >> arrow.first;
+        size_t direction;
+        arrows_node[i][1] >> direction;
+        arrow.second = ((2 * M_PI) / 16) * direction + M_PI/2;
+        arrows.push_back(arrow);
+      }
+    }
+
+    if (node.FindValue("put_text")) {
+      const YAML::Node& put_text_node = node["put_text"];
+      put_text_node >> put_text;
     }
   }
 
-  topological_mapper::drawGraph(image, graph, 0, 0, true, false, edges);
+  topological_mapper::drawGraph(image, graph, 0, 0, put_text, 
+      put_all_edges, edges);
   for(unsigned i = 0; i < circles.size(); ++i) {
     drawCircleOnGraph(image, graph, circles[i]);  
   }
