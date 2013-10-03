@@ -413,7 +413,7 @@ namespace bwi_exp1 {
         next_robot_direction -= 2 * M_PI;
       }
       float difference = fabs(next_robot_direction - expected_direction);
-      if (difference < M_PI / 12) {
+      if (difference < M_PI / 2) {
         sigma_sq = 0.01;
         expected_direction = next_robot_direction;
         random_probability = 0.01;
@@ -440,7 +440,6 @@ namespace bwi_exp1 {
         next_state_direction += 2 * M_PI;
 
       // Compute the probability of this state
-
       float probability = 
         exp(-pow(next_state_direction-expected_direction, 2) / (2 * sigma_sq));
       probabilities.push_back(probability);
