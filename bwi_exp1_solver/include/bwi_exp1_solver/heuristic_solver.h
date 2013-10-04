@@ -15,7 +15,7 @@ class HeuristicSolver {
     void computePolicy();
     void loadPolicy(const std::string& file);
     void savePolicy(const std::string& file);
-    bwi_exp1::Action getBestAction(const bwi_exp1::State2& state) const;
+    bwi_exp1::Action getBestAction(const bwi_exp1::State& state) const;
     virtual std::string generateDescription(unsigned int indentation = 0) {
       return std::string("stub");
     }

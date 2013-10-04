@@ -83,7 +83,7 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
       new PersonModel2(graph, map, goal_idx, indexed_model_file, 
         allow_robot_current_idx));
   boost::shared_ptr<PersonEstimator2> estimator(new PersonEstimator2);
-  ValueIteration<State2, Action> vi(model, estimator, 
+  ValueIteration<State, Action> vi(model, estimator, 
       1.0, 1.0, 1000, 0.0, -10000.0);
   HeuristicSolver hi(map, graph, goal_idx, allow_robot_current_idx); 
 
@@ -107,7 +107,7 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
 
       for (int run = 0; run < runs_per_instance; ++run) {
 
-        State2 current_state; 
+        State current_state; 
         current_state.graph_id = start_idx;
         current_state.direction = start_direction;
         current_state.num_robots_left = starting_robots;
@@ -122,7 +122,7 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
 
         while (current_state.graph_id != goal_idx && reward >= reward_limit) {
 
-          std::vector<State2> next_states;
+          std::vector<State> next_states;
           std::vector<float> probabilities;
           std::vector<float> rewards;
 

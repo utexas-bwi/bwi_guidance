@@ -7,19 +7,19 @@
 
 namespace bwi_exp1 {
 
-  float PersonEstimator2::getValue(const State2 &state) {
+  float PersonEstimator2::getValue(const State &state) {
     return value_cache_[state];
   }
 
-  void PersonEstimator2::updateValue(const State2 &state, float value) {
+  void PersonEstimator2::updateValue(const State &state, float value) {
     value_cache_[state] = value;
   }
 
-  Action PersonEstimator2::getBestAction(const State2 &state) {
+  Action PersonEstimator2::getBestAction(const State &state) {
     return best_action_cache_[state];
   }
 
-  void PersonEstimator2::setBestAction(const State2 &state, 
+  void PersonEstimator2::setBestAction(const State &state, 
       const Action& action) {
     best_action_cache_[state] = action;
   }

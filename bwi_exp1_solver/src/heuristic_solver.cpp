@@ -19,7 +19,7 @@ HeuristicSolver::HeuristicSolver(const nav_msgs::OccupancyGrid& map,
     fout.close();
   }
 
-Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
+Action HeuristicSolver::getBestAction(const bwi_exp1::State& state) const {
 
   if (state.robot_direction == DIR_UNASSIGNED) {
     // Find shortest path to goal. Point in direction of this path

@@ -16,16 +16,16 @@ namespace boost {
 
 namespace bwi_exp1 {
 
-  class PersonEstimator2 : public VIEstimator<State2, Action> {
+  class PersonEstimator2 : public VIEstimator<State, Action> {
     public:
 
       PersonEstimator2 () {}
       virtual ~PersonEstimator2 () {}
 
-      virtual float getValue(const State2 &state);
-      virtual void updateValue(const State2 &state, float value);
-      virtual Action getBestAction(const State2 &state);
-      virtual void setBestAction(const State2 &state, const Action& action);
+      virtual float getValue(const State &state);
+      virtual void updateValue(const State &state, float value);
+      virtual Action getBestAction(const State &state);
+      virtual void setBestAction(const State &state, const Action& action);
 
       virtual void saveEstimatedValues(const std::string& file);
       virtual void loadEstimatedValues(const std::string& file);
@@ -36,8 +36,8 @@ namespace bwi_exp1 {
 
     private:
 
-      std::map<State2, float> value_cache_;
-      std::map<State2, Action> best_action_cache_;
+      std::map<State, float> value_cache_;
+      std::map<State, Action> best_action_cache_;
 
       friend class boost::serialization::access;
       template<class Archive>

@@ -51,7 +51,7 @@ namespace bwi_exp1 {
 
   /* States */
 
-  struct State2 {
+  struct State {
     int graph_id; // ~50
     int direction; // ~8 
     int num_robots_left; // ~6
@@ -69,9 +69,9 @@ namespace bwi_exp1 {
     }
   };
 
-  bool operator<(const State2& l, const State2& r); 
-  bool operator==(const State2& l, const State2& r);
-  std::ostream& operator<<(std::ostream& stream, const State2& s);
+  bool operator<(const State& l, const State& r); 
+  bool operator==(const State& l, const State& r);
+  std::ostream& operator<<(std::ostream& stream, const State& s);
 
   /* Helper Functions */
 

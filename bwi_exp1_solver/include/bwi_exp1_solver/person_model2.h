@@ -16,20 +16,21 @@ namespace boost {
 
 namespace bwi_exp1 {
 
-  class PersonModel2 : public PredictiveModel<State2, Action> {
+  class PersonModel2 : public PredictiveModel<State, Action> {
 
     public:
 
       PersonModel2(const topological_mapper::Graph& graph, 
           const nav_msgs::OccupancyGrid& map, size_t goal_idx, 
-          const std::string& file = "", bool allow_robot_current_idx = false);
+          const std::string& file = "", bool allow_robot_current_idx = false,
+          float visibility_range = 0.0f, unsigned int max_robots = 5);
 
-      virtual bool isTerminalState(const State2& state) const;
-      virtual void getStateVector(std::vector<State2>& states);
-      virtual void getActionsAtState(const State2 &state, 
+      virtual bool isTerminalState(const State& state) const;
+      virtual void getStateVector(std::vector<State>& states);
+      virtual void getActionsAtState(const State &state, 
           std::vector<Action>& actions);
-      virtual void getTransitionDynamics(const State2 &s, 
-          const Action &a, std::vector<State2> &next_states, 
+      virtual void getTransitionDynamics(const State &s, 
+          const Action &a, std::vector<State> &next_states, 
           std::vector<float> &rewards, std::vector<float> &probabilities);
 
       virtual ~PersonModel2() {};
@@ -37,36 +38,37 @@ namespace bwi_exp1 {
         return std::string("stub");
       }
 
-      void getNextStates(const State2& state, const Action& action, 
-          std::vector<State2>& next_states);
+      void getNextStates(const State& state, const Action& action, 
+          std::vector<State>& next_states);
 
     private:
 
-      void computeAdjacentVertices();
-      void computeVisibleVertices();
-      void initializeStateSpace();
+      /* State space cache */
       std::map<int, std::vector<int> > adjacent_vertices_map_;
       std::map<int, std::vector<int> > visible_vertices_map_;
-      std::vector<State2> state_cache_;
+      void computeAdjacentVertices();
+      void computeVisibleVertices();
+      std::vector<State> state_cache_;
+      void initializeStateSpace();
 
+      /* Actions cache */
       void initializeActionCache();
-      void constructActionsAtState(const State2& state, 
+      void constructActionsAtState(const State& state, 
           std::vector<Action>& actions);
-      std::vector<Action>& getActionsAtState(const State2 &state);
-      std::map<State2, std::vector<Action> > action_cache_;
+      std::vector<Action>& getActionsAtState(const State &state);
+      std::map<State, std::vector<Action> > action_cache_;
 
+      /* Next states and transitions cache */
       void initializeNextStateCache();
-      // maps a direction, graph id to all possible next states and graph id
-      std::vector<std::vector<std::pair<int, int> > > next_state_cache_; 
-      void constructTransitionProbabilities(const State2& state, 
-          const Action& action, std::vector<float>& probabilities);
-      std::vector<float>& getTransitionProbabilities(const State2& state,
-          const Action& action);
-      std::map<State2, std::map<Action, std::vector<float> > > 
+      std::map<State, std::map<Action, std::vector<float> > > 
         ns_distribution_cache_;
+      void constructTransitionProbabilities(const State& state, 
+          const Action& action, std::vector<float>& probabilities);
+      std::vector<float>& getTransitionProbabilities(const State& state,
+          const Action& action);
 
-      uint32_t num_vertices_;
-      uint32_t max_robots_;
+      unsigned int num_vertices_;
+      unsigned int max_robots_;
 
       friend class boost::serialization::access;
       template<class Archive>
@@ -75,16 +77,17 @@ namespace bwi_exp1 {
         ar & BOOST_SERIALIZATION_NVP(visible_vertices_map_);
         ar & BOOST_SERIALIZATION_NVP(state_cache_);
         ar & BOOST_SERIALIZATION_NVP(action_cache_);
-        ar & BOOST_SERIALIZATION_NVP(next_state_cache_);
         ar & BOOST_SERIALIZATION_NVP(ns_distribution_cache_);
         ar & num_vertices_;
-        ar & max_robots_;
       }
 
       topological_mapper::Graph graph_;
       nav_msgs::OccupancyGrid map_;
       size_t goal_idx_;
+
+      /* Some parameters different between exp1 and exp2 */
       bool allow_robot_current_idx_;
+      float visibility_range_;
 
   };
   

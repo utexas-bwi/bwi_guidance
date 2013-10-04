@@ -26,7 +26,7 @@ namespace bwi_exp1 {
     return stream;
   }
 
-  bool operator<(const State2& l, const State2& r ) {
+  bool operator<(const State& l, const State& r ) {
     if (l.graph_id < r.graph_id) return true;
     if (l.graph_id > r.graph_id) return false;
 
@@ -45,7 +45,7 @@ namespace bwi_exp1 {
     return false;
   }
 
-  bool operator==(const State2& l, const State2& r ) {
+  bool operator==(const State& l, const State& r ) {
     return (l.graph_id == r.graph_id &&
         l.direction == r.direction &&
         l.num_robots_left == r.num_robots_left &&
@@ -53,7 +53,7 @@ namespace bwi_exp1 {
         l.visible_robot == r.visible_robot);
   }
 
-  std::ostream& operator<<(std::ostream& stream, const State2& s) {
+  std::ostream& operator<<(std::ostream& stream, const State& s) {
     stream << "[" << s.graph_id << ", " 
         << s.direction << ", " 
         << s.num_robots_left << ", " 

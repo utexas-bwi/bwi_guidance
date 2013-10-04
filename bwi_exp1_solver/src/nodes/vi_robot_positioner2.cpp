@@ -16,7 +16,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
   private:
     boost::shared_ptr<PersonModel2> model_;
     boost::shared_ptr<PersonEstimator2> estimator_;
-    boost::shared_ptr<ValueIteration<State2, Action> > vi_;
+    boost::shared_ptr<ValueIteration<State, Action> > vi_;
     boost::shared_ptr<HeuristicSolver> hs_;
 
     double vi_gamma_;
@@ -28,7 +28,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
     std::string instance_name_;
     int goal_idx_;
-    State2 current_state_;
+    State current_state_;
 
     size_t assigned_robots_;
     topological_mapper::Point2f assigned_robot_loc_;
@@ -89,7 +89,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       model_.reset(new PersonModel2(graph_, map_, goal_idx_, model_file, 
             allow_robot_current_idx_));
       estimator_.reset(new PersonEstimator2);
-      vi_.reset(new ValueIteration<State2, Action>(
+      vi_.reset(new ValueIteration<State, Action>(
             model_, estimator_, vi_gamma_, 1.0, vi_max_iterations_,
             0.0, vi_min_value_));
       hs_.reset(new HeuristicSolver(map_, graph_, goal_idx_,
@@ -137,7 +137,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       } else {
         action = vi_->getBestAction(current_state_);
       }
-      std::vector<State2> next_states;
+      std::vector<State> next_states;
       std::vector<float> probabilities;
       std::vector<float> rewards;
       model_->getTransitionDynamics(current_state_, action, next_states, 
@@ -182,7 +182,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
           // Perform lookahead to see best location to place robot
           size_t direction_idx = getDiscretizedAngle(angle);
-          State2 robot_state;
+          State robot_state;
           robot_state.graph_id = current_state_.visible_robot;
           robot_state.direction = direction_idx;
           robot_state.num_robots_left = current_state_.num_robots_left;
@@ -238,7 +238,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         // A transition has happened. Compute next state and check if robot 
         // needs to be placed.
         Action a(DO_NOTHING, 0);
-        std::vector<State2> next_states; 
+        std::vector<State> next_states; 
         model_->getNextStates(current_state_, a, next_states); 
         int old_robot_status = current_state_.robot_direction;
         if (old_robot_status != NONE) {
@@ -254,7 +254,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
                 0);
         }
 
-        BOOST_FOREACH(const State2& state, next_states) {
+        BOOST_FOREACH(const State& state, next_states) {
           if (state.graph_id == current_graph_id) {
             int old_robot_state = current_state_.visible_robot;
             current_state_ = state;

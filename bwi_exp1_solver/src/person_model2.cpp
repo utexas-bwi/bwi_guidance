@@ -13,55 +13,56 @@
 
 namespace bwi_exp1 {
 
-  PersonModel2::PersonModel2(const topological_mapper::Graph& graph, 
-      const nav_msgs::OccupancyGrid& map,  
-      size_t goal_idx, const std::string& file, 
-      bool allow_robot_current_idx) : graph_(graph), 
-      map_(map), goal_idx_(goal_idx), 
-      allow_robot_current_idx_(allow_robot_current_idx) {
+  PersonModel2::PersonModel2(const topological_mapper::Graph& graph, const
+      nav_msgs::OccupancyGrid& map,  size_t goal_idx, const std::string& file,
+      bool allow_robot_current_idx, float visibility_range, unsigned int
+      max_robots) : graph_(graph), map_(map), goal_idx_(goal_idx),
+  allow_robot_current_idx_(allow_robot_current_idx),
+  visibility_range_(visibility_range), max_robots_(max_robots) {
 
     if (!file.empty()) {
       std::ifstream ifs(file.c_str());
       if (ifs.is_open()) {
-        std::cout << "Loading model from file: " << file << std::endl;
+        std::cout << "PersonModel: Loading model from file: " << file <<
+          std::endl;
         boost::archive::binary_iarchive ia(ifs);
         ia >> *this;
-        std::cout << "Model loaded!" << std::endl;
+        std::cout << " - Model loaded from file!" << std::endl;
+        ifs.close();
         return;
       }
     }
 
+    // Compute Model
     initializeStateSpace();
     initializeActionCache();
     initializeNextStateCache();
 
-    std::ofstream ofs;
-    if (file.empty()) {
-      ofs.open("model.txt");
-    } else {
-      ofs.open(file.c_str());
-    }
+    std::string out_file = (file.empty()) ? "model.txt" : file;
+    std::cout << "PersonModel: Model computed. Saving to file: " << file <<
+      std::endl;
+    std::ofstream ofs(out_file.c_str());
     boost::archive::binary_oarchive oa(ofs);
     oa << *this;
-    /* std::cout << "Saved model to file: " << file << std::endl; */
+    ofs.close();
   }
 
-  bool PersonModel2::isTerminalState(const State2& state) const {
+  bool PersonModel2::isTerminalState(const State& state) const {
     return state.graph_id == goal_idx_;
   }
 
-  void PersonModel2::getStateVector(std::vector<State2>& states) {
+  void PersonModel2::getStateVector(std::vector<State>& states) {
     states = state_cache_;
   }
 
-  void PersonModel2::getActionsAtState(const State2& state, 
+  void PersonModel2::getActionsAtState(const State& state, 
       std::vector<Action>& actions) {
     actions = action_cache_[state];
   }
 
   /** Get the predictions of the MDP model for a given state action */
-  void PersonModel2::getTransitionDynamics(const State2& state, 
-      const Action& action, std::vector<State2> &next_states, 
+  void PersonModel2::getTransitionDynamics(const State& state, 
+      const Action& action, std::vector<State> &next_states, 
       std::vector<float> &rewards, std::vector<float> &probabilities) {
 
     next_states.clear();
@@ -75,21 +76,13 @@ namespace bwi_exp1 {
     getNextStates(state, action, next_states); // copy cost
     probabilities = getTransitionProbabilities(state, action);
 
-    if (action.type == DO_NOTHING) {
-      rewards.resize(next_states.size());
-      // Compute reward
-      for (std::vector<State2>::const_iterator ns = next_states.begin();
-          ns != next_states.end(); ++ns) {
-        rewards[ns - next_states.begin()] =
-          -topological_mapper::getEuclideanDistance(state.graph_id,
-              ns->graph_id, graph_);
-      }
-    } else if (action.type == PLACE_ROBOT) {
-      // Single transition, no reward
-      rewards.push_back(0.0);
-    } else {
-      // Single transition, no reward
-      rewards.push_back(0.0);
+    rewards.resize(next_states.size());
+    // Compute reward based on euclidean distance between state graph ids
+    for (std::vector<State>::const_iterator ns = next_states.begin();
+        ns != next_states.end(); ++ns) {
+      rewards[ns - next_states.begin()] =
+        -topological_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
+            graph_);
     }
   }
 
@@ -97,8 +90,7 @@ namespace bwi_exp1 {
     adjacent_vertices_map_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
       std::vector<size_t> adjacent_vertices;
-      topological_mapper::getAdjacentNodes(graph_id, graph_, 
-          adjacent_vertices); 
+      topological_mapper::getAdjacentNodes(graph_id, graph_, adjacent_vertices); 
       adjacent_vertices_map_[graph_id] = 
         std::vector<int>(adjacent_vertices.begin(), adjacent_vertices.end());
     }
@@ -107,172 +99,120 @@ namespace bwi_exp1 {
   void PersonModel2::computeVisibleVertices() {
     visible_vertices_map_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
-      topological_mapper::Point2f graph_location =
-        topological_mapper::getLocationFromGraphId(graph_id, graph_);
-      std::vector<int> &robot_vertices = visible_vertices_map_[graph_id];
-      std::set<int> open_set(adjacent_vertices_map_[graph_id].begin(),
-          adjacent_vertices_map_[graph_id].end());
-      std::set<int> closed_set;
-      closed_set.insert(graph_id);
-      while (open_set.size() != 0) {
-        int graph_id_2 = *(open_set.begin());
-        topological_mapper::Point2f graph_location_2 = 
-          topological_mapper::getLocationFromGraphId(graph_id_2, graph_); 
-        open_set.erase(open_set.begin());
-        closed_set.insert(graph_id_2);
-        bool location_2_visible = 
-          topological_mapper::locationsInDirectLineOfSight(                    
-              graph_location, graph_location_2, map_);
-        bool location_close = 
-          topological_mapper::getMagnitude(graph_location - graph_location_2) <
-          (25.0 / map_.info.resolution);
-        if (location_2_visible && location_close) {
-          // Location is visible from original vertex
-          robot_vertices.push_back(graph_id_2);
-          // Push all new adjacent vertices into the open set if not in closed
-          BOOST_FOREACH(int v, adjacent_vertices_map_[graph_id_2]) {
-            if (std::find(closed_set.begin(), closed_set.end(), v) == closed_set.end()) {
-              open_set.insert(v);
-            }
-          }
-        }
-      }
-      
-      // Push this vertex into the visible vertices map
-      robot_vertices.push_back(graph_id);
-
-      // std::cout << graph_id << " -> ";
-      // BOOST_FOREACH(int rv, robot_vertices) {
-      //   std::cout << rv << " ";
-      // }
-      // std::cout << std::endl;
-      
+      std::vector<size_t> visible_vertices;
+      topological_mapper::getVisibleNodes(graph_id, graph_, map_,
+          visible_vertices, visibility_range_); 
+      visible_vertices_map_[graph_id] = 
+        std::vector<int>(visible_vertices.begin(), visible_vertices.end());
     }
   }
 
   void PersonModel2::initializeStateSpace() {
 
     num_vertices_ = boost::num_vertices(graph_);
-    max_robots_ = 5;
 
-    /* std::cout << "Computing adjacent vertices... " << std::endl; */
     computeAdjacentVertices();
-    /* std::cout << "Computing robot vertices... " << std::endl; */
     computeVisibleVertices();
-
-    /* std::cout << "Precaching state space... " << std::endl; */
 
     state_cache_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
       std::vector<int>& adjacent_vertices = adjacent_vertices_map_[graph_id];
-      std::vector<int>& robot_vertices = visible_vertices_map_[graph_id];
+      std::vector<int>& visible_vertices = visible_vertices_map_[graph_id];
       for (int direction = 0; direction < NUM_DIRECTIONS; ++direction) {
         for (int robots = 0; robots <= max_robots_; ++robots) {
-          if (robots != max_robots_) {
-            for (int rd = DIR_UNASSIGNED; 
-                rd < (int)adjacent_vertices.size(); ++rd) {
-              for (int nrl = NONE; nrl < (int)robot_vertices.size(); ++nrl) {
-                if (nrl >= 0 && robot_vertices[nrl] == graph_id) {
-                  continue;
-                }
-                State2 state; 
-                state.graph_id = graph_id;
-                state.direction = direction;
-                state.num_robots_left = robots;
-                if (rd < 0) {
-                  state.robot_direction = rd;
-                } else {
-                  state.robot_direction = 
-                    adjacent_vertices[rd];
-                }
-                if (nrl < 0) {
-                  state.visible_robot = nrl;
-                } else {
-                  state.visible_robot = robot_vertices[nrl];
-                }
-                state_cache_.push_back(state);
-              }
-            }
-          } else {
-            State2 state;
-            state.graph_id = graph_id;
-            state.direction = direction;
-            state.num_robots_left = robots;
+
+          State state;
+          state.graph_id = graph_id;
+          state.direction = direction;
+          state.num_robots_left = robots;
+
+          // If all 5 robots are available, then no other robots can be placed
+          if (robots == max_robots_) {
             state.robot_direction = NONE;
             state.visible_robot = NONE;
             state_cache_.push_back(state);
+            continue;
+          }
+
+          // Otherwise, place all other robots
+          for (int rd = DIR_UNASSIGNED; rd < (int)adjacent_vertices.size();
+              ++rd) {
+
+            if (rd == DIR_UNASSIGNED || rd == NONE) { // insert as is
+              state.robot_direction = rd; 
+            } else { // resolve to adjacent node
+              state.robot_direction = adjacent_vertices[rd];
+            }
+
+            for (int vr = NONE; vr < (int)visible_vertices.size(); ++vr) {
+              // Don't add current_node as an option to visible_robot
+              if (vr >= 0 && visible_vertices[vr] == graph_id) {
+                continue; 
+              }
+              if (vr == NONE) { // insert as is
+                state.visible_robot = vr;
+              } else { // resolve to visible node
+                state.visible_robot = visible_vertices[vr];
+              }
+              state_cache_.push_back(state);
+            }
           }
         }
       }
     }
-    /* std::cout << "Number of states: " << state_cache_.size() << std::endl; */
   }
 
   void PersonModel2::initializeActionCache() {
     action_cache_.clear();
-    for (std::vector<State2>::iterator it = state_cache_.begin(); 
+    for (std::vector<State>::iterator it = state_cache_.begin(); 
         it != state_cache_.end(); ++it) {
       constructActionsAtState(*it, action_cache_[*it]);
     }
   }
 
-  void PersonModel2::constructActionsAtState(const State2& state, 
+  void PersonModel2::constructActionsAtState(const State& state, 
       std::vector<Action>& actions) {
 
     actions.clear();
+
+    // If a direction has to be assigned in the current state, only one of many
+    // DIRECT_PERSON actions can be taken
     if (state.robot_direction == DIR_UNASSIGNED) {
       BOOST_FOREACH(int id, adjacent_vertices_map_[state.graph_id]) {
         actions.push_back(Action(DIRECT_PERSON, id));
       }
       return;
-    } else {
-      actions.push_back(Action(DO_NOTHING,0));
     }
+    
+    // Otherwise have the DO_NOTHING option
+    actions.push_back(Action(DO_NOTHING,0));
 
+    // Check if the system can place robots
     if (state.num_robots_left != 0) {
-      // If state does not have a future robot, allow placing a robot in a future
-      // location
-      if (state.visible_robot == NONE) {
-        BOOST_FOREACH(int id, visible_vertices_map_[state.graph_id]) {
-          if (state.graph_id != id) {
+      BOOST_FOREACH(int id, visible_vertices_map_[state.graph_id]) {
+        if (state.graph_id != id) {
+          if (state.visible_robot == NONE) {
+            actions.push_back(Action(PLACE_ROBOT, id)); 
+          }
+        } else {
+          if (allow_robot_current_idx_ && state.robot_direction == NONE) {
             actions.push_back(Action(PLACE_ROBOT, id)); 
           }
         }
       }
-
-      if (allow_robot_current_idx_ && state.robot_direction == NONE) {
-        actions.push_back(Action(PLACE_ROBOT, state.graph_id));
-      }
     }
+
   }
 
   std::vector<Action>& PersonModel2::getActionsAtState(
-      const State2& state) {
+      const State& state) {
     return action_cache_[state];
   }
 
   void PersonModel2::initializeNextStateCache() {
 
-    /* std::cout << "Initializing next state cache" << std::endl; */
-
-    next_state_cache_.clear();
-    next_state_cache_.resize(num_vertices_ * NUM_DIRECTIONS);
-    for (int i = 0; i < num_vertices_; ++i) {
-      for (int j = 0; j < NUM_DIRECTIONS; ++j) {
-        BOOST_FOREACH(int id, adjacent_vertices_map_[i]) {
-          int direction = computeNextDirection(j, i, id, graph_);
-          next_state_cache_[i * NUM_DIRECTIONS + j].push_back(
-              std::make_pair(id, direction));
-        }
-      }
-    }
-
-    /* std::cout << "Next state cache size: " << next_state_cache_.size() << std::endl;  */
-
-    /* std::cout << "Initializing next state distribution cache" << std::endl; */
-    
     ns_distribution_cache_.clear();
-    BOOST_FOREACH(const State2& state, state_cache_) {
+    BOOST_FOREACH(const State& state, state_cache_) {
       std::vector<Action>& actions = getActionsAtState(state);
       BOOST_FOREACH(const Action& action, actions) {
         constructTransitionProbabilities(state, action, 
@@ -282,97 +222,109 @@ namespace bwi_exp1 {
 
   }
 
-  void PersonModel2::getNextStates(const State2& state, const Action& action, 
-      std::vector<State2>& states) {
+  void PersonModel2::getNextStates(const State& state, const Action& action, 
+      std::vector<State>& next_states) {
 
-    states.clear();
+    next_states.clear();
+
+    // getNextStates does not check if this action was indeed allowed at the
+    // given state. With an incorrect action, this function will probably lead
+    // you to a non existent state.
 
     if (isTerminalState(state)) {
       return; // no next states
     }
 
+    // First figure out next states for all actions that will end up in a
+    // deterministic state transition
+    if (action.type == PLACE_ROBOT) {
+      State next_state = state;
+      next_state.num_robots_left--;
+      if (action.graph_id != state.graph_id) {
+        next_state.visible_robot = action.graph_id;
+        next_states.push_back(next_state);
+        return;
+      } else {
+        next_state.robot_direction = DIR_UNASSIGNED;
+        next_states.push_back(next_state);
+        return;
+      }
+    }
+
     if (action.type == DIRECT_PERSON) {
-      State2 next_state = state;
+      State next_state = state;
       next_state.robot_direction = action.graph_id;
-      states.push_back(next_state);
+      next_states.push_back(next_state);
       return;
     }
-    if (action.type == PLACE_ROBOT) {
-      if (action.graph_id != state.graph_id) {
-        State2 next_state = state;
-        next_state.visible_robot = action.graph_id;
-        next_state.num_robots_left--;
-        states.push_back(next_state);
-        return;
-      } else {
-        State2 next_state = state;
-        next_state.robot_direction = DIR_UNASSIGNED;
-        next_state.num_robots_left--;
-        states.push_back(next_state);
-        return;
-      }
-    }
-   
-    // If the person is actually planning on moving, this one is going to be fun 
-    // Get all adjacent ids and the directions if we move to those ids
-    std::vector<std::pair<int, int> >& next_states = 
-      next_state_cache_[state.graph_id * NUM_DIRECTIONS + state.direction];
-    typedef std::pair<int, int> int2pair;
-    BOOST_FOREACH(int2pair& next_loc, next_states) {
-      State2 next_state;
-      next_state.graph_id = next_loc.first;
-      next_state.direction = next_loc.second;
-      next_state.num_robots_left = state.num_robots_left;
 
+    // Implies action.type == DO_NOTHING. The next state will not be
+    // deterministic. Compute all possible next states. Each next state graph
+    // id willl be a member of adjacent nodes, and the direction will be
+    // computed automatically
+   
+    // Get all adjacent ids the person can transition to
+    // Algorithm 1 in paper
+    BOOST_FOREACH(int next_node, adjacent_vertices_map_[state.graph_id]) {
+      State next_state;
       if (state.visible_robot == NONE) {
-        next_state.visible_robot = NONE;
+        // If no robot was visible in previous state, no robot can be present
         next_state.robot_direction = NONE;
+        next_state.visible_robot = NONE;
       } else {
-        // See if the location we moved to is where the next robot is
-        if (next_state.graph_id == state.visible_robot) {
-          // Transition to the state where the current location has a robot, but
-          // no direction
+        if (state.visible_robot == next_node) {
+          // We moved up to a robot, setup a robot here without an assigned dir
           next_state.robot_direction = DIR_UNASSIGNED;
-          next_state.visible_robot = NONE; // This robot no longer needs to be tracked
-        } else {
-          // See if the robot is still visible from the current location - you do not want to move
-          // to a state where the robot is not visible
-          if (std::find(visible_vertices_map_[next_state.graph_id].begin(),
-                visible_vertices_map_[next_state.graph_id].end(), state.visible_robot) 
-              == visible_vertices_map_[next_state.graph_id].end()) { 
-            // The person moved in an unexpected manner, the robot gets decommisioned
-            next_state.visible_robot = NONE;
-          } else {
-            next_state.visible_robot = state.visible_robot;
-          }
+          next_state.visible_robot = NONE; // no longer tracked 
+        } else if (std::find(visible_vertices_map_[next_state.graph_id].begin(),
+              visible_vertices_map_[next_state.graph_id].end(),
+              state.visible_robot) ==
+            visible_vertices_map_[next_state.graph_id].end()) { 
+          // The person moved such that a previously visible robot is no 
+          // longer visible. Decomission the robot.
           next_state.robot_direction = NONE;
+          next_state.visible_robot = NONE;
+        } else {
+          // The case where the tracked robot is still visible
+          next_state.robot_direction = NONE;
+          next_state.visible_robot = state.visible_robot;
         }
       }
-      states.push_back(next_state);
+    
+      next_state.direction = computeNextDirection(state.direction,
+          state.graph_id, next_node, graph_);
+      next_state.num_robots_left = state.num_robots_left;
+      next_state.graph_id = next_node;
+      next_states.push_back(next_state);
     }
-
   }
 
-  void PersonModel2::constructTransitionProbabilities(const State2& state, 
+  void PersonModel2::constructTransitionProbabilities(const State& state, 
       const Action& action, std::vector<float>& probabilities) {
 
     probabilities.clear();
 
+    // getNextStates does not check if this action was indeed allowed at the
+    // given state. With an incorrect action, this function will probably lead
+    // you to a non existent state.
+
     if (isTerminalState(state)) {
-      return;
+      return; // since next_states.size == 0
     }
 
     if (action.type == DIRECT_PERSON || action.type == PLACE_ROBOT) {
-      // This is a deterministic single transition
-      probabilities.push_back(1.0);
+      probabilities.push_back(1.0f); //since next_states.size == 1
       return;
     }
 
-    // If the person is going to be making the transition here, figure out
-    // next state probabilities using the person model (i.e action = DO_NOTHING)
-    
-    // In this simple MDP formulation, the action should induce a desired 
-    // direction for the person to be walking to.
+    // If the person is going to make the transition here (i.e action = DO_NOTHING),
+    // then use the hand-coded human motion model for producing the transition
+    // function
+
+    // In the future this human motion model needs to be abstracted to an 
+    // independent data structure so that it can be learned given a state 
+    // feature vector.
+
     float expected_direction, sigma_sq, random_probability;
     if (state.robot_direction != NONE && 
         state.robot_direction != DIR_UNASSIGNED // shouldn't really happen - VI messed up
@@ -396,9 +348,7 @@ namespace bwi_exp1 {
     topological_mapper::Point2f goal_location =
       topological_mapper::getLocationFromGraphId(goal_idx_, graph_);
     bool goal_idx_visible = topological_mapper::locationsInDirectLineOfSight(
-        graph_location,
-        goal_location,
-        map_);
+        graph_location, goal_location, map_);
     int next_identifier_location = state.visible_robot;
     next_identifier_location = 
       (next_identifier_location == NONE && goal_idx_visible) ?
@@ -422,13 +372,13 @@ namespace bwi_exp1 {
 
     // Now compute the weight of each next state. Get the favored direction
     // and compute transition probabilities
-    std::vector<State2> next_states;
+    std::vector<State> next_states;
     getNextStates(state, action, next_states);
 
     float probability_sum = 0;
     size_t last_non_zero_probability = 0;
     int next_state_counter = 0;
-    BOOST_FOREACH(const State2& next_state, next_states) {
+    BOOST_FOREACH(const State& next_state, next_states) {
 
       float next_state_direction = topological_mapper::getNodeAngle(
           state.graph_id, next_state.graph_id, graph_);
@@ -465,7 +415,7 @@ namespace bwi_exp1 {
   }
 
   std::vector<float>& PersonModel2::getTransitionProbabilities(
-      const State2& state, const Action& action) {
+      const State& state, const Action& action) {
     return ns_distribution_cache_[state][action];
   }
 
