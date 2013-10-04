@@ -66,7 +66,6 @@ namespace bwi_exp1 {
         ns_distribution_cache_;
 
       uint32_t num_vertices_;
-      uint32_t num_directions_;
       uint32_t max_robots_;
 
       friend class boost::serialization::access;
@@ -79,7 +78,6 @@ namespace bwi_exp1 {
         ar & BOOST_SERIALIZATION_NVP(next_state_cache_);
         ar & BOOST_SERIALIZATION_NVP(ns_distribution_cache_);
         ar & num_vertices_;
-        ar & num_directions_;
         ar & max_robots_;
       }
 

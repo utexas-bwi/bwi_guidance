@@ -25,9 +25,8 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
     // Find shortest path to goal. Point in direction of this path
     std::vector<size_t> path_from_goal;
     topological_mapper::getShortestPathWithDistance(
-        graph_, goal_idx_, state.graph_id, path_from_goal);
-    return bwi_exp1::Action(DIRECT_PERSON, 
-        path_from_goal[0]);
+        goal_idx_, state.graph_id, path_from_goal, graph_);
+    return bwi_exp1::Action(DIRECT_PERSON, path_from_goal[0]);
   }
 
   if (state.current_robot_status != NO_ROBOT) {
@@ -35,8 +34,8 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
     return bwi_exp1::Action(DO_NOTHING, 0);
   }
 
-  // Otherwise, see if we can place a robot
-  if (state.num_robots_left == 0 ||
+  // Otherwise, see if we can place a robot. Placing robots is only allowed:
+  if (state.num_robots_left == 0 || 
       state.graph_id == goal_idx_ || 
       state.visible_robot_location != NO_ROBOT) {
     // Already placed all available robots or no need to
@@ -56,7 +55,6 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
   while(true) {
 
     states.push_back(current_id);
-    /* std::cout << current_id << " "; */
 
     // Compute all adjacent vertices from this location
     topological_mapper::Graph::vertex_descriptor vd = 
@@ -112,7 +110,6 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
     current_direction = atan2f(sinf(next_angle), cosf(next_angle)); 
     current_id = next_vertex;
   }
-  /* std::cout << std::endl; */
 
   // If the current vertex can't be used for robot placement, remove it from the
   // set
@@ -127,18 +124,8 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
   for (std::vector<size_t>::iterator si = states.begin(); 
       si != states.end(); ++si) {
     std::vector<size_t> path_from_goal;
-    topological_mapper::getShortestPathWithDistance(
-        graph_, goal_idx_, *si, path_from_goal);
-    path_from_goal.insert(path_from_goal.begin(), *si);
-    float distance = 0;
-    for (size_t pp = 0; pp < path_from_goal.size() - 1; ++pp) {
-      topological_mapper::Graph::vertex_descriptor vd1 = 
-        boost::vertex(path_from_goal[pp], graph_);
-      topological_mapper::Graph::vertex_descriptor vd2 = 
-        boost::vertex(path_from_goal[pp + 1], graph_);
-      distance += topological_mapper::getMagnitude(
-          graph_[vd1].location - graph_[vd2].location);
-    }
+    float distance = topological_mapper::getShortestPathWithDistance(goal_idx_,
+        *si, path_from_goal, graph_);
     if (distance < min_distance) {
       min_graph_idx = *si;
       min_distance = distance;

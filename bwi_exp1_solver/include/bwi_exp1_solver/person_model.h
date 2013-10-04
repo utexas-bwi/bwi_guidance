@@ -33,8 +33,8 @@ namespace bwi_exp1 {
       Action resolveAction(state_t state, action_t action);
 
       size_t computeNextDirection(size_t dir, size_t graph_id, size_t next_graph_id);
-      size_t getDirectionFromAngle(float angle);
-      float getAngleFromDirection(size_t dir);
+      size_t getDiscretizedAngle(float angle);
+      float getAngleInRadians(size_t dir);
 
     private:
 
@@ -59,7 +59,6 @@ namespace bwi_exp1 {
       float getNodeAngle(size_t graph_id, size_t next_graph_id);
       float getEuclideanDistance(size_t graph_id, size_t next_graph_id);
       uint32_t num_vertices_;
-      uint32_t num_directions_;
       uint32_t max_robots_;
 
       topological_mapper::Graph graph_;

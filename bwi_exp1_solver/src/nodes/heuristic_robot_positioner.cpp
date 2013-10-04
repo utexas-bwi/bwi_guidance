@@ -127,8 +127,8 @@ class HeuristicRobotPositioner : public BaseRobotPositioner {
       for (std::vector<size_t>::iterator si = states.begin(); 
           si != states.end(); ++si) {
         std::vector<size_t> path_from_goal;
-        topological_mapper::getShortestPathWithDistance(
-            graph_, goal_idx_, *si, path_from_goal);
+        topological_mapper::getShortestPathWithDistance(goal_idx_, *si,
+            path_from_goal, graph_);
         path_from_goal.insert(path_from_goal.begin(), goal_idx_);
         float distance = 0;
         for (size_t pp = 0; pp < path_from_goal.size() - 1; ++pp) {

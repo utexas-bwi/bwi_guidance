@@ -64,7 +64,7 @@ namespace bwi_exp1 {
   }
 
   state_t PersonModel::canonicalizeState(uint32_t graph_id, uint32_t direction, uint32_t robots_remaining) const {
-    return graph_id * num_directions_ * (max_robots_ + 1) + 
+    return graph_id * NUM_DIRECTIONS * (max_robots_ + 1) + 
       direction * (max_robots_ + 1) +
       robots_remaining;
   }
@@ -81,12 +81,11 @@ namespace bwi_exp1 {
   void PersonModel::initializeStateSpace() {
     // TODO: Initialize these using command line arguments
     num_vertices_ = boost::num_vertices(graph_);
-    num_directions_ = 16;
     max_robots_ = 5;
 
     state_cache_.resize(getStateSpaceSize());
     for (uint32_t i = 0; i < num_vertices_; ++i) {
-      for (uint32_t dir = 0; dir < num_directions_; ++dir) {
+      for (uint32_t dir = 0; dir < NUM_DIRECTIONS; ++dir) {
         for (uint32_t robots_remaining = 0; robots_remaining <= max_robots_; 
             ++robots_remaining) {
           state_t state = canonicalizeState(i, dir, robots_remaining);
@@ -193,7 +192,7 @@ namespace bwi_exp1 {
   }
 
   size_t PersonModel::getStateSpaceSize() const {
-    return num_vertices_ * num_directions_ * (max_robots_ + 1);
+    return num_vertices_ * NUM_DIRECTIONS * (max_robots_ + 1);
   }
 
   void PersonModel::constructTransitionProbabilities(state_t state_id, 
@@ -215,7 +214,7 @@ namespace bwi_exp1 {
       sigma_sq = 0.05;
     } else {
       expected_direction = 
-        getAngleFromDirection(state.direction);
+        getAngleInRadians(state.direction);
       sigma_sq = 0.05;
     }
 
@@ -278,7 +277,7 @@ namespace bwi_exp1 {
   size_t PersonModel::computeNextDirection(size_t dir, size_t graph_id, 
       size_t next_graph_id) {
     float angle = getNodeAngle(graph_id, next_graph_id);
-    return getDirectionFromAngle(angle);
+    return getDiscretizedAngle(angle);
   }
 
   float PersonModel::getNodeAngle(size_t graph_id, size_t next_graph_id) {
@@ -302,15 +301,15 @@ namespace bwi_exp1 {
         graph_[next_v].location - graph_[v].location);
   }
 
-  size_t PersonModel::getDirectionFromAngle(float angle) {
-    angle = angle + M_PI / num_directions_;
+  size_t PersonModel::getDiscretizedAngle(float angle) {
+    angle = angle + M_PI / NUM_DIRECTIONS;
     while (angle < 0) angle += 2 * M_PI;
     while (angle >= 2 * M_PI) angle -= 2 * M_PI;
-    return (angle * num_directions_) / (2 * M_PI);
+    return (angle * NUM_DIRECTIONS) / (2 * M_PI);
   }
 
-  float PersonModel::getAngleFromDirection(size_t dir) {
-    return ((2 * M_PI) / num_directions_) * dir;
+  float PersonModel::getAngleInRadians(size_t dir) {
+    return ((2 * M_PI) / NUM_DIRECTIONS) * dir;
   }
 
 } /* bwi_exp1 */

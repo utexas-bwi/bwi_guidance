@@ -80,8 +80,9 @@ namespace bwi_exp1 {
       // Compute reward
       for (std::vector<State2>::const_iterator ns = next_states.begin();
           ns != next_states.end(); ++ns) {
-        rewards[ns - next_states.begin()] = 
-          -getEuclideanDistance(state.graph_id, ns->graph_id);
+        rewards[ns - next_states.begin()] =
+          -topological_mapper::getEuclideanDistance(state.graph_id,
+              ns->graph_id, graph_);
       }
     } else if (action.type == PLACE_ROBOT) {
       // Single transition, no reward
@@ -152,7 +153,6 @@ namespace bwi_exp1 {
   void PersonModel2::initializeStateSpace() {
 
     num_vertices_ = boost::num_vertices(graph_);
-    num_directions_ = 16;
     max_robots_ = 5;
 
     /* std::cout << "Computing adjacent vertices... " << std::endl; */
@@ -166,7 +166,7 @@ namespace bwi_exp1 {
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
       std::vector<int>& adjacent_vertices = adjacent_vertices_map_[graph_id];
       std::vector<int>& robot_vertices = visible_vertices_map_[graph_id];
-      for (int direction = 0; direction < num_directions_; ++direction) {
+      for (int direction = 0; direction < NUM_DIRECTIONS; ++direction) {
         for (int robots = 0; robots <= max_robots_; ++robots) {
           if (robots != max_robots_) {
             for (int rd = DIR_UNASSIGNED; 
@@ -256,12 +256,12 @@ namespace bwi_exp1 {
     /* std::cout << "Initializing next state cache" << std::endl; */
 
     next_state_cache_.clear();
-    next_state_cache_.resize(num_vertices_ * num_directions_);
+    next_state_cache_.resize(num_vertices_ * NUM_DIRECTIONS);
     for (int i = 0; i < num_vertices_; ++i) {
-      for (int j = 0; j < num_directions_; ++j) {
+      for (int j = 0; j < NUM_DIRECTIONS; ++j) {
         BOOST_FOREACH(int id, adjacent_vertices_map_[i]) {
-          int direction = computeNextDirection(j, i, id);
-          next_state_cache_[i * num_directions_ + j].push_back(
+          int direction = computeNextDirection(j, i, id, graph_);
+          next_state_cache_[i * NUM_DIRECTIONS + j].push_back(
               std::make_pair(id, direction));
         }
       }
@@ -316,7 +316,7 @@ namespace bwi_exp1 {
     // If the person is actually planning on moving, this one is going to be fun 
     // Get all adjacent ids and the directions if we move to those ids
     std::vector<std::pair<int, int> >& next_states = 
-      next_state_cache_[state.graph_id * num_directions_ + state.direction];
+      next_state_cache_[state.graph_id * NUM_DIRECTIONS + state.direction];
     typedef std::pair<int, int> int2pair;
     BOOST_FOREACH(int2pair& next_loc, next_states) {
       State2 next_state;
@@ -377,13 +377,13 @@ namespace bwi_exp1 {
     if (state.current_robot_status != NO_ROBOT && 
         state.current_robot_status != DIR_UNASSIGNED // shouldn't really happen - VI messed up
         ) {
-      expected_direction = 
-        getNodeAngle(state.graph_id, state.current_robot_status);
+      expected_direction = topological_mapper::getNodeAngle(state.graph_id,
+          state.current_robot_status, graph_);
       sigma_sq = 0.1;
       random_probability = 0.1;
     } else {
       expected_direction = 
-        getAngleFromDirection(state.direction);
+        getAngleInRadians(state.direction);
       sigma_sq = 0.1;
       random_probability = 0.1;
     }
@@ -404,8 +404,8 @@ namespace bwi_exp1 {
       (next_identifier_location == NO_ROBOT && goal_idx_visible) ?
       goal_idx_ : next_identifier_location;
     if (next_identifier_location != NO_ROBOT) {
-      float next_robot_direction = 
-        getNodeAngle(state.graph_id, next_identifier_location);
+      float next_robot_direction = topological_mapper::getNodeAngle(
+          state.graph_id, next_identifier_location, graph_);
       while (next_robot_direction <= expected_direction - M_PI) {
         next_robot_direction += 2 * M_PI;
       }
@@ -430,8 +430,8 @@ namespace bwi_exp1 {
     int next_state_counter = 0;
     BOOST_FOREACH(const State2& next_state, next_states) {
 
-      float next_state_direction = 
-        getNodeAngle(state.graph_id, next_state.graph_id);
+      float next_state_direction = topological_mapper::getNodeAngle(
+          state.graph_id, next_state.graph_id, graph_);
 
       // wrap next state direction around expected direction
       while (next_state_direction > expected_direction + M_PI) 

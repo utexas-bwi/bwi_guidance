@@ -112,7 +112,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       }
 
       size_t direction = 
-        model_->getDirectionFromAngle(instance.start_loc.yaw);
+        getDiscretizedAngle(instance.start_loc.yaw);
 
       current_state_.graph_id = start_idx;
       current_state_.direction = direction;
@@ -171,9 +171,9 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
             topological_mapper::getLocationFromGraphId(
                 current_state_.visible_robot_location, graph_);
 
-          float angle = model_->getNodeAngle(
+          float angle = topological_mapper::getNodeAngle(
                 current_state_.graph_id, 
-                current_state_.visible_robot_location
+                current_state_.visible_robot_location, graph_
                 );
           topological_mapper::Point2f from_loc =
             at_loc - topological_mapper::Point2f(
@@ -181,7 +181,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
                 50.0 * sinf(angle));
 
           // Perform lookahead to see best location to place robot
-          size_t direction_idx = model_->getDirectionFromAngle(angle);
+          size_t direction_idx = getDiscretizedAngle(angle);
           State2 robot_state;
           robot_state.graph_id = current_state_.visible_robot_location;
           robot_state.direction = direction_idx;

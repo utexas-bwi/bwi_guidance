@@ -82,7 +82,7 @@ class VIRobotPositioner : public BaseRobotPositioner {
       size_t prev_graph_id = 
         topological_mapper::getClosestIdOnGraph(start_point, graph_);
       size_t direction = 
-        model_->getDirectionFromAngle(instance.start_loc.yaw);
+        model_->getDiscretizedAngle(instance.start_loc.yaw);
 
       ROS_INFO_STREAM("Start: " << prev_graph_id << 
           ", direction: " << direction << 

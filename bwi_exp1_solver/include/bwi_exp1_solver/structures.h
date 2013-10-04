@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <ostream>
 
+#include <topological_mapper/graph.h>
+
 namespace boost {
   namespace serialization {
     class access;
@@ -12,6 +14,8 @@ namespace boost {
 }
 
 namespace bwi_exp1 {
+  
+  const unsigned NUM_DIRECTIONS = 16;
 
   enum ActionType {
     DO_NOTHING = 0,
@@ -82,9 +86,10 @@ namespace bwi_exp1 {
   bool operator==(const State2& l, const State2& r);
   std::ostream& operator<<(std::ostream& stream, const State2& s);
 
-  size_t computeNextDirection(size_t dir, size_t graph_id, size_t next_graph_id);
-  size_t getDirectionFromAngle(float angle);
-  float getAngleFromDirection(size_t dir);
+  size_t computeNextDirection(size_t dir, size_t graph_id, size_t
+      next_graph_id, const topological_mapper::Graph& graph);
+  size_t getDiscretizedAngle(float angle);
+  float getAngleInRadians(size_t dir);
 
 } /* bwi_exp1 */
 
