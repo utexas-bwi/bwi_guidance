@@ -171,7 +171,7 @@ namespace bwi_exp1 {
           if (robots != max_robots_) {
             for (int rd = DIR_UNASSIGNED; 
                 rd < (int)adjacent_vertices.size(); ++rd) {
-              for (int nrl = NO_ROBOT; nrl < (int)robot_vertices.size(); ++nrl) {
+              for (int nrl = NONE; nrl < (int)robot_vertices.size(); ++nrl) {
                 if (nrl >= 0 && robot_vertices[nrl] == graph_id) {
                   continue;
                 }
@@ -180,15 +180,15 @@ namespace bwi_exp1 {
                 state.direction = direction;
                 state.num_robots_left = robots;
                 if (rd < 0) {
-                  state.current_robot_status = rd;
+                  state.robot_direction = rd;
                 } else {
-                  state.current_robot_status = 
+                  state.robot_direction = 
                     adjacent_vertices[rd];
                 }
                 if (nrl < 0) {
-                  state.visible_robot_location = nrl;
+                  state.visible_robot = nrl;
                 } else {
-                  state.visible_robot_location = robot_vertices[nrl];
+                  state.visible_robot = robot_vertices[nrl];
                 }
                 state_cache_.push_back(state);
               }
@@ -198,8 +198,8 @@ namespace bwi_exp1 {
             state.graph_id = graph_id;
             state.direction = direction;
             state.num_robots_left = robots;
-            state.current_robot_status = NO_ROBOT;
-            state.visible_robot_location = NO_ROBOT;
+            state.robot_direction = NONE;
+            state.visible_robot = NONE;
             state_cache_.push_back(state);
           }
         }
@@ -220,7 +220,7 @@ namespace bwi_exp1 {
       std::vector<Action>& actions) {
 
     actions.clear();
-    if (state.current_robot_status == DIR_UNASSIGNED) {
+    if (state.robot_direction == DIR_UNASSIGNED) {
       BOOST_FOREACH(int id, adjacent_vertices_map_[state.graph_id]) {
         actions.push_back(Action(DIRECT_PERSON, id));
       }
@@ -232,7 +232,7 @@ namespace bwi_exp1 {
     if (state.num_robots_left != 0) {
       // If state does not have a future robot, allow placing a robot in a future
       // location
-      if (state.visible_robot_location == NO_ROBOT) {
+      if (state.visible_robot == NONE) {
         BOOST_FOREACH(int id, visible_vertices_map_[state.graph_id]) {
           if (state.graph_id != id) {
             actions.push_back(Action(PLACE_ROBOT, id)); 
@@ -240,7 +240,7 @@ namespace bwi_exp1 {
         }
       }
 
-      if (allow_robot_current_idx_ && state.current_robot_status == NO_ROBOT) {
+      if (allow_robot_current_idx_ && state.robot_direction == NONE) {
         actions.push_back(Action(PLACE_ROBOT, state.graph_id));
       }
     }
@@ -293,20 +293,20 @@ namespace bwi_exp1 {
 
     if (action.type == DIRECT_PERSON) {
       State2 next_state = state;
-      next_state.current_robot_status = action.graph_id;
+      next_state.robot_direction = action.graph_id;
       states.push_back(next_state);
       return;
     }
     if (action.type == PLACE_ROBOT) {
       if (action.graph_id != state.graph_id) {
         State2 next_state = state;
-        next_state.visible_robot_location = action.graph_id;
+        next_state.visible_robot = action.graph_id;
         next_state.num_robots_left--;
         states.push_back(next_state);
         return;
       } else {
         State2 next_state = state;
-        next_state.current_robot_status = DIR_UNASSIGNED;
+        next_state.robot_direction = DIR_UNASSIGNED;
         next_state.num_robots_left--;
         states.push_back(next_state);
         return;
@@ -324,28 +324,28 @@ namespace bwi_exp1 {
       next_state.direction = next_loc.second;
       next_state.num_robots_left = state.num_robots_left;
 
-      if (state.visible_robot_location == NO_ROBOT) {
-        next_state.visible_robot_location = NO_ROBOT;
-        next_state.current_robot_status = NO_ROBOT;
+      if (state.visible_robot == NONE) {
+        next_state.visible_robot = NONE;
+        next_state.robot_direction = NONE;
       } else {
         // See if the location we moved to is where the next robot is
-        if (next_state.graph_id == state.visible_robot_location) {
+        if (next_state.graph_id == state.visible_robot) {
           // Transition to the state where the current location has a robot, but
           // no direction
-          next_state.current_robot_status = DIR_UNASSIGNED;
-          next_state.visible_robot_location = NO_ROBOT; // This robot no longer needs to be tracked
+          next_state.robot_direction = DIR_UNASSIGNED;
+          next_state.visible_robot = NONE; // This robot no longer needs to be tracked
         } else {
           // See if the robot is still visible from the current location - you do not want to move
           // to a state where the robot is not visible
           if (std::find(visible_vertices_map_[next_state.graph_id].begin(),
-                visible_vertices_map_[next_state.graph_id].end(), state.visible_robot_location) 
+                visible_vertices_map_[next_state.graph_id].end(), state.visible_robot) 
               == visible_vertices_map_[next_state.graph_id].end()) { 
             // The person moved in an unexpected manner, the robot gets decommisioned
-            next_state.visible_robot_location = NO_ROBOT;
+            next_state.visible_robot = NONE;
           } else {
-            next_state.visible_robot_location = state.visible_robot_location;
+            next_state.visible_robot = state.visible_robot;
           }
-          next_state.current_robot_status = NO_ROBOT;
+          next_state.robot_direction = NONE;
         }
       }
       states.push_back(next_state);
@@ -374,11 +374,11 @@ namespace bwi_exp1 {
     // In this simple MDP formulation, the action should induce a desired 
     // direction for the person to be walking to.
     float expected_direction, sigma_sq, random_probability;
-    if (state.current_robot_status != NO_ROBOT && 
-        state.current_robot_status != DIR_UNASSIGNED // shouldn't really happen - VI messed up
+    if (state.robot_direction != NONE && 
+        state.robot_direction != DIR_UNASSIGNED // shouldn't really happen - VI messed up
         ) {
       expected_direction = topological_mapper::getNodeAngle(state.graph_id,
-          state.current_robot_status, graph_);
+          state.robot_direction, graph_);
       sigma_sq = 0.1;
       random_probability = 0.1;
     } else {
@@ -399,11 +399,11 @@ namespace bwi_exp1 {
         graph_location,
         goal_location,
         map_);
-    int next_identifier_location = state.visible_robot_location;
+    int next_identifier_location = state.visible_robot;
     next_identifier_location = 
-      (next_identifier_location == NO_ROBOT && goal_idx_visible) ?
+      (next_identifier_location == NONE && goal_idx_visible) ?
       goal_idx_ : next_identifier_location;
-    if (next_identifier_location != NO_ROBOT) {
+    if (next_identifier_location != NONE) {
       float next_robot_direction = topological_mapper::getNodeAngle(
           state.graph_id, next_identifier_location, graph_);
       while (next_robot_direction <= expected_direction - M_PI) {

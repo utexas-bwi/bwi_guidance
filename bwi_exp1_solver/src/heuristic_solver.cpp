@@ -21,7 +21,7 @@ HeuristicSolver::HeuristicSolver(const nav_msgs::OccupancyGrid& map,
 
 Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
 
-  if (state.current_robot_status == DIR_UNASSIGNED) {
+  if (state.robot_direction == DIR_UNASSIGNED) {
     // Find shortest path to goal. Point in direction of this path
     std::vector<size_t> path_from_goal;
     topological_mapper::getShortestPathWithDistance(
@@ -29,7 +29,7 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
     return bwi_exp1::Action(DIRECT_PERSON, path_from_goal[0]);
   }
 
-  if (state.current_robot_status != NO_ROBOT) {
+  if (state.robot_direction != NONE) {
     // Wait for person to transition out of this state. Do nothin
     return bwi_exp1::Action(DO_NOTHING, 0);
   }
@@ -37,7 +37,7 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
   // Otherwise, see if we can place a robot. Placing robots is only allowed:
   if (state.num_robots_left == 0 || 
       state.graph_id == goal_idx_ || 
-      state.visible_robot_location != NO_ROBOT) {
+      state.visible_robot != NONE) {
     // Already placed all available robots or no need to
     return bwi_exp1::Action(DO_NOTHING, 0);
   }

@@ -60,7 +60,7 @@ void test(topological_mapper::Graph& graph,
     std::cout << "Enter start numRobotsLeft: ";
     std::cin >> starting_robots;
     std::cout << "Enter start currentRobotStatus " 
-      << "(NO_ROBOT=-1, DIR_UNASSIGNED=-2): ";
+      << "(NONE=-1, DIR_UNASSIGNED=-2): ";
     std::cin >> start_crs;
     std::cout << "Enter start visibleRobotLocation: ";
     std::cin >> start_vrl;
@@ -69,8 +69,8 @@ void test(topological_mapper::Graph& graph,
     current_state.graph_id = start_idx;
     current_state.direction = start_direction;
     current_state.num_robots_left = starting_robots;
-    current_state.current_robot_status = start_crs;
-    current_state.visible_robot_location = start_vrl;
+    current_state.robot_direction = start_crs;
+    current_state.visible_robot = start_vrl;
 
     while (current_state.graph_id != goal_idx) {
 

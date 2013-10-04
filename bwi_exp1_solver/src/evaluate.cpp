@@ -111,8 +111,8 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
         current_state.graph_id = start_idx;
         current_state.direction = start_direction;
         current_state.num_robots_left = starting_robots;
-        current_state.current_robot_status = NO_ROBOT;
-        current_state.visible_robot_location = NO_ROBOT;
+        current_state.robot_direction = NONE;
+        current_state.visible_robot = NONE;
         true_distance = -estimator->getValue(current_state);
 
         /* std::cout << " - start " << current_state << std::endl; */

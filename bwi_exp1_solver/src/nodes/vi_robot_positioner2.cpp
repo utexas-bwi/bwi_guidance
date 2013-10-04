@@ -117,8 +117,8 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       current_state_.graph_id = start_idx;
       current_state_.direction = direction;
       current_state_.num_robots_left = instance.max_robots;
-      current_state_.current_robot_status = NO_ROBOT;
-      current_state_.visible_robot_location = NO_ROBOT;
+      current_state_.robot_direction = NONE;
+      current_state_.visible_robot = NONE;
       ROS_INFO_STREAM("Start at: " << current_state_);
       checkRobotPlacementAtCurrentState();
     }
@@ -151,7 +151,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           // Figure out direction to point towards here
           topological_mapper::Point2f to_loc = 
             topological_mapper::getLocationFromGraphId(
-                current_state_.current_robot_status, graph_);
+                current_state_.robot_direction, graph_);
           topological_mapper::Point2f change_loc = to_loc - assigned_robot_loc_;
           float destination_yaw = atan2(change_loc.y, change_loc.x);
           float change_in_yaw = destination_yaw - assigned_robot_yaw_;
@@ -169,11 +169,11 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           // around the node
           topological_mapper::Point2f at_loc = 
             topological_mapper::getLocationFromGraphId(
-                current_state_.visible_robot_location, graph_);
+                current_state_.visible_robot, graph_);
 
           float angle = topological_mapper::getNodeAngle(
                 current_state_.graph_id, 
-                current_state_.visible_robot_location, graph_
+                current_state_.visible_robot, graph_
                 );
           topological_mapper::Point2f from_loc =
             at_loc - topological_mapper::Point2f(
@@ -183,11 +183,11 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           // Perform lookahead to see best location to place robot
           size_t direction_idx = getDiscretizedAngle(angle);
           State2 robot_state;
-          robot_state.graph_id = current_state_.visible_robot_location;
+          robot_state.graph_id = current_state_.visible_robot;
           robot_state.direction = direction_idx;
           robot_state.num_robots_left = current_state_.num_robots_left;
-          robot_state.current_robot_status = DIR_UNASSIGNED;
-          robot_state.visible_robot_location = NO_ROBOT;
+          robot_state.robot_direction = DIR_UNASSIGNED;
+          robot_state.visible_robot = NONE;
           Action robot_action;
           if (use_heuristic_) {
             robot_action = hs_->getBestAction(robot_state);
@@ -209,7 +209,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           // Teleport the robot and forward this information
           std::string robot_id = default_robots_.robots[assigned_robots_].id;
           robot_locations_[robot_id] = pose;
-          graph_id_to_robot_map_[current_state_.visible_robot_location] =
+          graph_id_to_robot_map_[current_state_.visible_robot] =
             assigned_robots_;
 
           ++assigned_robots_;
@@ -240,8 +240,8 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         Action a(DO_NOTHING, 0);
         std::vector<State2> next_states; 
         model_->getNextStates(current_state_, a, next_states); 
-        int old_robot_status = current_state_.current_robot_status;
-        if (old_robot_status != NO_ROBOT) {
+        int old_robot_status = current_state_.robot_direction;
+        if (old_robot_status != NONE) {
           boost::mutex::scoped_lock lock(robot_modification_mutex_);
           int robot_number = 
             graph_id_to_robot_map_[current_state_.graph_id];
@@ -256,11 +256,11 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
         BOOST_FOREACH(const State2& state, next_states) {
           if (state.graph_id == current_graph_id) {
-            int old_robot_state = current_state_.visible_robot_location;
+            int old_robot_state = current_state_.visible_robot;
             current_state_ = state;
-            if (old_robot_state != NO_ROBOT && 
-                current_state_.visible_robot_location == NO_ROBOT &&
-                current_state_.current_robot_status == NO_ROBOT) {
+            if (old_robot_state != NONE && 
+                current_state_.visible_robot == NONE &&
+                current_state_.robot_direction == NONE) {
               int robot_number = 
                 graph_id_to_robot_map_[old_robot_state];
               std::string old_robot_id = 
