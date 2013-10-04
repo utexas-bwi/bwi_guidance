@@ -24,7 +24,7 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
   if (state.current_robot_status == DIR_UNASSIGNED) {
     // Find shortest path to goal. Point in direction of this path
     std::vector<size_t> path_from_goal;
-    topological_mapper::getShortestPath(
+    topological_mapper::getShortestPathWithDistance(
         graph_, goal_idx_, state.graph_id, path_from_goal);
     return bwi_exp1::Action(DIRECT_PERSON, 
         path_from_goal[0]);
@@ -63,7 +63,7 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
       boost::vertex(current_id, graph_);
     topological_mapper::Point2f loc = graph_[vd].location;
     std::vector<size_t> adjacent_vertices;
-    topological_mapper::getAdjacentVertices(
+    topological_mapper::getAdjacentNodes(
         current_id, graph_, adjacent_vertices);
 
     // Check vertex that has most likely transition
@@ -127,7 +127,7 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
   for (std::vector<size_t>::iterator si = states.begin(); 
       si != states.end(); ++si) {
     std::vector<size_t> path_from_goal;
-    topological_mapper::getShortestPath(
+    topological_mapper::getShortestPathWithDistance(
         graph_, goal_idx_, *si, path_from_goal);
     path_from_goal.insert(path_from_goal.begin(), *si);
     float distance = 0;

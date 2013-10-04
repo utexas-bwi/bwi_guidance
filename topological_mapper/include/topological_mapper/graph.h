@@ -45,6 +45,7 @@
 
 #include <opencv/cv.h>
 #include <nav_msgs/MapMetaData.h>
+#include <nav_msgs/OccupancyGrid.h>
 
 namespace topological_mapper {
 
@@ -100,11 +101,24 @@ namespace topological_mapper {
   size_t getClosestIdOnGraphFromEdge(const Point2f &point, 
       const Graph &graph, size_t prev_graph_id);
 
-  void getAdjacentVertices(size_t graph_id, const Graph& graph,
+  /* Functions defined in paper */
+
+  bool isVisible(size_t u, size_t v, const Graph &graph, 
+      const nav_msgs::OccupancyGrid& map);
+  
+  float getNodeAngle(size_t u, size_t v, const Graph &graph);
+
+  float getEuclideanDistance(size_t u, size_t v, const Graph &graph);
+
+  float getShortestPathWithDistance(size_t start_idx, size_t goal_idx, 
+      std::vector<size_t> &path_from_goal, const Graph &graph);
+
+  void getAdjacentNodes(size_t v, const Graph& graph,
       std::vector<size_t>& adjacent_vertices);
 
-  void getShortestPath(const Graph &graph, size_t start_idx,
-      size_t goal_idx, std::vector<size_t> &path_from_goal);
+  void getVisibleNodes(size_t v, const Graph& graph, 
+      const nav_msgs::OccupancyGrid& grid,
+      std::vector<size_t>& visible_vertices, float visibility_range = 0.0f);
 
 } /* topological_mapper */
 

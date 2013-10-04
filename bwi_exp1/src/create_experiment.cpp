@@ -270,7 +270,7 @@ int main(int argc, char** argv) {
           ss << "  ball_x: " << map_pt.x << std::endl;
           ss << "  ball_y: " << map_pt.y << std::endl;
           // findStartAndGoalIdx(pxl_start, pxl_goal, graph, start_idx, goal_idx);
-          // topological_mapper::getShortestPath(graph, start_idx, goal_idx, path_idx);
+          // topological_mapper::getShortestPathWithDistance(graph, start_idx, goal_idx, path_idx);
           global_state = GOAL_PATH;
           break;
         case GOAL_PATH:
@@ -324,7 +324,7 @@ int main(int argc, char** argv) {
         } else {
           size_t prev_idx = path_idx[path_idx.size() - 1];
           std::vector<size_t> path_from_prev_idx;
-          topological_mapper::getShortestPath(graph, idx, prev_idx, 
+          topological_mapper::getShortestPathWithDistance(graph, idx, prev_idx, 
               path_from_prev_idx);
           path_idx.insert(path_idx.end(), path_from_prev_idx.begin(),
               path_from_prev_idx.end());

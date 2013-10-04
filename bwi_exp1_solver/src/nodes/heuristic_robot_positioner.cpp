@@ -86,7 +86,7 @@ class HeuristicRobotPositioner : public BaseRobotPositioner {
         Graph::vertex_descriptor vd = boost::vertex(current_id, graph_);
         topological_mapper::Point2f loc = graph_[vd].location;
         std::vector<size_t> adjacent_vertices;
-        topological_mapper::getAdjacentVertices(
+        topological_mapper::getAdjacentNodes(
             current_id, graph_, adjacent_vertices);
 
         // Check vertex that has most likely transition
@@ -127,7 +127,7 @@ class HeuristicRobotPositioner : public BaseRobotPositioner {
       for (std::vector<size_t>::iterator si = states.begin(); 
           si != states.end(); ++si) {
         std::vector<size_t> path_from_goal;
-        topological_mapper::getShortestPath(
+        topological_mapper::getShortestPathWithDistance(
             graph_, goal_idx_, *si, path_from_goal);
         path_from_goal.insert(path_from_goal.begin(), goal_idx_);
         float distance = 0;

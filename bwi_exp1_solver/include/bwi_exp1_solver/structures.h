@@ -82,6 +82,10 @@ namespace bwi_exp1 {
   bool operator==(const State2& l, const State2& r);
   std::ostream& operator<<(std::ostream& stream, const State2& s);
 
+  size_t computeNextDirection(size_t dir, size_t graph_id, size_t next_graph_id);
+  size_t getDirectionFromAngle(float angle);
+  float getAngleFromDirection(size_t dir);
+
 } /* bwi_exp1 */
 
 #endif /* end of include guard: STRUCTURES_HDY3OBT2 */

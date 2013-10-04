@@ -60,4 +60,21 @@ namespace bwi_exp1 {
     return stream;
   }
 
+  size_t PersonModel2::computeNextDirection(size_t dir, size_t graph_id, 
+      size_t next_graph_id) {
+    float angle = getNodeAngle(graph_id, next_graph_id);
+    return getDirectionFromAngle(angle);
+  }
+
+  size_t PersonModel2::getDirectionFromAngle(float angle) {
+    angle = angle + M_PI / num_directions_;
+    while (angle < 0) angle += 2 * M_PI;
+    while (angle >= 2 * M_PI) angle -= 2 * M_PI;
+    return (angle * num_directions_) / (2 * M_PI);
+  }
+
+  float PersonModel2::getAngleFromDirection(size_t dir) {
+    return ((2 * M_PI) / num_directions_) * dir;
+  }
+
 } /* bwi_exp1 */

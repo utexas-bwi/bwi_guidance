@@ -61,7 +61,7 @@ namespace topological_mapper {
       Point2f location = graph[*vi].location;
       // Draw the edges from this vertex
       std::vector<size_t> adj_vertices;
-      getAdjacentVertices(count, graph, adj_vertices);
+      getAdjacentNodes(count, graph, adj_vertices);
       BOOST_FOREACH(size_t adj_vtx, adj_vertices) {
         if (adj_vtx > count) {
           bool allow_edge = put_all_edges;
@@ -312,24 +312,28 @@ namespace topological_mapper {
     }
   }
 
-  void getAdjacentVertices(size_t graph_id, const Graph& graph,
-      std::vector<size_t>& adjacent_vertices) {
-
-    adjacent_vertices.clear();
-    boost::property_map<Graph, boost::vertex_index_t>::type 
-        indexmap = boost::get(boost::vertex_index, graph);
-    Graph::vertex_descriptor vertex = boost::vertex(graph_id, graph);
-
-    Graph::adjacency_iterator ai, aend;
-    for (boost::tie(ai, aend) = boost::adjacent_vertices(vertex, graph); 
-        ai != aend; ++ai) {
-      adjacent_vertices.push_back(indexmap[*ai]);
-    }
-
+  bool isVisible(size_t u, size_t v, const Graph &graph, 
+      const nav_msgs::OccupancyGrid& map) {
+    Point2f loc_u = getLocationFromGraphId(u, graph);
+    Point2f loc_v = getLocationFromGraphId(v, graph);
+    return locationsInDirectLineOfSight(loc_u, loc_v, map);
   }
 
-  void getShortestPath(const Graph &graph, size_t start_idx,
-      size_t goal_idx, std::vector<size_t> &path_from_goal) {
+  float getNodeAngle(size_t u, size_t v, const Graph & graph) {
+    Graph::vertex_descriptor vd_u = boost::vertex(u, graph);
+    Graph::vertex_descriptor vd_v = boost::vertex(v, graph);
+    return atan2f(graph[vd_v].location.y - graph[vd_u].location.y,
+        graph[vd_v].location.x - graph[vd_u].location.x);
+  }
+
+  float getEuclideanDistance(size_t u, size_t v, const Graph& graph) {
+    Graph::vertex_descriptor vd_u = boost::vertex(u, graph);
+    Graph::vertex_descriptor vd_v = boost::vertex(v, graph);
+    return getMagnitude(graph[vd_v].location - graph[vd_u].location);
+  }
+
+  float getShortestPathWithDistance(size_t start_idx, size_t goal_idx,
+      std::vector<size_t> &path_from_goal, const Graph &graph) {
 
     topological_mapper::Graph graph_copy(graph);
     // Perform Dijakstra from start_idx
@@ -345,11 +349,10 @@ namespace topological_mapper {
       Graph, 
       double Edge::*
     >::type weightmap = boost::get(&Edge::weight, graph_copy);
-    boost::dijkstra_shortest_paths(graph_copy, 
-        s, &p[0], &d[0], weightmap, indexmap, 
-                              std::less<double>(), boost::closed_plus<double>(), 
-                              (std::numeric_limits<double>::max)(), 0,
-                              boost::default_dijkstra_visitor());
+    boost::dijkstra_shortest_paths(graph_copy, s, &p[0], &d[0], weightmap,
+        indexmap, std::less<double>(), boost::closed_plus<double>(),
+        (std::numeric_limits<double>::max)(), 0,
+        boost::default_dijkstra_visitor());
 
     // Look up the parent chain from the goal vertex to the start vertex
     path_from_goal.clear();
@@ -362,6 +365,47 @@ namespace topological_mapper {
     }
     path_from_goal.push_back(start_idx);
 
+    return d[start_idx];
+
+  }
+
+  void getAdjacentNodes(size_t graph_id, const Graph& graph,
+      std::vector<size_t>& adjacent_vertices) {
+
+    adjacent_vertices.clear();
+
+    boost::property_map<Graph, boost::vertex_index_t>::type 
+        indexmap = boost::get(boost::vertex_index, graph);
+
+    Graph::vertex_descriptor vertex = boost::vertex(graph_id, graph);
+    Graph::adjacency_iterator ai, aend;
+    for (boost::tie(ai, aend) = boost::adjacent_vertices(vertex, graph); 
+        ai != aend; ++ai) {
+      adjacent_vertices.push_back(indexmap[*ai]);
+    }
+
+  }
+
+  void getVisibleNodes(size_t v, const Graph& graph, 
+      const nav_msgs::OccupancyGrid& grid,
+      std::vector<size_t>& visible_vertices, float visibility_range) {
+
+    visible_vertices.clear();
+
+    Point2f loc_v = getLocationFromGraphId(v, graph);
+    size_t count = 0;
+    Graph::vertex_iterator vi, vend;
+    for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; 
+        ++vi, ++count) {
+      bool is_visible = isVisible(v, count, graph, grid);
+      if (is_visible && visibility_range != 0.0f) {
+        is_visible = is_visible && 
+          (getEuclideanDistance(v, count, graph) < visibility_range);
+      }
+      if (is_visible) {
+        visible_vertices.push_back(count);
+      }
+    }
   }
   
 } /* topological_mapper */

@@ -56,7 +56,7 @@ namespace bwi_exp1 {
         ns != next_states.end(); ++ns) {
       State &ns_deref = state_cache_[*ns];
       rewards[ns - next_states.begin()] = 
-        -getDistanceFromStates(s_deref.graph_id, ns_deref.graph_id);
+        -getEuclideanDistance(s_deref.graph_id, ns_deref.graph_id);
       if (a_deref.type == DIRECT_PERSON) { 
         rewards[ns - next_states.begin()] -= 500; 
       }
@@ -211,7 +211,7 @@ namespace bwi_exp1 {
     float expected_direction, sigma_sq;
     if (action.type == DIRECT_PERSON) {
       expected_direction = 
-        getAngleFromStates(state.graph_id, action.graph_id);
+        getNodeAngle(state.graph_id, action.graph_id);
       sigma_sq = 0.05;
     } else {
       expected_direction = 
@@ -240,7 +240,7 @@ namespace bwi_exp1 {
       }
 
       float next_state_direction = 
-        getAngleFromStates(state.graph_id, next_state.graph_id);
+        getNodeAngle(state.graph_id, next_state.graph_id);
 
       // wrap next state direction around expected direction
       while (next_state_direction > expected_direction + M_PI) 
@@ -277,11 +277,11 @@ namespace bwi_exp1 {
 
   size_t PersonModel::computeNextDirection(size_t dir, size_t graph_id, 
       size_t next_graph_id) {
-    float angle = getAngleFromStates(graph_id, next_graph_id);
+    float angle = getNodeAngle(graph_id, next_graph_id);
     return getDirectionFromAngle(angle);
   }
 
-  float PersonModel::getAngleFromStates(size_t graph_id, size_t next_graph_id) {
+  float PersonModel::getNodeAngle(size_t graph_id, size_t next_graph_id) {
 
     topological_mapper::Graph::vertex_descriptor v = 
       boost::vertex(graph_id, graph_);
@@ -292,7 +292,7 @@ namespace bwi_exp1 {
         graph_[next_v].location.x - graph_[v].location.x);
   }
 
-  float PersonModel::getDistanceFromStates(size_t graph_id, size_t next_graph_id) {
+  float PersonModel::getEuclideanDistance(size_t graph_id, size_t next_graph_id) {
     topological_mapper::Graph::vertex_descriptor v = 
       boost::vertex(graph_id, graph_);
     topological_mapper::Graph::vertex_descriptor next_v =

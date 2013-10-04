@@ -171,7 +171,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
             topological_mapper::getLocationFromGraphId(
                 current_state_.visible_robot_location, graph_);
 
-          float angle = model_->getAngleFromStates(
+          float angle = model_->getNodeAngle(
                 current_state_.graph_id, 
                 current_state_.visible_robot_location
                 );

@@ -56,8 +56,8 @@ namespace bwi_exp1 {
       std::vector<std::vector<state_t> > next_state_cache_;
       std::vector<std::vector<std::vector<float> > > ns_distribution_cache_;
 
-      float getAngleFromStates(size_t graph_id, size_t next_graph_id);
-      float getDistanceFromStates(size_t graph_id, size_t next_graph_id);
+      float getNodeAngle(size_t graph_id, size_t next_graph_id);
+      float getEuclideanDistance(size_t graph_id, size_t next_graph_id);
       uint32_t num_vertices_;
       uint32_t num_directions_;
       uint32_t max_robots_;

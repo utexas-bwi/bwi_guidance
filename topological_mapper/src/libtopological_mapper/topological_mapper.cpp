@@ -550,7 +550,7 @@ namespace topological_mapper {
       std::cout << "Analyzing pass 0 graph vertex: " << pass_0_count << std::endl;
 
       std::vector<size_t> adj_vertices;
-      getAdjacentVertices(pass_0_count, pass_0_graph, adj_vertices);
+      getAdjacentNodes(pass_0_count, pass_0_graph, adj_vertices);
       // See if the area of this region is too big to be directly pushed into 
       // the pass 3 graph
       if (pass_0_graph[*vi].pixels >= pixel_threshold &&
@@ -583,7 +583,7 @@ namespace topological_mapper {
       std::cout << "Converting pass1 vtx to CPs: " << pass_0_count << std::endl;
 
       std::vector<size_t> adj_vertices;
-      getAdjacentVertices(pass_0_count, pass_0_graph, adj_vertices);
+      getAdjacentNodes(pass_0_count, pass_0_graph, adj_vertices);
       std::vector<int> connect_edges;
       BOOST_FOREACH(size_t vtx, adj_vertices) {
         if (pass_0_vertex_status[vtx] == PRESENT) {
@@ -642,7 +642,7 @@ namespace topological_mapper {
       std::cout << "Adding pass 1 edges for: " << pass_0_count << std::endl;
 
       std::vector<size_t> adj_vertices;
-      getAdjacentVertices(pass_0_count, pass_0_graph, adj_vertices);
+      getAdjacentNodes(pass_0_count, pass_0_graph, adj_vertices);
       BOOST_FOREACH(size_t vtx, adj_vertices) {
         if (pass_0_vertex_status[vtx] == PRESENT && vtx < pass_0_count) {
           Graph::vertex_descriptor vi, vj;
@@ -687,7 +687,7 @@ namespace topological_mapper {
       // each other
       std::vector<size_t> open_vertices;
       int current_vertex = pass_1_count;
-      getAdjacentVertices(current_vertex, pass_1_graph, open_vertices);
+      getAdjacentNodes(current_vertex, pass_1_graph, open_vertices);
       std::vector<int> removed_vertices;
       std::pair<int, int> edge;
       if (open_vertices.size() == 2 &&
@@ -712,7 +712,7 @@ namespace topological_mapper {
             bool replacement_found = false;
             for (int i = 0; i < 2; ++i) {
               std::vector<size_t> adj_vertices;
-              getAdjacentVertices(open_vertices[i], pass_1_graph, 
+              getAdjacentNodes(open_vertices[i], pass_1_graph, 
                   adj_vertices);
               if (adj_vertices.size() == 2) {
                 size_t new_vertex = (adj_vertices[0] == current_vertex) ? 
@@ -768,7 +768,7 @@ namespace topological_mapper {
         ++vi, ++pass_1_count) {
       if (pass_1_vertex_status[pass_1_count] == PRESENT) {
         std::vector<size_t> adj_vertices;
-        getAdjacentVertices(pass_1_count, pass_1_graph, adj_vertices);
+        getAdjacentNodes(pass_1_count, pass_1_graph, adj_vertices);
         BOOST_FOREACH(size_t adj_vertex, adj_vertices) {
           if (pass_1_vertex_status[adj_vertex] == PRESENT &&
               adj_vertex > pass_1_count) {
@@ -829,7 +829,7 @@ namespace topological_mapper {
         open_set.erase(open_set.begin());
         closed_set.insert(current_vertex);
         std::vector<size_t> adj_vertices;
-        getAdjacentVertices(current_vertex, pass_2_graph, adj_vertices);
+        getAdjacentNodes(current_vertex, pass_2_graph, adj_vertices);
         BOOST_FOREACH(size_t vtx, adj_vertices) {
           if (closed_set.count(vtx) || open_set.count(vtx)) {
             continue;
@@ -871,7 +871,7 @@ namespace topological_mapper {
         ++vi, ++pass_2_count) {
       std::cout << "Gen edges pass 2 graph vtx: " << pass_2_count << std::endl;
       std::vector<size_t> adj_vertices;
-      getAdjacentVertices(pass_2_count, pass_2_graph, adj_vertices);
+      getAdjacentNodes(pass_2_count, pass_2_graph, adj_vertices);
       BOOST_FOREACH(size_t adj_vertex, adj_vertices) {
         if (adj_vertex > pass_2_count) {
           Graph::vertex_descriptor vi,vj;
@@ -939,7 +939,7 @@ namespace topological_mapper {
         ++vi, ++pass_3_count) {
       Point2f vtx1 = getLocationFromGraphId(pass_3_count, pass_3_graph);
       std::vector<size_t> adj_vertices;
-      getAdjacentVertices(pass_3_count, pass_3_graph, adj_vertices);
+      getAdjacentNodes(pass_3_count, pass_3_graph, adj_vertices);
       BOOST_FOREACH(size_t adj_vertex, adj_vertices) {
         if (adj_vertex > pass_3_count) {
           Point2f vtx2 = getLocationFromGraphId(adj_vertex, pass_3_graph);
@@ -963,7 +963,7 @@ namespace topological_mapper {
         ++vi, ++pass_3_count) {
       std::cout << "Analyzing edges on vtx " << pass_3_count << std::endl;
       std::vector<size_t> adj_vertices;
-      getAdjacentVertices(pass_3_count, pass_3_graph, adj_vertices);
+      getAdjacentNodes(pass_3_count, pass_3_graph, adj_vertices);
       Point2f vtx1 = getLocationFromGraphId(pass_3_count, pass_3_graph);
       BOOST_FOREACH(size_t adj_vertex, adj_vertices) {
         if (adj_vertex < pass_3_count)
@@ -977,19 +977,13 @@ namespace topological_mapper {
         vj = boost::vertex(adj_vertex, pass_3_graph);
         boost::remove_edge(vi, vj, pass_3_graph);
         std::vector<size_t> replacement_path;
-        getShortestPath(pass_3_graph, pass_3_count, adj_vertex, replacement_path);
-        replacement_path.insert(replacement_path.begin(), adj_vertex);
-        float path_cost = 0;
-        for (int i = 1; i < replacement_path.size(); ++i) {
-          std::cout << replacement_path[i-1] << "-" << replacement_path[i] << std::endl;
-          Point2f vtx3 = getLocationFromGraphId(replacement_path[i-1], pass_3_graph);
-          Point2f vtx4 = getLocationFromGraphId(replacement_path[i], pass_3_graph);
-          path_cost += getMagnitude(vtx3 - vtx4);
-        } 
+        float path_cost = 
+          getShortestPathWithDistance(pass_3_count, adj_vertex, replacement_path, pass_3_graph);
         if (replacement_path.size() >= 2) {
           std::cout << " - fount alternate path cost: " << path_cost << std::endl;
         }
-        if (replacement_path.size() < 2 || path_cost > 1.1 * edge_length) {
+        if (replacement_path.size() < 2 || path_cost  > 1.1 * edge_length) {
+          // re-add edge to graph
           Graph::edge_descriptor e; bool b;
           boost::tie(e,b) = boost::add_edge(vi, vj, pass_3_graph);
           pass_3_graph[e].weight = getMagnitude(

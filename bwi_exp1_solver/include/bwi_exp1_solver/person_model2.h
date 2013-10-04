@@ -37,12 +37,6 @@ namespace bwi_exp1 {
         return std::string("stub");
       }
 
-      size_t computeNextDirection(size_t dir, 
-          size_t graph_id, size_t next_graph_id);
-      size_t getDirectionFromAngle(float angle);
-      float getAngleFromDirection(size_t dir);
-      float getAngleFromStates(size_t graph_id, size_t next_graph_id);
-      float getDistanceFromStates(size_t graph_id, size_t next_graph_id);
       void getNextStates(const State2& state, const Action& action, 
           std::vector<State2>& next_states);
 

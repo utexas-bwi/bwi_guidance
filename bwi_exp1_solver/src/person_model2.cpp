@@ -81,7 +81,7 @@ namespace bwi_exp1 {
       for (std::vector<State2>::const_iterator ns = next_states.begin();
           ns != next_states.end(); ++ns) {
         rewards[ns - next_states.begin()] = 
-          -getDistanceFromStates(state.graph_id, ns->graph_id);
+          -getEuclideanDistance(state.graph_id, ns->graph_id);
       }
     } else if (action.type == PLACE_ROBOT) {
       // Single transition, no reward
@@ -96,7 +96,7 @@ namespace bwi_exp1 {
     adjacent_vertices_map_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
       std::vector<size_t> adjacent_vertices;
-      topological_mapper::getAdjacentVertices(graph_id, graph_, 
+      topological_mapper::getAdjacentNodes(graph_id, graph_, 
           adjacent_vertices); 
       adjacent_vertices_map_[graph_id] = 
         std::vector<int>(adjacent_vertices.begin(), adjacent_vertices.end());
@@ -378,7 +378,7 @@ namespace bwi_exp1 {
         state.current_robot_status != DIR_UNASSIGNED // shouldn't really happen - VI messed up
         ) {
       expected_direction = 
-        getAngleFromStates(state.graph_id, state.current_robot_status);
+        getNodeAngle(state.graph_id, state.current_robot_status);
       sigma_sq = 0.1;
       random_probability = 0.1;
     } else {
@@ -405,7 +405,7 @@ namespace bwi_exp1 {
       goal_idx_ : next_identifier_location;
     if (next_identifier_location != NO_ROBOT) {
       float next_robot_direction = 
-        getAngleFromStates(state.graph_id, next_identifier_location);
+        getNodeAngle(state.graph_id, next_identifier_location);
       while (next_robot_direction <= expected_direction - M_PI) {
         next_robot_direction += 2 * M_PI;
       }
@@ -431,7 +431,7 @@ namespace bwi_exp1 {
     BOOST_FOREACH(const State2& next_state, next_states) {
 
       float next_state_direction = 
-        getAngleFromStates(state.graph_id, next_state.graph_id);
+        getNodeAngle(state.graph_id, next_state.graph_id);
 
       // wrap next state direction around expected direction
       while (next_state_direction > expected_direction + M_PI) 
@@ -467,45 +467,6 @@ namespace bwi_exp1 {
   std::vector<float>& PersonModel2::getTransitionProbabilities(
       const State2& state, const Action& action) {
     return ns_distribution_cache_[state][action];
-  }
-
-
-  size_t PersonModel2::computeNextDirection(size_t dir, size_t graph_id, 
-      size_t next_graph_id) {
-    float angle = getAngleFromStates(graph_id, next_graph_id);
-    return getDirectionFromAngle(angle);
-  }
-
-  float PersonModel2::getAngleFromStates(size_t graph_id, size_t next_graph_id) {
-
-    topological_mapper::Graph::vertex_descriptor v = 
-      boost::vertex(graph_id, graph_);
-    topological_mapper::Graph::vertex_descriptor next_v =
-      boost::vertex(next_graph_id, graph_);
-
-    return atan2f(graph_[next_v].location.y - graph_[v].location.y,
-        graph_[next_v].location.x - graph_[v].location.x);
-  }
-
-  float PersonModel2::getDistanceFromStates(size_t graph_id, size_t next_graph_id) {
-    topological_mapper::Graph::vertex_descriptor v = 
-      boost::vertex(graph_id, graph_);
-    topological_mapper::Graph::vertex_descriptor next_v =
-      boost::vertex(next_graph_id, graph_);
-
-    return topological_mapper::getMagnitude(
-        graph_[next_v].location - graph_[v].location);
-  }
-
-  size_t PersonModel2::getDirectionFromAngle(float angle) {
-    angle = angle + M_PI / num_directions_;
-    while (angle < 0) angle += 2 * M_PI;
-    while (angle >= 2 * M_PI) angle -= 2 * M_PI;
-    return (angle * num_directions_) / (2 * M_PI);
-  }
-
-  float PersonModel2::getAngleFromDirection(size_t dir) {
-    return ((2 * M_PI) / num_directions_) * dir;
   }
 
 } /* bwi_exp1 */
