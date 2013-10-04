@@ -324,8 +324,8 @@ int main(int argc, char** argv) {
         } else {
           size_t prev_idx = path_idx[path_idx.size() - 1];
           std::vector<size_t> path_from_prev_idx;
-          topological_mapper::getShortestPathWithDistance(graph, idx, prev_idx, 
-              path_from_prev_idx);
+          topological_mapper::getShortestPathWithDistance(idx, prev_idx,
+              path_from_prev_idx, graph);
           path_idx.insert(path_idx.end(), path_from_prev_idx.begin(),
               path_from_prev_idx.end());
         }
