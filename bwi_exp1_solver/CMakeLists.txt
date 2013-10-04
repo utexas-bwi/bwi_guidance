@@ -34,9 +34,7 @@ include_directories(
 ## Declare a cpp library
 add_library(bwi_exp1_solver
   src/heuristic_solver.cpp
-  src/person_model.cpp
   src/person_model2.cpp
-  src/person_estimator.cpp
   src/person_estimator2.cpp
   src/structures.cpp
 )
@@ -55,12 +53,6 @@ target_link_libraries(test_vi
 add_executable(test_mdp 
   test/test_mdp.cpp
 )
-target_link_libraries(test_mdp 
-  bwi_exp1_solver
-)
-add_executable(test_mdp2 
-  test/test_mdp2.cpp
-)
 target_link_libraries(test_mdp2 
   bwi_exp1_solver
 )
@@ -71,26 +63,10 @@ target_link_libraries(evaluate
   bwi_exp1_solver
 )
 
-add_executable(vi_robot_positioner
-  src/nodes/vi_robot_positioner.cpp
-)
-target_link_libraries(vi_robot_positioner 
-  bwi_exp1_solver
-  ${catkin_LIBRARIES}
-)
-
 add_executable(vi_robot_positioner2
   src/nodes/vi_robot_positioner2.cpp
 )
 target_link_libraries(vi_robot_positioner2 
-  bwi_exp1_solver
-  ${catkin_LIBRARIES}
-)
-
-add_executable(heuristic_robot_positioner
-  src/nodes/heuristic_robot_positioner.cpp
-)
-target_link_libraries(heuristic_robot_positioner 
   bwi_exp1_solver
   ${catkin_LIBRARIES}
 )
