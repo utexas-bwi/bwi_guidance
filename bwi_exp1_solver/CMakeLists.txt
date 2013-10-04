@@ -50,12 +50,14 @@ add_executable(test_vi
 target_link_libraries(test_vi 
   bwi_exp1_solver
 )
-add_executable(test_mdp 
-  test/test_mdp.cpp
+
+add_executable(test_mdp2 
+  test/test_mdp2.cpp
 )
 target_link_libraries(test_mdp2 
   bwi_exp1_solver
 )
+
 add_executable(evaluate 
   src/evaluate.cpp
 )
@@ -78,7 +80,7 @@ target_link_libraries(vi_robot_positioner2
 ## Mark executables and/or libraries for installation
 install(TARGETS 
   bwi_exp1_solver
-  test_mdp
+  test_mdp2
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

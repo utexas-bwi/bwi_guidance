@@ -46,8 +46,7 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State2& state) const {
   // is moving in, compute the expected forward locations of the person
   std::vector<size_t> states;
   size_t current_id = state.graph_id;
-  float current_direction = 
-    ((2 * M_PI) / 16) * state.direction;
+  float current_direction = getAngleInRadians(state.direction);
   topological_mapper::Point2f start_location = 
     topological_mapper::getLocationFromGraphId(state.graph_id, graph_); 
 
