@@ -19,6 +19,11 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
     boost::shared_ptr<ValueIteration<State, Action> > vi_;
     boost::shared_ptr<HeuristicSolver> hs_;
 
+    std::map<int, boost::shared_ptr<PersonModel2> > model_map_;
+    std::map<int, boost::shared_ptr<PersonEstimator2> > estimator_map_;
+    std::map<int, boost::shared_ptr<ValueIteration<State, Action> > > vi_map_;
+    std::map<int, boost::shared_ptr<HeuristicSolver> > hs_map_;
+
     double vi_gamma_;
     int vi_max_iterations_;
     std::string data_directory_;
@@ -51,12 +56,71 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       private_nh.param<bool>("allow_goal_visibility", allow_goal_visibility_, 
           true);
       private_nh.param<double>("visibility_range", visibility_range_, 
-          25.0);
+          30.0);
 
       if (use_heuristic_)
         ROS_INFO_STREAM("Using heuristic!");
       else
         ROS_INFO_STREAM("Using VI!");
+
+      // Pre-compute all the experiment related information
+      std::vector<std::string> instance_names;
+      getInstanceNames(experiment_, instance_names);
+      BOOST_FOREACH(const std::string iname, instance_names) {
+        const Instance& instance = getInstance(experiment_, iname);
+        topological_mapper::Point2f goal_point(instance.ball_loc.x,
+            instance.ball_loc.y);
+        goal_point = topological_mapper::toGrid(goal_point, map_info_);
+        int goal_idx = 
+          topological_mapper::getClosestIdOnGraph(goal_point, graph_);
+
+        // Compute model file
+        std::string model_file = data_directory_
+          + boost::lexical_cast<std::string>(goal_idx) + "_model.txt";
+        std::string vi_file = data_directory_
+          + boost::lexical_cast<std::string>(goal_idx) + "_vi.txt";
+
+        // Setup the model and the heuristic solver to read from file
+        boost::shared_ptr<PersonModel2> model;
+        boost::shared_ptr<PersonEstimator2> estimator;
+        boost::shared_ptr<ValueIteration<State, Action> > vi;
+        boost::shared_ptr<HeuristicSolver> hs;
+        float pixel_visibility_range = visibility_range_ / map_.info.resolution;
+        model.reset(new PersonModel2(graph_, map_, goal_idx, model_file,
+              allow_robot_current_idx_, pixel_visibility_range,
+              allow_goal_visibility_));
+        estimator.reset(new PersonEstimator2);
+        float epsilon = 0.05f / map_.info.resolution;
+        float delta = -500.0f / map_.info.resolution;
+        vi.reset(new ValueIteration<State, Action>(
+              model, estimator, vi_gamma_, epsilon, vi_max_iterations_,
+              0.0, delta));
+        hs.reset(new HeuristicSolver(map_, graph_, goal_idx,
+              allow_robot_current_idx_, pixel_visibility_range, 
+              allow_goal_visibility_)); 
+
+        bool policy_available = false;
+        std::ifstream fin(vi_file.c_str());
+        if (fin.good()) {
+          policy_available = true;
+        }
+        if (policy_available) {
+          vi->loadPolicy(vi_file);
+          ROS_INFO_STREAM("VIRobotPositioner2: Loaded policy for goal_idx " <<
+              goal_idx << " from " << vi_file);
+        } else {
+          ROS_INFO_STREAM("VIRobotPositioner2: Computing policy for goal_idx: "
+              << goal_idx);
+          vi->computePolicy();
+          vi->savePolicy(vi_file);
+          ROS_INFO_STREAM("VIRobotPositioner2: Saved policy to " << vi_file);
+        }
+
+        model_map_[goal_idx] = model;
+        estimator_map_[goal_idx] = estimator;
+        vi_map_[goal_idx] = vi;
+        hs_map_[goal_idx] = hs;
+      }
 
     }
 
@@ -68,8 +132,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       instance_name_ = instance_name;
       assigned_robots_ = 0;
 
-      const Instance& instance = 
-        getInstance(experiment_, instance_name_);
+      const Instance& instance = getInstance(experiment_, instance_name_);
 
       topological_mapper::Point2f start_point(instance.start_loc.x,
           instance.start_loc.y);
@@ -82,43 +145,11 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       goal_point = topological_mapper::toGrid(goal_point, map_info_);
       goal_idx_ = 
         topological_mapper::getClosestIdOnGraph(goal_point, graph_);
-
-      // Compute model file
-      std::string model_file = data_directory_
-        + boost::lexical_cast<std::string>(goal_idx_) + "_model.txt";
-      std::string vi_file = data_directory_
-        + boost::lexical_cast<std::string>(goal_idx_) + "_vi.txt";
-
-      // Setup the model and the heuristic solver to read from file
-      float pixel_visibility_range = visibility_range_ / map_.info.resolution;
-      model_.reset(new PersonModel2(graph_, map_, goal_idx_, model_file,
-            allow_robot_current_idx_, pixel_visibility_range,
-            allow_goal_visibility_));
-      estimator_.reset(new PersonEstimator2);
-      float epsilon = 0.05f / map_.info.resolution;
-      float delta = -500.0f / map_.info.resolution;
-      vi_.reset(new ValueIteration<State, Action>(
-            model_, estimator_, vi_gamma_, epsilon, vi_max_iterations_,
-            0.0, delta));
-      hs_.reset(new HeuristicSolver(map_, graph_, goal_idx_,
-            allow_robot_current_idx_, pixel_visibility_range, 
-            allow_goal_visibility_)); 
-
-      // Setup the VI policy file
-      bool policy_available = false;
-      std::ifstream fin(vi_file.c_str());
-      if (fin.good()) {
-        policy_available = true;
-      }
-      if (policy_available) {
-        vi_->loadPolicy(vi_file);
-        ROS_INFO_STREAM("VIRobotPositioner2: Loaded policy from " << vi_file);
-      } else {
-        ROS_INFO_STREAM("VIRobotPositioner2: Computing policy...");
-        vi_->computePolicy();
-        vi_->savePolicy(vi_file);
-        ROS_INFO_STREAM("VIRobotPositioner2: Saved policy to " << vi_file);
-      }
+ 
+      model_ = model_map_[goal_idx_];
+      estimator_ = estimator_map_[goal_idx_];
+      vi_ = vi_map_[goal_idx_];
+      hs_ = hs_map_[goal_idx_];
 
       size_t direction = 
         getDiscretizedAngle(instance.start_loc.yaw);

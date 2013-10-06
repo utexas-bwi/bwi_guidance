@@ -282,8 +282,7 @@ class ExperimentController:
                             + "There are more TUTORIALS to go!"
                 else:
                     self.experiment_text = "Awesome! You've finished the "\
-                            + "tutorials! Hit the enter key or press the "\
-                            + "continue button to proceed to the EXPERIMENTS!"
+                            + "tutorials!";
                 reward = 50
             else:
                 current_time = rospy.get_time()
@@ -296,7 +295,7 @@ class ExperimentController:
                 reward = 0
 
         self.experiment_text += \
-                " Hit the ENTER key or press Continue to try again!"
+                " Hit the ENTER key or press Continue!"
         self.reward += reward
 
         # Write log file
@@ -319,7 +318,7 @@ class ExperimentController:
         if not self.experiment_ready_timer_started:
             self.experiment_ready_timer_started = True
             self.experiment_ready_timer = \
-                threading.Timer(20.0, self.ready_the_experiment)
+                threading.Timer(90.0, self.ready_the_experiment)
             self.experiment_ready_timer.start()
 
         if (not self.instance_in_progress):
@@ -586,7 +585,8 @@ class ExperimentController:
     def continue_to_next_instance(self):
         success = False
         self.modify_experiment_lock.acquire()
-        if not self.instance_in_progress:
+        if (not self.instance_in_progress and 
+            self.instance_number != len(self.instances)):
             self.start_next_instance = True
             self.ping_server()
             success = True

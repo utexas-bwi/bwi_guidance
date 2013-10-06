@@ -57,6 +57,13 @@ add_executable(test_mdp2
 target_link_libraries(test_mdp2 
   bwi_exp1_solver
 )
+add_executable(generate_exp2 
+  test/generate_exp2.cpp
+)
+target_link_libraries(generate_exp2 
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
 
 add_executable(evaluate 
   src/evaluate.cpp

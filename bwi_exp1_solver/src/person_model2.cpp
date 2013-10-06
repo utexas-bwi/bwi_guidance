@@ -366,13 +366,14 @@ namespace bwi_exp1 {
 
         unsigned robot_dir = (state.robot_direction != NONE) ? 
           state.robot_direction : best_ns;
+
         unsigned next_state_counter = 0;
         float probablity_sum = 0.0f;
         BOOST_FOREACH(const State& next_state, next_states) {
           float probablity = 0.01f / next_states.size();
           if (best_ns == next_state_counter)
             probablity += 0.495f;
-          if (robot_dir == next_state_counter)
+          if (robot_dir == next_state.graph_id)
             probablity += 0.495f;
           probablity_sum += probablity;
           if (next_state_counter == next_states.size() - 1) {

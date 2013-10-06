@@ -1,30 +1,67 @@
 person_id: person
 ball_id: ball
 instance_groups:
-  - prefix: test
+  - prefix: tutorial
     order: 0
     instances:
-      - start_x: 13.95
-        start_y: 45.45
+      - start_x: 8.6
+        start_y: 45.4
         start_yaw: 0
-        ball_x: 38.2
-        ball_y: 13.9
+        ball_x: 38.1
+        ball_y: 38.1
+        max_robots: 5
+        max_duration: 300 #seconds
+        tutorial_duration: 60 #seconds
+        is_tutorial: true
+      - start_x: 45.35
+        start_y: 38.1
+        start_yaw: 3.14
+        ball_x: 30.75
+        ball_y: 45.4
+        max_robots: 5
+        max_duration: 300 #seconds
+        tutorial_duration: 40 #seconds
+        is_tutorial: true
+  - prefix: exp
+    order: 1
+    instances:
+      - start_x: 1.3
+        start_y: 23.35
+        start_yaw: 0
+        ball_x: 38.1
+        ball_y: 8.55
         max_robots: 1
         max_duration: 300 #seconds
         is_tutorial: false
-      - start_x: 5.7
-        start_y: 38.1
-        start_yaw: -0.0475823
-        ball_x: 38.1
-        ball_y: 13.65
+      - start_x: 38.1
+        start_y: 45.4
+        start_yaw: -1.57
+        ball_x: 8.6
+        ball_y: 8.55
         max_robots: 2
         max_duration: 300 #seconds
         is_tutorial: false
-      - start_x: 1.4
-        start_y: 10.9
-        start_yaw: -1.60782
-        ball_x: 38.2
-        ball_y: 13.7
+      - start_x: 8.6
+        start_y: 45.4
+        start_yaw: 0
+        ball_x: 38.15
+        ball_y: 15
         max_robots: 3
+        max_duration: 300 #seconds
+        is_tutorial: false
+      - start_x: 23.35
+        start_y: 1.3
+        start_yaw: 1.57
+        ball_x: 23.35
+        ball_y: 45.4
+        max_robots: 4
+        max_duration: 300 #seconds
+        is_tutorial: false
+      - start_x: 1.3
+        start_y: 38.1
+        start_yaw: 0
+        ball_x: 38.1
+        ball_y: 1.3
+        max_robots: 5
         max_duration: 300 #seconds
         is_tutorial: false

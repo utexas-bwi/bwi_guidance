@@ -7,7 +7,7 @@
 
   <!-- launch the experiment controller node -->
   <node name="experiment_controller" pkg="bwi_exp1" type="controller.py" output="screen">
-    <param name="graph_file" value="$(find bwi_exp1)/maps/graph.yaml" />
+    <param name="graph_file" value="$(find bwi_exp1)/maps/graph_exp1.yaml" />
     <param name="experiment_file" 
            value="$(find bwi_exp1_solver)/config/experiment.yaml" />
     <param name="user_file" value="$(find bwi_exp1_solver)/data/exp2/users/users.yaml" />
@@ -22,7 +22,7 @@
   <node name="robot_positioner" pkg="bwi_exp1_solver" 
         type="vi_robot_positioner2">
     <param name="map_file" value="$(find bwi_exp1)/maps/exp1.yaml" />
-    <param name="graph_file" value="$(find bwi_exp1)/maps/graph.yaml" />
+    <param name="graph_file" value="$(find bwi_exp1)/maps/graph_exp1.yaml" />
     <param name="experiment_file" 
            value="$(find bwi_exp1_solver)/config/experiment.yaml" />
     <param name="default_robot_file" 
@@ -33,6 +33,7 @@
     <!-- <param name="debug" value="true" /> -->
     <param name="data_directory" value="$(find bwi_exp1_solver)/data/exp2/cache/" />
     <param name="use_heuristic" value="$(arg use_heuristic)" />
+    <param name="visibility_range" value="30.0" />
   </node>
 
 </launch>
