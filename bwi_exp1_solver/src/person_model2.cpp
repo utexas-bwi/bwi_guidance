@@ -365,7 +365,7 @@ namespace bwi_exp1 {
             std::min_element(differences.begin(), differences.end()));
 
         unsigned robot_dir = (state.robot_direction != NONE) ? 
-          state.robot_direction : best_ns;
+          state.robot_direction : next_states[best_ns].graph_id;
 
         unsigned next_state_counter = 0;
         float probablity_sum = 0.0f;
