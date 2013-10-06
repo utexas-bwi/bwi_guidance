@@ -79,6 +79,7 @@ namespace bwi_exp1 {
       next_graph_id, const topological_mapper::Graph& graph);
   size_t getDiscretizedAngle(float angle);
   float getAngleInRadians(size_t dir);
+  float getAbsoluteAngleDifference(float angle1, float angle2);
 
 } /* bwi_exp1 */
 

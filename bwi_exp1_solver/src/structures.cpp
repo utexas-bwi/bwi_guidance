@@ -80,4 +80,10 @@ namespace bwi_exp1 {
     return ((2 * M_PI) / NUM_DIRECTIONS) * dir;
   }
 
+  float getAbsoluteAngleDifference(float angle1, float angle2) {
+    while (angle2 > angle1 + M_PI) angle2 -= 2 * M_PI;
+    while (angle2 <= angle1 - M_PI) angle2 += 2 * M_PI;
+    return fabs (angle1 - angle2);
+  }
+
 } /* bwi_exp1 */

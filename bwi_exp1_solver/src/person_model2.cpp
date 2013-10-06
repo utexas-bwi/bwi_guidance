@@ -15,10 +15,12 @@ namespace bwi_exp1 {
 
   PersonModel2::PersonModel2(const topological_mapper::Graph& graph, const
       nav_msgs::OccupancyGrid& map,  size_t goal_idx, const std::string& file,
-      bool allow_robot_current_idx, float visibility_range, unsigned int
-      max_robots) : graph_(graph), map_(map), goal_idx_(goal_idx),
+      bool allow_robot_current_idx, float visibility_range, bool
+      allow_goal_visibility, unsigned int max_robots) : graph_(graph),
+  map_(map), goal_idx_(goal_idx),
   allow_robot_current_idx_(allow_robot_current_idx),
-  visibility_range_(visibility_range), max_robots_(max_robots) {
+  visibility_range_(visibility_range),
+  allow_goal_visibility_(allow_goal_visibility), max_robots_(max_robots) {
 
     if (!file.empty()) {
       std::ifstream ifs(file.c_str());
@@ -276,10 +278,9 @@ namespace bwi_exp1 {
           // We moved up to a robot, setup a robot here without an assigned dir
           next_state.robot_direction = DIR_UNASSIGNED;
           next_state.visible_robot = NONE; // no longer tracked 
-        } else if (std::find(visible_vertices_map_[next_state.graph_id].begin(),
-              visible_vertices_map_[next_state.graph_id].end(),
-              state.visible_robot) ==
-            visible_vertices_map_[next_state.graph_id].end()) { 
+        } else if (std::find(visible_vertices_map_[next_node].begin(),
+              visible_vertices_map_[next_node].end(), state.visible_robot) ==
+            visible_vertices_map_[next_node].end()) { 
           // The person moved such that a previously visible robot is no 
           // longer visible. Decomission the robot.
           next_state.robot_direction = NONE;
@@ -304,9 +305,9 @@ namespace bwi_exp1 {
 
     probabilities.clear();
 
-    // getNextStates does not check if this action was indeed allowed at the
-    // given state. With an incorrect action, this function will probably lead
-    // you to a non existent state.
+    // constructTransitionProbabilities does not check if this action was
+    // indeed allowed at the given state. With an incorrect action, this
+    // function will probably lead you to a non existent state.
 
     if (isTerminalState(state)) {
       return; // since next_states.size == 0
@@ -325,49 +326,81 @@ namespace bwi_exp1 {
     // independent data structure so that it can be learned given a state 
     // feature vector.
 
-    float expected_direction, sigma_sq, random_probability;
-    if (state.robot_direction != NONE && 
-        state.robot_direction != DIR_UNASSIGNED // shouldn't really happen - VI messed up
-        ) {
-      expected_direction = topological_mapper::getNodeAngle(state.graph_id,
-          state.robot_direction, graph_);
-      sigma_sq = 0.1;
-      random_probability = 0.1;
-    } else {
-      expected_direction = 
-        getAngleInRadians(state.direction);
-      sigma_sq = 0.1;
-      random_probability = 0.1;
-    }
+    /* CASE 1 */
 
     // In case the next robot is somewhere in the direction of where the person
     // wants to go, this should significantly increase the probablity of seeing
     // the next robot and moving towards it.
-    topological_mapper::Point2f graph_location =
-      topological_mapper::getLocationFromGraphId(state.graph_id, graph_);
-    topological_mapper::Point2f goal_location =
-      topological_mapper::getLocationFromGraphId(goal_idx_, graph_);
-    bool goal_idx_visible = topological_mapper::locationsInDirectLineOfSight(
-        graph_location, goal_location, map_);
-    int next_identifier_location = state.visible_robot;
-    next_identifier_location = 
-      (next_identifier_location == NONE && goal_idx_visible) ?
-      goal_idx_ : next_identifier_location;
-    if (next_identifier_location != NONE) {
-      float next_robot_direction = topological_mapper::getNodeAngle(
-          state.graph_id, next_identifier_location, graph_);
-      while (next_robot_direction <= expected_direction - M_PI) {
-        next_robot_direction += 2 * M_PI;
+
+    std::vector<int>& visible_vertices = 
+      visible_vertices_map_[state.graph_id];
+    bool goal_visible = allow_goal_visibility_ &&
+      std::find(visible_vertices.begin(), visible_vertices.end(), goal_idx_) !=
+      visible_vertices.end();
+    bool case_1_invalid = true;
+    if (state.visible_robot != NONE || goal_visible) {
+      int target = (goal_visible) ? goal_idx_ : state.visible_robot;
+      // Check angle to target
+      float expected_dir = 
+        topological_mapper::getNodeAngle(state.graph_id, target, graph_);
+      float angle_diff = getAbsoluteAngleDifference(expected_dir, 
+          getAngleInRadians(state.direction));
+      if (angle_diff < M_PI / 3) {
+        // target is inside visibility cone, so we are pretty sure it has been
+        // seen. case 1 is finally true!
+        case_1_invalid = false;
+
+        std::vector<State> next_states;
+        getNextStates(state, action, next_states);
+
+        std::vector<float> differences;
+        BOOST_FOREACH(const State& next_state, next_states) {
+          float ns_angle = topological_mapper::getNodeAngle(state.graph_id,
+              next_state.graph_id, graph_);
+          float ns_difference = getAbsoluteAngleDifference(expected_dir,
+              ns_angle);
+          differences.push_back(ns_difference);
+        }
+        unsigned best_ns = std::distance(differences.begin(),
+            std::min_element(differences.begin(), differences.end()));
+
+        unsigned robot_dir = (state.robot_direction != NONE) ? 
+          state.robot_direction : best_ns;
+        unsigned next_state_counter = 0;
+        float probablity_sum = 0.0f;
+        BOOST_FOREACH(const State& next_state, next_states) {
+          float probablity = 0.01f / next_states.size();
+          if (best_ns == next_state_counter)
+            probablity += 0.495f;
+          if (robot_dir == next_state_counter)
+            probablity += 0.495f;
+          probablity_sum += probablity;
+          if (next_state_counter == next_states.size() - 1) {
+            // Account for floating point errors. No surprises!
+            probablity += 1.0f - probablity_sum; 
+          }
+          probabilities.push_back(probablity);
+          next_state_counter++;
+        }
       }
-      while (next_robot_direction > expected_direction + M_PI) {
-        next_robot_direction -= 2 * M_PI;
+    }
+
+    if (!case_1_invalid) {
+      return;
+    }
+
+    /* Case 2 and 3 */
+    float expected_dir;
+    if (state.robot_direction != NONE) {
+      // Case 2
+      if (state.robot_direction == DIR_UNASSIGNED) {
+        // The DO_NOTHING action should not be possible in this state
+        throw std::runtime_error("Human Model: unassigned robot_dir!!!");
       }
-      float difference = fabs(next_robot_direction - expected_direction);
-      if (difference < M_PI / 2) {
-        sigma_sq = 0.01;
-        expected_direction = next_robot_direction;
-        random_probability = 0.01;
-      }
+      expected_dir = topological_mapper::getNodeAngle(state.graph_id,
+          state.robot_direction, graph_);
+    } else {
+      expected_dir = getAngleInRadians(state.direction);
     }
 
     // Now compute the weight of each next state. Get the favored direction
@@ -375,43 +408,34 @@ namespace bwi_exp1 {
     std::vector<State> next_states;
     getNextStates(state, action, next_states);
 
-    float probability_sum = 0;
-    size_t last_non_zero_probability = 0;
-    int next_state_counter = 0;
+    float weight_sum = 0;
+    std::vector<float> weights;
     BOOST_FOREACH(const State& next_state, next_states) {
 
       float next_state_direction = topological_mapper::getNodeAngle(
           state.graph_id, next_state.graph_id, graph_);
-
-      // wrap next state direction around expected direction
-      while (next_state_direction > expected_direction + M_PI) 
-        next_state_direction -= 2 * M_PI;
-      while (next_state_direction < expected_direction - M_PI) 
-        next_state_direction += 2 * M_PI;
+      float angle_difference = getAbsoluteAngleDifference(next_state_direction, 
+          expected_dir);
 
       // Compute the probability of this state
-      float probability = 
-        exp(-pow(next_state_direction-expected_direction, 2) / (2 * sigma_sq));
-      probabilities.push_back(probability);
-      probability_sum += probability;
-
-      last_non_zero_probability = next_state_counter;
-      ++next_state_counter;
+      float weight = exp(-pow(angle_difference, 2) / (2 * 0.1));
+      weights.push_back(weight);
+      weight_sum += weight;
     }
 
     // Normalize probabilities. Ensure sum == 1 with last non zero probability 
-    float normalized_probability_sum = 0;
-    for (size_t probability_counter = 0; 
-        probability_counter < probabilities.size();
+    float probability_sum = 0;
+    for (size_t probability_counter = 0; probability_counter < weights.size();
         ++probability_counter) {
-      probabilities[probability_counter] =
-        (1.0 - random_probability)
-           * (probabilities[probability_counter] / probability_sum) +
-        random_probability * (1.0f / probabilities.size());
-      normalized_probability_sum += probabilities[probability_counter];
+      float probability = 0.9 * (weights[probability_counter] / weight_sum) +
+        0.1 * (1.0f / weights.size());
+      probability_sum += probability;
+      if (probability_counter == weights.size() - 1) {
+        // Account for floating point errors. No surprises!
+        probability += 1.0f - probability_sum; 
+      }
+      probabilities.push_back(probability);
     }
-    probabilities[last_non_zero_probability] += 1 - normalized_probability_sum;
-
   }
 
   std::vector<float>& PersonModel2::getTransitionProbabilities(

@@ -21,10 +21,11 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
     double vi_gamma_;
     int vi_max_iterations_;
-    double vi_min_value_;
     std::string data_directory_;
     bool use_heuristic_;
     bool allow_robot_current_idx_;
+    double visibility_range_;
+    bool allow_goal_visibility_;
 
     std::string instance_name_;
     int goal_idx_;
@@ -44,10 +45,13 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       private_nh.param<std::string>("data_directory", data_directory_, "");
       private_nh.param<double>("vi_gamma", vi_gamma_, 1.0);
       private_nh.param<int>("vi_max_iterations", vi_max_iterations_, 1000);
-      private_nh.param<double>("vi_min_value", vi_min_value_, -10000.0);
       private_nh.param<bool>("use_heuristic", use_heuristic_, false);
       private_nh.param<bool>("allow_robot_current", allow_robot_current_idx_, 
           false);
+      private_nh.param<bool>("allow_goal_visibility", allow_goal_visibility_, 
+          true);
+      private_nh.param<double>("visibility_range", visibility_range_, 
+          25.0);
 
       if (use_heuristic_)
         ROS_INFO_STREAM("Using heuristic!");
@@ -86,14 +90,19 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         + boost::lexical_cast<std::string>(goal_idx_) + "_vi.txt";
 
       // Setup the model and the heuristic solver to read from file
-      model_.reset(new PersonModel2(graph_, map_, goal_idx_, model_file, 
-            allow_robot_current_idx_));
+      float pixel_visibility_range = visibility_range_ / map_.info.resolution;
+      model_.reset(new PersonModel2(graph_, map_, goal_idx_, model_file,
+            allow_robot_current_idx_, pixel_visibility_range,
+            allow_goal_visibility_));
       estimator_.reset(new PersonEstimator2);
+      float epsilon = 0.05f / map_.info.resolution;
+      float delta = -500.0f / map_.info.resolution;
       vi_.reset(new ValueIteration<State, Action>(
-            model_, estimator_, vi_gamma_, 1.0, vi_max_iterations_,
-            0.0, vi_min_value_));
+            model_, estimator_, vi_gamma_, epsilon, vi_max_iterations_,
+            0.0, delta));
       hs_.reset(new HeuristicSolver(map_, graph_, goal_idx_,
-            allow_robot_current_idx_)); 
+            allow_robot_current_idx_, pixel_visibility_range, 
+            allow_goal_visibility_)); 
 
       // Setup the VI policy file
       bool policy_available = false;

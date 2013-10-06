@@ -23,7 +23,8 @@ namespace bwi_exp1 {
       PersonModel2(const topological_mapper::Graph& graph, 
           const nav_msgs::OccupancyGrid& map, size_t goal_idx, 
           const std::string& file = "", bool allow_robot_current_idx = false,
-          float visibility_range = 0.0f, unsigned int max_robots = 5);
+          float visibility_range = 0.0f, bool allow_goal_visibility = false,
+          unsigned int max_robots = 5);
 
       virtual bool isTerminalState(const State& state) const;
       virtual void getStateVector(std::vector<State>& states);
@@ -87,6 +88,7 @@ namespace bwi_exp1 {
 
       /* Some parameters different between exp1 and exp2 */
       bool allow_robot_current_idx_;
+      bool allow_goal_visibility_;
       float visibility_range_;
 
   };

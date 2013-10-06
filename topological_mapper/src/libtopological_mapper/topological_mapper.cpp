@@ -982,7 +982,7 @@ namespace topological_mapper {
         if (replacement_path.size() >= 2) {
           std::cout << " - fount alternate path cost: " << path_cost << std::endl;
         }
-        if (replacement_path.size() < 2 || path_cost  > 1.1 * edge_length) {
+        if (replacement_path.size() < 2 || path_cost  > 1.05 * edge_length) {
           // re-add edge to graph
           Graph::edge_descriptor e; bool b;
           boost::tie(e,b) = boost::add_edge(vi, vj, pass_3_graph);

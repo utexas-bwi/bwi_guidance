@@ -20,23 +20,29 @@ std::string graph_file = "";
 bool use_heuristic = false;
 bool use_vi = false; 
 bool allow_robot_current_idx = false;
-int goal_idx = 46;
+bool allow_goal_visibility = false;
+int goal_idx = 0;
+float visibility_range = 0.0f;
 
-void test(topological_mapper::Graph& graph, 
-    nav_msgs::OccupancyGrid& map) {
+void test(topological_mapper::Graph& graph, nav_msgs::OccupancyGrid& map) {
 
   std::string indexed_model_file = boost::lexical_cast<std::string>(goal_idx)
     + "_" + model_file;
   std::string indexed_vi_file = boost::lexical_cast<std::string>(goal_idx)
     + "_" + vi_policy_file;
 
+  float pixel_visibility_range = visibility_range / map.info.resolution;
   boost::shared_ptr<PersonModel2> model(
       new PersonModel2(graph, map, goal_idx, indexed_model_file, 
-        allow_robot_current_idx));
+        allow_robot_current_idx, pixel_visibility_range,
+        allow_goal_visibility));
   boost::shared_ptr<PersonEstimator2> estimator(new PersonEstimator2);
-  ValueIteration<State, Action> vi(model, estimator, 
-      1.0, 1.0, 1000, 0.0, -10000.0);
-  HeuristicSolver hi(map, graph, goal_idx, allow_robot_current_idx); 
+  float epsilon = 0.05f / map.info.resolution;
+  float delta = -500.0f / map.info.resolution;
+  ValueIteration<State, Action> vi(model, estimator, 1.0, epsilon, 1000, 0.0f,
+      delta);
+  HeuristicSolver hi(map, graph, goal_idx, allow_robot_current_idx,
+      pixel_visibility_range, allow_goal_visibility); 
 
   std::ifstream vi_ifs(indexed_vi_file.c_str());
   if (vi_ifs.good()) {
@@ -59,8 +65,7 @@ void test(topological_mapper::Graph& graph,
     std::cin >> start_direction;
     std::cout << "Enter start numRobotsLeft: ";
     std::cin >> starting_robots;
-    std::cout << "Enter start currentRobotStatus " 
-      << "(NONE=-1, DIR_UNASSIGNED=-2): ";
+    std::cout << "Enter start currentRobotStatus (NONE=-1,DIR_UNASSIGNED=-2): ";
     std::cin >> start_crs;
     std::cout << "Enter start visibleRobotLocation: ";
     std::cin >> start_vrl;
@@ -164,14 +169,16 @@ int processOptions(int argc, char** argv) {
   desc.add_options() 
     ("heuristic,h", "Use heuristic to auto-select best option") 
     ("vi,v", "Use VI to auto-select best option") 
-    ("map_file,M", po::value<std::string>(&map_file)->required(), "YAML map file") 
-    ("graph_file,G", po::value<std::string>(&graph_file)->required(), "YAML graph file") 
-    ("allow_robot_current,a", "Allow robot to be placed at current index") 
-    ("goal_idx,g", po::value<int>(&goal_idx), "Goal index location"); 
+    ("map-file,M", po::value<std::string>(&map_file)->required(), "YAML map file") 
+    ("graph-file,G", po::value<std::string>(&graph_file)->required(), "YAML graph file") 
+    ("allow-robot-current,a", "Allow robot to be placed at current index") 
+    ("allow-goal-visibility,V", "Allow goal visibility to affect human model")
+    ("visibility-range,r", po::value<float>(&visibility_range), "Simulator visibility")
+    ("goal-idx,g", po::value<int>(&goal_idx), "Goal index location"); 
 
   po::positional_options_description positionalOptions; 
-  positionalOptions.add("map_file", 1); 
-  positionalOptions.add("graph_file", 1); 
+  positionalOptions.add("map-file", 1); 
+  positionalOptions.add("graph-file", 1); 
 
   po::variables_map vm; 
 
@@ -199,8 +206,11 @@ int processOptions(int argc, char** argv) {
     use_vi = true;
   }
 
-  if (vm.count("allow_robot_current")) {
+  if (vm.count("allow-robot-current")) {
     allow_robot_current_idx = true;
+  }
+  if (vm.count("allow-goal-visibility")) {
+    allow_goal_visibility = true;
   }
 
   return 0;
@@ -213,11 +223,11 @@ int main(int argc, char** argv) {
     return ret;
   }
 
-  topological_mapper::MapLoader mapper(argv[1]);
+  topological_mapper::MapLoader mapper(map_file);
   topological_mapper::Graph graph;
   nav_msgs::OccupancyGrid map;
   mapper.getMap(map);
-  topological_mapper::readGraphFromFile(argv[2], map.info, graph);
+  topological_mapper::readGraphFromFile(graph_file, map.info, graph);
 
   test(graph, map);
 

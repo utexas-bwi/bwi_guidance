@@ -357,15 +357,18 @@ namespace topological_mapper {
     // Look up the parent chain from the goal vertex to the start vertex
     path_from_goal.clear();
 
-    Graph::vertex_descriptor g = 
-      boost::vertex(goal_idx, graph_copy);
+    /* std::cout << "path from goal: " << goal_idx << " to start: " << start_idx << std::endl; */
+    Graph::vertex_descriptor g = boost::vertex(goal_idx, graph_copy);
+    /* float shortest_distance = std::numeric_limits<float>::quiet_NaN(); */
     while (indexmap[p[g]] != start_idx) {
+      /* std::cout << " - " << indexmap[p[g]] << "(" << d[g] << ")" << std::endl; */
       path_from_goal.push_back(indexmap[p[g]]);
       g = p[g];
     }
     path_from_goal.push_back(start_idx);
+    /* std::cout << " - goal Distance: " << d[goal_idx] << std::endl; */
 
-    return d[start_idx];
+    return d[goal_idx];
 
   }
 

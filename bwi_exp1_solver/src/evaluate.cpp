@@ -33,6 +33,8 @@ int num_instances = 10;
 int runs_per_instance = 1;
 float distance_limit = 300.f;
 bool allow_robot_current_idx = false;
+float visibility_range = 0.0f;
+bool allow_goal_visibility = false;
 
 struct InstanceResult {
   float avg_vi_distance[5];
@@ -79,13 +81,18 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
     + boost::lexical_cast<std::string>(goal_idx)
     + "_" + vi_policy_file;
 
+  float pixel_visibility_range = visibility_range / map.info.resolution;
   boost::shared_ptr<PersonModel2> model(
       new PersonModel2(graph, map, goal_idx, indexed_model_file, 
-        allow_robot_current_idx));
+        allow_robot_current_idx, pixel_visibility_range,
+        allow_goal_visibility));
   boost::shared_ptr<PersonEstimator2> estimator(new PersonEstimator2);
-  ValueIteration<State, Action> vi(model, estimator, 
-      1.0, 1.0, 1000, 0.0, -10000.0);
-  HeuristicSolver hi(map, graph, goal_idx, allow_robot_current_idx); 
+  float epsilon = 0.05f / map.info.resolution;
+  float delta = -500.0f / map.info.resolution;
+  ValueIteration<State, Action> vi(model, estimator, 1.0, epsilon, 1000, 0.0f,
+      delta);
+  HeuristicSolver hi(map, graph, goal_idx, allow_robot_current_idx,
+      pixel_visibility_range, allow_goal_visibility); 
 
   std::ifstream vi_ifs(indexed_vi_file.c_str());
   if (vi_ifs.good()) {
@@ -203,6 +210,8 @@ int processOptions(int argc, char** argv) {
     ("seed,s", po::value<int>(&seed), "Random seed")  
     ("num-instances,n", po::value<int>(&num_instances), "Number of Instances") 
     ("runs-per-instance,r", po::value<int>(&runs_per_instance), "Averge each instance over these many runs") 
+    ("allow-goal-visibility,V", "Allow goal visibility to affect human model")
+    ("visibility-range,r", po::value<float>(&visibility_range), "Simulator visibility")
     ("distance-limit,d", po::value<float>(&distance_limit), "Max distance at which to terminate episode"); 
 
   // po::positional_options_description positionalOptions; 
@@ -231,6 +240,9 @@ int processOptions(int argc, char** argv) {
 
   if (vm.count("allow-robot-current")) {
     allow_robot_current_idx = true;
+  }
+  if (vm.count("allow-goal-visibility")) {
+    allow_goal_visibility = true;
   }
 
   return 0;

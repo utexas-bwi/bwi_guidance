@@ -23,7 +23,7 @@ catkin_package(
 ## Build ##
 ###########
 
-## add_definitions(-DVI_DEBUG)
+add_definitions(-DVI_DEBUG)
 
 include_directories(
   include

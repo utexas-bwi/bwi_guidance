@@ -5,10 +5,25 @@
 
 using namespace bwi_exp1;
 
-HeuristicSolver::HeuristicSolver(const nav_msgs::OccupancyGrid& map, 
-    const topological_mapper::Graph& graph, int goal_idx,
-    bool allow_robot_current_idx) : map_(map), graph_(graph),
-  goal_idx_(goal_idx), allow_robot_current_idx_(allow_robot_current_idx) {}
+HeuristicSolver::HeuristicSolver(const nav_msgs::OccupancyGrid& map, const
+    topological_mapper::Graph& graph, int goal_idx, bool
+    allow_robot_current_idx, float visibility_range, bool
+    allow_goal_visibility) : map_(map), graph_(graph), goal_idx_(goal_idx),
+  allow_robot_current_idx_(allow_robot_current_idx),
+  visibility_range_(visibility_range),
+  allow_goal_visibility_(allow_goal_visibility) {
+  
+    int num_vertices = boost::num_vertices(graph_);
+    visible_vertices_map_.clear();
+    for (int graph_id = 0; graph_id < num_vertices; ++graph_id) {
+      std::vector<size_t> visible_vertices;
+      topological_mapper::getVisibleNodes(graph_id, graph_, map_,
+          visible_vertices, visibility_range_); 
+      visible_vertices_map_[graph_id] = 
+        std::vector<int>(visible_vertices.begin(), visible_vertices.end());
+    }
+
+  }
 
   HeuristicSolver::~HeuristicSolver() {}
 
@@ -25,8 +40,13 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State& state) const {
     // Find shortest path to goal. Point in direction of this path
     std::vector<size_t> path_from_goal;
     topological_mapper::getShortestPathWithDistance(
-        goal_idx_, state.graph_id, path_from_goal, graph_);
-    return bwi_exp1::Action(DIRECT_PERSON, path_from_goal[0]);
+        state.graph_id, goal_idx_, path_from_goal, graph_);
+    path_from_goal.insert(path_from_goal.begin(), goal_idx_);
+    // std::cout << "shortest path b/w " << state.graph_id << " and " << goal_idx_ << " of size " << path_from_goal.size() << std::endl;
+    // for (std::vector<size_t>::const_iterator i = path_from_goal.begin(); 
+    //     i != path_from_goal.end(); ++i) std::cout << *i << ' ';
+    // std::cout << std::endl;
+    return bwi_exp1::Action(DIRECT_PERSON, path_from_goal[path_from_goal.size() - 2]);
   }
 
   if (state.robot_direction != NONE) {
@@ -47,8 +67,8 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State& state) const {
   std::vector<size_t> states;
   size_t current_id = state.graph_id;
   float current_direction = getAngleInRadians(state.direction);
-  topological_mapper::Point2f start_location = 
-    topological_mapper::getLocationFromGraphId(state.graph_id, graph_); 
+  const std::vector<int>& visible_vertices =
+    (*(visible_vertices_map_.find(state.graph_id))).second;
 
   /* std::cout << "Forward path: "; */
   while(true) {
@@ -90,16 +110,10 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State& state) const {
       break;
     }
 
-    topological_mapper::Point2f next_location = 
-      topological_mapper::getLocationFromGraphId(next_vertex, graph_); 
-    bool next_visible = 
-      topological_mapper::locationsInDirectLineOfSight(                    
-          start_location, next_location, map_);
-    bool next_close = 
-      topological_mapper::getMagnitude(next_location - start_location) <
-      (25.0 / map_.info.resolution);
+    bool next_visible = std::find(visible_vertices.begin(),
+        visible_vertices.end(), (int)next_vertex) != visible_vertices.end();
 
-    if (!next_visible || !next_close) {
+    if (!next_visible) {
       // The most probable location in path is no longer visible, hence no longer
       // probable
       break;
@@ -123,15 +137,16 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State& state) const {
   for (std::vector<size_t>::iterator si = states.begin(); 
       si != states.end(); ++si) {
     std::vector<size_t> path_from_goal;
-    float distance = topological_mapper::getShortestPathWithDistance(goal_idx_,
-        *si, path_from_goal, graph_);
+    float distance = topological_mapper::getShortestPathWithDistance(*si,
+        goal_idx_, path_from_goal, graph_);
     if (distance < min_distance) {
       min_graph_idx = *si;
       min_distance = distance;
     }
   }
 
-  if (min_graph_idx != goal_idx_ && min_graph_idx != (size_t)-1) {
+  if ((!allow_goal_visibility_ || min_graph_idx != goal_idx_) && min_graph_idx
+      != (size_t)-1) {
     // The user is expected to pass through the goal
     return bwi_exp1::Action(PLACE_ROBOT, min_graph_idx);
   }

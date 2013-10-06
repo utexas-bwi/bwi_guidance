@@ -10,7 +10,8 @@ class HeuristicSolver {
   public:
     HeuristicSolver(const nav_msgs::OccupancyGrid& map, 
         const topological_mapper::Graph& graph, int goal_idx, 
-        bool allow_robot_current_idx = false);
+        bool allow_robot_current_idx = false, float visibility_range = 0.0f,
+        bool allow_goal_visibility_ = true);
     ~HeuristicSolver();
     void computePolicy();
     void loadPolicy(const std::string& file);
@@ -25,6 +26,9 @@ class HeuristicSolver {
     topological_mapper::Graph graph_;
     int goal_idx_;
     bool allow_robot_current_idx_;
+    float visibility_range_;
+    bool allow_goal_visibility_;
+    std::map<int, std::vector<int> > visible_vertices_map_;
 };
 
 #endif /* end of include guard: HEURISTIC_SOLVER_CBV4SH6M */
