@@ -406,8 +406,11 @@ namespace bwi_exp1 {
             teleportEntity(robot_id, robot_locations_[robot_id]);
           assigned_robot_locations_[robot_id] = robot_locations_[robot_id];
         }
-        change = change || (prev_orientation_[robot_id] != 
-          robot_screen_orientations_[robot_id]);
+        bool orientation_same = 
+          (std::isnan(prev_orientation_[robot_id]) &&
+           std::isnan(robot_screen_orientations_[robot_id])) ||
+          prev_orientation_[robot_id] == robot_screen_orientations_[robot_id];
+        change = change || !orientation_same;
       }
       change = change || (instance_in_progress_ != prev_msg_ready_);
       if (change) {

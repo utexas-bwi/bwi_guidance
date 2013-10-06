@@ -197,6 +197,9 @@ class ExperimentController:
         self.instance_success = False
         self.start_next_instance = False
         self.paused = False
+        self.instance_distance_covered = 0
+        self.prev_loc = [0, 0]
+        self.wait_for_first_odom = False
 
         # Setup the odometry subscriber
         self.odometry_subscriber = rospy.Subscriber(self.person_id + '/odom', 
@@ -250,6 +253,8 @@ class ExperimentController:
         self.robot_positioning_enabled = True
         self.instance_success = False
 
+        self.wait_for_first_odom = True
+
         self.modify_instance_lock.release()
 
     def stop_instance(self, success):
@@ -274,7 +279,8 @@ class ExperimentController:
                 self.experiment_text = "Oh no! It looks like you ran out of "\
                         + "time with this experiment. We've awarded you "\
                         + str(reward) + " points."
-            self.instance_times.append(time_diff)
+            self.instance_results.append(time_diff)
+            self.instance_results.append(self.instance_distance_covered)
         else:
             if (success):
                 if self.instances[self.instance_number + 1]['is_tutorial']:
@@ -328,6 +334,15 @@ class ExperimentController:
 
         ros_time = odom.header.stamp.to_sec()
         loc = [odom.pose.pose.position.x, odom.pose.pose.position.y]
+
+        if self.wait_for_first_odom:
+            self.instance_distance_covered = 0
+            self.wait_for_first_odom = False
+        else:
+            self.instance_distance_covered = self.instance_distance_covered +\
+                    math.hypot(loc[1] - self.prev_loc[1], loc[0] -
+                               self.prev_loc[0]) 
+        self.prev_loc = loc
 
         # record position
         self.odometry_log.append([loc[0],loc[1],ros_time]);
@@ -502,7 +517,7 @@ class ExperimentController:
         # Load instances based on the instance group order
         self.instance_names = []
         self.instances = []
-        self.instance_times = []
+        self.instance_results = []
         self.instance_group_count = []
         for instance_group_name in self.instance_group_order:
             for instance_group in self.experiment['instance_groups']:
@@ -553,9 +568,9 @@ class ExperimentController:
         else:
             result_file.write("vi,")
         count = 0
-        for instance_time in self.instance_times:
+        for instance_time in self.instance_results:
             result_file.write(str(instance_time))
-            if count != len(self.instance_times) - 1:
+            if count != len(self.instance_results) - 1:
                 result_file.write(",")
             count = count + 1
         result_file.write('\n')
