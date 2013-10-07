@@ -89,6 +89,7 @@ class ExperimentServer:
 
         # Setup whether the heuristic is being used first or not
         self.use_heuristic = random.choice([True, False])
+        # self.use_heuristic = True
 
         # Setup the experiment text publisher
         self.experiment_interface = ExperimentServerInterface(self)

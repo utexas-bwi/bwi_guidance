@@ -131,6 +131,11 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State& state) const {
     states.erase(states.begin());
   }
 
+  // std::cout << "States under consideration for placing a robot: ";
+  // for (std::vector<size_t>::iterator si = states.begin();                        
+  //     si != states.end(); ++si) { std::cout << *si << " "; }
+  // std::cout << std::endl;
+
   // Now for each state in the forward path, see which is the closest
   size_t min_graph_idx = (size_t) -1;
   float min_distance = std::numeric_limits<float>::max();

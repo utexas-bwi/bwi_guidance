@@ -62,6 +62,10 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         ROS_INFO_STREAM("Using heuristic!");
       else
         ROS_INFO_STREAM("Using VI!");
+      ROS_INFO_STREAM("Allow placing robot at current location: " <<
+          allow_robot_current_idx_);
+      ROS_INFO_STREAM("Simulator visibility: " << visibility_range_);
+      ROS_INFO_STREAM("Allor visibility of goal: " << allow_goal_visibility_);
 
       // Pre-compute all the experiment related information
       std::vector<std::string> instance_names;
@@ -254,7 +258,11 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
           ++assigned_robots_;
         }
-        action = vi_->getBestAction(current_state_);
+        if (use_heuristic_) {
+          action = hs_->getBestAction(current_state_);
+        } else {
+          action = vi_->getBestAction(current_state_);
+        }
         model_->getTransitionDynamics(current_state_, action, next_states, 
             rewards, probabilities);
       }
