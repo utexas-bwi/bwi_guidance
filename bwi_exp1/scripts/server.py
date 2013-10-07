@@ -88,7 +88,7 @@ class ExperimentServer:
         self.log = None
 
         # Setup whether the heuristic is being used first or not
-        self.use_heuristic = random.choice(['true','false'])
+        self.use_heuristic = random.choice([True, False])
 
         # Setup the experiment text publisher
         self.experiment_interface = ExperimentServerInterface(self)
@@ -126,7 +126,7 @@ class ExperimentServer:
             log_file = self.logs_folder + "/" + uid + ".log"
             self.log = open(log_file, "w")
             rospy.loginfo("  Log at: " + log_file)
-            use_heuristic = self.use_heuristic
+            use_heuristic = 'true' if self.use_heuristic else 'false'
             self.use_heuristic = not self.use_heuristic #switch for next person
             rospy.loginfo("  use heuristic: " + use_heuristic)
             process = bwi_exp1.start_roslaunch_process(
