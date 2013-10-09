@@ -77,10 +77,10 @@ namespace topological_mapper {
     for (size_t i = 0; i < critical_points_.size(); ++i) {
       VoronoiPoint &vp = critical_points_[i];
       cv::circle(image, 
-          cv::Point(vp.x + orig_x, vp.y + orig_y), 2, cv::Scalar(0,0,255), -1);
+          cv::Point(vp.x + orig_x, vp.y + orig_y), 8, cv::Scalar(0,0,255), -1);
     }
 
-    drawCriticalLines(image, orig_x, orig_y);
+    drawCriticalLines(image, orig_x, orig_y, false, true);
   }
 
   /**
@@ -95,7 +95,7 @@ namespace topological_mapper {
     component_colors_.resize(num_colors);
     for (size_t i = 0; i < num_colors; ++i) {
       component_colors_[i] = 
-        cv::Vec3b(32 + rand() % 192, 32 + rand() % 192, 32 + rand() % 192);
+        cv::Vec3b(160 + rand() % 64, 160 + rand() % 64, 160 + rand() % 64);
     }
 
     // component 0 is obstacles + background. don't draw?
@@ -1005,7 +1005,8 @@ namespace topological_mapper {
    *          at (orig_x, orig_y)
    */
   void TopologicalMapper::drawCriticalLines(cv::Mat &image, 
-      uint32_t orig_x, uint32_t orig_y, bool draw_idx) {
+      uint32_t orig_x, uint32_t orig_y, bool draw_idx, 
+      bool visualization_image) {
 
     for (size_t i = 0; i < critical_points_.size(); ++i) {
       cv::Scalar color = cv::Scalar(0);
@@ -1019,11 +1020,20 @@ namespace topological_mapper {
       } else {
         Point2d &p1(vp.basis_points[0]);
         Point2d &p2(vp.basis_points[1]);
-        cv::line(image, 
-            cv::Point(orig_x + p1.x, orig_y + p1.y),
-            cv::Point(orig_x + p2.x, orig_y + p2.y), 
-            color,
-            1, 4); // draw a 4 connected line
+        if (!visualization_image) {
+          cv::line(image, 
+              cv::Point(orig_x + p1.x, orig_y + p1.y),
+              cv::Point(orig_x + p2.x, orig_y + p2.y), 
+              color,
+              1, 4); // draw a 4 connected line
+        } else {
+          color = cv::Scalar(0, 0, 255);
+          cv::line(image, 
+              cv::Point(orig_x + p1.x, orig_y + p1.y),
+              cv::Point(orig_x + p2.x, orig_y + p2.y), 
+              color,
+              2, CV_AA); // draw a 4 connected line
+        }
       }
     }
   }

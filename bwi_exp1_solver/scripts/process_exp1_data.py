@@ -24,11 +24,12 @@ with open(sys.argv[1], 'rb') as csvfile:
         for i in range(5):
             vi[i].append(float(line[4 + 3*i]) / float(line[18]))
             hs[i].append(float(line[5 + 3*i]) / float(line[18]))
-            hs_vals[i].append([vi[i][-1], [line[1], line[2], line[3]]])
+            if float(line[4 + 3*i]) > 20.0 and float(line[5 + 3*i]) > 20.0:
+                hs_vals[i].append([vi[i][-1], [line[1], line[2], line[3]]])
 
 for i in range(5):
     hs_vals[i].sort(reverse=True, key=lambda x: x[0])
-    print hs_vals[i][0:5]
+    print hs_vals[i][0:15]
 
 vi_means = []
 vi_conf = []
@@ -63,8 +64,9 @@ for r in range(len(rects1)):
             ha='center', va='bottom')
 
 plt.axhline(y=1.0, xmin=0, xmax=6, linewidth=1, color="black") 
+plt.axis([0, 5, 0, 6])
 # plt.show()
 
 fig = plt.gcf()
 fig.set_size_inches(6,4)
-plt.savefig('out.png',dpi=100)
+plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=100)

@@ -128,7 +128,8 @@ namespace topological_mapper {
        *          at (orig_x, orig_y)
        */
       void drawCriticalLines(cv::Mat &image, uint32_t orig_x = 0, 
-          uint32_t orig_y = 0, bool draw_idx = false); 
+          uint32_t orig_y = 0, bool draw_idx = false, 
+          bool visualization_image = false); 
 
       /** \brief stores the array of computed Critical Points **/
       std::vector<VoronoiPoint> critical_points_;

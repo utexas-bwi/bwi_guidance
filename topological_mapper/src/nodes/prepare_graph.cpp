@@ -8,7 +8,7 @@
 using namespace topological_mapper;
 
 void drawElementsFile(const std::string& elements_file, cv::Mat& image,
-    const Graph& graph) {
+    const Graph& graph, const nav_msgs::MapMetaData& info) {
 
   std::ifstream fin(elements_file.c_str());
   YAML::Parser parser(fin);
@@ -81,7 +81,7 @@ void drawElementsFile(const std::string& elements_file, cv::Mat& image,
     drawSquareOnGraph(image, graph, squares[i]);  
   }
   for(unsigned i = 0; i < arrows.size(); ++i) {
-    drawArrowOnGraph(image, graph, arrows[i]);  
+    drawArrowOnGraph(image, graph, arrows[i], info.width, info.height);  
   }
 
 }
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
 
   cv::Mat image;
   mapper.drawMap(image);
-  drawElementsFile(argv[3], image, graph);
+  drawElementsFile(argv[3], image, graph, info);
 
   cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);
   cv::imshow("Display window", image);                

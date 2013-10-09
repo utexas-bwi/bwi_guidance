@@ -110,37 +110,44 @@ namespace topological_mapper {
   }
 
   void drawArrowOnGraph(cv::Mat &image, const Graph& graph, 
-      std::pair<size_t, float> arrow, cv::Scalar color,
-      uint32_t orig_x, uint32_t orig_y) {
+      std::pair<size_t, float> arrow, uint32_t map_width, uint32_t map_height,
+      cv::Scalar color, uint32_t orig_x, uint32_t orig_y) {
 
     float orientation = arrow.second;
     Point2f loc = getLocationFromGraphId(arrow.first, graph);
     cv::Point node_loc(loc.x + orig_x, loc.y + orig_y); 
-    cv::Point arrow_center = node_loc + 
-      cv::Point(20 * cosf(orientation), 20 * sinf(orientation));
+    cv::Point map_center(orig_x + map_width / 2, orig_y + map_height / 2);
+    
+    cv::Point arrow_center_1 = node_loc + 
+      cv::Point(25 * cosf(orientation), 25 * sinf(orientation));
+    cv::Point arrow_center_2 = node_loc - 
+      cv::Point(25 * cosf(orientation), 25 * sinf(orientation));
+    cv::Point arrow_center = (cv::norm(arrow_center_2 - map_center) <
+        cv::norm(arrow_center_1 - map_center)) ? arrow_center_2 :
+      arrow_center_1;
 
     cv::Point arrow_start = arrow_center +
-      cv::Point(15 * cosf(orientation + M_PI/2), 
-                15 * sinf(orientation + M_PI/2));
+      cv::Point(20 * cosf(orientation + M_PI/2), 
+                20 * sinf(orientation + M_PI/2));
     cv::Point arrow_end = arrow_center -
-      cv::Point(15 * cosf(orientation + M_PI/2), 
-                15 * sinf(orientation + M_PI/2));
+      cv::Point(20 * cosf(orientation + M_PI/2), 
+                20 * sinf(orientation + M_PI/2));
 
-    cv::line(image, arrow_start, arrow_end, color, 2, CV_AA);
+    cv::line(image, arrow_start, arrow_end, color, 3, CV_AA);
 
     // http://mlikihazar.blogspot.com/2013/02/draw-arrow-opencv.html
     cv::Point p(arrow_start), q(arrow_end);
 
     //Draw the first segment
     float angle = atan2f(p.y - q.y, p.x - q.x);
-    p.x = (int) (q.x + 6 * cos(angle + M_PI/4));
-    p.y = (int) (q.y + 6 * sin(angle + M_PI/4));
-    cv::line(image, p, q, color, 2, CV_AA);
+    p.x = (int) (q.x + 9 * cos(angle + M_PI/4));
+    p.y = (int) (q.y + 9 * sin(angle + M_PI/4));
+    cv::line(image, p, q, color, 3, CV_AA);
 
     //Draw the second segment
-    p.x = (int) (q.x + 8 * cos(angle - M_PI/4));
-    p.y = (int) (q.y + 8 * sin(angle - M_PI/4));
-    cv::line(image, p, q, color, 2, CV_AA);
+    p.x = (int) (q.x + 11 * cos(angle - M_PI/4));
+    p.y = (int) (q.y + 11 * sin(angle - M_PI/4));
+    cv::line(image, p, q, color, 3, CV_AA);
   }
 
   void drawCircleOnGraph(cv::Mat &image, const Graph& graph, 

@@ -76,7 +76,8 @@ namespace topological_mapper {
       std::vector<std::pair<size_t, size_t> >());
 
   void drawArrowOnGraph(cv::Mat &image, const Graph& graph, 
-      std::pair<size_t, float> arrow, cv::Scalar color = cv::Scalar(0,0,255),
+      std::pair<size_t, float> arrow, uint32_t map_width, uint32_t map_height,
+      cv::Scalar color = cv::Scalar(0,0,255),
       uint32_t orig_x = 0, uint32_t orig_y = 0);
 
   void drawCircleOnGraph(cv::Mat &image, const Graph& graph, 
