@@ -123,7 +123,7 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
         current_state.robot_direction = NONE;
         current_state.visible_robot = NONE;
 
-        std::cout << " - start " << current_state << std::endl;
+        /* std::cout << " START " << current_state << std::endl; */
 
         float reward = 0;
         float reward_limit = -((float)distance_limit) / map.info.resolution;
@@ -137,10 +137,11 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
           int increase_robots = 0;
           // Deterministic system transitions
           while (true) {
+            increase_robots = 0;
 
             Action action;
               action = hi.getBestAction(current_state);
-            std::cout << "   action: " << action << std::endl;
+            /* std::cout << "   action: " << action << std::endl; */
 
             if (current_state.num_robots_left > 3) {
               increase_robots = current_state.num_robots_left - 3;
@@ -157,14 +158,14 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
             // The human does not move for this action, and a single next state is present
             current_state = next_states[0];
             current_state.num_robots_left += increase_robots;
-            std::cout << " - auto " << current_state << std::endl;
+            /* std::cout << " - auto " << current_state << std::endl; */
           }
 
           // Select next state choice based on probabilities
           int choice = select(probabilities);
           current_state = next_states[choice];
           current_state.num_robots_left += increase_robots;
-          std::cout << " - manual " << current_state << std::endl;
+          /* std::cout << " - manual " << current_state << std::endl; */
           reward += rewards[choice];
         }
 
@@ -278,10 +279,10 @@ int main(int argc, char** argv) {
       goal_idx = idx_gen();
     }
     int start_direction = direction_gen();
+    std::cout << "#" << i << " Testing [" << start_idx << "," <<
+      start_direction << "," << goal_idx << "]: " << std::endl;
     InstanceResult res = testInstance(graph, map, start_idx, start_direction, goal_idx);
-    std::cout << "#" << i << " Testing [" << start_idx << "," << start_direction << "," << goal_idx
-      << "]: " << std::endl;
-    // std::cout << res << std::endl;
+    std::cout << res << std::endl;
     fout << i << "," << start_idx << "," << start_direction << "," << goal_idx
       << "," << res << std::endl;
   }
