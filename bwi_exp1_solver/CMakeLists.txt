@@ -71,6 +71,12 @@ add_executable(evaluate
 target_link_libraries(evaluate 
   bwi_exp1_solver
 )
+add_executable(metric_map2 
+  src/metric_map2.cpp
+)
+target_link_libraries(metric_map2 
+  bwi_exp1_solver
+)
 
 add_executable(vi_robot_positioner2
   src/nodes/vi_robot_positioner2.cpp
