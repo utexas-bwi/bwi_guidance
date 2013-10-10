@@ -37,15 +37,13 @@ float visibility_range = 0.0f;
 bool allow_goal_visibility = false;
 
 struct InstanceResult {
-  float avg_vi_distance[5];
-  float percent_vi_completion[5]; 
   float avg_hi_distance[15];
   float percent_hi_completion[15];
-  float true_vi_value[5];
+  float true_vi_value;
 };
 
 std::ostream& operator<< (std::ostream& stream, const InstanceResult& ir) {
-  stream << ir.true_vi_value[4] << ",";
+  stream << ir.true_vi_value << ",";
   for (int i = 0; i < 15; ++i) {
     stream << ir.avg_hi_distance[i];
     if (i!=14) 
@@ -101,12 +99,20 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
       << indexed_vi_file << std::endl;
   }
 
-  for (int method = 1; method < 2; ++method) {
+  State true_state;
+  true_state.graph_id = start_idx;
+  true_state.direction = start_direction;
+  true_state.num_robots_left = 5;
+  true_state.robot_direction = NONE;
+  true_state.visible_robot = NONE;
+  float true_distance = -estimator->getValue(true_state);
+  result.true_vi_value = true_distance;
+  result.true_vi_value *= map.info.resolution;
+
     for (int starting_robots = 1; starting_robots <= 15; ++starting_robots) {
 
       float sum_instance_distance = 0;
       int count_successful = 0;
-      float true_distance = 0;
 
       for (int run = 0; run < runs_per_instance; ++run) {
 
@@ -116,10 +122,8 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
         current_state.num_robots_left = starting_robots;
         current_state.robot_direction = NONE;
         current_state.visible_robot = NONE;
-        if (starting_robots == 5)
-          true_distance = -estimator->getValue(current_state);
 
-        /* std::cout << " - start " << current_state << std::endl; */
+        std::cout << " - start " << current_state << std::endl;
 
         float reward = 0;
         float reward_limit = -((float)distance_limit) / map.info.resolution;
@@ -135,12 +139,8 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
           while (true) {
 
             Action action;
-            if (method == 0) {
-              action = vi.getBestAction(current_state);
-            } else {
               action = hi.getBestAction(current_state);
-            }
-            /* std::cout << "   action: " << action << std::endl; */
+            std::cout << "   action: " << action << std::endl;
 
             if (current_state.num_robots_left > 3) {
               increase_robots = current_state.num_robots_left - 3;
@@ -157,14 +157,14 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
             // The human does not move for this action, and a single next state is present
             current_state = next_states[0];
             current_state.num_robots_left += increase_robots;
-            /* std::cout << " - auto " << current_state << std::endl; */
+            std::cout << " - auto " << current_state << std::endl;
           }
 
           // Select next state choice based on probabilities
           int choice = select(probabilities);
           current_state = next_states[choice];
           current_state.num_robots_left += increase_robots;
-          /* std::cout << " - manual " << current_state << std::endl; */
+          std::cout << " - manual " << current_state << std::endl;
           reward += rewards[choice];
         }
 
@@ -174,26 +174,13 @@ InstanceResult testInstance(topological_mapper::Graph& graph,
         sum_instance_distance += -reward;
       }
 
-      if (starting_robots == 5) {
-        result.true_vi_value[starting_robots - 1] = true_distance;
-        result.true_vi_value[starting_robots - 1] *= map.info.resolution;
-      }
-      if (method == 0) {
-        result.avg_vi_distance[starting_robots - 1] = 
-          sum_instance_distance / runs_per_instance;
-        result.avg_vi_distance[starting_robots - 1] *= map.info.resolution;
-        result.percent_vi_completion[starting_robots - 1] =
-          ((float) count_successful * 100.0f) / runs_per_instance;
-      } else {
         result.avg_hi_distance[starting_robots - 1] = 
           sum_instance_distance / runs_per_instance;
         result.avg_hi_distance[starting_robots - 1] *= map.info.resolution;
         result.percent_hi_completion[starting_robots - 1] =
           ((float) count_successful * 100.0f) / runs_per_instance;
-      }
 
     }
-  }
 
   return result;
 
