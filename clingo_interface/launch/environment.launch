@@ -1,14 +1,30 @@
 <launch>
 
+  <arg name="map_file" default="$(find utexas_gdc)/maps/3ne.yaml" />
+  <arg name="door_file" default="$(find clingo_interface)/config/doors.yaml" />
+  <arg name="location_file" default="$(find clingo_interface)/config/locations.yaml" />
+
   <include file="$(find utexas_gdc)/launch/3ne.launch" />
   <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
+
   <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
     <arg name="launch_localization" value="true" />
     <arg name="y" value="8" />
   </include>
+
   <include file="$(find segbot_navigation)/launch/move_base_eband.launch" />
   <include file="$(find segbot_navigation)/launch/rviz.launch">
     <arg name="config" value="nav_eband" />
   </include>
+
+  <node name="gazebo_handler" pkg="clingo_interface" type="gazebo_handler">
+    <param name="map_file" value="$(arg map_file)" />
+    <param name="door_file" value="$(arg door_file)" />
+    <param name="location_file" value="$(arg location_file)" />
+    <rosparam param="obstacle_urdf" command="load" 
+      file="$(find clingo_interface)/urdf/obstacle.urdf" />
+    <rosparam param="door_urdf" command="load" 
+      file="$(find clingo_interface)/urdf/door.urdf" />
+  </node>
 
 </launch>

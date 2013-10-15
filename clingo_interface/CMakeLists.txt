@@ -23,11 +23,18 @@ include_directories(
 add_executable(cc_test src/cc_test.cpp)
 target_link_libraries(cc_test ${OpenCV_LIBRARIES})
 
+add_executable(gazebo_handler src/gazebo_handler.cpp)
+target_link_libraries(gazebo_handler 
+  ${catkin_LIBRARIES}
+  ${YAML_CPP_LIBRARIES}
+)
+
 add_executable(test_door_detector src/test_door_detector.cpp)
 target_link_libraries(test_door_detector 
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${YAML_CPP_LIBRARIES})
+
 add_executable(mark_doors src/mark_doors.cpp)
 target_link_libraries(mark_doors 
   ${catkin_LIBRARIES}
