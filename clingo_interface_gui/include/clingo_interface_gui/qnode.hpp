@@ -28,6 +28,7 @@
 #include <tf/transform_listener.h>
 #include <clingo_interface_gui/ClingoInterfaceAction.h>
 #include <clingo_interface/door_handler.h>
+#include <clingo_interface/gazebo_handler.h>
 #include <nav_msgs/Odometry.h>
 #include <opencv/cv.h>
 
@@ -104,6 +105,7 @@ namespace clingo_interface_gui {
       boost::shared_ptr<tf::TransformListener> tf_;
       boost::shared_ptr<topological_mapper::MapLoader> mapper_;
       boost::shared_ptr<clingo_interface::DoorHandler> handler_;
+      boost::shared_ptr<clingo_interface::GazeboHandler> gh_;
 
   };
 

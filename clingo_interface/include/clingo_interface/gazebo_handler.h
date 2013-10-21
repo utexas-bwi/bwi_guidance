@@ -13,6 +13,7 @@
 #include <gazebo_msgs/SpawnModel.h>
 #include <geometry_msgs/Point32.h>
 #include <ros/ros.h>
+#include <tf/transform_datatypes.h>
 #include <topological_mapper/map_loader.h>
 #include <topological_mapper/map_utils.h>
 #include <topological_mapper/point_utils.h>
@@ -107,6 +108,100 @@ namespace clingo_interface {
           retval.position.x = 600.0f;
         }
         return retval;
+      }
+
+      geometry_msgs::Pose getDoorLocation(int index) {
+        geometry_msgs::Pose retval;
+
+        topological_mapper::Point2f door_center = 0.5 *
+          (doors_[index].approach_points[0] +
+           doors_[index].approach_points[1]);
+        retval.position.x = door_center.x;
+        retval.position.y = door_center.y;
+        retval.position.z = 0;
+
+        topological_mapper::Point2f diff = 
+          (doors_[index].approach_points[0] -
+           doors_[index].approach_points[1]);
+        float door_yaw = atan2f(diff.y, diff.x);
+        retval.orientation = tf::createQuaternionMsgFromYaw(door_yaw);
+
+        return retval;
+      }
+
+      void openDoor(int index) {
+        std::string prefix = "auto_door_";
+        std::string model_name = prefix +
+          boost::lexical_cast<std::string>(index);
+        geometry_msgs::Pose pose = getDefaultLocation(true, index);
+        teleportEntity(model_name, pose);
+      }
+
+      void openAllDoors() {
+        for (unsigned i = 0; i < doors_.size(); ++i) {
+          openDoor(i);
+        }
+      }
+
+      void closeDoor(int index) {
+        ROS_INFO_STREAM("Closing door " << index);
+        std::string prefix = "auto_door_";
+        std::string model_name = prefix +
+          boost::lexical_cast<std::string>(index);
+        geometry_msgs::Pose pose = getDoorLocation(index);
+        teleportEntity(model_name, pose);
+      }
+
+      void closeAllDoors() {
+        ROS_INFO_STREAM("Closing all doors");
+        for (unsigned i = 0; i < doors_.size(); ++i) {
+          closeDoor(i);
+        }
+      }
+
+      bool checkClosePoses(const geometry_msgs::Pose& p1,
+          const geometry_msgs::Pose& p2) {
+        if (fabs(p1.position.x - p2.position.x) > 0.05 ||
+            fabs(p1.position.y - p2.position.y) > 0.05) {
+          return false;
+        }
+        double yaw1 = tf::getYaw(p1.orientation);
+        double yaw2 = tf::getYaw(p2.orientation);
+        if (fabs(yaw1 - yaw2) > 0.1) {
+          return false;
+        }
+        return true;
+      }
+
+      bool teleportEntity(const std::string& entity,
+          const geometry_msgs::Pose& pose) {
+
+        int count = 0;
+        int attempts = 5;
+        bool location_verified = false;
+        while (count < attempts and !location_verified) {
+          gazebo_msgs::GetModelState get_srv;
+          get_srv.request.model_name = entity;
+          get_gazebo_model_client_.call(get_srv);
+          location_verified = checkClosePoses(get_srv.response.pose, pose);
+          if (!location_verified) {
+            gazebo_msgs::SetModelState set_srv;
+            set_srv.request.model_state.model_name = entity;
+            set_srv.request.model_state.pose = pose;
+            set_gazebo_model_client_.call(set_srv);
+            if (!set_srv.response.success) {
+              ROS_WARN_STREAM("SetModelState service call failed for " << entity
+                  << " to " << pose);
+            }
+          }
+          ++count;
+        }
+        if (!location_verified) {
+          ROS_ERROR_STREAM("Unable to teleport " << entity << " to " << pose
+              << " despite " << attempts << " attempts.");
+          return false;
+        }
+        return true;
       }
 
       void spawnObject(bool is_door, int index = 0) {
