@@ -1,6 +1,7 @@
 #ifndef GAZEBO_HANDLER_E8TY9EDI
 #define GAZEBO_HANDLER_E8TY9EDI
 
+#include <ros/ros.h>
 #include <stdexcept>
 
 #include <boost/algorithm/string/join.hpp>
@@ -83,15 +84,17 @@ namespace clingo_interface {
         set_gazebo_model_client_.waitForExistence();
 
         // Spawn all necessary doors
+        door_open_status_.resize(doors_.size());
         for (unsigned i = 0; i < doors_.size(); ++i) {
           spawnObject(true, i);
+          door_open_status_[i] = false;
         }
 
         // Spawn 30 obstacle objects
         num_obstacles_ = 0;
-        for (unsigned i = 0; i < 30; ++i) {
-          spawnObject(false, i);
-        }
+        // for (unsigned i = 0; i < 30; ++i) {
+        //   spawnObject(false, i);
+        // }
       }
 
       geometry_msgs::Pose getDefaultLocation(bool is_door, int index) {
@@ -108,6 +111,10 @@ namespace clingo_interface {
           retval.position.x = 600.0f;
         }
         return retval;
+      }
+
+      float getDoorWidth(int index) {
+        return (0.75f/0.9f) * doors_[index].width;
       }
 
       geometry_msgs::Pose getDoorLocation(int index) {
@@ -130,11 +137,14 @@ namespace clingo_interface {
       }
 
       void openDoor(int index) {
+        if (door_open_status_[index]) 
+          return;
         std::string prefix = "auto_door_";
         std::string model_name = prefix +
           boost::lexical_cast<std::string>(index);
         geometry_msgs::Pose pose = getDefaultLocation(true, index);
         teleportEntity(model_name, pose);
+        door_open_status_[index] = true;
       }
 
       void openAllDoors() {
@@ -144,12 +154,15 @@ namespace clingo_interface {
       }
 
       void closeDoor(int index) {
+        if (!door_open_status_[index]) 
+          return;
         ROS_INFO_STREAM("Closing door " << index);
         std::string prefix = "auto_door_";
         std::string model_name = prefix +
           boost::lexical_cast<std::string>(index);
         geometry_msgs::Pose pose = getDoorLocation(index);
         teleportEntity(model_name, pose);
+        door_open_status_[index] = false;
       }
 
       void closeAllDoors() {
@@ -159,15 +172,30 @@ namespace clingo_interface {
         }
       }
 
+      void closeAllDoorsFarAwayFromPoint(
+          const geometry_msgs::Pose& point, float distance = 2.0) {
+        for (unsigned i = 0; i < doors_.size(); ++i) {
+          if (!door_open_status_[i])
+            continue;
+          bool is_door_near = 
+            checkClosePoses(point, getDoorLocation(i), distance, false);
+          if (!is_door_near) 
+            closeDoor(i);
+        }
+      }
+
       bool checkClosePoses(const geometry_msgs::Pose& p1,
-          const geometry_msgs::Pose& p2) {
-        if (fabs(p1.position.x - p2.position.x) > 0.05 ||
-            fabs(p1.position.y - p2.position.y) > 0.05) {
+          const geometry_msgs::Pose& p2, float threshold = 0.05,
+          bool check_yaw = true) {
+        float dist_diff = 
+          sqrtf(pow((p1.position.x - p2.position.x), 2) +
+              pow((p1.position.y - p2.position.y), 2));
+        if (dist_diff > threshold) {
           return false;
         }
         double yaw1 = tf::getYaw(p1.orientation);
         double yaw2 = tf::getYaw(p2.orientation);
-        if (fabs(yaw1 - yaw2) > 0.1) {
+        if (check_yaw && fabs(yaw1 - yaw2) > 0.1) {
           return false;
         }
         return true;
@@ -210,16 +238,19 @@ namespace clingo_interface {
         std::string prefix;
         if (is_door) {
           prefix = "auto_door_";
-          spawn.request.model_xml = door_urdf_;
+          spawn.request.model_xml = boost::regex_replace(door_urdf_, 
+              boost::regex("@WIDTH@"),
+              boost::lexical_cast<std::string>(getDoorWidth(index)));
+          spawn.request.initial_pose = getDoorLocation(index);
         } else {
           prefix = "auto_obs_";
           index = num_obstacles_;
           spawn.request.model_xml = obstacle_urdf_;
+          spawn.request.initial_pose = getDefaultLocation(false, index);
         }
 
         spawn.request.model_name = prefix +
           boost::lexical_cast<std::string>(index);
-        spawn.request.initial_pose = getDefaultLocation(is_door, index);
 
         if (spawn_model_client_.call(spawn)) {
           if (spawn.response.success) {
@@ -242,6 +273,7 @@ namespace clingo_interface {
       boost::shared_ptr <topological_mapper::MapLoader> mapper_;
       nav_msgs::MapMetaData info_;
 
+      std::vector<bool> door_open_status_;
       std::set<int> obstacles_in_use;
       std::set<int> unused_obstacles_;
       unsigned int num_obstacles_; // obstacles + doors

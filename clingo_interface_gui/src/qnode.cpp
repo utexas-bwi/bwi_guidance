@@ -48,7 +48,9 @@ namespace clingo_interface_gui {
     ros::param::get("~map_file", map_file);
     ros::param::get("~door_file", door_file);
     ros::param::get("~location_file", location_file);
+    ros::param::param("~auto_door_open_enabled", auto_door_open_enabled_, true);
     handler_.reset(new clingo_interface::DoorHandler(map_file, door_file, location_file));
+    gh_.reset(new clingo_interface::GazeboHandler);
 
     odom_subscriber_ = nh_->subscribe("odom", 1, &QNode::odometryHandler, this);
     as_.reset(new actionlib::SimpleActionServer<
@@ -153,6 +155,9 @@ namespace clingo_interface_gui {
         int count = 0;
         bool door_open = false; 
         while (!door_open && count < 300) {
+          if (count == 50 && auto_door_open_enabled_) {
+            gh_->openDoor(door_idx);
+          }
           if (as_->isPreemptRequested() || !ros::ok()) { // TODO What about goal not being active or new goal?
             ROS_INFO("Preempting action");
             as_->setPreempted();
@@ -332,10 +337,10 @@ namespace clingo_interface_gui {
     robot_x_ = odom->pose.pose.position.x;
     robot_y_ = odom->pose.pose.position.y;
     robot_yaw_ = tf::getYaw(odom->pose.pose.orientation);
+    gh_->closeAllDoorsFarAwayFromPoint(odom->pose.pose);
   }
 
   bool QNode::newLocationReceived(const std::string& loc) {
-
     std::cout << "testing location: " << loc << std::endl;
     if (handler_->getLocationIdx(loc) != (size_t) -1) {
       location_received_ = true;

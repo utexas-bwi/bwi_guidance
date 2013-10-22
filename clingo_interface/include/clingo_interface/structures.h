@@ -37,6 +37,7 @@ namespace clingo_interface {
       std::string approach_names[2];
       topological_mapper::Point2f approach_points[2];
       float approach_yaw[2];
+      float width;
       topological_mapper::Point2f corners[2];
   };
 
@@ -63,6 +64,7 @@ namespace clingo_interface {
         approach_node[j]["point"][2] >> door.approach_yaw[j]; 
       }
       doc[i]["name"] >> door.name;
+      doc[i]["width"] >> door.width;
       doors.push_back(door);
     }
   }
