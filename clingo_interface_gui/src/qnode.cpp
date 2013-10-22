@@ -113,25 +113,26 @@ namespace clingo_interface_gui {
           resp.success = success;
 
           // Publish the observable fluents
-          // TODO Besides should be published if approach goal succeeds
-          if (success) {
-            computeKnownDoorProximity(door_idx, resp.observable_fluents);
-          } else {
-            senseDoorProximity(resp.observable_fluents);
-          }
-          clingo_interface_gui::ClingoFluent door_open;
-          door_open.args.push_back(door_name);
-          if (handler_->isDoorOpen(door_idx)) {
-            door_open.op = "open";
-            resp.observable_fluents.push_back(door_open);
-          } else {
-            door_open.op = "n_open";
-            resp.observable_fluents.push_back(door_open);
-          }
+          senseDoorProximity(resp.observable_fluents);
 
+          // Close a door is opened previously
           if (close_door_idx_ != -1) {
             gh_->closeDoor(close_door_idx_);
             close_door_idx_ = -1;
+          }
+
+          // We can't sense the door once we go through as we won't be facing
+          // it. We should only sense a door when we approach it.
+          if (req->command.op == "approach") {
+            clingo_interface_gui::ClingoFluent door_open;
+            door_open.args.push_back(door_name);
+            if (handler_->isDoorOpen(door_idx)) {
+              door_open.op = "open";
+              resp.observable_fluents.push_back(door_open);
+            } else {
+              door_open.op = "n_open";
+              resp.observable_fluents.push_back(door_open);
+            }
           }
 
         } else {
@@ -212,7 +213,7 @@ namespace clingo_interface_gui {
         size_t door_idx = handler_->getDoorIdx(door_name);
         topological_mapper::Point2f robot_loc(robot_x_, robot_y_);
         bool besides_door = 
-          handler_->isPointBesideDoor(robot_loc, 0.5, door_idx);
+          handler_->isPointBesideDoor(robot_loc, robot_yaw_, 1.5, door_idx);
         if (!besides_door) {
           clingo_interface_gui::ClingoFluent n_beside;
           n_beside.op = "n_beside";
@@ -317,6 +318,7 @@ namespace clingo_interface_gui {
       resp.success = true;
     } else if (req->command.op == "noop") {
       resp.success = true;
+      senseDoorProximity(resp.observable_fluents);
     } 
 
     // Get location
@@ -363,7 +365,7 @@ namespace clingo_interface_gui {
     topological_mapper::Point2f robot_loc(robot_x_, robot_y_);
     for (size_t door = 0; door < num_doors; ++door) {
       bool besides_door = handler_->isPointBesideDoor(
-          robot_loc, 0.5, door);
+          robot_loc, robot_yaw_, 1.5, door);
       if (!besides_door) {
         clingo_interface_gui::ClingoFluent n_beside;
         n_beside.op = "n_beside";

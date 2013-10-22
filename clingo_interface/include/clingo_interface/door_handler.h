@@ -204,14 +204,24 @@ namespace clingo_interface {
       }
 
       bool isPointBesideDoor(const topological_mapper::Point2f& current_location,
-          float threshold, size_t idx) {
-        for (size_t pt = 0; pt < 2; ++pt) {
-          if (topological_mapper::getMagnitude(
-                doors_[idx].approach_points[pt] - current_location) < 
-              threshold) {
-            return true;
-          }
+          float yaw, float threshold, size_t idx) {
+
+        topological_mapper::Point2f center_pt = 0.5 * 
+          (doors_[idx].approach_points[0] + doors_[idx].approach_points[1]);
+        if (topological_mapper::getMagnitude(center_pt - current_location) >
+            threshold) {
+          return false;
         }
+
+        topological_mapper::Point2f diff_pt = center_pt - current_location;
+        float orientation_to_door = atan2f(diff_pt.y, diff_pt.x);
+        while (orientation_to_door > yaw + M_PI) orientation_to_door -= 2*M_PI;
+        while (orientation_to_door <= yaw - M_PI) orientation_to_door += 2*M_PI;
+        if (fabs(orientation_to_door - yaw) > M_PI / 6) {
+          return false;
+        }
+
+        return true;
       }
 
       size_t getLocationIdx(const topological_mapper::Point2f& current_location) {
