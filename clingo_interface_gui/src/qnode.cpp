@@ -49,6 +49,7 @@ namespace clingo_interface_gui {
     ros::param::get("~door_file", door_file);
     ros::param::get("~location_file", location_file);
     ros::param::param("~auto_door_open_enabled", auto_door_open_enabled_, true);
+    close_door_idx_ = -1;
     handler_.reset(new clingo_interface::DoorHandler(map_file, door_file, location_file));
     gh_.reset(new clingo_interface::GazeboHandler);
 
@@ -128,6 +129,11 @@ namespace clingo_interface_gui {
             resp.observable_fluents.push_back(door_open);
           }
 
+          if (close_door_idx_ != -1) {
+            gh_->closeDoor(close_door_idx_);
+            close_door_idx_ = -1;
+          }
+
         } else {
           // Planning failure
           resp.success = false;
@@ -155,8 +161,9 @@ namespace clingo_interface_gui {
         int count = 0;
         bool door_open = false; 
         while (!door_open && count < 300) {
-          if (count == 50 && auto_door_open_enabled_) {
+          if (count == 5 && auto_door_open_enabled_) {
             gh_->openDoor(door_idx);
+            close_door_idx_ = door_idx;
           }
           if (as_->isPreemptRequested() || !ros::ok()) { // TODO What about goal not being active or new goal?
             ROS_INFO("Preempting action");

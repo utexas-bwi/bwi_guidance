@@ -108,6 +108,7 @@ namespace clingo_interface_gui {
       boost::shared_ptr<clingo_interface::GazeboHandler> gh_;
 
       bool auto_door_open_enabled_;
+      int close_door_idx_;
       
   };
 
