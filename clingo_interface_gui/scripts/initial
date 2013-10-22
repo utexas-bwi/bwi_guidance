@@ -1,6 +1,8 @@
-beside(d3_508,0).
+n_beside(d3_508,0).
 n_beside(d3_510,0).
-n_beside(d3_512,0).
+beside(d3_512,0).
+n_beside(d3_414a2,0).
+n_beside(d3_414a1,0).
 n_beside(d3_416,0).
-open(d3_508,0).
+open(d3_512,0).
 at(cor,0).

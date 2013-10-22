@@ -1,0 +1,176 @@
+step(0..n).
+#domain step(I).
+
+%floor plan of GDC north wing
+
+% faculty offices
+office(o3_508;;o3_510;;o3_512;;o3_514;;o3_418;;o3_420;;o3_422;;o3_430;;o3_432).
+door(d3_508;;d3_510;;d3_512;;d3_514;;d3_418;;d3_420;;d3_422;;d3_430;;d3_432).
+
+hasdoor(o3_508,d3_508;;o3_510,d3_510;;o3_512,d3_512;;o3_514,d3_514;;o3_418,d3_418;;o3_420,d3_420;;o3_422,d3_422;;o3_430,d3_430;;o3_422,d3_422).
+hasdoor(o3_508,d3_508).
+% research labs
+
+lab(l3_414a;;l3_414b;;l3_414;;l3_436).
+door(d3_414a1;;d3_414a2;;d3_414a3;;d3_414b1;;d3_414b2;;d3_414b3;;d3_4361;;d3_4362).
+
+hasdoor(l3_414a,d3_414a1;;l3_414a,d3_414a2;;l3_414a,d3_414a3;;l3_414b,d3_414b1;;l3_414b,d3_414b2;;l3_414b,d3_414b3;;l3_436,d3_4361;;l3_436,d3_4362).
+
+%:- not acc(l3_414a,d3_414a1,cor,0).
+
+% conference room
+
+conference(c3_416).
+door(d3_416).
+hasdoor(c3_416,d3_416).
+
+% seminar room
+
+seminar(s3_516).
+door(d3_516a).
+hasdoor(s3_516,d3_516a).
+door(d3_516b).
+hasdoor(s3_516,d3_516b).
+
+% open areas
+
+openoffice(o3_410(1..6);;o3_504(1..6);;o3_518(1..6);;o3_424(1..6)).
+door(d3_410(1..6);;d3_504(1..6);;d3_518(1..6);;d3_424(1..6)). % conceptually there is a fake door
+
+lobby(lo3_434;;lo3_514).
+coffee(lo3_520).
+door(d3_434;;d3_514;;d3_520).
+
+hasdoor(o3_410(X),d3_410(X);;o3_504(X),d3_504(X);;o3_518(X),d3_518(X);;o3_424(X),d3_424(X)) :- X=1..6.
+
+hasdoor(lo3_434,d3_434;;lo3_514,d3_514;;lo3_520,d3_520).
+
+openarea(X) :- openoffice(X).
+openarea(X) :- lobby(X).
+openarea(X) :- coffee(X).
+
+% corridor
+corridor(cor).
+
+room(X) :- office(X).
+room(X) :- lab(X).
+room(X) :- corridor(X).
+room(X) :- openarea(X).
+room(X) :- conference(X).
+room(X) :- seminar(X).
+
+% accessibility
+
+acc(X,Y,cor,I) :- room(X),door(Y),hasdoor(X,Y).
+acc(l3_414a,d3_414a3,l3_414,I).
+acc(l3_414b,d3_414b3,l3_414,I).
+
+% room assignment
+
+% faculty members
+inside(peterstone,o3_508).
+inside(danaballard,o3_510).
+inside(raymooney,o3_512).
+inside(toddhester,o3_418).
+
+% students in open areas
+
+inside(niveda,o3_410(1);;jacobm,o3_410(2);;padmini,o3_410(3);;eli,o3_410(4);;julia,o3_410(5);;piyush,o3_410(6)).
+
+inside(elad,o3_424(1);;islam,o3_424(2);;katie,o3_424(3);;samuel,o3_424(4);;jeremy,o3_424(5);;yinon,o3_424(6)).
+
+inside(dan,o3_504(1);;jacobs,o3_504(2);;joohyun,o3_504(3);;craig,o3_504(4);;nora,o3_504(5);;patrick,o3_504(6)).
+
+inside(leif,o3_518(1);;lewis,o3_518(2);;kimberly,o3_518(3);;joseph,o3_518(5);;dmitry,o3_518(6)).
+
+person(X) :- inside(X,Y).
+
+
+% static laws
+
+% the doors of open offices are always open (actually there is no door).
+open(X,I) :- door(X), openarea(Y), acc(Y,X,Z,I).
+
+acc(Z,Y,X,I) :- acc(X,Y,Z,I).
+
+% the states of doors are inertial all the time.
+
+open(X,I+1) :- open(X,I), not -open(X,I+1), door(X), I<n.
+-open(X,I+1) :- -open(X,I), not open(X,I+1), door(X), I<n.
+
+beside(X,I+1) :- beside(X,I), not -beside(X,I+1), I<n.
+-beside(X,I+1) :- -beside(X,I), not beside(X,I+1), I<n.
+
+%-beside(X,I) :- not beside(X,I), door(X).
+
+% dynamic laws
+
+beside(X,I+1) :- approach(X,I), door(X), I<n.
+
+{at(X,I+1)} :- at(X,I), room(X), I<n.
+
+at(Z,I+1) :- gothrough(Y,I), at(X,I), acc(X,Y,Z,I), I<n.
+
+:- gothrough(Y,I), at(X,I), {door(Y):acc(X,Y,Z,I)}0.
+
+:- gothrough(Y,I), not open(Y,I).
+
+:- gothrough(Y,I), not beside(Y,I).
+
+{visited(X,I+1)} :- visited(X,I), I<n.
+
+visited(X,I+1) :- goto(X,I), I<n.
+
+:- goto(X,I), at(Y,I), not inside(X,Y), person(X), room(Y), I<n.
+
+:- goto(X,I), goto(Y,I), X!=Y.
+
+:- goto(X,I), gothrough(Y,I).
+
+open(X,I+1) :- callforopen(X,I), I<n.
+
+:- callforopen(X,I), not beside(X,I), I<n.
+
+:- callforopen(X,I), open(X,I), I<n.
+
+:- callforopen(Y,I), at(X,I), {acc(X,Y,Z,I):room(Z)}0, I<n.
+
+:- callforopen(X,I), callforopen(Y,I), X!=Y, I<n.
+
+:- gothrough(X,I), callforopen(Y,I), I<n.
+
+:- goto(X,I), callforopen(Y,I), I<n.
+
+:- approach(X,I), gothrough(Y,I), I<n.
+
+:- approach(X,I), callforopen(Y,I), I<n.
+
+:- approach(X,I), goto(Y,I), I<n.
+
+:- approach(X,I), approach(Y,I), X!=Y, I<n.
+
+:- approach(Y,I), at(X,I), {acc(X,Y,Z,I):room(Z)}0, I<n.
+
+% standard choice rules
+
+{gothrough(X,I)} :- door(X), I<n.
+
+{goto(X,I)} :- person(X), I<n.
+
+{callforopen(X,I)} :- door(X), I<n.
+
+{approach(X,I)} :- door(X), I<n.
+
+% uniquness and existence of value
+
+:- not 1{at(X,I):room(X)}1.
+
+#hide.
+#show at/2.
+#show beside/2.
+#show gothrough/2.
+#show goto/2.
+#show visited/2.
+#show open/2.
+#show callforopen/2.
+#show approach/2.

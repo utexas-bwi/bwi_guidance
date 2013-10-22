@@ -1,0 +1,211 @@
+#begin_lua
+
+function dis(a,b)
+	a1 = tostring(a)
+	b1 = tostring(b)
+	if a1==b1 then return 10 end
+	if a1=="d3_508" and b1=="d3_510" then return 10 end
+	if a1=="d3_508" and b1=="d3_512" then return 20 end
+	if a1=="d3_508" and b1=="d3_416" then return 40 end
+	if a1=="d3_508" and b1=="d3_414a2" then return 5 end
+	if a1=="d3_508" and b1=="d3_414a1" then return 40 end
+	if a1=="d3_510" and b1=="d3_512" then return 10 end
+	if a1=="d3_510" and b1=="d3_416" then return 50 end
+	if a1=="d3_510" and b1=="d3_414a2" then return 15 end
+	if a1=="d3_510" and b1=="d3_414a1" then return 50 end
+	if a1=="d3_512" and b1=="d3_416" then return 60 end
+	if a1=="d3_512" and b1=="d3_414a2" then return 25 end
+	if a1=="d3_512" and b1=="d3_414a1" then return 60 end
+	if a1=="d3_416" and b1=="d3_414a2" then return 35 end
+	if a1=="d3_416" and b1=="d3_414a1" then return 5 end
+	if a1=="d3_414a1" and b1=="d3_414a2" then return 30 end
+	if b1=="d3_508" and a1=="d3_510" then return 10 end
+	if b1=="d3_508" and a1=="d3_512" then return 20 end
+	if b1=="d3_508" and a1=="d3_416" then return 40 end
+	if b1=="d3_508" and a1=="d3_414a2" then return 5 end
+	if b1=="d3_508" and a1=="d3_414a1" then return 40 end
+	if b1=="d3_510" and a1=="d3_512" then return 10 end
+	if b1=="d3_510" and a1=="d3_416" then return 50 end
+	if b1=="d3_510" and a1=="d3_414a2" then return 15 end
+	if b1=="d3_510" and a1=="d3_414a1" then return 50 end
+	if b1=="d3_512" and a1=="d3_416" then return 60 end
+	if b1=="d3_512" and a1=="d3_414a2" then return 25 end
+	if b1=="d3_512" and a1=="d3_414a1" then return 60 end
+	if b1=="d3_416" and a1=="d3_414a2" then return 35 end
+	if b1=="d3_416" and a1=="d3_414a1" then return 5 end
+	if b1=="d3_414a1" and a1=="d3_414a2" then return 30 end
+end
+
+#end_lua.
+
+
+step(0..n).
+#domain step(I).
+
+%floor plan of GDC north wing
+
+% faculty offices
+office(o3_508;;o3_510;;o3_512;;o3_416;;l3_414a).
+door(d3_508;;d3_510;;d3_512;;d3_416;;d3_414a1;;d3_414a2).
+
+hasdoor(o3_508,d3_508;;o3_510,d3_510;;o3_512,d3_512;;o3_416,d3_416;;l3_414a,d3_414a1;;l3_414a,d3_414a2).
+
+% corridor
+corridor(cor).
+room(X) :- office(X).
+room(cor).
+
+% accessibility
+
+acc(X,Y,cor) :- room(X),door(Y),hasdoor(X,Y).
+
+% room assignment
+
+% faculty members
+inside(peterstone,o3_512,I) :- I<=n.
+inside(danaballard,o3_510,I) :- I<=n.
+%inside(raymooney,o3_510,I) :- I<=n.
+inside(stacymiller,o3_508,I) :- I<=n.
+
+
+person(peterstone).
+person(danaballard).
+person(raymooney).
+person(stacymiller).
+
+% knowledge of people's location
+
+knows(peterstone, ploc(danaballard)).
+knows(stacymiller, ploc(raymooney)).
+
+% static laws
+
+acc(Z,Y,X) :- acc(X,Y,Z).
+
+% inertial fluent and uniquness/existence constraints
+
+open(X,I+1) :- open(X,I), door(X), not n_open(X,I+1), I<n.
+n_open(X,I+1) :- n_open(X,I), door(X), not open(X,I+1), I<n.
+:- open(X,I), n_open(X,I), I<=n.
+
+inside(X,Y,I+1) :- inside(X,Y,I), not -inside(X,Y,I+1), I<n.
+-inside(X,Y,I+1) :- -inside(X,Y,I), not inside(X,Y,I+1), I<n.
+
+beside(X,I+1) :- beside(X,I), not n_beside(X,I+1), I<n.
+n_beside(X,I+1) :- n_beside(X,I), not beside(X,I+1), I<n.
+:- beside(X,I), n_beside(X,I), I<=n.
+:- beside(X1,I), beside(X2,I), X1!=X2, I<=n.
+n_beside(X2,I) :- beside(X1,I), door(X1), door(X2), X1!=X2, I<=n.
+
+{at(X,I+1)} :- at(X,I), room(X), I<n.
+:- not 1{at(X,I):room(X)}1.
+
+n_visited(X,I) :- not visited(X,I), person(X), I<=n.
+:- visited(X,I), n_visited(X,I), I<=n.
+
+% actions changes fluents
+
+% approach changes the value of beside
+
+beside(X,I+1) :- approach(X,I), door(X), I<n.
+:- approach(Y,I), at(X,I), {door(Y):acc(X,Y,Z)}0, I<n.
+:- approach(X,I), beside(X,I), I<n.
+:- approach(X,I), not n_beside(X,I), I<n.
+
+% gothrough changes the value of at
+
+at(Z,I+1) :- gothrough(Y,I), at(X,I), acc(X,Y,Z), I<n.
+:- gothrough(Y,I), at(X,I), {door(Y):acc(X,Y,Z)}0.
+:- gothrough(Y,I), not open(Y,I), I<n.
+:- gothrough(Y,I), not beside(Y,I), I<n.
+
+% goto changes the value of visited and beside
+
+visited(X,I+1) :- goto(X,I), I<n.
+%n_beside(D,I+1) :- goto(X,I), beside(D,I), I<n.
+:- goto(X,I), at(Y,I), not inside(X,Y,I), person(X), room(Y), I<n.
+:- goto(X,I), not at(Y,I), inside(X,Y,I), person(X), room(Y), I<n.
+
+% call for open action changes the value of open
+
+open(X,I+1) :- callforopen(X,I), n_open(X,I), I<n, beside(X,I).
+
+%nonconcurrency
+
+:- goto(X,I), callforopen(Y,I), I<n.
+:- goto(X,I), goto(Y,I), X!=Y, I<n.
+:- gothrough(X,I), callforopen(Y,I), I<n.
+:- approach(X,I), callforopen(Y,I), I<n.
+:- approach(X,I), goto(Y,I), I<n.
+:- approach(X,I), gothrough(Y,I), I<n.
+:- gothrough(X,I), goto(Y,I), I<n.
+
+% sensing action
+
+1{open(X,I+1), n_open(X,I+1)}1 :- sense(open(X),I), I<n.
+1{beside(X,I+1), n_beside(X,I+1)} :- sense(beside(X),I), I<n.
+1{inside(X,Y,I+1):room(Y)}1:-sense(ploc(X),I), I<n.
+
+fluent(open(X)) :- door(X).
+fluent(beside(X)) :- door(X).
+fluent(ploc(X)) :- person(X).
+
+:- sense(X,I), sense(Y,I),X!=Y.
+:- sense(X,I), goto(Y,I).
+:- sense(X,I), callforopen(Y,I).
+:- sense(X,I), gothrough(Y,I).
+:- sense(X,I), approach(Y,I).
+
+:- sense(ploc(X),I), {visited(Y,I):person(Y)}0.
+:- sense(ploc(X),I), visited(Y,I), not knows(Y,ploc(X)).
+:- sense(ploc(X),I), inside(X,Y,I).
+:- sense(open(X),I), not beside(X,I), I<n.
+:- sense(open(X),I), n_beside(X,I), I<n.
+:- sense(open(X),I), open(X,I), I<n.
+:- sense(open(X),I), n_open(X,I), I<n.
+:- sense(beside(X),I), beside(X,I), I<n.
+:- sense(beside(X),I), n_beside(X,I), I<n.
+
+% standard choice rules
+{sense(F,I)} :- fluent(F), I<n.
+{gothrough(X,I)} :- door(X), I<n.
+{goto(X,I)} :- person(X), I<n.
+{callforopen(X,I)} :- door(X), I<n.
+{approach(X,I)} :- door(X), I<n.
+
+%optimization
+
+cost(@dis(X,Y),I) :- approach(X,I), beside(Y,I), door(X), door(Y), I<n, not at(l3_414a,I).
+cost(10,I) :- approach(X,I), beside(Y,I), door(X), door(Y), I<n, at(l3_414a,I).
+cost(1,I) :- sense(F,I), I<n.
+cost(1,I) :- gothrough(X,I), I<n.
+cost(1,I) :- goto(X,I), I<n.
+cost(1,I) :- callforopen(X,I), I<n.
+
+action(sense(F,I)) :- sense(F,I), I<n.
+action(gothrough(X,I)) :- gothrough(X,I), I<n.
+action(goto(X,I)) :- goto(X,I), I<n.
+action(callforopen(X,I)) :- callforopen(X,I), I<n.
+action(approach(X,I)) :- approach(X,I), I<n.
+
+
+#minimize[cost(X,Y)=X@2].
+
+#hide.
+#show at/2.
+#show beside/2.
+#show n_beside/2.
+#show gothrough/2.
+#show goto/2.
+#show open/2.
+#show n_open/2.
+#show visited/2.
+#show n_visited/2.
+#show callforopen/2.
+#show approach/2.
+#show sense/2.
+%#show fluent/1.
+%#show action/1.
+#show inside/3.
+#show goal/2.
+

@@ -1,0 +1,9 @@
+Answer: 1
+n_beside(d3_508,0) n_beside(d3_510,0) beside(d3_512,0) n_beside(d3_414a2,0) n_beside(d3_414a1,0) n_beside(d3_416,0) open(d3_512,0) at(cor,0) goal(2,2) goal(2,3) goal(2,4) inside(raymooney,o3_512,0) inside(peterstone,o3_508,2) inside(peterstone,o3_508,1) inside(peterstone,o3_508,0) inside(stacymiller,o3_510,2) inside(stacymiller,o3_510,1) inside(stacymiller,o3_510,0) open(d3_512,1) open(d3_512,2) inside(raymooney,o3_512,1) inside(raymooney,o3_512,2) beside(d3_512,1) goto(raymooney,1) n_beside(d3_508,2) n_beside(d3_510,2) n_beside(d3_512,2) n_beside(d3_416,2) n_beside(d3_416,1) n_beside(d3_414a1,1) n_beside(d3_414a2,1) n_beside(d3_510,1) n_beside(d3_508,1) n_beside(d3_414a2,2) n_beside(d3_414a1,2) gothrough(d3_512,0) at(o3_512,2) at(o3_512,1) visited(raymooney,2) n_visited(stacymiller,2) n_visited(danaballard,2) n_visited(peterstone,2) n_visited(stacymiller,1) n_visited(raymooney,1) n_visited(danaballard,1) n_visited(peterstone,1) n_visited(stacymiller,0) n_visited(raymooney,0) n_visited(danaballard,0) n_visited(peterstone,0) goal(3,2) 
+SATISFIABLE
+
+Models      : 1     
+Time        : 0.000
+  Prepare   : 0.000
+  Prepro.   : 0.000
+  Solving   : 0.000
