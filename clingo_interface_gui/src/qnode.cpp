@@ -50,8 +50,10 @@ namespace clingo_interface_gui {
     ros::param::get("~location_file", location_file);
     ros::param::param("~auto_door_open_enabled", auto_door_open_enabled_, true);
     close_door_idx_ = -1;
+    prev_door_idx_ = -1;
     handler_.reset(new clingo_interface::DoorHandler(map_file, door_file, location_file));
     gh_.reset(new clingo_interface::GazeboHandler);
+    ce_.reset(new clingo_interface::CostEstimator);
 
     odom_subscriber_ = nh_->subscribe("odom", 1, &QNode::odometryHandler, this);
     as_.reset(new actionlib::SimpleActionServer<
@@ -109,11 +111,22 @@ namespace clingo_interface_gui {
           pose.pose.position.y = approach_pt.y;
           tf::quaternionTFToMsg(tf::createQuaternionFromYaw(approach_yaw), 
               pose.pose.orientation); 
+          float start_time = ros::Time::now().toSec();
           bool success = executeRobotGoal(pose);
+          float cost = ros::Time::now().toSec() - start_time;
           resp.success = success;
 
           // Publish the observable fluents
           senseDoorProximity(resp.observable_fluents);
+          if (success) {
+            if (prev_door_idx_ != -1 &&
+                prev_door_idx_ != door_idx) {
+              ce_->addSample(prev_door_idx_, door_idx, cost); 
+            }
+            prev_door_idx_ = door_idx;
+          } else {
+            prev_door_idx_ = -1;
+          }
 
           // Close a door is opened previously
           if (close_door_idx_ != -1) {
@@ -319,7 +332,10 @@ namespace clingo_interface_gui {
     } else if (req->command.op == "noop") {
       resp.success = true;
       senseDoorProximity(resp.observable_fluents);
-    } 
+    } else if (req->command.op == "finish") {
+      resp.success = true;
+      ce_->finalizeEpisode();
+    }
 
     // Get location
     size_t location_idx = 

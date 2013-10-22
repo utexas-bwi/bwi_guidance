@@ -29,6 +29,7 @@
 #include <clingo_interface_gui/ClingoInterfaceAction.h>
 #include <clingo_interface/door_handler.h>
 #include <clingo_interface/gazebo_handler.h>
+#include <clingo_interface/cost_estimator.h>
 #include <nav_msgs/Odometry.h>
 #include <opencv/cv.h>
 
@@ -106,9 +107,11 @@ namespace clingo_interface_gui {
       boost::shared_ptr<topological_mapper::MapLoader> mapper_;
       boost::shared_ptr<clingo_interface::DoorHandler> handler_;
       boost::shared_ptr<clingo_interface::GazeboHandler> gh_;
+      boost::shared_ptr<clingo_interface::CostEstimator> ce_;
 
       bool auto_door_open_enabled_;
       int close_door_idx_;
+      int prev_door_idx_;
       
   };
 
