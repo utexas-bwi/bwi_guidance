@@ -98,7 +98,7 @@ namespace clingo_interface {
         }
         fout << "\treturn 1" << std::endl;
         fout << "end" << std::endl << std::endl;
-        fout << "#end_lua" << std::endl;
+        fout << "#end_lua." << std::endl;
         fout.close();
       }
 

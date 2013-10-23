@@ -203,7 +203,7 @@ namespace clingo_interface {
         return false;
       }
 
-      bool isPointBesideDoor(const topological_mapper::Point2f& current_location,
+      bool isRobotFacingDoor(const topological_mapper::Point2f& current_location,
           float yaw, float threshold, size_t idx) {
 
         topological_mapper::Point2f center_pt = 0.5 * 
@@ -218,6 +218,19 @@ namespace clingo_interface {
         while (orientation_to_door > yaw + M_PI) orientation_to_door -= 2*M_PI;
         while (orientation_to_door <= yaw - M_PI) orientation_to_door += 2*M_PI;
         if (fabs(orientation_to_door - yaw) > M_PI / 6) {
+          return false;
+        }
+
+        return true;
+      }
+      
+      bool isRobotBesideDoor(const topological_mapper::Point2f& current_location,
+          float yaw, float threshold, size_t idx) {
+
+        topological_mapper::Point2f center_pt = 0.5 * 
+          (doors_[idx].approach_points[0] + doors_[idx].approach_points[1]);
+        if (topological_mapper::getMagnitude(center_pt - current_location) >
+            threshold) {
           return false;
         }
 

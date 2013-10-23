@@ -77,8 +77,6 @@ namespace clingo_interface_gui {
       int init_argc;
       char** init_argv;
 
-      void computeKnownDoorProximity(size_t door_idx, 
-          std::vector<clingo_interface_gui::ClingoFluent>& fluents);
       void senseDoorProximity(std::vector<clingo_interface_gui::ClingoFluent>& fluents);
       bool executeRobotGoal(const geometry_msgs::PoseStamped& pose);
 

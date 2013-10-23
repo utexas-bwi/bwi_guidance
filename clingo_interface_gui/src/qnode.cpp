@@ -221,22 +221,23 @@ namespace clingo_interface_gui {
           resp.observable_fluents.push_back(door_open);
         }
         resp.success = true;
-      } else if (sense_fluent_op == "beside") {
+      } else if (sense_fluent_op == "beside" || sense_fluent_op == "facing") {
         std::string door_name = req->sense_fluent.args[0];
         size_t door_idx = handler_->getDoorIdx(door_name);
         topological_mapper::Point2f robot_loc(robot_x_, robot_y_);
-        bool besides_door = 
-          handler_->isPointBesideDoor(robot_loc, robot_yaw_, 1.5, door_idx);
-        if (!besides_door) {
-          clingo_interface_gui::ClingoFluent n_beside;
-          n_beside.op = "n_beside";
-          n_beside.args.push_back(door_name);
-          resp.observable_fluents.push_back(n_beside);
+        bool op_door = (sense_fluent_op == "beside") ? 
+          handler_->isRobotBesideDoor(robot_loc, robot_yaw_, 1.2, door_idx) :
+          handler_->isRobotFacingDoor(robot_loc, robot_yaw_, 1.2, door_idx);
+        if (!op_door) {
+          clingo_interface_gui::ClingoFluent n_op;
+          n_op.op = "n_" + sense_fluent_op;
+          n_op.args.push_back(door_name);
+          resp.observable_fluents.push_back(n_op);
         } else {
-          clingo_interface_gui::ClingoFluent beside;
-          beside.op = "beside";
-          beside.args.push_back(door_name);
-          resp.observable_fluents.push_back(beside);
+          clingo_interface_gui::ClingoFluent op;
+          op.op = sense_fluent_op;
+          op.args.push_back(door_name);
+          resp.observable_fluents.push_back(op);
         }
         resp.success = true;
       } else if (sense_fluent_op == "ploc") {
@@ -380,27 +381,22 @@ namespace clingo_interface_gui {
     size_t num_doors = handler_->getNumDoors();
     topological_mapper::Point2f robot_loc(robot_x_, robot_y_);
     for (size_t door = 0; door < num_doors; ++door) {
-      bool besides_door = handler_->isPointBesideDoor(
-          robot_loc, robot_yaw_, 1.5, door);
-      if (!besides_door) {
-        clingo_interface_gui::ClingoFluent n_beside;
-        n_beside.op = "n_beside";
-        n_beside.args.push_back(handler_->getDoorString(door));
-        fluents.push_back(n_beside);
+      bool facing_door = handler_->isRobotFacingDoor(
+          robot_loc, robot_yaw_, 1.2, door);
+      bool beside_door = handler_->isRobotBesideDoor(
+          robot_loc, robot_yaw_, 1.2, door);
+      if (!facing_door) {
+        clingo_interface_gui::ClingoFluent n_facing;
+        n_facing.op = "n_facing";
+        n_facing.args.push_back(handler_->getDoorString(door));
+        fluents.push_back(n_facing);
       } else {
-        clingo_interface_gui::ClingoFluent beside;
-        beside.op = "beside";
-        beside.args.push_back(handler_->getDoorString(door));
-        fluents.push_back(beside);
+        clingo_interface_gui::ClingoFluent facing;
+        facing.op = "facing";
+        facing.args.push_back(handler_->getDoorString(door));
+        fluents.push_back(facing);
       }
-    }
-  }
-
-  void QNode::computeKnownDoorProximity(size_t door_idx, 
-      std::vector<clingo_interface_gui::ClingoFluent>& fluents) {
-    size_t num_doors = handler_->getNumDoors();
-    for (size_t door = 0; door < num_doors; ++door) {
-      if (door != door_idx) {
+      if (!beside_door) {
         clingo_interface_gui::ClingoFluent n_beside;
         n_beside.op = "n_beside";
         n_beside.args.push_back(handler_->getDoorString(door));
