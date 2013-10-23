@@ -150,11 +150,15 @@ namespace clingo_interface {
         // Exponentially weighted average
         distance_estimates_[door_from][door_to] = alpha_ * cost + (1 - alpha_) *
           distance_estimates_[door_from][door_to];
+        distance_estimates_[door_to][door_from] =
+          distance_estimates_[door_from][door_to];
       }
 
       void finalizeEpisode() {
         writeLuaFile();
         writeValuesFile();
+        ++iteration_;
+        ROS_INFO_STREAM("Bumping to ITERATION #" << iteration_);
       }
 
     private:

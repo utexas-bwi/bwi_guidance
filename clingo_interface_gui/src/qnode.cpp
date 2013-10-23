@@ -117,7 +117,7 @@ namespace clingo_interface_gui {
           resp.success = success;
 
           // Publish the observable fluents
-          senseDoorProximity(resp.observable_fluents);
+          senseDoorProximity(resp.observable_fluents, door_idx);
           if (success) {
             if (prev_door_idx_ != -1 &&
                 prev_door_idx_ != door_idx) {
@@ -336,6 +336,7 @@ namespace clingo_interface_gui {
     } else if (req->command.op == "finish") {
       ROS_INFO("RECEIVED FINISH");
       resp.success = true;
+      prev_door_idx_ = -1; // Robot may be teleported
       ce_->finalizeEpisode();
     }
 
@@ -378,10 +379,14 @@ namespace clingo_interface_gui {
   }
 
   void QNode::senseDoorProximity( 
-      std::vector<clingo_interface_gui::ClingoFluent>& fluents) {
+      std::vector<clingo_interface_gui::ClingoFluent>& fluents,
+      int door_idx) {
     size_t num_doors = handler_->getNumDoors();
     topological_mapper::Point2f robot_loc(robot_x_, robot_y_);
     for (size_t door = 0; door < num_doors; ++door) {
+      if (door_idx != -1 && door != door_idx) {
+        continue;
+      }
       bool facing_door = handler_->isRobotFacingDoor(
           robot_loc, robot_yaw_, 1.2, door);
       bool beside_door = handler_->isRobotBesideDoor(
