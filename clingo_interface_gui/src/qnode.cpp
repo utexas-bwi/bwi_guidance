@@ -334,6 +334,7 @@ namespace clingo_interface_gui {
       resp.success = true;
       senseDoorProximity(resp.observable_fluents);
     } else if (req->command.op == "finish") {
+      ROS_INFO("RECEIVED FINISH");
       resp.success = true;
       ce_->finalizeEpisode();
     }

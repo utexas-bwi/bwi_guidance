@@ -19,19 +19,19 @@ queryFile = sys.argv[3]
 initialFile = sys.argv[2]
 
 action = ["sense","goto","gothrough","callforopen","approach"]
-fluent = ["at", "open", "visited","beside", "n_open", "n_visited", "n_beside", "inside","-inside","goal"]
+fluent = ["at", "open", "visited","beside", "n_open", "n_visited", "n_beside", "inside","-inside","goal","facing","n_facing"]
 newknowledge = ["inside"]
 
 def GeneratePlan():
         plan = []
         states = []
         inputFile = open("result","w")
-        retcode = subprocess.call("clingo -c n=18 --opt-heu "+domainFile+" "+initialFile+" "+queryFile, shell = True, stdout=inputFile)
+        retcode = subprocess.call("clingo -c n=20 --opt-heu distances.lua "+domainFile+" "+initialFile+" "+queryFile, shell = True, stdout=inputFile)
         inputFile.close()
 
         inputFile = open("result","r")
         if inputFile.readline()=="UNSATISFIABLE\n":
-                print "goal not achieved at "+17+" steps incremented..."
+                print "goal not achieved at 18 steps incremented..."
         else:
                 linelist = []
                 for line in inputFile:
@@ -93,6 +93,17 @@ def PlannerClient():
 
 	result = GeneratePlan()
 	SendoutPlan(result,client)
+
+#task finished, send out "finish" action
+	finish = clingo_interface_gui.msg.ClingoFluent("finish",[])
+	fsensedfluent =  clingo_interface_gui.msg.ClingoFluent()
+	fevalfluent = []
+	
+	goalfinished = clingo_interface_gui.msg.ClingoInterfaceGoal(finish,fsensedfluent, fevalfluent)
+	client.send_goal(goalfinished)
+	print "Finish goal"
+	client.wait_for_result()
+	
 
 def SendoutPlan(result,client):
 	plan = result[0]
@@ -158,14 +169,13 @@ def SendoutPlan(result,client):
 					inputFile3 = open(sys.argv[3],"a")
 					inputFile3.write(goalinfo)
 					inputFile3.close()
-
 		if needreplan == 1:
 			#generate a new initial state and calling for replan
 			inputFile = open(sys.argv[2],"w")
 			inputFile2 = open(sys.argv[3],"a")
 			for fluent in result.observable_fluents:
 				op = fluent.op
-				arg = fluent.args
+				arg = fluent.args				
 				curstate = (plan[i+1][0]-1,[op]+arg)
 			#	print curstate
 				s="("

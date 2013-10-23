@@ -1,14 +1,13 @@
-%#volatile n.
+goal(0,I):- at(o3_508,I).
 
-%goal(1,I):- at(o3_414a,I).
-goal(3,I):- visited(raymooney,I).
+goal(1,I):- at(l3_414,I).
+%goal(3,I):- visited(raymooney,I).
 goal(2,I):- visited(peterstone,I).
 
 goal(G,I+1) :- goal(G,I), I<n.
 
-
-%:- not goal(1,n).
+%:- not goal(0,n).
 :- not goal(2,n).
-:- not goal(3,n).
-goal(2,2).goal(2,3).goal(2,4).goal(2,2).inside(raymooney,o3_512,0).
-goal(2,2).goal(2,2).goal(3,2).
+%:- not goal(3,n).
+
+goal(0,6).goal(0,7).goal(2,7).
