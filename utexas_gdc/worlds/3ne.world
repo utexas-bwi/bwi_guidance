@@ -24,7 +24,7 @@
       </constraints>
     </ode>
     <!-- <update_rate>1000.000000</update_rate> -->
-    <update_rate>0.000000</update_rate>
+    <update_rate>6000.000000</update_rate>
   </physics>
   <model name='plane1_model'>
     <link name='body'>

@@ -59,6 +59,7 @@ namespace clingo_interface {
         if (iteration_ == 1) {
           // Input data has no meaning. Initialize optimistically
           distance_estimates_.resize(doors_.size());
+          distance_samples_.resize(doors_.size());
           for (int idx = 0; idx < doors_.size(); ++idx) {
             for (int j = 0; j < doors_.size(); ++j) {
               if (j == idx) {
@@ -69,6 +70,7 @@ namespace clingo_interface {
                   doors_[j].approach_names[1] == doors_[idx].approach_names[0] ||
                   doors_[j].approach_names[1] == doors_[idx].approach_names[1]) {
                 distance_estimates_[idx][j] = 1.0f;
+                distance_samples_[idx][j] = 0;
               }
             }
           }
@@ -116,6 +118,7 @@ namespace clingo_interface {
               it != distance_estimates_[idx].end(); ++it) {
             fout << "     - to: " << it->first << std::endl;
             fout << "       cost: " << it->second << std::endl;
+            fout << "       samples: " << distance_samples_[idx][it->first] << std::endl;
           }
         }
         fout.close();
@@ -134,12 +137,14 @@ namespace clingo_interface {
         parser.GetNextDocument(doc);
 
         distance_estimates_.resize(doc.size());
+        distance_samples_.resize(doc.size());
         for (size_t i = 0; i < doc.size(); ++i) {
           const YAML::Node &costs = doc[i]["costs"];
           for (size_t j = 0; j < costs.size(); ++j) {
             int to;
             costs[j]["to"] >> to;
             costs[j]["cost"] >> distance_estimates_[i][to];
+            costs[j]["samples"] >> distance_samples_[i][to];
           }
         }
       }
@@ -147,11 +152,17 @@ namespace clingo_interface {
       void addSample(int door_from, int door_to, float cost) {
         ROS_INFO_STREAM("Adding sample " << doors_[door_from].name << "->" <<
             doors_[door_to].name << ": " << cost);
-        // Exponentially weighted average
-        distance_estimates_[door_from][door_to] = alpha_ * cost + (1 - alpha_) *
-          distance_estimates_[door_from][door_to];
-        distance_estimates_[door_to][door_from] =
-          distance_estimates_[door_from][door_to];
+        // Average across all samples 
+        int samples = distance_samples_[door_from][door_to];
+        float final_cost = cost;
+        if (samples != 0) {
+          float current_cost = distance_estimates_[door_from][door_to];
+          final_cost = (current_cost * samples + cost) / (samples + 1);
+        }
+        distance_estimates_[door_to][door_from] = final_cost;
+        distance_estimates_[door_from][door_to] = final_cost;
+        distance_samples_[door_to][door_from] = samples + 1;
+        distance_samples_[door_from][door_to] = samples + 1;
       }
 
       void finalizeEpisode() {
@@ -165,6 +176,7 @@ namespace clingo_interface {
 
       std::vector<clingo_interface::Door> doors_;
       std::vector<std::map<int, float> > distance_estimates_;
+      std::vector<std::map<int, int> > distance_samples_;
 
       std::string values_file_;
       std::string lua_file_;

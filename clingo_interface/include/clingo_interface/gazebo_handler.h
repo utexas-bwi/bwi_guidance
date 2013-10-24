@@ -172,6 +172,10 @@ namespace clingo_interface {
         }
       }
 
+      bool isDoorOpen(int index) {
+        return door_open_status_[index];
+      }
+
       void closeAllDoorsFarAwayFromPoint(
           const geometry_msgs::Pose& point, float distance = 2.0) {
         for (unsigned i = 0; i < doors_.size(); ++i) {

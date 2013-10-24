@@ -65,7 +65,7 @@ namespace clingo_interface {
 
         ros::NodeHandle n;
         make_plan_client_ = 
-          n.serviceClient<nav_msgs::GetPlan>("move_base/NavfnROS/make_plan"); //TODO maybe not need Navfn here?
+          n.serviceClient<nav_msgs::GetPlan>("move_base/make_plan"); //TODO maybe not need Navfn here?
         make_plan_client_.waitForExistence();
         std::cout << "Make plan server AVAILABLE" << std::endl; 
       }
@@ -119,9 +119,11 @@ namespace clingo_interface {
               return false; // returned path probably through some other door
             }
           } else {
+            std::cout << "checking door " << idx << ". navigator unable to find a plan" << std::endl;
             return false; // this is ok. it means the door is closed
           }
         } else {
+          std::cout << "checking door " << idx << ". navigator service call failed" << std::endl;
           return false; // shouldn't be here. the service has failed
         }
       }

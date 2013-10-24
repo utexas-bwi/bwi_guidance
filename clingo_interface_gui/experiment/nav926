@@ -148,8 +148,10 @@ fluent(facing(X)) :- door(X).
 
 %optimization
 
-cost(@dis(X,Y),I) :- approach(X,I), beside(Y,I), door(X), door(Y), I<n, not at(l3_414a,I).
+cost(@dis(X,Y),I) :- approach(X,I), beside(Y,I), door(X), door(Y), I<n, not at(l3_414a,I), not at(l3_414b,I), not at(l3_414,I).
 cost(10,I) :- approach(X,I), beside(Y,I), door(X), door(Y), I<n, at(l3_414a,I).
+cost(10,I) :- approach(X,I), beside(Y,I), door(X), door(Y), I<n, at(l3_414,I).
+cost(10,I) :- approach(X,I), beside(Y,I), door(X), door(Y), I<n, at(l3_414b,I).
 cost(1,I) :- sense(F,I), I<n.
 cost(5,I) :- gothrough(X,I), I<n.
 cost(1,I) :- goto(X,I), I<n.
@@ -163,7 +165,7 @@ action(approach(X,I)) :- approach(X,I), I<n.
 
 
 #minimize[cost(X,Y)=X@2].
-#minimize[action(X)=1@1].
+%#minimize[action(X)=1@1].
 
 #hide.
 #show at/2.

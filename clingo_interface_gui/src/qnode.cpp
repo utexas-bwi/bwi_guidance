@@ -15,6 +15,8 @@
 #include <tf/transform_datatypes.h>
 #include <geometry_msgs/PoseStamped.h>
 
+#include <boost/thread/thread.hpp>
+
 /*****************************************************************************
  ** Namespaces
  *****************************************************************************/
@@ -129,9 +131,11 @@ namespace clingo_interface_gui {
           }
 
           // Close a door is opened previously
-          if (close_door_idx_ != -1) {
-            gh_->closeDoor(close_door_idx_);
-            close_door_idx_ = -1;
+          if (success) {
+            if (close_door_idx_ != -1) {
+              gh_->closeDoor(close_door_idx_);
+              close_door_idx_ = -1;
+            }
           }
 
           // We can't sense the door once we go through as we won't be facing
@@ -139,7 +143,8 @@ namespace clingo_interface_gui {
           if (req->command.op == "approach") {
             clingo_interface_gui::ClingoFluent door_open;
             door_open.args.push_back(door_name);
-            if (handler_->isDoorOpen(door_idx)) {
+            /* if (handler_->isDoorOpen(door_idx)) { */
+            if (gh_->isDoorOpen(door_idx)) {
               door_open.op = "open";
               resp.observable_fluents.push_back(door_open);
             } else {
@@ -171,11 +176,11 @@ namespace clingo_interface_gui {
         Q_EMIT updateFrameInfo();
 
         /* Wait for the door to be opened */
-        ros::Rate r(10);
+        ros::Rate r(1);
         int count = 0;
         bool door_open = false; 
-        while (!door_open && count < 300) {
-          if (count == 5 && auto_door_open_enabled_) {
+        while (!door_open && count < 30) {
+          if (count == 1 && auto_door_open_enabled_) {
             gh_->openDoor(door_idx);
             close_door_idx_ = door_idx;
           }
@@ -184,7 +189,8 @@ namespace clingo_interface_gui {
             as_->setPreempted();
             return;
           }
-          door_open = handler_->isDoorOpen(door_idx);
+          /* door_open = handler_->isDoorOpen(door_idx); */
+          door_open = gh_->isDoorOpen(door_idx);
           count++;
           r.sleep();
         }
@@ -213,7 +219,8 @@ namespace clingo_interface_gui {
         size_t door_idx = handler_->getDoorIdx(door_name);
         clingo_interface_gui::ClingoFluent door_open;
         door_open.args.push_back(door_name);
-        if (handler_->isDoorOpen(door_idx)) {
+        /* if (handler_->isDoorOpen(door_idx)) { */
+        if (gh_->isDoorOpen(door_idx)) {
           door_open.op = "open";
           resp.observable_fluents.push_back(door_open);
         } else {
@@ -352,6 +359,8 @@ namespace clingo_interface_gui {
       at.args.push_back(at_str);
       resp.observable_fluents.push_back(at);
     }
+
+    /* boost::this_thread::sleep(boost::posix_time::seconds(1)); */
 
     if (resp.success) {
       as_->setSucceeded(resp, resp.status);
