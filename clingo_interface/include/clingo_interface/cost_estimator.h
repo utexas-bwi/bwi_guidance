@@ -76,15 +76,18 @@ namespace clingo_interface {
           }
           // Write the lua file as it won't be available so that it can be used
           // in this turn
-          writeLuaFile();
           writeValuesFile(0);
         } else {
           readValuesFile(iteration_ - 1);
         }
+        writeLuaFile();
       }
 
-      void writeLuaFile() {
-        std::ofstream fout(lua_file_.c_str());
+      void writeLuaFile(std::string lua_file = "" ) {
+        if (lua_file.empty()) {
+          lua_file = lua_file_;
+        }
+        std::ofstream fout(lua_file.c_str());
         fout << "#begin_lua" << std::endl << std::endl;
         fout << "function dis(a,b)" << std::endl;
         fout << "\ta1 = tostring(a)" << std::endl;
@@ -122,6 +125,9 @@ namespace clingo_interface {
           }
         }
         fout.close();
+        std::string lua_file_name = values_file_ + "_distances" +
+          boost::lexical_cast<std::string>(episode) + ".lua";
+        writeLuaFile(lua_file_name);
       }
 
       void readValuesFile(int episode = -1) {
