@@ -219,7 +219,7 @@ namespace clingo_interface {
         float orientation_to_door = atan2f(diff_pt.y, diff_pt.x);
         while (orientation_to_door > yaw + M_PI) orientation_to_door -= 2*M_PI;
         while (orientation_to_door <= yaw - M_PI) orientation_to_door += 2*M_PI;
-        if (fabs(orientation_to_door - yaw) > M_PI / 6) {
+        if (fabs(orientation_to_door - yaw) > M_PI / 4) {
           return false;
         }
 
