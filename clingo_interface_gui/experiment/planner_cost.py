@@ -26,7 +26,7 @@ def GeneratePlan():
         plan = []
         states = []
         inputFile = open("result","w")
-        retcode = subprocess.call("clingo -c n=20 --opt-heu distances.lua "+domainFile+" "+initialFile+" "+queryFile, shell = True, stdout=inputFile)
+        retcode = subprocess.call("clingo -c n=15 --opt-heu distances.lua "+domainFile+" "+initialFile+" "+queryFile, shell = True, stdout=inputFile)
         inputFile.close()
 
         inputFile = open("result","r")

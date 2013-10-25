@@ -33,7 +33,8 @@ namespace clingo_interface {
         if (!(private_nh.getParam("lua_file", lua_file_))) {
           unavailable_parameters.push_back("door_file");
         }
-        private_nh.param("alpha", alpha_, 2.0/3.0);
+        private_nh.param("alpha", alpha_, 0.5);
+        private_nh.param("use_exponential_weighting", use_exponential_weighting_, true);
 
         if (unavailable_parameters.size() != 0) {
           std::string message = "Following neccessary params not available: " +
@@ -160,10 +161,17 @@ namespace clingo_interface {
             doors_[door_to].name << ": " << cost);
         // Average across all samples 
         int samples = distance_samples_[door_from][door_to];
-        float final_cost = cost;
-        if (samples != 0) {
-          float current_cost = distance_estimates_[door_from][door_to];
-          final_cost = (current_cost * samples + cost) / (samples + 1);
+        float old_cost = distance_estimates_[door_from][door_to];
+        float final_cost = 0;
+        if (use_exponential_weighting_) {
+          final_cost = (1.0f - alpha_) * old_cost + alpha_ * cost; 
+        } else {
+          if (samples != 0) {
+            final_cost = (old_cost * samples + cost) / (samples + 1);
+          } else {
+            // First sample
+            final_cost = cost;
+          }
         }
         distance_estimates_[door_to][door_from] = final_cost;
         distance_estimates_[door_from][door_to] = final_cost;
@@ -188,6 +196,7 @@ namespace clingo_interface {
       std::string lua_file_;
 
       double alpha_;
+      bool use_exponential_weighting_;
       int iteration_;
   };
 }
