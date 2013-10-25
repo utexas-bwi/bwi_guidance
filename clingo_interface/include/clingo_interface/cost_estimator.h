@@ -6,13 +6,19 @@
 
 #include <boost/algorithm/string/join.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/regex.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <clingo_interface/structures.h>
 
 namespace clingo_interface {
+
+  typedef std::pair<const int, float> IFPair;
+  typedef std::pair<const int, int> IIPair;
+  typedef std::pair<const int, std::map<int, float> > IIFPair;
+  typedef std::pair<const int, std::map<int, int> > IIIPair;
+  typedef std::pair<const std::string, std::map<int, std::map< int, float> > > SIIFPair;
+  typedef std::pair<const std::string, std::map<int, std::map< int, int> > > SIIIPair;
 
   class CostEstimator {
 
@@ -59,19 +65,30 @@ namespace clingo_interface {
 
         if (iteration_ == 1) {
           // Input data has no meaning. Initialize optimistically
-          distance_estimates_.resize(doors_.size());
-          distance_samples_.resize(doors_.size());
           for (int idx = 0; idx < doors_.size(); ++idx) {
             for (int j = 0; j < doors_.size(); ++j) {
               if (j == idx) {
                 continue;
               }
-              if (doors_[j].approach_names[0] == doors_[idx].approach_names[0] ||
-                  doors_[j].approach_names[0] == doors_[idx].approach_names[1] ||
-                  doors_[j].approach_names[1] == doors_[idx].approach_names[0] ||
-                  doors_[j].approach_names[1] == doors_[idx].approach_names[1]) {
-                distance_estimates_[idx][j] = 1.0f;
-                distance_samples_[idx][j] = 0;
+              if (doors_[j].approach_names[0] == doors_[idx].approach_names[0]) {
+                std::string loc = doors_[j].approach_names[0];
+                distance_estimates_[loc][idx][j] = 1.0f;
+                distance_samples_[loc][idx][j] = 0;
+              }
+              if (doors_[j].approach_names[0] == doors_[idx].approach_names[1]) {
+                std::string loc = doors_[j].approach_names[0];
+                distance_estimates_[loc][idx][j] = 1.0f;
+                distance_samples_[loc][idx][j] = 0;
+              }
+              if (doors_[j].approach_names[1] == doors_[idx].approach_names[0]) {
+                std::string loc = doors_[j].approach_names[1];
+                distance_estimates_[loc][idx][j] = 1.0f;
+                distance_samples_[loc][idx][j] = 0;
+              }
+              if (doors_[j].approach_names[1] == doors_[idx].approach_names[1]) {
+                std::string loc = doors_[j].approach_names[1];
+                distance_estimates_[loc][idx][j] = 1.0f;
+                distance_samples_[loc][idx][j] = 0;
               }
             }
           }
@@ -90,16 +107,18 @@ namespace clingo_interface {
         }
         std::ofstream fout(lua_file.c_str());
         fout << "#begin_lua" << std::endl << std::endl;
-        fout << "function dis(a,b)" << std::endl;
+        fout << "function dis(a,b,c)" << std::endl;
         fout << "\ta1 = tostring(a)" << std::endl;
         fout << "\tb1 = tostring(b)" << std::endl;
+        fout << "\tc1 = tostring(c)" << std::endl;
         fout << "\tif a1==b1 then return 1 end" << std::endl;
-        for (int idx = 0; idx < doors_.size(); ++idx) {
-          for (std::map<int,float>::iterator it = distance_estimates_[idx].begin();
-              it != distance_estimates_[idx].end(); ++it) {
-            fout << "\tif a1==\"" << doors_[idx].name << "\" and b1==\"" <<
-              doors_[it->first].name << "\" then return " << 
-              lrint(it->second) << " end" << std::endl;
+        BOOST_FOREACH(SIIFPair const& kv, distance_estimates_) {
+          BOOST_FOREACH(IIFPair const& kv2, kv.second) {
+            BOOST_FOREACH(IFPair const& kv3, kv2.second) {
+            fout << "\tif a1==\"" << doors_[kv2.first].name << "\" and b1==\"" <<
+              doors_[kv3.first].name << "\" and c1==\"" << kv.first << 
+              "\" then return " << lrint(kv3.second) << " end" << std::endl;
+            }
           }
         }
         fout << "\treturn 1" << std::endl;
@@ -115,14 +134,16 @@ namespace clingo_interface {
         std::string out_file_name = values_file_ + 
           boost::lexical_cast<std::string>(episode);
         std::ofstream fout(out_file_name.c_str());
-        for (int idx = 0; idx < doors_.size(); ++idx) {
-          fout << " - name: " << doors_[idx].name << std::endl;
+        BOOST_FOREACH(SIIIPair const& kv, distance_samples_) {
+          fout << " - name: " << kv.first << std::endl;
           fout << "   costs: " << std::endl;
-          for (std::map<int,float>::iterator it = distance_estimates_[idx].begin();
-              it != distance_estimates_[idx].end(); ++it) {
-            fout << "     - to: " << it->first << std::endl;
-            fout << "       cost: " << it->second << std::endl;
-            fout << "       samples: " << distance_samples_[idx][it->first] << std::endl;
+          BOOST_FOREACH(IIIPair const& kv2, kv.second) {
+            BOOST_FOREACH(IIPair const& kv3, kv2.second) {
+              fout << "     - from: " << kv2.first << std::endl;
+              fout << "       to: " << kv3.first << std::endl;
+              fout << "       cost: " << distance_estimates_[kv.first][kv2.first][kv3.first] << std::endl;
+              fout << "       samples: " << kv3.second << std::endl;
+            }
           }
         }
         fout.close();
@@ -143,25 +164,25 @@ namespace clingo_interface {
         YAML::Node doc;
         parser.GetNextDocument(doc);
 
-        distance_estimates_.resize(doc.size());
-        distance_samples_.resize(doc.size());
         for (size_t i = 0; i < doc.size(); ++i) {
+          std::string loc;
+          doc[i]["name"] >> loc;
           const YAML::Node &costs = doc[i]["costs"];
           for (size_t j = 0; j < costs.size(); ++j) {
-            int to;
+            int from, to;
+            costs[j]["from"] >> from;
             costs[j]["to"] >> to;
-            costs[j]["cost"] >> distance_estimates_[i][to];
-            costs[j]["samples"] >> distance_samples_[i][to];
+            costs[j]["cost"] >> distance_estimates_[loc][from][to];
+            costs[j]["samples"] >> distance_samples_[loc][from][to];
           }
         }
       }
 
-      void addSample(int door_from, int door_to, float cost) {
-        ROS_INFO_STREAM("Adding sample " << doors_[door_from].name << "->" <<
+      void addSample(std::string loc, int door_from, int door_to, float cost) {
+        ROS_INFO_STREAM(std::string("Adding sample ") << doors_[door_from].name << "->" <<
             doors_[door_to].name << ": " << cost);
-        // Average across all samples 
-        int samples = distance_samples_[door_from][door_to];
-        float old_cost = distance_estimates_[door_from][door_to];
+        int samples = distance_samples_[loc][door_from][door_to];
+        float old_cost = distance_estimates_[loc][door_from][door_to];
         float final_cost = 0;
         if (use_exponential_weighting_) {
           final_cost = (1.0f - alpha_) * old_cost + alpha_ * cost; 
@@ -173,10 +194,10 @@ namespace clingo_interface {
             final_cost = cost;
           }
         }
-        distance_estimates_[door_to][door_from] = final_cost;
-        distance_estimates_[door_from][door_to] = final_cost;
-        distance_samples_[door_to][door_from] = samples + 1;
-        distance_samples_[door_from][door_to] = samples + 1;
+        distance_estimates_[loc][door_from][door_to] = final_cost;
+        distance_estimates_[loc][door_to][door_from] = final_cost;
+        distance_samples_[loc][door_from][door_to] = samples + 1;
+        distance_samples_[loc][door_to][door_from] = samples + 1;
       }
 
       void finalizeEpisode() {
@@ -189,8 +210,8 @@ namespace clingo_interface {
     private:
 
       std::vector<clingo_interface::Door> doors_;
-      std::vector<std::map<int, float> > distance_estimates_;
-      std::vector<std::map<int, int> > distance_samples_;
+      std::map<std::string, std::map<int, std::map<int, float> > > distance_estimates_;
+      std::map<std::string, std::map<int, std::map<int, int> > > distance_samples_;
 
       std::string values_file_;
       std::string lua_file_;

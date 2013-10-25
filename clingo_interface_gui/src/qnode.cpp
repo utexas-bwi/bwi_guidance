@@ -123,7 +123,10 @@ namespace clingo_interface_gui {
           if (success) {
             if (prev_door_idx_ != -1 &&
                 prev_door_idx_ != door_idx) {
-              ce_->addSample(prev_door_idx_, door_idx, cost); 
+              size_t location_idx = 
+                handler_->getLocationIdx(topological_mapper::Point2f(robot_x_, robot_y_));
+              std::string at_str = handler_->getLocationString(location_idx);
+              ce_->addSample(at_str, prev_door_idx_, door_idx, cost); 
             }
             prev_door_idx_ = door_idx;
           } else {
