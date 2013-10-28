@@ -57,13 +57,6 @@ for i in range (min_iter, max_iter + 1):
                     print "action cost not found!"
             costs[p].append(cost)
 
-print costs[0][0]
-print costs[0][30]
-print costs[1][0]
-print costs[1][30]
-print costs[2][0]
-print costs[2][30]
-
 fig, ax = plt.subplots()
 p1, = ax.plot(X, np.array(costs[0]), linewidth = 4)
 p2, = ax.plot(X, np.array(costs[1]), dashes=(20,5), linewidth = 4)
@@ -74,9 +67,9 @@ ax.set_xlabel('Episode Number')
 ax.set_title('Cost Learning')
  
 ax.legend((p1,p2,p3), ('Path 1', 'Path 2', 'Path 3'), handlelength=4)
-plt.axis([min_iter, max_iter, 20, 100])
+plt.axis([min_iter, max_iter, 20, 180])
 #plt.show()
  
 fig = plt.gcf()
-fig.set_size_inches(6,6)
+fig.set_size_inches(6,4)
 plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=300)
