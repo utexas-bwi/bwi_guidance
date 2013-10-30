@@ -47,17 +47,38 @@ namespace clingo_interface_gui {
     nh_.reset(new ros::NodeHandle);
 
     std::string map_file, door_file, location_file;
+    bool use_sim_time;
     ros::param::get("~map_file", map_file);
     ros::param::get("~door_file", door_file);
     ros::param::get("~location_file", location_file);
-    ros::param::param("~auto_door_open_enabled", auto_door_open_enabled_, true);
+    ros::param::param<std::string>("~global_frame", global_frame_, "map");
+    ros::param::param("~sim_auto_door", sim_auto_door_, true);
+    ros::param::param("/use_sim_time", use_sim_time, false);
+    if (sim_auto_door_) {
+      ROS_INFO("ClingoInterface: Running in simulation!");
+    } else {
+      ROS_INFO("ClingoInterface: Running in the real world!");
+    }
+    if (sim_auto_door_ && !use_sim_time) {
+      ROS_ERROR_STREAM("Automated door interaction enabled, but no simulator present!");
+      sim_auto_door_ = false;
+    }
+
     close_door_idx_ = -1;
     prev_door_idx_ = -1;
     handler_.reset(new clingo_interface::DoorHandler(map_file, door_file, location_file));
-    gh_.reset(new clingo_interface::GazeboHandler);
+    if (sim_auto_door_) {
+      gh_.reset(new clingo_interface::GazeboHandler);
+    }
     ce_.reset(new clingo_interface::CostEstimator);
 
-    odom_subscriber_ = nh_->subscribe("odom", 1, &QNode::odometryHandler, this);
+    tf_.reset(new tf::TransformListener);
+    odom_subscriber_.reset(new message_filters::Subscriber<nav_msgs::Odometry>);
+    odom_subscriber_->subscribe(*nh_, "odom", 5);
+    tf_filter_.reset(new tf::MessageFilter<nav_msgs::Odometry>(
+        *odom_subscriber_, *tf_, global_frame_, 5));
+    tf_filter_->registerCallback(boost::bind(&QNode::odometryHandler, this, _1));
+
     as_.reset(new actionlib::SimpleActionServer<
         clingo_interface_gui::ClingoInterfaceAction>(*nh_, "clingo_interface_gui", 
             boost::bind(&QNode::clingoInterfaceHandler, this, _1), false));
@@ -66,7 +87,7 @@ namespace clingo_interface_gui {
     robot_controller_.reset(new actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>("move_base", true));
     robot_controller_->waitForServer();
 
-    std::cout << "move_base server is now AVAILABLE" << std::endl;
+    ROS_INFO_STREAM("ClingoInterface: move_base server is now AVAILABLE");
 
     start();
     return true;
@@ -135,7 +156,7 @@ namespace clingo_interface_gui {
 
           // Close a door is opened previously
           if (success) {
-            if (close_door_idx_ != -1) {
+            if (sim_auto_door_ && close_door_idx_ != -1) {
               gh_->closeDoor(close_door_idx_);
               close_door_idx_ = -1;
             }
@@ -146,8 +167,7 @@ namespace clingo_interface_gui {
           if (req->command.op == "approach") {
             clingo_interface_gui::ClingoFluent door_open;
             door_open.args.push_back(door_name);
-            /* if (handler_->isDoorOpen(door_idx)) { */
-            if (gh_->isDoorOpen(door_idx)) {
+            if (handler_->isDoorOpen(door_idx)) {
               door_open.op = "open";
               resp.observable_fluents.push_back(door_open);
             } else {
@@ -183,7 +203,7 @@ namespace clingo_interface_gui {
         int count = 0;
         bool door_open = false; 
         while (!door_open && count < 30) {
-          if (count == 1 && auto_door_open_enabled_) {
+          if (sim_auto_door_ && count == 1) {
             gh_->openDoor(door_idx);
             close_door_idx_ = door_idx;
           }
@@ -192,8 +212,7 @@ namespace clingo_interface_gui {
             as_->setPreempted();
             return;
           }
-          /* door_open = handler_->isDoorOpen(door_idx); */
-          door_open = gh_->isDoorOpen(door_idx);
+          door_open = handler_->isDoorOpen(door_idx);
           count++;
           r.sleep();
         }
@@ -222,8 +241,7 @@ namespace clingo_interface_gui {
         size_t door_idx = handler_->getDoorIdx(door_name);
         clingo_interface_gui::ClingoFluent door_open;
         door_open.args.push_back(door_name);
-        /* if (handler_->isDoorOpen(door_idx)) { */
-        if (gh_->isDoorOpen(door_idx)) {
+        if (handler_->isDoorOpen(door_idx)) {
           door_open.op = "open";
           resp.observable_fluents.push_back(door_open);
         } else {
@@ -374,10 +392,17 @@ namespace clingo_interface_gui {
 
   void QNode::odometryHandler(
       const nav_msgs::Odometry::ConstPtr& odom) {
-    robot_x_ = odom->pose.pose.position.x;
-    robot_y_ = odom->pose.pose.position.y;
-    robot_yaw_ = tf::getYaw(odom->pose.pose.orientation);
-    gh_->closeAllDoorsFarAwayFromPoint(odom->pose.pose);
+    geometry_msgs::PoseStamped pose_in, pose_out;
+    pose_in.header = odom->header;
+    pose_in.pose = odom->pose.pose;
+    tf_->transformPose(global_frame_, pose_in, pose_out);
+    std::cout << pose_out.header.frame_id << std::endl;
+    robot_x_ = pose_out.pose.position.x;
+    robot_y_ = pose_out.pose.position.y;
+    robot_yaw_ = tf::getYaw(pose_out.pose.orientation);
+    if (sim_auto_door_) {
+      gh_->closeAllDoorsFarAwayFromPoint(pose_out.pose);
+    }
   }
 
   bool QNode::newLocationReceived(const std::string& loc) {

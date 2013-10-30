@@ -33,6 +33,10 @@
 #include <nav_msgs/Odometry.h>
 #include <opencv/cv.h>
 
+#include "tf/transform_listener.h"
+#include "tf/message_filter.h"
+#include "message_filters/subscriber.h"
+
 /*****************************************************************************
 ** Namespaces
 *****************************************************************************/
@@ -83,11 +87,15 @@ namespace clingo_interface_gui {
       /* Ros Stuff */
       boost::shared_ptr<ros::NodeHandle> nh_;
       boost::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> > robot_controller_;
-      ros::Subscriber odom_subscriber_;
       boost::shared_ptr<actionlib::SimpleActionServer<
           clingo_interface_gui::ClingoInterfaceAction> > as_;
 
       /* Robot Location */
+      std::string global_frame_;
+      boost::shared_ptr<tf::TransformListener> tf_;
+      boost::shared_ptr<tf::MessageFilter<nav_msgs::Odometry> > tf_filter_;
+      boost::shared_ptr<message_filters::Subscriber<nav_msgs::Odometry> > 
+        odom_subscriber_;
       float robot_x_;
       float robot_y_;
       float robot_yaw_;
@@ -101,13 +109,12 @@ namespace clingo_interface_gui {
       std::string map_file_;
       std::string door_file_;
       std::string location_file_;
-      boost::shared_ptr<tf::TransformListener> tf_;
       boost::shared_ptr<topological_mapper::MapLoader> mapper_;
       boost::shared_ptr<clingo_interface::DoorHandler> handler_;
       boost::shared_ptr<clingo_interface::GazeboHandler> gh_;
       boost::shared_ptr<clingo_interface::CostEstimator> ce_;
 
-      bool auto_door_open_enabled_;
+      bool sim_auto_door_;
       int close_door_idx_;
       int prev_door_idx_;
       

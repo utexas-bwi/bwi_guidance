@@ -1,7 +1,7 @@
 <launch>
 
   <include file="$(find utexas_gdc)/launch/3ne.launch" />
-  <include file="$(find utexas_gdc)/launch/3ne_map.launch" />
+  <!-- <include file="$(find utexas_gdc)/launch/3ne_map.launch" /> -->
 
   <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
     <arg name="launch_localization" value="true" />

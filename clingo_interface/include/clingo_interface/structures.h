@@ -64,7 +64,11 @@ namespace clingo_interface {
         approach_node[j]["point"][2] >> door.approach_yaw[j]; 
       }
       doc[i]["name"] >> door.name;
-      doc[i]["width"] >> door.width;
+      try {
+        doc[i]["width"] >> door.width;
+      } catch(YAML::TypedKeyNotFound<std::string>& e) {
+        door.width = 0.5;
+      }
       doors.push_back(door);
     }
   }
