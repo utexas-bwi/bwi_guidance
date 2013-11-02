@@ -396,7 +396,6 @@ namespace clingo_interface_gui {
     pose_in.header = odom->header;
     pose_in.pose = odom->pose.pose;
     tf_->transformPose(global_frame_, pose_in, pose_out);
-    std::cout << pose_out.header.frame_id << std::endl;
     robot_x_ = pose_out.pose.position.x;
     robot_y_ = pose_out.pose.position.y;
     robot_yaw_ = tf::getYaw(pose_out.pose.orientation);

@@ -198,6 +198,8 @@ namespace clingo_interface {
           if (getLocationIdx(doors_[idx].approach_names[pt]) == getLocationIdx(current_location)) {
             point = doors_[idx].approach_points[1 - pt];
             yaw = M_PI + doors_[idx].approach_yaw[1 - pt];
+            while (yaw > M_PI) yaw -= 2 * M_PI;
+            while (yaw <= M_PI) yaw += 2 * M_PI;
             return true;
           }
         }
@@ -219,7 +221,7 @@ namespace clingo_interface {
         float orientation_to_door = atan2f(diff_pt.y, diff_pt.x);
         while (orientation_to_door > yaw + M_PI) orientation_to_door -= 2*M_PI;
         while (orientation_to_door <= yaw - M_PI) orientation_to_door += 2*M_PI;
-        if (fabs(orientation_to_door - yaw) > M_PI / 4) {
+        if (fabs(orientation_to_door - yaw) > M_PI / 3) {
           return false;
         }
 
