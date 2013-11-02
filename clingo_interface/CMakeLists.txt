@@ -35,6 +35,12 @@ target_link_libraries(test_door_detector
   ${OpenCV_LIBRARIES}
   ${YAML_CPP_LIBRARIES})
 
+add_executable(mark_locations src/mark_locations.cpp)
+target_link_libraries(mark_locations 
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  ${YAML_CPP_LIBRARIES})
+
 add_executable(mark_doors src/mark_doors.cpp)
 target_link_libraries(mark_doors 
   ${catkin_LIBRARIES}
