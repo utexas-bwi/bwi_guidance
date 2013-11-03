@@ -7,7 +7,7 @@
     <param name="door_file" value="$(arg door_file)" />
     <param name="location_file" value="$(arg location_file)" />
     <param name="values_file" value="$(find clingo_interface_gui)/data/values" />
-    <param name="lua_file" value="$(find clingo_interface_gui)/experiment/distances.lua" />
+    <param name="lua_file" value="$(find clingo_interface_gui)/symposiumExp/distances.lua" />
     <rosparam param="obstacle_urdf" command="load" 
       file="$(find clingo_interface)/urdf/obstacle.urdf" />
     <rosparam param="door_urdf" command="load" 
