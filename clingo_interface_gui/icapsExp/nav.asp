@@ -497,7 +497,8 @@ h(eql(served(P),true),V_astep) :- occ(eql(goto(P),true),V_astep-1).
 %goto(P) causes served(P1) if relatedto(P,P1)
 h(eql(served(P1),true),V_step) :- h(eql(served(P),true),V_step),h(eql(relatedto(P,P1),true)).
 false :- occ(eql(goto(P),true),V_astep-1),h(eql(loc,R),V_astep-1),h(eql(believeinside(P,R),false),V_astep-1).
-false :- occ(eql(goto(P),true),V_astep-1),h(eql(passto(P,P1),true),V_astep-1).
+false :- occ(eql(goto(P),true),V_astep-1),h(eql(passto(P,P1),true)).
+false :- occ(eql(goto(P),true),V_astep-1),h(eql(served(P),true),V_astep-1).
 #domain room(X_Value_0).
 #domain room(_NV_1).
 false :- occ(eql(goto(P),true),V_astep-1),_NV_1!=R,h(eql(loc,_NV_1),V_astep-1),h(eql(believeinside(P,R),true),V_astep-1).

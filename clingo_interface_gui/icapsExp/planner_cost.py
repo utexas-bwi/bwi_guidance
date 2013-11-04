@@ -1,8 +1,10 @@
 #! /usr/bin/env python
 
 import os
+import signal
 import subprocess
 import sys
+import time
 import threading
 
 #import roslib; roslib.load_manifest('clingo_interface_gui')
@@ -80,7 +82,7 @@ class Command(object):
     def run(self, timeout):
         def target():
             print 'Thread started'
-            self.process = subprocess.Popen(self.cmd, shell=True, stdout=self.outfile)
+            self.process = subprocess.Popen(self.cmd, shell=True, stdout=self.outfile, preexec_fn=os.setsid)
             self.process.communicate()
             print 'Thread finished'
 
@@ -90,7 +92,7 @@ class Command(object):
         thread.join(timeout)
         if thread.is_alive():
             print 'Terminating process'
-            self.process.terminate()
+            os.killpg(self.process.pid, signal.SIGTERM)
             thread.join()
         print "Process RetCode: " + str(self.process.returncode)
         self.outfile.close()
@@ -114,9 +116,9 @@ def GeneratePlan():
                 linelist = []
                 for line in inputFile:
                         linelist.append(line)
-                        if line[:13] == "Optimization:":
-				optimization_line = linelist[-1]
-				plan_line = linelist[-2]
+                        if line[:11] == "SATISFIABLE":
+				optimization_line = linelist[-2]
+				plan_line = linelist[-3]
                 print optimization_line
 		words = plan_line.split()
 		for w in words:
