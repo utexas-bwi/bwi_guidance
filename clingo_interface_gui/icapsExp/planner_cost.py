@@ -30,7 +30,7 @@ passto = []
 def UpdateEnvironmentalKnowledge(fluentarray,arg1,arg2):
 	header = fluentarray[0]
 	index = header.index(arg2)
-	print "Update environment knowledge for "+head[0][0]+"\n"
+	print "Update environment knowledge for "+header[0][0]+"\n"
 	for i in range(1,len(fluentarray)):
 		if fluentarray[i][0] == arg1:
 			for j in range(1,len(fluentarray[i])):
@@ -106,7 +106,7 @@ def GeneratePlan():
 
 	believeinside = GenerateEnvironmentalKnowledge("believeinside")
 	passto = GenerateEnvironmentalKnowledge("passto")
-        clingo_command = Command("clingo -c maxstep=30 --opt-heu distances.lua initialenv show.asp "+domainFile+" "+initialFile+" "+queryFile)
+        clingo_command = Command("clingo -c maxstep=35 --opt-heu distances.lua initialenv show.asp "+domainFile+" "+initialFile+" "+queryFile)
         clingo_command.run(60)
 
         inputFile = open("result","r")

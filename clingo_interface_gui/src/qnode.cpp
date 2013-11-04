@@ -167,7 +167,7 @@ namespace clingo_interface_gui {
           if (req->command.op == "approach") {
             clingo_interface_gui::ClingoFluent door_open;
             door_open.args.push_back(door_name);
-            if (handler_->isDoorOpen(door_idx)) {
+            if (gh_->isDoorOpen(door_idx)) {
               door_open.op = "open";
               resp.observable_fluents.push_back(door_open);
             } else {
@@ -203,7 +203,7 @@ namespace clingo_interface_gui {
         int count = 0;
         bool door_open = false; 
         while (!door_open && count < 30) {
-          if (sim_auto_door_ && count == 1) {
+          if (sim_auto_door_ && count == 0) {
             gh_->openDoor(door_idx);
             close_door_idx_ = door_idx;
           }
@@ -212,7 +212,7 @@ namespace clingo_interface_gui {
             as_->setPreempted();
             return;
           }
-          door_open = handler_->isDoorOpen(door_idx);
+          door_open = gh_->isDoorOpen(door_idx);
           count++;
           r.sleep();
         }
@@ -241,7 +241,7 @@ namespace clingo_interface_gui {
         size_t door_idx = handler_->getDoorIdx(door_name);
         clingo_interface_gui::ClingoFluent door_open;
         door_open.args.push_back(door_name);
-        if (handler_->isDoorOpen(door_idx)) {
+        if (gh_->isDoorOpen(door_idx)) {
           door_open.op = "open";
           resp.observable_fluents.push_back(door_open);
         } else {
@@ -254,8 +254,8 @@ namespace clingo_interface_gui {
         size_t door_idx = handler_->getDoorIdx(door_name);
         topological_mapper::Point2f robot_loc(robot_x_, robot_y_);
         bool op_door = (sense_fluent_op == "beside") ? 
-          handler_->isRobotBesideDoor(robot_loc, robot_yaw_, 1.2, door_idx) :
-          handler_->isRobotFacingDoor(robot_loc, robot_yaw_, 1.2, door_idx);
+          handler_->isRobotBesideDoor(robot_loc, robot_yaw_, 1.5, door_idx) :
+          handler_->isRobotFacingDoor(robot_loc, robot_yaw_, 1.5, door_idx);
         if (!op_door) {
           clingo_interface_gui::ClingoFluent n_op;
           n_op.op = "n_" + sense_fluent_op;
@@ -424,9 +424,9 @@ namespace clingo_interface_gui {
         continue;
       }
       bool facing_door = handler_->isRobotFacingDoor(
-          robot_loc, robot_yaw_, 1.2, door);
+          robot_loc, robot_yaw_, 1.5, door);
       bool beside_door = handler_->isRobotBesideDoor(
-          robot_loc, robot_yaw_, 1.2, door);
+          robot_loc, robot_yaw_, 1.5, door);
       if (!facing_door) {
         clingo_interface_gui::ClingoFluent n_facing;
         n_facing.op = "n_facing";
