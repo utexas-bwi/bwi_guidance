@@ -106,7 +106,7 @@ def GeneratePlan():
 
 	believeinside = GenerateEnvironmentalKnowledge("believeinside")
 	passto = GenerateEnvironmentalKnowledge("passto")
-        clingo_command = Command("clingo -c maxstep=40 --opt-heu distances.lua initialenv show.asp "+domainFile+" "+initialFile+" "+queryFile)
+        clingo_command = Command("clingo -c maxstep=30 --opt-heu distances.lua initialenv show.asp "+domainFile+" "+initialFile+" "+queryFile)
         clingo_command.run(60)
 
         inputFile = open("result","r")
