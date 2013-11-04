@@ -113,13 +113,15 @@ namespace clingo_interface {
         fout << "\tc1 = tostring(c)" << std::endl;
         fout << "\tif a1==b1 then return 1 end" << std::endl;
         BOOST_FOREACH(SIIFPair const& kv, distance_estimates_) {
+          fout << "\tif c1==\"" << kv.first << "\" then" << std::endl;
           BOOST_FOREACH(IIFPair const& kv2, kv.second) {
+            fout << "\t\tif a1==\"" << doors_[kv2.first].name << "\" then" << std::endl;
             BOOST_FOREACH(IFPair const& kv3, kv2.second) {
-            fout << "\tif a1==\"" << doors_[kv2.first].name << "\" and b1==\"" <<
-              doors_[kv3.first].name << "\" and c1==\"" << kv.first << 
-              "\" then return " << lrint(kv3.second) << " end" << std::endl;
+              fout << "\t\t\tif b1==\"" << doors_[kv3.first].name << "\" then return " << lrint(kv3.second) << " end" << std::endl;
             }
+            fout << "\t\tend" << std::endl;
           }
+          fout << "\tend" << std::endl;
         }
         fout << "\treturn 1" << std::endl;
         fout << "end" << std::endl << std::endl;
