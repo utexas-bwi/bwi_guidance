@@ -107,7 +107,7 @@ def GeneratePlan():
 	believeinside = GenerateEnvironmentalKnowledge("believeinside")
 	passto = GenerateEnvironmentalKnowledge("passto")
         clingo_command = Command("clingo -c maxstep=35 --opt-heu distances.lua initialenv show.asp "+domainFile+" "+initialFile+" "+queryFile)
-        clingo_command.run(60)
+        clingo_command.run(300)
 
         inputFile = open("result","r")
         if inputFile.readline()=="UNSATISFIABLE\n":

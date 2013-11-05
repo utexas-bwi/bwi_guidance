@@ -107,21 +107,33 @@ namespace clingo_interface {
         }
         std::ofstream fout(lua_file.c_str());
         fout << "#begin_lua" << std::endl << std::endl;
-        fout << "function dis(a,b,c)" << std::endl;
-        fout << "\ta1 = tostring(a)" << std::endl;
-        fout << "\tb1 = tostring(b)" << std::endl;
-        fout << "\tc1 = tostring(c)" << std::endl;
-        fout << "\tif a1==b1 then return 1 end" << std::endl;
+        fout << "loc_table={}" << std::endl;
+        int count = 0;
         BOOST_FOREACH(SIIFPair const& kv, distance_estimates_) {
-          fout << "\tif c1==\"" << kv.first << "\" then" << std::endl;
+          fout << "loc_table[\"" << kv.first << "\"] = " << count << std::endl;
+          count++;
+        }
+        fout << "door_table={}" << std::endl;
+        for (unsigned int i = 0; i < doors_.size(); ++i) {
+          fout << "door_table[\"" << doors_[i].name << "\"] = " << i << std::endl;
+        }
+        fout << "function dis(a,b,c)" << std::endl;
+        fout << "\td1 = door_table[tostring(a)]" << std::endl;
+        fout << "\td2 = door_table[tostring(b)]" << std::endl;
+        fout << "\tif d1==d2 then return 1 end" << std::endl;
+        fout << "\tloc = loc_table[tostring(c)]" << std::endl;
+        count = 0;
+        BOOST_FOREACH(SIIFPair const& kv, distance_estimates_) {
+          fout << "\tif loc==" << count << " then" << std::endl;
           BOOST_FOREACH(IIFPair const& kv2, kv.second) {
-            fout << "\t\tif a1==\"" << doors_[kv2.first].name << "\" then" << std::endl;
+            fout << "\t\tif d1==" << kv2.first << " then" << std::endl;
             BOOST_FOREACH(IFPair const& kv3, kv2.second) {
-              fout << "\t\t\tif b1==\"" << doors_[kv3.first].name << "\" then return " << lrint(kv3.second) << " end" << std::endl;
+              fout << "\t\t\tif d2==" << kv3.first << " then return " << lrint(kv3.second) << " end" << std::endl;
             }
             fout << "\t\tend" << std::endl;
           }
           fout << "\tend" << std::endl;
+          count++;
         }
         fout << "\treturn 1" << std::endl;
         fout << "end" << std::endl << std::endl;
