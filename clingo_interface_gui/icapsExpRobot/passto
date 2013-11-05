@@ -1,0 +1,11 @@
+passto, 	alice,   bob, carol, dan,   erin, frank, george, harry, ian, jack
+alice,		false, false, false, false, false, false, false, false, false, false
+bob,		true, false, false, false, false, false, false, false, false, false
+carol,		false, true, false, false, false, false, false, false, false, false
+dan,		false, false, false, false, false, false, false, false, false, false
+erin,		false, false, false, true, false, false, false, false, false
+frank,		false, false, false, false, true, false, false, false, false, false
+george,		false, false, false, false, false, false, false, true, false, false
+harry,		false, false, false, false, false, false, false, false, false, false
+ian,		false, false, false, false, false, false, false, true, false, false
+jack,		false, false, false, false, false, false, false, false, true, false
