@@ -1,0 +1,11 @@
+believeinside,cor,o3_508,o3_510,o3_512,o3_416,l3_414a,s3_516,l3_436,o3_428,o3_426,l3_414b,l3_414,o3_402,o3_412,o3_502,o3_404,o3_418,o3_420,o3_422,o3_430,o3_432 
+alice,	    false,  true, false, false, false, false,   false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+bob,	    false, false, true, false, false,  false,   false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+carol,      false, false, false, true, false,  false,   false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+frank,      false, false, false, false, false,  false,   false, false, false, false, true, false, false, false, false, false, false, false, false, false, false
+erin,       false, false, false, false, false,  false,   false, false, false, false, false, true, false, false, false, false, false, false, false, false, false
+dan,        false, false, false, false, false,  true,   false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+george,     false, false, false, false, true,  false,   false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+harry,      false, false, false, false, false,  false,   false, false, false, false, false, false, false, false, false, false, true, false, false, false, false
+ian,        false, false, false, false, false,  false,   false, false, false, false, false, false, false, false, false, false, false, true, false, false, false
+jack,       false, false, false, false, false,  false,   false, false, false, false, false, false, false, false, false, false, false, false, true, false, false
