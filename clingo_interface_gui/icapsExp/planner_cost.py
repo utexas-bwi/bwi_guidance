@@ -106,7 +106,7 @@ def GeneratePlan():
 
 	believeinside = GenerateEnvironmentalKnowledge("believeinside")
 	passto = GenerateEnvironmentalKnowledge("passto")
-        clingo_command = Command("clingo -c maxstep=35 --opt-heu distances.lua initialenv show.asp "+domainFile+" "+initialFile+" "+queryFile)
+        clingo_command = Command("clingo -c maxstep=24 --opt-heu distances.lua initialenv show.asp "+domainFile+" "+initialFile+" "+queryFile)
         clingo_command.run(300)
 
         inputFile = open("result","r")
@@ -116,7 +116,7 @@ def GeneratePlan():
                 linelist = []
                 for line in inputFile:
                         linelist.append(line)
-                        if line[:11] == "SATISFIABLE":
+                        if line[:11] == "SATISFIABLE" or line[:13] == "OPTIMUM FOUND":
 				optimization_line = linelist[-2]
 				plan_line = linelist[-3]
                 print optimization_line
