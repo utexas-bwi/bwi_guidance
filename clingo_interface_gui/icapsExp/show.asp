@@ -45,6 +45,7 @@ cost(1,V_step) :- callforopen(D,V_step).
 #show callforopen/2.
 #show goto/2.
 #show sense/3.
+#show goal/2.
 
 #show inside/3.
 #show n_inside/3.

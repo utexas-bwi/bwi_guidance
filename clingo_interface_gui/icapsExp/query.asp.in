@@ -54,4 +54,3 @@ false :- not goal(0,maxstep).
 true.
 :- false.
 
-
