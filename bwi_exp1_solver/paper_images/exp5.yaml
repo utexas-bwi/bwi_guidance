@@ -1,0 +1,7 @@
+squares:
+  - 30
+circles:
+  - 10
+arrows:
+  - [10, 0]
+edges: []
