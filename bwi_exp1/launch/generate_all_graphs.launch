@@ -2,17 +2,17 @@
 
   <arg name="map_file_1" default="$(find bwi_exp1)/maps/exp1.yaml" />
   <arg name="graph_file_1" default="$(find bwi_exp1)/maps/graph_exp1.yaml" />
-  <node name="generate_graph_1" pkg="topological_mapper" type="generate_graph"
+  <node name="generate_graph_1" pkg="bwi_mapper" type="generate_graph"
     args="$(arg map_file_1) $(arg graph_file_1)" />
 
   <arg name="map_file_2" default="$(find bwi_exp1)/maps/map1.yaml" />
   <arg name="graph_file_2" default="$(find bwi_exp1)/maps/graph_map1.yaml" />
-  <node name="generate_graph_2" pkg="topological_mapper" type="generate_graph"
+  <node name="generate_graph_2" pkg="bwi_mapper" type="generate_graph"
     args="$(arg map_file_2) $(arg graph_file_2)" />
 
   <arg name="map_file_3" default="$(find bwi_exp1)/maps/map2.yaml" />
   <arg name="graph_file_3" default="$(find bwi_exp1)/maps/graph_map2.yaml" />
-  <node name="generate_graph_3" pkg="topological_mapper" type="generate_graph"
+  <node name="generate_graph_3" pkg="bwi_mapper" type="generate_graph"
     args="$(arg map_file_3) $(arg graph_file_3)" />
 
 </launch>

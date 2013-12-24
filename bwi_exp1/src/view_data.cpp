@@ -36,7 +36,7 @@
  **/
 
 #include <boost/filesystem.hpp>
-#include <topological_mapper/map_loader.h>
+#include <bwi_mapper/map_loader.h>
 
 std::string map_file;
 std::string graph_file;
@@ -54,7 +54,7 @@ int main(int argc, const char *argv[]) {
 
   // Read in everything here
 
-  topological_mapper::MapLoader mapper(map_file);
+  bwi_mapper::MapLoader mapper(map_file);
 
   
   createTrackbar(Track, "Display", &seconds, alpha_slider_max, onSecondsTrackbarChange);

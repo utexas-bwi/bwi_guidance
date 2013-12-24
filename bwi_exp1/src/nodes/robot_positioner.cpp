@@ -39,8 +39,8 @@
 
 #include <ros/ros.h>
 #include <tf/transform_datatypes.h>
-#include <topological_mapper/map_utils.h>
-#include <topological_mapper/point_utils.h>
+#include <bwi_mapper/map_utils.h>
+#include <bwi_mapper/point_utils.h>
 #include <bwi_exp1/base_robot_positioner.h>
 #include <boost/foreach.hpp>
 
@@ -99,30 +99,30 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
         // Argh! These locations are in pixels
         
         // At location
-        topological_mapper::Point2f at_loc = 
-          topological_mapper::getLocationFromGraphId(
+        bwi_mapper::Point2f at_loc = 
+          bwi_mapper::getLocationFromGraphId(
               path_point.graph_id, graph_);
 
         // Coming from location
-        topological_mapper::Point2f from_loc(
+        bwi_mapper::Point2f from_loc(
             instance.start_loc.x,
             instance.start_loc.y);
-        from_loc = topological_mapper::toGrid(from_loc, map_info_);
+        from_loc = bwi_mapper::toGrid(from_loc, map_info_);
         if (path_idx != 0) {
           const PathPoint& prev_path_point = 
             robots_in_instance.path[path_idx-1];
-          from_loc = topological_mapper::getLocationFromGraphId(
+          from_loc = bwi_mapper::getLocationFromGraphId(
               prev_path_point.graph_id, graph_);
         }
 
         // Going to location
-        topological_mapper::Point2f to_loc(
+        bwi_mapper::Point2f to_loc(
             instance.ball_loc.x,
             instance.ball_loc.y);
-        to_loc = topological_mapper::toGrid(to_loc, map_info_);
+        to_loc = bwi_mapper::toGrid(to_loc, map_info_);
         if (path_idx != robots_in_instance.path.size() - 1) {
           const PathPoint& next_path_point = robots_in_instance.path[path_idx+1];
-          to_loc = topological_mapper::getLocationFromGraphId(
+          to_loc = bwi_mapper::getLocationFromGraphId(
               next_path_point.graph_id, graph_);
         }
 
@@ -131,24 +131,24 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
         float robot_yaw = tf::getYaw(pose.orientation);
 
         // Get arrow direction
-        topological_mapper::Point2f robot_loc(pose.position.x, pose.position.y);
-        robot_loc = topological_mapper::toGrid(robot_loc, map_info_);
+        bwi_mapper::Point2f robot_loc(pose.position.x, pose.position.y);
+        robot_loc = bwi_mapper::toGrid(robot_loc, map_info_);
         float destination_distance = 
-          topological_mapper::getMagnitude(to_loc - robot_loc);
+          bwi_mapper::getMagnitude(to_loc - robot_loc);
         size_t path_position = path_idx + 1;
         while (destination_distance < (3.0 / map_info_.resolution) && 
             path_position < robots_in_instance.path.size()) {
 
           const PathPoint& next_path_point = 
             robots_in_instance.path[path_position];
-          to_loc = topological_mapper::getLocationFromGraphId(
+          to_loc = bwi_mapper::getLocationFromGraphId(
               next_path_point.graph_id, graph_);
           destination_distance = 
-            topological_mapper::getMagnitude(to_loc - robot_loc);
+            bwi_mapper::getMagnitude(to_loc - robot_loc);
           ++path_position;
         }
 
-        topological_mapper::Point2f change_loc = to_loc - robot_loc;
+        bwi_mapper::Point2f change_loc = to_loc - robot_loc;
         float destination_yaw = atan2(change_loc.y, change_loc.x);
         float change_in_yaw = destination_yaw - robot_yaw;
         cv::Mat robot_image;
@@ -175,7 +175,7 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
 
     virtual void odometryCallback(const nav_msgs::Odometry::ConstPtr odom) {
 
-      topological_mapper::Point2f person_loc(
+      bwi_mapper::Point2f person_loc(
           odom->pose.pose.position.x,
           odom->pose.pose.position.y);
 
@@ -184,12 +184,12 @@ class DataCollectionRobotPositioner : public bwi_exp1::BaseRobotPositioner {
       size_t count = 0;
       BOOST_FOREACH(const Robot& robot, default_robots_.robots) {
         if (count < assigned_robots_) {
-          topological_mapper::Point2f robot_loc(
+          bwi_mapper::Point2f robot_loc(
             assigned_robot_locations_[robot.id].position.x,
             assigned_robot_locations_[robot.id].position.y
           );
           float distance = 
-            topological_mapper::getMagnitude(robot_loc - person_loc);
+            bwi_mapper::getMagnitude(robot_loc - person_loc);
           if (distance < 3.0) {
             robot_screen_publisher_.updateImage(robot.id, robot_images_[count]);
             robot_screen_orientations_[robot.id] = robot_orientations_[count];

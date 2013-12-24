@@ -3,11 +3,11 @@
 #include <bwi_exp1_solver/ValueIteration.h>
 #include <bwi_exp1_solver/person_estimator.h>
 #include <bwi_exp1_solver/person_model.h>
-#include <topological_mapper/map_loader.h>
+#include <bwi_mapper/map_loader.h>
 
 using namespace bwi_exp1;
 
-void testValueIteration(topological_mapper::Graph& graph, const std::string& file = "") {
+void testValueIteration(bwi_mapper::Graph& graph, const std::string& file = "") {
 
   size_t goal_idx = 33;
 
@@ -83,11 +83,11 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  topological_mapper::MapLoader mapper(argv[1]);
-  topological_mapper::Graph graph;
+  bwi_mapper::MapLoader mapper(argv[1]);
+  bwi_mapper::Graph graph;
   nav_msgs::MapMetaData info;
   mapper.getMapInfo(info);
-  topological_mapper::readGraphFromFile(argv[2], info, graph);
+  bwi_mapper::readGraphFromFile(argv[2], info, graph);
 
   //testNextDirectionComputation(graph);
   //testActionChoices(graph);

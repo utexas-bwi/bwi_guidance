@@ -1,6 +1,6 @@
 <launch>
-  <arg name="map_file" default="$(find topological_mapper)/maps/graph.yaml" />
-  <arg name="graph_file" default="$(find topological_mapper)/graph.yaml" />
+  <arg name="map_file" default="$(find bwi_mapper)/maps/graph.yaml" />
+  <arg name="graph_file" default="$(find bwi_mapper)/graph.yaml" />
   <arg name="data_dir" default="$(find bwi_exp1_solver)/data/exp1/graph/" />
   <node name="evaluate" pkg="bwi_exp1_solver" type="evaluate"  output="screen"
     args="--map-file $(arg map_file) --graph-file $(arg graph_file) -D $(arg data_dir) -a" />

@@ -3,13 +3,13 @@
 
 #include <bwi_exp1_solver/structures.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <topological_mapper/graph.h>
+#include <bwi_mapper/graph.h>
 
 class HeuristicSolver {
 
   public:
     HeuristicSolver(const nav_msgs::OccupancyGrid& map, 
-        const topological_mapper::Graph& graph, int goal_idx, 
+        const bwi_mapper::Graph& graph, int goal_idx, 
         bool allow_robot_current_idx = false, float visibility_range = 0.0f,
         bool allow_goal_visibility_ = true);
     ~HeuristicSolver();
@@ -23,7 +23,7 @@ class HeuristicSolver {
 
   private:
     nav_msgs::OccupancyGrid map_;
-    topological_mapper::Graph graph_;
+    bwi_mapper::Graph graph_;
     int goal_idx_;
     bool allow_robot_current_idx_;
     float visibility_range_;

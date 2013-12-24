@@ -2,7 +2,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(bwi_exp1)
 
-find_package(catkin REQUIRED COMPONENTS bwi_msgs cv_bridge roslib topological_mapper)
+find_package(catkin REQUIRED COMPONENTS bwi_msgs cv_bridge roslib bwi_mapper)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
@@ -13,7 +13,7 @@ pkg_check_modules(YAML_CPP REQUIRED yaml-cpp)
 
 catkin_package(
   DEPENDS yaml-cpp opencv
-  CATKIN_DEPENDS bwi_msgs cv_bridge roslib topological_mapper
+  CATKIN_DEPENDS bwi_msgs cv_bridge roslib bwi_mapper
   INCLUDE_DIRS include
   LIBRARIES bwi_exp1
 )

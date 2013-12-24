@@ -36,11 +36,11 @@
  *
  **/
 
-#include <topological_mapper/topological_mapper.h>
-#include <topological_mapper/map_inflator.h>
-#include <topological_mapper/map_utils.h>
-#include <topological_mapper/point_utils.h>
-#include <topological_mapper/graph.h>
+#include <bwi_mapper/topological_mapper.h>
+#include <bwi_mapper/map_inflator.h>
+#include <bwi_mapper/map_utils.h>
+#include <bwi_mapper/point_utils.h>
+#include <bwi_mapper/graph.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -63,32 +63,32 @@ bool new_robot_available = false;
 bool new_path_point_available = false;
 int highlight_idx = -1;
 
-void findStartAndGoalIdx(topological_mapper::Point2f start, 
-    topological_mapper::Point2f goal, 
-    topological_mapper::Graph &graph, size_t &start_idx, size_t &goal_idx) {
+void findStartAndGoalIdx(bwi_mapper::Point2f start, 
+    bwi_mapper::Point2f goal, 
+    bwi_mapper::Graph &graph, size_t &start_idx, size_t &goal_idx) {
 
-  boost::property_map<topological_mapper::Graph, boost::vertex_index_t>::type 
+  boost::property_map<bwi_mapper::Graph, boost::vertex_index_t>::type 
       indexmap = boost::get(boost::vertex_index, graph);
 
   float start_fitness = std::numeric_limits<float>::max();
   float goal_fitness = std::numeric_limits<float>::max();
 
-  topological_mapper::Graph::vertex_iterator vi, vend;
+  bwi_mapper::Graph::vertex_iterator vi, vend;
   for (boost::tie(vi, vend) = boost::vertices(graph); vi != vend; ++vi) {
-    topological_mapper::Point2f& loc = graph[*vi].location;
-    topological_mapper::Graph::adjacency_iterator ai, aend;
+    bwi_mapper::Point2f& loc = graph[*vi].location;
+    bwi_mapper::Graph::adjacency_iterator ai, aend;
     for (boost::tie(ai, aend) = boost::adjacent_vertices(
-          (topological_mapper::Graph::vertex_descriptor)*vi, graph); 
+          (bwi_mapper::Graph::vertex_descriptor)*vi, graph); 
         ai != aend; ++ai) {
-      topological_mapper::Point2f& loc2 = graph[*ai].location;
+      bwi_mapper::Point2f& loc2 = graph[*ai].location;
 
       // Improve start idx as necessary
       float start_distance = 
-          topological_mapper::minimumDistanceToLineSegment(loc, loc2, start);
+          bwi_mapper::minimumDistanceToLineSegment(loc, loc2, start);
       if (start_distance < start_fitness) {
         start_fitness = start_distance;
-        if (topological_mapper::getMagnitude(loc - goal) < 
-            topological_mapper::getMagnitude(loc2 - goal)) {
+        if (bwi_mapper::getMagnitude(loc - goal) < 
+            bwi_mapper::getMagnitude(loc2 - goal)) {
           start_idx = indexmap[*vi];
         } else {
           start_idx = indexmap[*ai];
@@ -97,11 +97,11 @@ void findStartAndGoalIdx(topological_mapper::Point2f start,
 
       // Improve goal idx as necessary
       float goal_distance = 
-          topological_mapper::minimumDistanceToLineSegment(loc, loc2, goal);
+          bwi_mapper::minimumDistanceToLineSegment(loc, loc2, goal);
       if (goal_distance < goal_fitness) {
         goal_fitness = goal_distance;
-        if (topological_mapper::getMagnitude(loc - start) < 
-            topological_mapper::getMagnitude(loc2 - start)) {
+        if (bwi_mapper::getMagnitude(loc - start) < 
+            bwi_mapper::getMagnitude(loc2 - start)) {
           goal_idx = indexmap[*vi];
         } else {
           goal_idx = indexmap[*ai];
@@ -113,20 +113,20 @@ void findStartAndGoalIdx(topological_mapper::Point2f start,
 
 }
 
-void circleIdx(cv::Mat& image, topological_mapper::Graph& graph, 
+void circleIdx(cv::Mat& image, bwi_mapper::Graph& graph, 
     size_t idx, cv::Scalar color = cv::Scalar(0, 0, 255)) {
 
-  topological_mapper::Graph::vertex_descriptor vd = boost::vertex(idx, graph);
-  topological_mapper::Point2f &location = graph[vd].location;
+  bwi_mapper::Graph::vertex_descriptor vd = boost::vertex(idx, graph);
+  bwi_mapper::Point2f &location = graph[vd].location;
   cv::circle(image, cv::Point(location.x, location.y), 7, color, 2); 
   
 }
 
-void highlightIdx(cv::Mat& image, topological_mapper::Graph& graph, 
+void highlightIdx(cv::Mat& image, bwi_mapper::Graph& graph, 
     size_t idx, cv::Scalar color = cv::Scalar(0, 255, 0)) {
 
-  topological_mapper::Graph::vertex_descriptor vd = boost::vertex(idx, graph);
-  topological_mapper::Point2f &location = graph[vd].location;
+  bwi_mapper::Graph::vertex_descriptor vd = boost::vertex(idx, graph);
+  bwi_mapper::Point2f &location = graph[vd].location;
   cv::circle(image, cv::Point(location.x, location.y), 5, color, -1); 
   
 }
@@ -154,18 +154,18 @@ int main(int argc, char** argv) {
     return -1;
   }
 
-  topological_mapper::TopologicalMapper mapper(argv[1]);
-  topological_mapper::Graph graph;
+  bwi_mapper::TopologicalMapper mapper(argv[1]);
+  bwi_mapper::Graph graph;
   nav_msgs::MapMetaData info;
   mapper.getMapInfo(info);
-  topological_mapper::readGraphFromFile(argv[2], info, graph);
+  bwi_mapper::readGraphFromFile(argv[2], info, graph);
 
   cv::Mat image;
 
   cv::namedWindow("Display", CV_WINDOW_AUTOSIZE);
   cv::setMouseCallback("Display", mouseCallback, 0);
 
-  topological_mapper::Point2f map_start, map_goal;
+  bwi_mapper::Point2f map_start, map_goal;
   double yaw = 0;
   map_start.x = 0; map_start.y = 0;
   map_goal.x = 0; map_goal.y = 0;
@@ -175,14 +175,14 @@ int main(int argc, char** argv) {
   std::vector<size_t> robot_idx;
   std::vector<cv::Point> robot_pxls;
   std::vector<cv::Point> extra_robot_pxls;
-  std::vector<topological_mapper::Point2f> extra_robot_locations;
+  std::vector<bwi_mapper::Point2f> extra_robot_locations;
   std::vector<float> extra_robot_yaw;
 
   std::stringstream ss;
   while (true) {
 
     mapper.drawMap(image,0,0);
-    topological_mapper::drawGraph(image, graph, 0, 0, true);
+    bwi_mapper::drawGraph(image, graph, 0, 0, true);
 
     // Clicks
     if (global_state > START_LOC) {
@@ -225,7 +225,7 @@ int main(int argc, char** argv) {
     // Highlight
     if (global_state == ROBOTS || global_state == GOAL_PATH) {
       size_t highlight_idx = 
-          topological_mapper::getClosestIdOnGraph(mouseover_pt, graph);
+          bwi_mapper::getClosestIdOnGraph(mouseover_pt, graph);
       if (highlight_idx != (size_t) -1) {
         highlightIdx(image, graph, highlight_idx); 
       }
@@ -249,8 +249,8 @@ int main(int argc, char** argv) {
     }
 
     if (increment_state) {
-      topological_mapper::Point2f map_pt = 
-          topological_mapper::toMap(clicked_pt, info);
+      bwi_mapper::Point2f map_pt = 
+          bwi_mapper::toMap(clicked_pt, info);
       switch(global_state) {
         case START_LOC:
           map_start = map_pt; pxl_start = clicked_pt;
@@ -270,7 +270,7 @@ int main(int argc, char** argv) {
           ss << "  ball_x: " << map_pt.x << std::endl;
           ss << "  ball_y: " << map_pt.y << std::endl;
           // findStartAndGoalIdx(pxl_start, pxl_goal, graph, start_idx, goal_idx);
-          // topological_mapper::getShortestPathWithDistance(graph, start_idx, goal_idx, path_idx);
+          // bwi_mapper::getShortestPathWithDistance(graph, start_idx, goal_idx, path_idx);
           global_state = GOAL_PATH;
           break;
         case GOAL_PATH:
@@ -317,14 +317,14 @@ int main(int argc, char** argv) {
       }
       increment_state = false;
     } else if (new_path_point_available) {
-      size_t idx = topological_mapper::getClosestIdOnGraph(clicked_pt, graph);
+      size_t idx = bwi_mapper::getClosestIdOnGraph(clicked_pt, graph);
       if (idx != (size_t)-1) {
         if (path_idx.size() == 0) {
           path_idx.push_back(idx);
         } else {
           size_t prev_idx = path_idx[path_idx.size() - 1];
           std::vector<size_t> path_from_prev_idx;
-          topological_mapper::getShortestPathWithDistance(idx, prev_idx,
+          bwi_mapper::getShortestPathWithDistance(idx, prev_idx,
               path_from_prev_idx, graph);
           path_idx.insert(path_idx.end(), path_from_prev_idx.begin(),
               path_from_prev_idx.end());
@@ -333,15 +333,15 @@ int main(int argc, char** argv) {
       new_path_point_available = false;
     } else if (new_robot_available) {
       if (global_state == ROBOTS) {
-        size_t idx = topological_mapper::getClosestIdOnGraph(clicked_pt, graph);
+        size_t idx = bwi_mapper::getClosestIdOnGraph(clicked_pt, graph);
         if (idx != (size_t)-1) {
           if (std::find(path_idx.begin(), path_idx.end(), idx) != path_idx.end()) {
             robot_idx.push_back(idx);
           }
         }
       } else if (global_state == EXTRA_ROBOT_LOC) {
-        topological_mapper::Point2f map_pt = 
-            topological_mapper::toMap(clicked_pt, info);
+        bwi_mapper::Point2f map_pt = 
+            bwi_mapper::toMap(clicked_pt, info);
         extra_robot_pxls.push_back(clicked_pt);
         extra_robot_locations.push_back(map_pt);
         global_state = EXTRA_ROBOT_YAW;

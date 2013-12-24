@@ -1,5 +1,5 @@
 #include <bwi_exp1_solver/structures.h>
-#include <topological_mapper/graph.h>
+#include <bwi_mapper/graph.h>
 
 namespace bwi_exp1 {
 
@@ -63,9 +63,9 @@ namespace bwi_exp1 {
   }
 
   size_t computeNextDirection(size_t dir, size_t graph_id, 
-      size_t next_graph_id, const topological_mapper::Graph& graph) {
+      size_t next_graph_id, const bwi_mapper::Graph& graph) {
     float angle = 
-      topological_mapper::getNodeAngle(graph_id, next_graph_id, graph);
+      bwi_mapper::getNodeAngle(graph_id, next_graph_id, graph);
     return getDiscretizedAngle(angle);
   }
 

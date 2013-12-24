@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(bwi_exp1_solver)
 
 ## Find catkin and external packages
-find_package(catkin REQUIRED COMPONENTS bwi_exp1 topological_mapper)
+find_package(catkin REQUIRED COMPONENTS bwi_exp1 bwi_mapper)
 find_package(Boost REQUIRED COMPONENTS serialization program_options)
 
 ###################################
@@ -16,7 +16,7 @@ catkin_package(
     bwi_exp1_solver
   CATKIN_DEPENDS 
     bwi_exp1 
-    topological_mapper
+    bwi_mapper
 )
 
 ###########

@@ -1,12 +1,12 @@
 #include <fstream>
 #include <bwi_exp1_solver/heuristic_solver.h>
-#include <topological_mapper/map_utils.h>
-#include <topological_mapper/point_utils.h>
+#include <bwi_mapper/map_utils.h>
+#include <bwi_mapper/point_utils.h>
 
 using namespace bwi_exp1;
 
 HeuristicSolver::HeuristicSolver(const nav_msgs::OccupancyGrid& map, const
-    topological_mapper::Graph& graph, int goal_idx, bool
+    bwi_mapper::Graph& graph, int goal_idx, bool
     allow_robot_current_idx, float visibility_range, bool
     allow_goal_visibility) : map_(map), graph_(graph), goal_idx_(goal_idx),
   allow_robot_current_idx_(allow_robot_current_idx),
@@ -17,7 +17,7 @@ HeuristicSolver::HeuristicSolver(const nav_msgs::OccupancyGrid& map, const
     visible_vertices_map_.clear();
     for (int graph_id = 0; graph_id < num_vertices; ++graph_id) {
       std::vector<size_t> visible_vertices;
-      topological_mapper::getVisibleNodes(graph_id, graph_, map_,
+      bwi_mapper::getVisibleNodes(graph_id, graph_, map_,
           visible_vertices, visibility_range_); 
       visible_vertices_map_[graph_id] = 
         std::vector<int>(visible_vertices.begin(), visible_vertices.end());
@@ -39,7 +39,7 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State& state) const {
   if (state.robot_direction == DIR_UNASSIGNED) {
     // Find shortest path to goal. Point in direction of this path
     std::vector<size_t> path_from_goal;
-    topological_mapper::getShortestPathWithDistance(
+    bwi_mapper::getShortestPathWithDistance(
         state.graph_id, goal_idx_, path_from_goal, graph_);
     path_from_goal.insert(path_from_goal.begin(), goal_idx_);
     // std::cout << "shortest path b/w " << state.graph_id << " and " << goal_idx_ << " of size " << path_from_goal.size() << std::endl;
@@ -76,11 +76,11 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State& state) const {
     states.push_back(current_id);
 
     // Compute all adjacent vertices from this location
-    topological_mapper::Graph::vertex_descriptor vd = 
+    bwi_mapper::Graph::vertex_descriptor vd = 
       boost::vertex(current_id, graph_);
-    topological_mapper::Point2f loc = graph_[vd].location;
+    bwi_mapper::Point2f loc = graph_[vd].location;
     std::vector<size_t> adjacent_vertices;
-    topological_mapper::getAdjacentNodes(
+    bwi_mapper::getAdjacentNodes(
         current_id, graph_, adjacent_vertices);
 
     // Check vertex that has most likely transition
@@ -89,9 +89,9 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State& state) const {
     float next_angle = 0;
     for (std::vector<size_t>::const_iterator av = adjacent_vertices.begin();
         av != adjacent_vertices.end(); ++av) {
-      topological_mapper::Graph::vertex_descriptor next_vd = 
+      bwi_mapper::Graph::vertex_descriptor next_vd = 
         boost::vertex(*av, graph_);
-      topological_mapper::Point2f next_loc = graph_[next_vd].location;
+      bwi_mapper::Point2f next_loc = graph_[next_vd].location;
       float angle = atan2f((next_loc-loc).y, (next_loc-loc).x);
       // Wrap angle around direction
       while (angle <= current_direction - M_PI) angle += 2 * M_PI;
@@ -142,7 +142,7 @@ Action HeuristicSolver::getBestAction(const bwi_exp1::State& state) const {
   for (std::vector<size_t>::iterator si = states.begin(); 
       si != states.end(); ++si) {
     std::vector<size_t> path_from_goal;
-    float distance = topological_mapper::getShortestPathWithDistance(*si,
+    float distance = bwi_mapper::getShortestPathWithDistance(*si,
         goal_idx_, path_from_goal, graph_);
     if (distance < min_distance) {
       min_graph_idx = *si;

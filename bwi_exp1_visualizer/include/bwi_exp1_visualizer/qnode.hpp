@@ -21,8 +21,8 @@
 #include <QThread>
 #include <QStringListModel>
 
-#include <topological_mapper/map_loader.h>
-#include <topological_mapper/graph.h>
+#include <bwi_mapper/map_loader.h>
+#include <bwi_mapper/graph.h>
 #include <bwi_exp1/experiment.h>
 #include <bwi_exp1/users.h>
 #include <bwi_exp1/odometry.h>
@@ -87,8 +87,8 @@ namespace bwi_exp1_visualizer {
       std::string users_file_;
 
       /* Experiment and graph information */
-      boost::shared_ptr<topological_mapper::MapLoader> mapper_;
-      topological_mapper::Graph graph_;
+      boost::shared_ptr<bwi_mapper::MapLoader> mapper_;
+      bwi_mapper::Graph graph_;
       bwi_exp1::Experiment experiments_;
       std::vector<bwi_exp1::User> users_;
       std::vector< std::vector<size_t> > user_box_to_idx_map_;

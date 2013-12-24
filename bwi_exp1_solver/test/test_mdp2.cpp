@@ -8,8 +8,8 @@
 #include <bwi_exp1_solver/heuristic_solver.h>
 #include <bwi_exp1_solver/person_estimator2.h>
 #include <bwi_exp1_solver/person_model2.h>
-#include <topological_mapper/map_loader.h>
-#include <topological_mapper/map_utils.h>
+#include <bwi_mapper/map_loader.h>
+#include <bwi_mapper/map_utils.h>
 
 using namespace bwi_exp1;
 
@@ -24,7 +24,7 @@ bool allow_goal_visibility = false;
 int goal_idx = 0;
 float visibility_range = 0.0f;
 
-void test(topological_mapper::Graph& graph, nav_msgs::OccupancyGrid& map) {
+void test(bwi_mapper::Graph& graph, nav_msgs::OccupancyGrid& map) {
 
   std::string indexed_model_file = boost::lexical_cast<std::string>(goal_idx)
     + "_" + model_file;
@@ -223,11 +223,11 @@ int main(int argc, char** argv) {
     return ret;
   }
 
-  topological_mapper::MapLoader mapper(map_file);
-  topological_mapper::Graph graph;
+  bwi_mapper::MapLoader mapper(map_file);
+  bwi_mapper::Graph graph;
   nav_msgs::OccupancyGrid map;
   mapper.getMap(map);
-  topological_mapper::readGraphFromFile(graph_file, map.info, graph);
+  bwi_mapper::readGraphFromFile(graph_file, map.info, graph);
 
   test(graph, map);
 

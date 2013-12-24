@@ -6,7 +6,7 @@
 #include <opencv/highgui.h>
 #include <tf/transform_datatypes.h>
 #include <bwi_exp1/base_robot_positioner.h>
-#include <topological_mapper/map_inflator.h>
+#include <bwi_mapper/map_inflator.h>
 #include <bwi_msgs/RobotInfoArray.h>
 #include <boost/range/adaptor/map.hpp>
 
@@ -52,13 +52,13 @@ namespace bwi_exp1 {
     private_nh.param<double>("search_distance", search_distance_, 0.75);
 
     // Setup map, graph and robots
-    mapper_.reset(new topological_mapper::MapLoader(map_file));
+    mapper_.reset(new bwi_mapper::MapLoader(map_file));
     mapper_->getMapInfo(map_info_);
     mapper_->getMap(map_);
    
-    topological_mapper::inflateMap(robot_radius + robot_padding, 
+    bwi_mapper::inflateMap(robot_radius + robot_padding, 
         map_, inflated_map_);
-    topological_mapper::readGraphFromFile(graph_file, map_info_, graph_);
+    bwi_mapper::readGraphFromFile(graph_file, map_info_, graph_);
     
     readDefaultRobotsFromFile(robot_file, default_robots_);
     BOOST_FOREACH(const Robot& robot, default_robots_.robots) {
@@ -281,39 +281,39 @@ namespace bwi_exp1 {
   }
 
   geometry_msgs::Pose BaseRobotPositioner::positionRobot(
-      const topological_mapper::Point2f& from,
-      const topological_mapper::Point2f& at,
-      const topological_mapper::Point2f& to) {
+      const bwi_mapper::Point2f& from,
+      const bwi_mapper::Point2f& at,
+      const bwi_mapper::Point2f& to) {
 
     geometry_msgs::Pose resp;
-    topological_mapper::Point2f from_map = 
-      topological_mapper::toMap(from, map_info_);
-    topological_mapper::Point2f at_map = 
-      topological_mapper::toMap(at, map_info_);
+    bwi_mapper::Point2f from_map = 
+      bwi_mapper::toMap(from, map_info_);
+    bwi_mapper::Point2f at_map = 
+      bwi_mapper::toMap(at, map_info_);
 
     // Figure out if you want to stay on the outside angle or not
     bool use_outside_angle = true;
     float yaw1 = -atan2((to - at).y, (to - at).x);
     float yaw2 = -atan2((from - at).y, (from - at).x);
 
-    topological_mapper::Point2f yaw1_pt(cosf(yaw1),sinf(yaw1));
-    topological_mapper::Point2f yaw2_pt(cosf(yaw2),sinf(yaw2));
-    topological_mapper::Point2f yawmid_pt = 0.5 * (yaw1_pt + yaw2_pt);
+    bwi_mapper::Point2f yaw1_pt(cosf(yaw1),sinf(yaw1));
+    bwi_mapper::Point2f yaw2_pt(cosf(yaw2),sinf(yaw2));
+    bwi_mapper::Point2f yawmid_pt = 0.5 * (yaw1_pt + yaw2_pt);
 
-    if (topological_mapper::getMagnitude(yawmid_pt) < 0.1) {
+    if (bwi_mapper::getMagnitude(yawmid_pt) < 0.1) {
       use_outside_angle = false;
     }
 
     size_t y_test = at.y - search_distance_ / map_info_.resolution;
     float location_fitness = -1;
-    topological_mapper::Point2f test_coords;
-    topological_mapper::Point2f map_coords;
+    bwi_mapper::Point2f test_coords;
+    bwi_mapper::Point2f map_coords;
 
     while(y_test < at.y + search_distance_ / map_info_.resolution) {
       size_t x_test = at.x - search_distance_ / map_info_.resolution;
       while (x_test < at.x + search_distance_ / map_info_.resolution) {
 
-        topological_mapper::Point2f test(x_test, y_test);
+        bwi_mapper::Point2f test(x_test, y_test);
         
         // Check if x_test, y_test is free.
         size_t map_idx = MAP_IDX(map_info_.width, x_test, y_test);
@@ -330,17 +330,17 @@ namespace bwi_exp1 {
           }
         }
 
-        topological_mapper::Point2f test_loc(x_test, y_test);
+        bwi_mapper::Point2f test_loc(x_test, y_test);
 
         float dist1 = 
-          topological_mapper::minimumDistanceToLineSegment(from, at, test_loc);
+          bwi_mapper::minimumDistanceToLineSegment(from, at, test_loc);
         float dist2 = 
-          topological_mapper::minimumDistanceToLineSegment(at, to, test_loc);
+          bwi_mapper::minimumDistanceToLineSegment(at, to, test_loc);
         float fitness = std::min(dist1, dist2);
 
         if (fitness > location_fitness) {
           test_coords = test_loc;
-          map_coords = topological_mapper::toMap(test_loc, map_info_);
+          map_coords = bwi_mapper::toMap(test_loc, map_info_);
           resp.position.x = map_coords.x;
           resp.position.y = map_coords.y;
           location_fitness = fitness;
@@ -355,8 +355,8 @@ namespace bwi_exp1 {
     yaw1 = atan2(resp.position.y - at_map.y, resp.position.x - at_map.x); 
     yaw2 = atan2(resp.position.y - from_map.y, resp.position.x - from_map.x);
 
-    yaw1_pt = topological_mapper::Point2f(cosf(yaw1),sinf(yaw1));
-    yaw2_pt = topological_mapper::Point2f(cosf(yaw2),sinf(yaw2));
+    yaw1_pt = bwi_mapper::Point2f(cosf(yaw1),sinf(yaw1));
+    yaw2_pt = bwi_mapper::Point2f(cosf(yaw2),sinf(yaw2));
     yawmid_pt = 0.5 * (yaw1_pt + yaw2_pt);
 
     /* float resp_yaw = atan2f(yawmid_pt.y, yawmid_pt.x);  */
@@ -373,7 +373,7 @@ namespace bwi_exp1 {
       cv::circle(image, test_coords, 5, cv::Scalar(0, 255, 0), 2);
 
       cv::circle(image, test_coords + 
-          topological_mapper::Point2f(20 * cosf(resp_yaw), 20 * sinf(resp_yaw)), 
+          bwi_mapper::Point2f(20 * cosf(resp_yaw), 20 * sinf(resp_yaw)), 
           3, cv::Scalar(0, 255, 0), -1);
 
       cv::namedWindow("Display window", CV_WINDOW_AUTOSIZE);

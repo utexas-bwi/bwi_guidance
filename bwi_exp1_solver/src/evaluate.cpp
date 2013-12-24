@@ -13,8 +13,8 @@
 #include <bwi_exp1_solver/heuristic_solver.h>
 #include <bwi_exp1_solver/person_estimator2.h>
 #include <bwi_exp1_solver/person_model2.h>
-#include <topological_mapper/map_loader.h>
-#include <topological_mapper/map_utils.h>
+#include <bwi_mapper/map_loader.h>
+#include <bwi_mapper/map_utils.h>
 
 using namespace bwi_exp1;
 
@@ -68,7 +68,7 @@ int select(std::vector<float>& probabilities) {
   return probabilities.size() - 1;
 }
 
-InstanceResult testInstance(topological_mapper::Graph& graph, 
+InstanceResult testInstance(bwi_mapper::Graph& graph, 
     nav_msgs::OccupancyGrid& map, int start_idx, int start_direction, 
     int goal_idx) {
 
@@ -264,11 +264,11 @@ int main(int argc, char** argv) {
       boost::mt19937&, 
       boost::uniform_real<float> >(mt, u));
 
-  topological_mapper::MapLoader mapper(map_file);
-  topological_mapper::Graph graph;
+  bwi_mapper::MapLoader mapper(map_file);
+  bwi_mapper::Graph graph;
   nav_msgs::OccupancyGrid map;
   mapper.getMap(map);
-  topological_mapper::readGraphFromFile(graph_file, map.info, graph);
+  bwi_mapper::readGraphFromFile(graph_file, map.info, graph);
 
   boost::uniform_int<int> idx_dist(0, boost::num_vertices(graph) - 1);
   boost::variate_generator<boost::mt19937&, boost::uniform_int<int> >

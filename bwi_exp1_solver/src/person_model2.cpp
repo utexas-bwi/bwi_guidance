@@ -8,12 +8,12 @@
 #include <boost/serialization/vector.hpp>
 
 #include <bwi_exp1_solver/person_model2.h>
-#include <topological_mapper/point_utils.h>
-#include <topological_mapper/map_utils.h>
+#include <bwi_mapper/point_utils.h>
+#include <bwi_mapper/map_utils.h>
 
 namespace bwi_exp1 {
 
-  PersonModel2::PersonModel2(const topological_mapper::Graph& graph, const
+  PersonModel2::PersonModel2(const bwi_mapper::Graph& graph, const
       nav_msgs::OccupancyGrid& map,  size_t goal_idx, const std::string& file,
       bool allow_robot_current_idx, float visibility_range, bool
       allow_goal_visibility, unsigned int max_robots) : graph_(graph),
@@ -83,7 +83,7 @@ namespace bwi_exp1 {
     for (std::vector<State>::const_iterator ns = next_states.begin();
         ns != next_states.end(); ++ns) {
       rewards[ns - next_states.begin()] =
-        -topological_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
+        -bwi_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
             graph_);
     }
   }
@@ -92,7 +92,7 @@ namespace bwi_exp1 {
     adjacent_vertices_map_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
       std::vector<size_t> adjacent_vertices;
-      topological_mapper::getAdjacentNodes(graph_id, graph_, adjacent_vertices); 
+      bwi_mapper::getAdjacentNodes(graph_id, graph_, adjacent_vertices); 
       adjacent_vertices_map_[graph_id] = 
         std::vector<int>(adjacent_vertices.begin(), adjacent_vertices.end());
     }
@@ -102,7 +102,7 @@ namespace bwi_exp1 {
     visible_vertices_map_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
       std::vector<size_t> visible_vertices;
-      topological_mapper::getVisibleNodes(graph_id, graph_, map_,
+      bwi_mapper::getVisibleNodes(graph_id, graph_, map_,
           visible_vertices, visibility_range_); 
       visible_vertices_map_[graph_id] = 
         std::vector<int>(visible_vertices.begin(), visible_vertices.end());
@@ -342,7 +342,7 @@ namespace bwi_exp1 {
       int target = (goal_visible) ? goal_idx_ : state.visible_robot;
       // Check angle to target
       float expected_dir = 
-        topological_mapper::getNodeAngle(state.graph_id, target, graph_);
+        bwi_mapper::getNodeAngle(state.graph_id, target, graph_);
       float angle_diff = getAbsoluteAngleDifference(expected_dir, 
           getAngleInRadians(state.direction));
       if (angle_diff < M_PI / 3) {
@@ -355,7 +355,7 @@ namespace bwi_exp1 {
 
         std::vector<float> differences;
         BOOST_FOREACH(const State& next_state, next_states) {
-          float ns_angle = topological_mapper::getNodeAngle(state.graph_id,
+          float ns_angle = bwi_mapper::getNodeAngle(state.graph_id,
               next_state.graph_id, graph_);
           float ns_difference = getAbsoluteAngleDifference(expected_dir,
               ns_angle);
@@ -398,7 +398,7 @@ namespace bwi_exp1 {
         // The DO_NOTHING action should not be possible in this state
         throw std::runtime_error("Human Model: unassigned robot_dir!!!");
       }
-      expected_dir = topological_mapper::getNodeAngle(state.graph_id,
+      expected_dir = bwi_mapper::getNodeAngle(state.graph_id,
           state.robot_direction, graph_);
     } else {
       expected_dir = getAngleInRadians(state.direction);
@@ -413,7 +413,7 @@ namespace bwi_exp1 {
     std::vector<float> weights;
     BOOST_FOREACH(const State& next_state, next_states) {
 
-      float next_state_direction = topological_mapper::getNodeAngle(
+      float next_state_direction = bwi_mapper::getNodeAngle(
           state.graph_id, next_state.graph_id, graph_);
       float angle_difference = getAbsoluteAngleDifference(next_state_direction, 
           expected_dir);

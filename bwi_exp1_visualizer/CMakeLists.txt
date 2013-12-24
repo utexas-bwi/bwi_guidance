@@ -1,11 +1,11 @@
 # http://ros.org/doc/groovy/api/catkin/html/user_guide/supposed.html
 cmake_minimum_required(VERSION 2.8.3)
 project(bwi_exp1_visualizer)
-find_package(catkin REQUIRED COMPONENTS topological_mapper bwi_exp1)
+find_package(catkin REQUIRED COMPONENTS bwi_mapper bwi_exp1)
 
 catkin_package(
   DEPENDS qt4
-  CATKIN_DEPENDS topological_mapper bwi_exp1 
+  CATKIN_DEPENDS bwi_mapper bwi_exp1 
   INCLUDE_DIRS include
 )
 

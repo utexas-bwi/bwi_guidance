@@ -4,10 +4,10 @@
 #include <boost/shared_ptr.hpp>
 #include <gazebo_msgs/GetModelState.h>
 #include <gazebo_msgs/SetModelState.h>
-#include <topological_mapper/point_utils.h>
-#include <topological_mapper/map_loader.h>
-#include <topological_mapper/map_utils.h>
-#include <topological_mapper/graph.h>
+#include <bwi_mapper/point_utils.h>
+#include <bwi_mapper/map_loader.h>
+#include <bwi_mapper/map_utils.h>
+#include <bwi_mapper/graph.h>
 #include <nav_msgs/Odometry.h>
 #include <opencv/cv.h>
 #include <ros/ros.h>
@@ -42,9 +42,9 @@ namespace bwi_exp1 {
           const geometry_msgs::Pose& pose);
 
       geometry_msgs::Pose positionRobot(
-          const topological_mapper::Point2f& from,
-          const topological_mapper::Point2f& at,
-          const topological_mapper::Point2f& to);
+          const bwi_mapper::Point2f& from,
+          const bwi_mapper::Point2f& at,
+          const bwi_mapper::Point2f& to);
 
       void start();
       void run();
@@ -62,8 +62,8 @@ namespace bwi_exp1 {
 
       bool debug_;
       double search_distance_;
-      boost::shared_ptr<topological_mapper::MapLoader> mapper_;
-      topological_mapper::Graph graph_;
+      boost::shared_ptr<bwi_mapper::MapLoader> mapper_;
+      bwi_mapper::Graph graph_;
       nav_msgs::OccupancyGrid map_;
       nav_msgs::OccupancyGrid inflated_map_;
       nav_msgs::MapMetaData map_info_;

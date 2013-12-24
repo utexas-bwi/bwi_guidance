@@ -6,7 +6,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <bwi_exp1_solver/PredictiveModel.h>
 #include <bwi_exp1_solver/structures.h>
-#include <topological_mapper/graph.h>
+#include <bwi_mapper/graph.h>
 
 namespace boost {
   namespace serialization {
@@ -20,7 +20,7 @@ namespace bwi_exp1 {
 
     public:
 
-      PersonModel2(const topological_mapper::Graph& graph, 
+      PersonModel2(const bwi_mapper::Graph& graph, 
           const nav_msgs::OccupancyGrid& map, size_t goal_idx, 
           const std::string& file = "", bool allow_robot_current_idx = false,
           float visibility_range = 0.0f, bool allow_goal_visibility = false,
@@ -82,7 +82,7 @@ namespace bwi_exp1 {
         ar & num_vertices_;
       }
 
-      topological_mapper::Graph graph_;
+      bwi_mapper::Graph graph_;
       nav_msgs::OccupancyGrid map_;
       size_t goal_idx_;
 

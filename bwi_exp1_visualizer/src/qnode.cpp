@@ -63,10 +63,10 @@ namespace bwi_exp1_visualizer {
 
     /* Initialize the map and associated data now the we know where the map 
        file is */
-    mapper_.reset(new topological_mapper::MapLoader(map_file_));
+    mapper_.reset(new bwi_mapper::MapLoader(map_file_));
     nav_msgs::MapMetaData info;
     mapper_->getMapInfo(info);
-    topological_mapper::readGraphFromFile(graph_file_, info, graph_);
+    bwi_mapper::readGraphFromFile(graph_file_, info, graph_);
 
     /* Process experiment data */
     bwi_exp1::readExperimentFromFile(experiment_file_, experiments_);
@@ -167,7 +167,7 @@ namespace bwi_exp1_visualizer {
     //std::cout << exp.path.size() << std::endl;
     for (size_t i = 0; i < exp.path.size(); ++i) {
       //std::cout << "in here";
-      topological_mapper::Graph::vertex_descriptor vd = 
+      bwi_mapper::Graph::vertex_descriptor vd = 
           boost::vertex(exp.path[i].graph_id, graph_);
       cv::Point point_loc(graph_[vd].location.x, graph_[vd].location.y);
       if (i > 0) {

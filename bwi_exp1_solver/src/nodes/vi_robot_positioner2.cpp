@@ -4,7 +4,7 @@
 #include <bwi_exp1_solver/person_estimator2.h>
 #include <bwi_exp1_solver/person_model2.h>
 #include <bwi_exp1_solver/heuristic_solver.h>
-#include <topological_mapper/map_loader.h>
+#include <bwi_mapper/map_loader.h>
 #include <bwi_exp1/base_robot_positioner.h>
 #include <tf/transform_datatypes.h>
 #include <boost/foreach.hpp>
@@ -37,7 +37,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
     State current_state_;
 
     size_t assigned_robots_;
-    topological_mapper::Point2f assigned_robot_loc_;
+    bwi_mapper::Point2f assigned_robot_loc_;
     float assigned_robot_yaw_;
     std::map<int, int> graph_id_to_robot_map_;
 
@@ -72,11 +72,11 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       getInstanceNames(experiment_, instance_names);
       BOOST_FOREACH(const std::string iname, instance_names) {
         const Instance& instance = getInstance(experiment_, iname);
-        topological_mapper::Point2f goal_point(instance.ball_loc.x,
+        bwi_mapper::Point2f goal_point(instance.ball_loc.x,
             instance.ball_loc.y);
-        goal_point = topological_mapper::toGrid(goal_point, map_info_);
+        goal_point = bwi_mapper::toGrid(goal_point, map_info_);
         int goal_idx = 
-          topological_mapper::getClosestIdOnGraph(goal_point, graph_);
+          bwi_mapper::getClosestIdOnGraph(goal_point, graph_);
 
         // Compute model file
         std::string model_file = data_directory_
@@ -138,17 +138,17 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
       const Instance& instance = getInstance(experiment_, instance_name_);
 
-      topological_mapper::Point2f start_point(instance.start_loc.x,
+      bwi_mapper::Point2f start_point(instance.start_loc.x,
           instance.start_loc.y);
-      start_point = topological_mapper::toGrid(start_point, map_info_);
+      start_point = bwi_mapper::toGrid(start_point, map_info_);
       size_t start_idx = 
-        topological_mapper::getClosestIdOnGraph(start_point, graph_);
+        bwi_mapper::getClosestIdOnGraph(start_point, graph_);
 
-      topological_mapper::Point2f goal_point(instance.ball_loc.x,
+      bwi_mapper::Point2f goal_point(instance.ball_loc.x,
           instance.ball_loc.y);
-      goal_point = topological_mapper::toGrid(goal_point, map_info_);
+      goal_point = bwi_mapper::toGrid(goal_point, map_info_);
       goal_idx_ = 
-        topological_mapper::getClosestIdOnGraph(goal_point, graph_);
+        bwi_mapper::getClosestIdOnGraph(goal_point, graph_);
  
       model_ = model_map_[goal_idx_];
       estimator_ = estimator_map_[goal_idx_];
@@ -193,10 +193,10 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         if (action.type == DIRECT_PERSON) {
 
           // Figure out direction to point towards here
-          topological_mapper::Point2f to_loc = 
-            topological_mapper::getLocationFromGraphId(
+          bwi_mapper::Point2f to_loc = 
+            bwi_mapper::getLocationFromGraphId(
                 current_state_.robot_direction, graph_);
-          topological_mapper::Point2f change_loc = to_loc - assigned_robot_loc_;
+          bwi_mapper::Point2f change_loc = to_loc - assigned_robot_loc_;
           float destination_yaw = atan2(change_loc.y, change_loc.x);
           float change_in_yaw = destination_yaw - assigned_robot_yaw_;
           cv::Mat robot_image;
@@ -211,16 +211,16 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
           // Place a robot here. Use lookahead to determine the best positioning
           // around the node
-          topological_mapper::Point2f at_loc = 
-            topological_mapper::getLocationFromGraphId(
+          bwi_mapper::Point2f at_loc = 
+            bwi_mapper::getLocationFromGraphId(
                 current_state_.visible_robot, graph_);
 
-          float angle = topological_mapper::getNodeAngle(
+          float angle = bwi_mapper::getNodeAngle(
                 current_state_.graph_id, 
                 current_state_.visible_robot, graph_
                 );
-          topological_mapper::Point2f from_loc =
-            at_loc - topological_mapper::Point2f(
+          bwi_mapper::Point2f from_loc =
+            at_loc - bwi_mapper::Point2f(
                 50.0 * cosf(angle),
                 50.0 * sinf(angle));
 
@@ -238,17 +238,17 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           } else {
             robot_action = vi_->getBestAction(robot_state);
           }
-          topological_mapper::Point2f to_loc = 
-            topological_mapper::getLocationFromGraphId(
+          bwi_mapper::Point2f to_loc = 
+            bwi_mapper::getLocationFromGraphId(
                 robot_action.graph_id, graph_);
 
           // Compute robot pose
           geometry_msgs::Pose pose = positionRobot(from_loc, at_loc, to_loc);
           assigned_robot_yaw_ = tf::getYaw(pose.orientation);
           assigned_robot_loc_ = 
-            topological_mapper::Point2f(pose.position.x, pose.position.y);
+            bwi_mapper::Point2f(pose.position.x, pose.position.y);
           assigned_robot_loc_ = 
-            topological_mapper::toGrid(assigned_robot_loc_, map_info_);
+            bwi_mapper::toGrid(assigned_robot_loc_, map_info_);
 
           // Teleport the robot and forward this information
           std::string robot_id = default_robots_.robots[assigned_robots_].id;
@@ -273,13 +273,13 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       if (!instance_in_progress_)
         return;
 
-      topological_mapper::Point2f person_loc(
+      bwi_mapper::Point2f person_loc(
           odom->pose.pose.position.x,
           odom->pose.pose.position.y);
-      person_loc = topological_mapper::toGrid(person_loc, map_info_);
+      person_loc = bwi_mapper::toGrid(person_loc, map_info_);
 
       size_t current_graph_id =
-        topological_mapper::getClosestIdOnGraphFromEdge(person_loc,
+        bwi_mapper::getClosestIdOnGraphFromEdge(person_loc,
             graph_, current_state_.graph_id);
 
       if (current_graph_id != current_state_.graph_id) {
