@@ -1,7 +1,0 @@
-:- approach(Y,I), at(X,I), acc(X,Y,Z), 1{indacc(Z,Y1,W)}1,inside(peterstone,W,I), Z!=W.
-:- approach(Y,I), not callforopen(Y,I+1), I<n.
-:- callforopen(Y,I), not gothrough(Y,I+1), I<n.
-
-goal(0,I):- visited(peterstone,I).
-goal(G,I+1) :- goal(G,I), I<n.
-:- not goal(0,n).

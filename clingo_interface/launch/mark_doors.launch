@@ -1,7 +1,0 @@
-<launch>
-  <arg name="map_file" default="$(find utexas_gdc)/maps/3ne.yaml" />
-  <arg name="door_file" default="$(find clingo_interface)/config/new_door.yaml" />
-  <arg name="location_file" default="$(find clingo_interface)/config/new_location.yaml" />
-  <node name="mark_doors" type="mark_doors" pkg="clingo_interface" 
-    args="$(arg map_file) $(arg door_file) $(arg location_file)" output="screen" />
-</launch>

@@ -1,3 +1,0 @@
-goal(0,I):- visited(peterstone,I).
-goal(G,I+1) :- goal(G,I), I<n.
-:- not goal(0,n).
