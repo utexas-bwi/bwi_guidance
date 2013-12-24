@@ -1,0 +1,33 @@
+<launch>
+
+  <arg name="uid" />
+  <arg name="email" />
+  <arg name="name" />
+
+  <!-- launch the experiment controller node -->
+  <node name="experiment_controller" pkg="bwi_guidance" type="controller.py" output="screen">
+    <param name="graph_file" value="$(find bwi_guidance)/maps/graph.yaml" />
+    <param name="experiment_file" value="$(find bwi_guidance)/config/data_collection_experiment.yaml" />
+    <param name="user_file" value="$(find bwi_guidance)/data/users.yaml" />
+    <param name="data_dir" value="$(find bwi_guidance)/data" />
+    <param name="uid" value="$(arg uid)"/>
+    <param name="email" value="$(arg email)"/>
+    <param name="name" value="$(arg name)"/>
+  </node>
+
+  <node name="robot_positioner" pkg="bwi_guidance" type="robot_positioner">
+    <param name="map_file" value="$(find bwi_guidance)/maps/exp1.yaml" />
+    <param name="graph_file" value="$(find bwi_guidance)/maps/graph.yaml" />
+    <param name="experiment_file" 
+           value="$(find bwi_guidance)/config/data_collection_experiment.yaml" />
+    <param name="robot_file" 
+           value="$(find bwi_guidance)/config/default_robots.yaml" />
+    <param name="experiment_robot_file" 
+           value="$(find bwi_guidance)/config/data_collection_robots.yaml" />
+    <param name="robot_radius" value="0.25" />
+    <param name="robot_padding" value="0.1" />
+    <param name="search_distance" value="0.45" />
+    <!-- <param name="debug" value="true" /> -->
+  </node>
+
+</launch>

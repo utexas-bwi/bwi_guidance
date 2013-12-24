@@ -1,0 +1,10 @@
+<launch>
+  <node name="data_visualizer" pkg="bwi_guidance_visualizer" type="bwi_guidance_visualizer" >
+  <!-- <node name="data_visualizer" pkg="bwi_guidance_visualizer" type="bwi_guidance_visualizer" launch-prefix="gdb -ex run -args"> -->
+    <param name="map_file" value="$(find bwi_guidance)/maps/exp1.yaml" />
+    <param name="graph_file" value="$(find bwi_guidance)/maps/graph.yaml" />
+    <param name="experiment_file" value="$(find bwi_guidance)/config/experiment.yaml" />
+    <param name="data_directory" value="$(find bwi_guidance)/data-exp1-4-16-2013" />
+    <param name="users_file" value="$(find bwi_guidance)/data-exp1-4-16-2013/users.yaml" />
+  </node>
+</launch>

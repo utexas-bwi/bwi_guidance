@@ -1,0 +1,12 @@
+<launch>
+
+  <!-- webserver needs to be up for server interactions -->
+  <include file="$(find bwi_web)/launch/webserver.launch" />
+
+  <!-- load the server -->
+  <node name="server" pkg="bwi_guidance" type="server.py" output="screen">
+    <param name="package" value="bwi_guidance_solver" />
+    <param name="script" value="experiment.launch" />
+  </node>
+
+</launch>

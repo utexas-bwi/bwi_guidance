@@ -1,0 +1,21 @@
+<package>
+  <name>bwi_guidance_visualizer</name>
+  <version>0.0.1</version>
+  <description>bwi_guidance_visualizer</description>
+
+  <license>BSD</license>
+
+  <author>Piyush Khandelwal</author>
+  <maintainer email="piyushk@gmail.com">Piyush Khandelwal</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>qt4</build_depend>
+  <build_depend>bwi_mapper</build_depend>
+  <build_depend>bwi_guidance</build_depend>
+
+  <run_depend>qt4</run_depend>
+  <run_depend>bwi_mapper</run_depend>
+  <run_depend>bwi_guidance</run_depend>
+
+</package>

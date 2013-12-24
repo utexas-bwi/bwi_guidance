@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package>
+  <name>bwi_guidance_solver</name>
+  <version>0.0.1</version>
+  <description>The bwi_guidance_solver package</description>
+
+  <maintainer email="piyushk@gmail.com">Piyush Khandelwal</maintainer>
+
+  <license>BSD</license>
+
+  <author email="piyushk@gmail.com">Piyush Khandelwal</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>bwi_guidance</build_depend>
+  <build_depend>bwi_mapper</build_depend>
+
+  <run_depend>bwi_guidance</run_depend>
+  <run_depend>bwi_mapper</run_depend>
+
+</package>

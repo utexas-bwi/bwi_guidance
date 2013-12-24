@@ -1,0 +1,32 @@
+<package>
+  <name>bwi_guidance</name>
+  <version>0.0.1</version>
+  <description>bwi_guidance</description>
+
+  <license>BSD</license>
+
+  <author>Piyush Khandelwal</author>
+  <maintainer email="piyushk@gmail.com">Piyush Khandelwal</maintainer>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>bwi_guidance_msgs</build_depend>
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>roslib</build_depend>
+  <build_depend>bwi_mapper</build_depend>
+  <build_depend>yaml-cpp</build_depend>
+
+  <run_depend>bwi_guidance_msgs</run_depend>
+  <run_depend>bwi_web</run_depend>
+  <run_depend>cv_bridge</run_depend>
+  <run_depend>roslib</run_depend>
+  <run_depend>bwi_mapper</run_depend>
+  <run_depend>yaml-cpp</run_depend>
+  <run_depend>gazebo_ros</run_depend>
+  <run_depend>gazebo_msgs</run_depend> <!-- python dependency only -->
+
+  <export>
+    <gazebo_ros gazebo_media_path="${prefix}"/>
+  </export>
+
+</package>

@@ -1,0 +1,138 @@
+<launch>
+
+  <include file="$(find bwi_guidance)/launch/exp1.launch">
+    <arg name="gui" value="false" />
+  </include>
+
+  <!-- Launch the person with their very own map server -->
+  <group ns="person">
+    <arg name="personid" default="person" />
+    <include file="$(find bwi_gazebo_entities)/launch/controllable_person.launch">
+      <arg name="x" value="1.2" />
+      <arg name="y" value="1.2" />
+      <arg name="personid" default="$(arg personid)" />
+    </include>
+  </group>
+
+  <!-- launch the 5 robots that will be required for this experiment
+       as specified in the experiment file -->
+  <group ns="robot1">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="500" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot1" />
+      <arg name="tf_prefix" value="robot1" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/auxiliary.segbot.launch.xml" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+  </group>
+
+  <group ns="robot2">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="502" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot2" />
+      <arg name="tf_prefix" value="robot2" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/auxiliary.segbot.launch.xml" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+  </group>
+
+  <group ns="robot3">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="504" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot3" />
+      <arg name="tf_prefix" value="robot3" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/auxiliary.segbot.launch.xml" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+  </group>
+
+  <group ns="robot4">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="506" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot4" />
+      <arg name="tf_prefix" value="robot4" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/auxiliary.segbot.launch.xml" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+  </group>
+
+  <group ns="robot5">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="508" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot5" />
+      <arg name="tf_prefix" value="robot5" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/auxiliary.segbot.launch.xml" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+  </group>
+
+  <group ns="robot6">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="510" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot6" />
+      <arg name="tf_prefix" value="robot6" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/auxiliary.segbot.launch.xml" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+  </group>
+
+  <group ns="robot7">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="512" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot7" />
+      <arg name="tf_prefix" value="robot7" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/auxiliary.segbot.launch.xml" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+  </group>
+
+  <group ns="robot8">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="514" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot8" />
+      <arg name="tf_prefix" value="robot8" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/auxiliary.segbot.launch.xml" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+  </group>
+
+  <group ns="robot9">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="516" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot9" />
+      <arg name="tf_prefix" value="robot9" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/auxiliary.segbot.launch.xml" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+  </group>
+
+  <group ns="robot10">
+    <include file="$(find segbot_gazebo)/launch/segbot_mobile_base.launch">
+      <arg name="x" value="518" />
+      <arg name="y" value="500" />
+      <arg name="robotid" value="robot10" />
+      <arg name="tf_prefix" value="robot10" />
+      <arg name="configuration_file" value="$(find segbot_bringup)/launch/includes/auxiliary.segbot.launch.xml" />
+      <arg name="use_full_gazebo_model" value="false" />
+    </include>
+  </group>
+
+  <group ns="ball">
+    <arg name="ballid" default="ball" />
+    <include file="$(find bwi_gazebo_entities)/launch/ball.launch">
+      <arg name="x" value="600" />
+      <arg name="y" value="600" />
+      <arg name="ballid" default="$(arg ballid)" />
+    </include>
+  </group>
+
+</launch>

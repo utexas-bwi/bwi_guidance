@@ -1,0 +1,39 @@
+<launch>
+
+  <arg name="uid" />
+  <arg name="email" default=""/>
+  <arg name="name" default=""/>
+  <arg name="use_heuristic" default="true"/>
+
+  <!-- launch the experiment controller node -->
+  <node name="experiment_controller" pkg="bwi_guidance" type="controller.py" output="screen">
+    <param name="graph_file" value="$(find bwi_guidance)/maps/graph_exp1.yaml" />
+    <param name="experiment_file" 
+           value="$(find bwi_guidance_solver)/config/experiment.yaml" />
+    <param name="user_file" value="$(find bwi_guidance_solver)/data/exp2/users/users.yaml" />
+    <param name="result_file" value="$(find bwi_guidance_solver)/data/exp2/users/results.txt" />
+    <param name="data_dir" value="$(find bwi_guidance_solver)/data/exp2/users" />
+    <param name="uid" value="$(arg uid)"/>
+    <param name="email" value="$(arg email)"/>
+    <param name="name" value="$(arg name)"/>
+    <param name="use_heuristic" value="$(arg use_heuristic)" />
+  </node>
+
+  <node name="robot_positioner" pkg="bwi_guidance_solver" 
+        type="vi_robot_positioner2">
+    <param name="map_file" value="$(find bwi_guidance)/maps/exp1.yaml" />
+    <param name="graph_file" value="$(find bwi_guidance)/maps/graph_exp1.yaml" />
+    <param name="experiment_file" 
+           value="$(find bwi_guidance_solver)/config/experiment.yaml" />
+    <param name="default_robot_file" 
+           value="$(find bwi_guidance)/config/default_robots.yaml" />
+    <param name="robot_radius" value="0.25" />
+    <param name="robot_padding" value="0.1" />
+    <param name="search_distance" value="0.45" />
+    <!-- <param name="debug" value="true" /> -->
+    <param name="data_directory" value="$(find bwi_guidance_solver)/data/exp2/cache/" />
+    <param name="use_heuristic" value="$(arg use_heuristic)" />
+    <param name="visibility_range" value="30.0" />
+  </node>
+
+</launch>
