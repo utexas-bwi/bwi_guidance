@@ -14,8 +14,10 @@
 
   <build_depend>bwi_guidance</build_depend>
   <build_depend>bwi_mapper</build_depend>
+  <build_depend>rl_pursuit</build_depend>
 
   <run_depend>bwi_guidance</run_depend>
   <run_depend>bwi_mapper</run_depend>
+  <run_depend>rl_pursuit</run_depend>
 
 </package>

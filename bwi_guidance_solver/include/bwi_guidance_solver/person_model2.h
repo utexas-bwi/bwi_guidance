@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #include <nav_msgs/OccupancyGrid.h>
-#include <bwi_guidance_solver/PredictiveModel.h>
+#include <rl_pursuit/planning/PredictiveModel.h>
 #include <bwi_guidance_solver/structures.h>
 #include <bwi_mapper/graph.h>
 

@@ -1,6 +1,6 @@
 #include<fstream>
 
-#include <bwi_guidance_solver/ValueIteration.h>
+#include <rl_pursuit/planning/ValueIteration.h>
 #include <bwi_guidance_solver/person_estimator.h>
 #include <bwi_guidance_solver/person_model.h>
 #include <bwi_mapper/map_loader.h>

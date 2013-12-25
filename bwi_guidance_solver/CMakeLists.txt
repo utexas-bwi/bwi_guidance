@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(bwi_guidance_solver)
 
 ## Find catkin and external packages
-find_package(catkin REQUIRED COMPONENTS bwi_guidance bwi_mapper)
+find_package(catkin REQUIRED COMPONENTS bwi_guidance bwi_mapper rl_pursuit)
 find_package(Boost REQUIRED COMPONENTS serialization program_options)
 
 ###################################

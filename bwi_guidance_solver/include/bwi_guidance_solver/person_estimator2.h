@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <map>
 
-#include <bwi_guidance_solver/VIEstimator.h>
+#include <rl_pursuit/planning/VIEstimator.h>
 #include <bwi_guidance_solver/structures.h>
 
 namespace boost {

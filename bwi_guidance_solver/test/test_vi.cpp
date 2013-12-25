@@ -1,7 +1,7 @@
 #include<fstream>
 
-#include <bwi_guidance_solver/ValueIteration.h>
-#include <bwi_guidance_solver/PredictiveModel.h>
+#include <rl_pursuit/planning/ValueIteration.h>
+#include <rl_pursuit/planning/PredictiveModel.h>
 #include <boost/foreach.hpp>
 
 class TestModel : public PredictiveModel<int, int>{
