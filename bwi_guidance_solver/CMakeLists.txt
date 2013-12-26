@@ -33,10 +33,10 @@ include_directories(
 
 ## Declare a cpp library
 add_library(bwi_guidance_solver
-  src/heuristic_solver.cpp
-  src/person_model2.cpp
-  src/person_estimator2.cpp
-  src/structures.cpp
+  src/libbwi_guidance_solver/heuristic_solver_qrr14.cpp
+  src/libbwi_guidance_solver/person_estimator_qrr14.cpp
+  src/libbwi_guidance_solver/person_model_qrr14.cpp
+  src/libbwi_guidance_solver/structures_qrr14.cpp
 )
 target_link_libraries(bwi_guidance_solver 
   ${catkin_LIBRARIES}
@@ -47,41 +47,38 @@ target_link_libraries(bwi_guidance_solver
 add_executable(test_vi 
   test/test_vi.cpp
 )
-target_link_libraries(test_vi 
-  bwi_guidance_solver
-)
 
-add_executable(test_mdp2 
-  test/test_mdp2.cpp
+add_executable(test_mdp_qrr14 
+  test/test_mdp_qrr14.cpp
 )
-target_link_libraries(test_mdp2 
+target_link_libraries(test_mdp_qrr14 
   bwi_guidance_solver
 )
-add_executable(generate_exp2 
-  test/generate_exp2.cpp
+add_executable(generate_exp2_robots_qrr14 
+  test/generate_exp2_robots_qrr14.cpp
 )
-target_link_libraries(generate_exp2 
+target_link_libraries(generate_exp2_robots_qrr14
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
 
-add_executable(evaluate 
-  src/evaluate.cpp
+add_executable(evaluate_qrr14 
+  src/nodes/evaluate_qrr14.cpp
 )
-target_link_libraries(evaluate 
+target_link_libraries(evaluate_qrr14
   bwi_guidance_solver
 )
-add_executable(metric_map2 
-  src/metric_map2.cpp
+add_executable(metric_map2_qrr14 
+  src/nodes/metric_map2_qrr14.cpp
 )
-target_link_libraries(metric_map2 
+target_link_libraries(metric_map2_qrr14 
   bwi_guidance_solver
 )
 
-add_executable(vi_robot_positioner2
-  src/nodes/vi_robot_positioner2.cpp
+add_executable(robot_positioner_qrr14
+  src/nodes/robot_positioner_qrr14.cpp
 )
-target_link_libraries(vi_robot_positioner2 
+target_link_libraries(robot_positioner_qrr14 
   bwi_guidance_solver
   ${catkin_LIBRARIES}
 )
@@ -93,7 +90,6 @@ target_link_libraries(vi_robot_positioner2
 ## Mark executables and/or libraries for installation
 install(TARGETS 
   bwi_guidance_solver
-  test_mdp2
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

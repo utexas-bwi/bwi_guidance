@@ -32,9 +32,9 @@ namespace bwi_guidance {
     PLACE_ROBOT = 2
   };
 
-  struct Action {
-    Action();
-    Action(ActionType a, size_t g);
+  struct ActionQRR14 {
+    ActionQRR14();
+    ActionQRR14(ActionType a, size_t g);
     ActionType type;
     size_t graph_id; // with PLACE ROBOT, identifies the direction pointed to
 
@@ -46,12 +46,12 @@ namespace bwi_guidance {
     }
   };
 
-  bool operator<(const Action& l, const Action& r);
-  std::ostream& operator<<(std::ostream& stream, const Action& a);
+  bool operator<(const ActionQRR14& l, const ActionQRR14& r);
+  std::ostream& operator<<(std::ostream& stream, const ActionQRR14& a);
 
   /* States */
 
-  struct State {
+  struct StateQRR14 {
     int graph_id; // ~50
     int direction; // ~8 
     int num_robots_left; // ~6
@@ -69,9 +69,9 @@ namespace bwi_guidance {
     }
   };
 
-  bool operator<(const State& l, const State& r); 
-  bool operator==(const State& l, const State& r);
-  std::ostream& operator<<(std::ostream& stream, const State& s);
+  bool operator<(const StateQRR14& l, const StateQRR14& r); 
+  bool operator==(const StateQRR14& l, const StateQRR14& r);
+  std::ostream& operator<<(std::ostream& stream, const StateQRR14& s);
 
   /* Helper Functions */
 

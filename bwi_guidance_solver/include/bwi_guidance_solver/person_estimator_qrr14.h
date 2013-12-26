@@ -6,7 +6,7 @@
 #include <map>
 
 #include <rl_pursuit/planning/VIEstimator.h>
-#include <bwi_guidance_solver/structures.h>
+#include <bwi_guidance_solver/structures_qrr14.h>
 
 namespace boost {
   namespace serialization {
@@ -16,16 +16,16 @@ namespace boost {
 
 namespace bwi_guidance {
 
-  class PersonEstimator2 : public VIEstimator<State, Action> {
+  class PersonEstimatorQRR14 : public VIEstimator<StateQRR14, ActionQRR14> {
     public:
 
-      PersonEstimator2 () {}
-      virtual ~PersonEstimator2 () {}
+      PersonEstimatorQRR14 () {}
+      virtual ~PersonEstimatorQRR14 () {}
 
-      virtual float getValue(const State &state);
-      virtual void updateValue(const State &state, float value);
-      virtual Action getBestAction(const State &state);
-      virtual void setBestAction(const State &state, const Action& action);
+      virtual float getValue(const StateQRR14 &state);
+      virtual void updateValue(const StateQRR14 &state, float value);
+      virtual ActionQRR14 getBestAction(const StateQRR14 &state);
+      virtual void setBestAction(const StateQRR14 &state, const ActionQRR14& action);
 
       virtual void saveEstimatedValues(const std::string& file);
       virtual void loadEstimatedValues(const std::string& file);
@@ -36,8 +36,8 @@ namespace bwi_guidance {
 
     private:
 
-      std::map<State, float> value_cache_;
-      std::map<State, Action> best_action_cache_;
+      std::map<StateQRR14, float> value_cache_;
+      std::map<StateQRR14, ActionQRR14> best_action_cache_;
 
       friend class boost::serialization::access;
       template<class Archive>

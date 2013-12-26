@@ -1,7 +1,7 @@
 #ifndef HEURISTIC_SOLVER_CBV4SH6M
 #define HEURISTIC_SOLVER_CBV4SH6M
 
-#include <bwi_guidance_solver/structures.h>
+#include <bwi_guidance_solver/structures_qrr14.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <bwi_mapper/graph.h>
 
@@ -16,7 +16,7 @@ class HeuristicSolver {
     void computePolicy();
     void loadPolicy(const std::string& file);
     void savePolicy(const std::string& file);
-    bwi_guidance::Action getBestAction(const bwi_guidance::State& state) const;
+    bwi_guidance::ActionQRR14 getBestAction(const bwi_guidance::StateQRR14& state) const;
     virtual std::string generateDescription(unsigned int indentation = 0) {
       return std::string("stub");
     }

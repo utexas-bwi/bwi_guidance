@@ -7,13 +7,13 @@
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
 
-#include <bwi_guidance_solver/person_model2.h>
+#include <bwi_guidance_solver/person_model_qrr14.h>
 #include <bwi_mapper/point_utils.h>
 #include <bwi_mapper/map_utils.h>
 
 namespace bwi_guidance {
 
-  PersonModel2::PersonModel2(const bwi_mapper::Graph& graph, const
+  PersonModelQRR14::PersonModelQRR14(const bwi_mapper::Graph& graph, const
       nav_msgs::OccupancyGrid& map,  size_t goal_idx, const std::string& file,
       bool allow_robot_current_idx, float visibility_range, bool
       allow_goal_visibility, unsigned int max_robots) : graph_(graph),
@@ -49,22 +49,22 @@ namespace bwi_guidance {
     ofs.close();
   }
 
-  bool PersonModel2::isTerminalState(const State& state) const {
+  bool PersonModelQRR14::isTerminalState(const StateQRR14& state) const {
     return state.graph_id == goal_idx_;
   }
 
-  void PersonModel2::getStateVector(std::vector<State>& states) {
+  void PersonModelQRR14::getStateVector(std::vector<StateQRR14>& states) {
     states = state_cache_;
   }
 
-  void PersonModel2::getActionsAtState(const State& state, 
-      std::vector<Action>& actions) {
+  void PersonModelQRR14::getActionsAtState(const StateQRR14& state, 
+      std::vector<ActionQRR14>& actions) {
     actions = action_cache_[state];
   }
 
   /** Get the predictions of the MDP model for a given state action */
-  void PersonModel2::getTransitionDynamics(const State& state, 
-      const Action& action, std::vector<State> &next_states, 
+  void PersonModelQRR14::getTransitionDynamics(const StateQRR14& state, 
+      const ActionQRR14& action, std::vector<StateQRR14> &next_states, 
       std::vector<float> &rewards, std::vector<float> &probabilities) {
 
     next_states.clear();
@@ -80,7 +80,7 @@ namespace bwi_guidance {
 
     rewards.resize(next_states.size());
     // Compute reward based on euclidean distance between state graph ids
-    for (std::vector<State>::const_iterator ns = next_states.begin();
+    for (std::vector<StateQRR14>::const_iterator ns = next_states.begin();
         ns != next_states.end(); ++ns) {
       rewards[ns - next_states.begin()] =
         -bwi_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
@@ -88,7 +88,7 @@ namespace bwi_guidance {
     }
   }
 
-  void PersonModel2::computeAdjacentVertices() {
+  void PersonModelQRR14::computeAdjacentVertices() {
     adjacent_vertices_map_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
       std::vector<size_t> adjacent_vertices;
@@ -98,7 +98,7 @@ namespace bwi_guidance {
     }
   }
 
-  void PersonModel2::computeVisibleVertices() {
+  void PersonModelQRR14::computeVisibleVertices() {
     visible_vertices_map_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
       std::vector<size_t> visible_vertices;
@@ -109,7 +109,7 @@ namespace bwi_guidance {
     }
   }
 
-  void PersonModel2::initializeStateSpace() {
+  void PersonModelQRR14::initializeStateSpace() {
 
     num_vertices_ = boost::num_vertices(graph_);
 
@@ -123,7 +123,7 @@ namespace bwi_guidance {
       for (int direction = 0; direction < NUM_DIRECTIONS; ++direction) {
         for (int robots = 0; robots <= max_robots_; ++robots) {
 
-          State state;
+          StateQRR14 state;
           state.graph_id = graph_id;
           state.direction = direction;
           state.num_robots_left = robots;
@@ -164,16 +164,16 @@ namespace bwi_guidance {
     }
   }
 
-  void PersonModel2::initializeActionCache() {
+  void PersonModelQRR14::initializeActionCache() {
     action_cache_.clear();
-    for (std::vector<State>::iterator it = state_cache_.begin(); 
+    for (std::vector<StateQRR14>::iterator it = state_cache_.begin(); 
         it != state_cache_.end(); ++it) {
       constructActionsAtState(*it, action_cache_[*it]);
     }
   }
 
-  void PersonModel2::constructActionsAtState(const State& state, 
-      std::vector<Action>& actions) {
+  void PersonModelQRR14::constructActionsAtState(const StateQRR14& state, 
+      std::vector<ActionQRR14>& actions) {
 
     actions.clear();
 
@@ -181,24 +181,24 @@ namespace bwi_guidance {
     // DIRECT_PERSON actions can be taken
     if (state.robot_direction == DIR_UNASSIGNED) {
       BOOST_FOREACH(int id, adjacent_vertices_map_[state.graph_id]) {
-        actions.push_back(Action(DIRECT_PERSON, id));
+        actions.push_back(ActionQRR14(DIRECT_PERSON, id));
       }
       return;
     }
     
     // Otherwise have the DO_NOTHING option
-    actions.push_back(Action(DO_NOTHING,0));
+    actions.push_back(ActionQRR14(DO_NOTHING,0));
 
     // Check if the system can place robots
     if (state.num_robots_left != 0) {
       BOOST_FOREACH(int id, visible_vertices_map_[state.graph_id]) {
         if (state.graph_id != id) {
           if (state.visible_robot == NONE) {
-            actions.push_back(Action(PLACE_ROBOT, id)); 
+            actions.push_back(ActionQRR14(PLACE_ROBOT, id)); 
           }
         } else {
           if (allow_robot_current_idx_ && state.robot_direction == NONE) {
-            actions.push_back(Action(PLACE_ROBOT, id)); 
+            actions.push_back(ActionQRR14(PLACE_ROBOT, id)); 
           }
         }
       }
@@ -206,17 +206,17 @@ namespace bwi_guidance {
 
   }
 
-  std::vector<Action>& PersonModel2::getActionsAtState(
-      const State& state) {
+  std::vector<ActionQRR14>& PersonModelQRR14::getActionsAtState(
+      const StateQRR14& state) {
     return action_cache_[state];
   }
 
-  void PersonModel2::initializeNextStateCache() {
+  void PersonModelQRR14::initializeNextStateCache() {
 
     ns_distribution_cache_.clear();
-    BOOST_FOREACH(const State& state, state_cache_) {
-      std::vector<Action>& actions = getActionsAtState(state);
-      BOOST_FOREACH(const Action& action, actions) {
+    BOOST_FOREACH(const StateQRR14& state, state_cache_) {
+      std::vector<ActionQRR14>& actions = getActionsAtState(state);
+      BOOST_FOREACH(const ActionQRR14& action, actions) {
         constructTransitionProbabilities(state, action, 
             ns_distribution_cache_[state][action]);
       }
@@ -224,8 +224,8 @@ namespace bwi_guidance {
 
   }
 
-  void PersonModel2::getNextStates(const State& state, const Action& action, 
-      std::vector<State>& next_states) {
+  void PersonModelQRR14::getNextStates(const StateQRR14& state, const ActionQRR14& action, 
+      std::vector<StateQRR14>& next_states) {
 
     next_states.clear();
 
@@ -240,7 +240,7 @@ namespace bwi_guidance {
     // First figure out next states for all actions that will end up in a
     // deterministic state transition
     if (action.type == PLACE_ROBOT) {
-      State next_state = state;
+      StateQRR14 next_state = state;
       next_state.num_robots_left--;
       if (action.graph_id != state.graph_id) {
         next_state.visible_robot = action.graph_id;
@@ -254,7 +254,7 @@ namespace bwi_guidance {
     }
 
     if (action.type == DIRECT_PERSON) {
-      State next_state = state;
+      StateQRR14 next_state = state;
       next_state.robot_direction = action.graph_id;
       next_states.push_back(next_state);
       return;
@@ -268,7 +268,7 @@ namespace bwi_guidance {
     // Get all adjacent ids the person can transition to
     // Algorithm 1 in paper
     BOOST_FOREACH(int next_node, adjacent_vertices_map_[state.graph_id]) {
-      State next_state;
+      StateQRR14 next_state;
       if (state.visible_robot == NONE) {
         // If no robot was visible in previous state, no robot can be present
         next_state.robot_direction = NONE;
@@ -300,8 +300,8 @@ namespace bwi_guidance {
     }
   }
 
-  void PersonModel2::constructTransitionProbabilities(const State& state, 
-      const Action& action, std::vector<float>& probabilities) {
+  void PersonModelQRR14::constructTransitionProbabilities(const StateQRR14& state, 
+      const ActionQRR14& action, std::vector<float>& probabilities) {
 
     probabilities.clear();
 
@@ -350,11 +350,11 @@ namespace bwi_guidance {
         // seen. case 1 is finally true!
         case_1_invalid = false;
 
-        std::vector<State> next_states;
+        std::vector<StateQRR14> next_states;
         getNextStates(state, action, next_states);
 
         std::vector<float> differences;
-        BOOST_FOREACH(const State& next_state, next_states) {
+        BOOST_FOREACH(const StateQRR14& next_state, next_states) {
           float ns_angle = bwi_mapper::getNodeAngle(state.graph_id,
               next_state.graph_id, graph_);
           float ns_difference = getAbsoluteAngleDifference(expected_dir,
@@ -369,7 +369,7 @@ namespace bwi_guidance {
 
         unsigned next_state_counter = 0;
         float probablity_sum = 0.0f;
-        BOOST_FOREACH(const State& next_state, next_states) {
+        BOOST_FOREACH(const StateQRR14& next_state, next_states) {
           float probablity = 0.01f / next_states.size();
           if (best_ns == next_state_counter)
             probablity += 0.495f;
@@ -406,12 +406,12 @@ namespace bwi_guidance {
 
     // Now compute the weight of each next state. Get the favored direction
     // and compute transition probabilities
-    std::vector<State> next_states;
+    std::vector<StateQRR14> next_states;
     getNextStates(state, action, next_states);
 
     float weight_sum = 0;
     std::vector<float> weights;
-    BOOST_FOREACH(const State& next_state, next_states) {
+    BOOST_FOREACH(const StateQRR14& next_state, next_states) {
 
       float next_state_direction = bwi_mapper::getNodeAngle(
           state.graph_id, next_state.graph_id, graph_);
@@ -439,8 +439,8 @@ namespace bwi_guidance {
     }
   }
 
-  std::vector<float>& PersonModel2::getTransitionProbabilities(
-      const State& state, const Action& action) {
+  std::vector<float>& PersonModelQRR14::getTransitionProbabilities(
+      const StateQRR14& state, const ActionQRR14& action) {
     return ns_distribution_cache_[state][action];
   }
 

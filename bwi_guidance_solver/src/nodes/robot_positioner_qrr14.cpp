@@ -1,9 +1,9 @@
 #include<fstream>
 
 #include <rl_pursuit/planning/ValueIteration.h>
-#include <bwi_guidance_solver/person_estimator2.h>
-#include <bwi_guidance_solver/person_model2.h>
-#include <bwi_guidance_solver/heuristic_solver.h>
+#include <bwi_guidance_solver/person_estimator_qrr14.h>
+#include <bwi_guidance_solver/person_model_qrr14.h>
+#include <bwi_guidance_solver/heuristic_solver_qrr14.h>
 #include <bwi_mapper/map_loader.h>
 #include <bwi_guidance/base_robot_positioner.h>
 #include <tf/transform_datatypes.h>
@@ -11,17 +11,17 @@
 
 using namespace bwi_guidance;
 
-class VIRobotPositioner2 : public BaseRobotPositioner {
+class RobotPositionerQRR14 : public BaseRobotPositioner {
 
   private:
-    boost::shared_ptr<PersonModel2> model_;
-    boost::shared_ptr<PersonEstimator2> estimator_;
-    boost::shared_ptr<ValueIteration<State, Action> > vi_;
+    boost::shared_ptr<PersonModelQRR14> model_;
+    boost::shared_ptr<PersonEstimatorQRR14> estimator_;
+    boost::shared_ptr<ValueIteration<StateQRR14, ActionQRR14> > vi_;
     boost::shared_ptr<HeuristicSolver> hs_;
 
-    std::map<int, boost::shared_ptr<PersonModel2> > model_map_;
-    std::map<int, boost::shared_ptr<PersonEstimator2> > estimator_map_;
-    std::map<int, boost::shared_ptr<ValueIteration<State, Action> > > vi_map_;
+    std::map<int, boost::shared_ptr<PersonModelQRR14> > model_map_;
+    std::map<int, boost::shared_ptr<PersonEstimatorQRR14> > estimator_map_;
+    std::map<int, boost::shared_ptr<ValueIteration<StateQRR14, ActionQRR14> > > vi_map_;
     std::map<int, boost::shared_ptr<HeuristicSolver> > hs_map_;
 
     double vi_gamma_;
@@ -34,7 +34,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
     std::string instance_name_;
     int goal_idx_;
-    State current_state_;
+    StateQRR14 current_state_;
 
     size_t assigned_robots_;
     bwi_mapper::Point2f assigned_robot_loc_;
@@ -43,7 +43,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
   public:
 
-    VIRobotPositioner2(boost::shared_ptr<ros::NodeHandle>& nh) :
+    RobotPositionerQRR14(boost::shared_ptr<ros::NodeHandle>& nh) :
         BaseRobotPositioner(nh) {
 
       ros::NodeHandle private_nh("~");
@@ -85,18 +85,18 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
           + boost::lexical_cast<std::string>(goal_idx) + "_vi.txt";
 
         // Setup the model and the heuristic solver to read from file
-        boost::shared_ptr<PersonModel2> model;
-        boost::shared_ptr<PersonEstimator2> estimator;
-        boost::shared_ptr<ValueIteration<State, Action> > vi;
+        boost::shared_ptr<PersonModelQRR14> model;
+        boost::shared_ptr<PersonEstimatorQRR14> estimator;
+        boost::shared_ptr<ValueIteration<StateQRR14, ActionQRR14> > vi;
         boost::shared_ptr<HeuristicSolver> hs;
         float pixel_visibility_range = visibility_range_ / map_.info.resolution;
-        model.reset(new PersonModel2(graph_, map_, goal_idx, model_file,
+        model.reset(new PersonModelQRR14(graph_, map_, goal_idx, model_file,
               allow_robot_current_idx_, pixel_visibility_range,
               allow_goal_visibility_));
-        estimator.reset(new PersonEstimator2);
+        estimator.reset(new PersonEstimatorQRR14);
         float epsilon = 0.05f / map_.info.resolution;
         float delta = -500.0f / map_.info.resolution;
-        vi.reset(new ValueIteration<State, Action>(
+        vi.reset(new ValueIteration<StateQRR14, ActionQRR14>(
               model, estimator, vi_gamma_, epsilon, vi_max_iterations_,
               0.0, delta));
         hs.reset(new HeuristicSolver(map_, graph_, goal_idx,
@@ -110,14 +110,14 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         }
         if (policy_available) {
           vi->loadPolicy(vi_file);
-          ROS_INFO_STREAM("VIRobotPositioner2: Loaded policy for goal_idx " <<
+          ROS_INFO_STREAM("RobotPositionerQRR14: Loaded policy for goal_idx " <<
               goal_idx << " from " << vi_file);
         } else {
-          ROS_INFO_STREAM("VIRobotPositioner2: Computing policy for goal_idx: "
+          ROS_INFO_STREAM("RobotPositionerQRR14: Computing policy for goal_idx: "
               << goal_idx);
           vi->computePolicy();
           vi->savePolicy(vi_file);
-          ROS_INFO_STREAM("VIRobotPositioner2: Saved policy to " << vi_file);
+          ROS_INFO_STREAM("RobotPositionerQRR14: Saved policy to " << vi_file);
         }
 
         model_map_[goal_idx] = model;
@@ -128,7 +128,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
     }
 
-    virtual ~VIRobotPositioner2() {}
+    virtual ~RobotPositionerQRR14() {}
 
     virtual void startExperimentInstance(
         const std::string& instance_name) {
@@ -175,13 +175,13 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
         getInstance(experiment_, instance_name_);
 
       // First check if we need to place a robot according to VI policy
-      Action action;
+      ActionQRR14 action;
       if (use_heuristic_) {
         action = hs_->getBestAction(current_state_);
       } else {
         action = vi_->getBestAction(current_state_);
       }
-      std::vector<State> next_states;
+      std::vector<StateQRR14> next_states;
       std::vector<float> probabilities;
       std::vector<float> rewards;
       model_->getTransitionDynamics(current_state_, action, next_states, 
@@ -226,13 +226,13 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
 
           // Perform lookahead to see best location to place robot
           size_t direction_idx = getDiscretizedAngle(angle);
-          State robot_state;
+          StateQRR14 robot_state;
           robot_state.graph_id = current_state_.visible_robot;
           robot_state.direction = direction_idx;
           robot_state.num_robots_left = current_state_.num_robots_left;
           robot_state.robot_direction = DIR_UNASSIGNED;
           robot_state.visible_robot = NONE;
-          Action robot_action;
+          ActionQRR14 robot_action;
           if (use_heuristic_) {
             robot_action = hs_->getBestAction(robot_state);
           } else {
@@ -285,8 +285,8 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
       if (current_graph_id != current_state_.graph_id) {
         // A transition has happened. Compute next state and check if robot 
         // needs to be placed.
-        Action a(DO_NOTHING, 0);
-        std::vector<State> next_states; 
+        ActionQRR14 a(DO_NOTHING, 0);
+        std::vector<StateQRR14> next_states; 
         model_->getNextStates(current_state_, a, next_states); 
         int old_robot_status = current_state_.robot_direction;
         if (old_robot_status != NONE) {
@@ -302,7 +302,7 @@ class VIRobotPositioner2 : public BaseRobotPositioner {
                 0);
         }
 
-        BOOST_FOREACH(const State& state, next_states) {
+        BOOST_FOREACH(const StateQRR14& state, next_states) {
           if (state.graph_id == current_graph_id) {
             int old_robot_state = current_state_.visible_robot;
             current_state_ = state;
@@ -335,7 +335,7 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "vi_robot_positioner2");
   boost::shared_ptr<ros::NodeHandle> nh;
   nh.reset(new ros::NodeHandle());
-  VIRobotPositioner2 rp(nh);
+  RobotPositionerQRR14 rp(nh);
   rp.run();
 
   return 0;

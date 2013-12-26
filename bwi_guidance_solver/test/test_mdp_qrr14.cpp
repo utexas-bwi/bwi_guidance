@@ -5,9 +5,9 @@
 #include <boost/foreach.hpp>
 
 #include <rl_pursuit/planning/ValueIteration.h>
-#include <bwi_guidance_solver/heuristic_solver.h>
-#include <bwi_guidance_solver/person_estimator2.h>
-#include <bwi_guidance_solver/person_model2.h>
+#include <bwi_guidance_solver/heuristic_solver_qrr14.h>
+#include <bwi_guidance_solver/person_estimator_qrr14.h>
+#include <bwi_guidance_solver/person_model_qrr14.h>
 #include <bwi_mapper/map_loader.h>
 #include <bwi_mapper/map_utils.h>
 
@@ -32,14 +32,14 @@ void test(bwi_mapper::Graph& graph, nav_msgs::OccupancyGrid& map) {
     + "_" + vi_policy_file;
 
   float pixel_visibility_range = visibility_range / map.info.resolution;
-  boost::shared_ptr<PersonModel2> model(
-      new PersonModel2(graph, map, goal_idx, indexed_model_file, 
+  boost::shared_ptr<PersonModelQRR14> model(
+      new PersonModelQRR14(graph, map, goal_idx, indexed_model_file, 
         allow_robot_current_idx, pixel_visibility_range,
         allow_goal_visibility));
-  boost::shared_ptr<PersonEstimator2> estimator(new PersonEstimator2);
+  boost::shared_ptr<PersonEstimatorQRR14> estimator(new PersonEstimatorQRR14);
   float epsilon = 0.05f / map.info.resolution;
   float delta = -500.0f / map.info.resolution;
-  ValueIteration<State, Action> vi(model, estimator, 1.0, epsilon, 1000, 0.0f,
+  ValueIteration<StateQRR14, ActionQRR14> vi(model, estimator, 1.0, epsilon, 1000, 0.0f,
       delta);
   HeuristicSolver hi(map, graph, goal_idx, allow_robot_current_idx,
       pixel_visibility_range, allow_goal_visibility); 
@@ -70,7 +70,7 @@ void test(bwi_mapper::Graph& graph, nav_msgs::OccupancyGrid& map) {
     std::cout << "Enter start visibleRobotLocation: ";
     std::cin >> start_vrl;
 
-    State current_state; 
+    StateQRR14 current_state; 
     current_state.graph_id = start_idx;
     current_state.direction = start_direction;
     current_state.num_robots_left = starting_robots;
@@ -79,35 +79,35 @@ void test(bwi_mapper::Graph& graph, nav_msgs::OccupancyGrid& map) {
 
     while (current_state.graph_id != goal_idx) {
 
-      std::vector<State> next_states;
+      std::vector<StateQRR14> next_states;
       std::vector<float> probabilities;
       std::vector<float> rewards;
 
       while (true) {
 
-        std::cout << "At State " << current_state << std::endl; 
+        std::cout << "At StateQRR14 " << current_state << std::endl; 
         std::cout << "Value of this state (from VI): " << 
           estimator->getValue(current_state) << std::endl;
 
-        std::vector<Action> actions;
+        std::vector<ActionQRR14> actions;
         int count = 0;
         model->getActionsAtState(current_state, actions);
         std::string str[3];
         str[DO_NOTHING] = "DO_NOTHING";
         str[DIRECT_PERSON] = "DIRECT_PERSON";
         str[PLACE_ROBOT] = "PLACE_ROBOT";
-        BOOST_FOREACH(const Action& action, actions) {
-          std::cout << "#" << count << " Action: " << str[action.type] << " " << action.graph_id << std::endl;
+        BOOST_FOREACH(const ActionQRR14& action, actions) {
+          std::cout << "#" << count << " ActionQRR14: " << str[action.type] << " " << action.graph_id << std::endl;
           model->getTransitionDynamics(current_state, action, next_states, rewards, probabilities);
           // for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
-          //   State& next_state = next_states[next_state_counter];
-          //   std::cout << "  - #" << next_state_counter << " Leads to State " << next_state << " with probability " << probabilities[next_state_counter] << " and reward " << rewards[next_state_counter] << std::endl;
+          //   StateQRR14& next_state = next_states[next_state_counter];
+          //   std::cout << "  - #" << next_state_counter << " Leads to StateQRR14 " << next_state << " with probability " << probabilities[next_state_counter] << " and reward " << rewards[next_state_counter] << std::endl;
           // }
           ++count;
         }
-        Action vi_action = vi.getBestAction(current_state);
-        Action hi_action = hi.getBestAction(current_state);
-        Action action;
+        ActionQRR14 vi_action = vi.getBestAction(current_state);
+        ActionQRR14 hi_action = hi.getBestAction(current_state);
+        ActionQRR14 action;
         if (use_heuristic) {
           action = hi_action;
         } else if (use_vi) {
@@ -144,8 +144,8 @@ void test(bwi_mapper::Graph& graph, nav_msgs::OccupancyGrid& map) {
       std::cout << "Waiting for MANUAL transition..." << std::endl;
 
       for (size_t next_state_counter = 0; next_state_counter < next_states.size(); ++next_state_counter) {
-        State& next_state = next_states[next_state_counter];
-        std::cout << "  - #" << next_state_counter << " Leads to State " << next_state << " with probability " << probabilities[next_state_counter] << std::endl;
+        StateQRR14& next_state = next_states[next_state_counter];
+        std::cout << "  - #" << next_state_counter << " Leads to StateQRR14 " << next_state << " with probability " << probabilities[next_state_counter] << std::endl;
       }
       std::cout << "Choice: ";
       int choice;

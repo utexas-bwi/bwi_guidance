@@ -1,5 +1,5 @@
 #include <fstream>
-#include <bwi_guidance_solver/heuristic_solver.h>
+#include <bwi_guidance_solver/heuristic_solver_qrr14.h>
 #include <bwi_mapper/map_utils.h>
 #include <bwi_mapper/point_utils.h>
 
@@ -34,7 +34,7 @@ HeuristicSolver::HeuristicSolver(const nav_msgs::OccupancyGrid& map, const
     fout.close();
   }
 
-Action HeuristicSolver::getBestAction(const bwi_guidance::State& state) const {
+ActionQRR14 HeuristicSolver::getBestAction(const bwi_guidance::StateQRR14& state) const {
 
   if (state.robot_direction == DIR_UNASSIGNED) {
     // Find shortest path to goal. Point in direction of this path
@@ -46,12 +46,12 @@ Action HeuristicSolver::getBestAction(const bwi_guidance::State& state) const {
     // for (std::vector<size_t>::const_iterator i = path_from_goal.begin(); 
     //     i != path_from_goal.end(); ++i) std::cout << *i << ' ';
     // std::cout << std::endl;
-    return bwi_guidance::Action(DIRECT_PERSON, path_from_goal[path_from_goal.size() - 2]);
+    return bwi_guidance::ActionQRR14(DIRECT_PERSON, path_from_goal[path_from_goal.size() - 2]);
   }
 
   if (state.robot_direction != NONE) {
     // Wait for person to transition out of this state. Do nothin
-    return bwi_guidance::Action(DO_NOTHING, 0);
+    return bwi_guidance::ActionQRR14(DO_NOTHING, 0);
   }
 
   // Otherwise, see if we can place a robot. Placing robots is only allowed:
@@ -59,7 +59,7 @@ Action HeuristicSolver::getBestAction(const bwi_guidance::State& state) const {
       state.graph_id == goal_idx_ || 
       state.visible_robot != NONE) {
     // Already placed all available robots or no need to
-    return bwi_guidance::Action(DO_NOTHING, 0);
+    return bwi_guidance::ActionQRR14(DO_NOTHING, 0);
   }
 
   // Given the current graph id of the person and the direction the person
@@ -153,12 +153,12 @@ Action HeuristicSolver::getBestAction(const bwi_guidance::State& state) const {
   if ((!allow_goal_visibility_ || min_graph_idx != goal_idx_) && min_graph_idx
       != (size_t)-1) {
     // The user is expected to pass through the goal
-    return bwi_guidance::Action(PLACE_ROBOT, min_graph_idx);
+    return bwi_guidance::ActionQRR14(PLACE_ROBOT, min_graph_idx);
   }
 
   // This means that placing a robot on the current vertex is not allowed, and 
   // the current vertex is the closest vertex to the goal on the forward path
-  return bwi_guidance::Action(DO_NOTHING, 0);
+  return bwi_guidance::ActionQRR14(DO_NOTHING, 0);
 
 }
 

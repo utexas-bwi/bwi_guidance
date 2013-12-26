@@ -10,9 +10,9 @@
 #include <boost/random/mersenne_twister.hpp>
 
 #include <rl_pursuit/planning/ValueIteration.h>
-#include <bwi_guidance_solver/heuristic_solver.h>
-#include <bwi_guidance_solver/person_estimator2.h>
-#include <bwi_guidance_solver/person_model2.h>
+#include <bwi_guidance_solver/heuristic_solver_qrr14.h>
+#include <bwi_guidance_solver/person_estimator_qrr14.h>
+#include <bwi_guidance_solver/person_model_qrr14.h>
 #include <bwi_mapper/map_loader.h>
 #include <bwi_mapper/map_utils.h>
 
@@ -25,7 +25,7 @@ boost::shared_ptr<
 std::string data_directory = "";
 std::string vi_policy_file = "vi.txt";
 std::string model_file = "model.txt";
-std::string results_file = "result.txt";
+std::string results_file = "metric_map2.txt";
 std::string map_file = "";
 std::string graph_file = "";
 int seed = 12345;
@@ -37,23 +37,17 @@ float visibility_range = 0.0f;
 bool allow_goal_visibility = false;
 
 struct InstanceResult {
-  float avg_vi_distance[5];
-  float percent_vi_completion[5]; 
-  float avg_hi_distance[5];
-  float percent_hi_completion[5];
-  float true_vi_value[5];
+  float avg_hi_distance[15];
+  float percent_hi_completion[15];
+  float true_vi_value;
 };
 
 std::ostream& operator<< (std::ostream& stream, const InstanceResult& ir) {
-  for (int i = 0; i < 5; ++i) {
-    stream << ir.avg_vi_distance[i] << "," << ir.avg_hi_distance[i] << "," << ir.true_vi_value[i];
-    /* stream << ir.avg_vi_distance[i] << "," << ir.percent_vi_completion[i] << "," << ir.avg_hi_distance[i] << "," << ir.percent_hi_completion[i]; */
-    if (i!=4) 
+  stream << ir.true_vi_value << ",";
+  for (int i = 0; i < 15; ++i) {
+    stream << ir.avg_hi_distance[i];
+    if (i!=14) 
       stream << ",";
-    // stream << "VI\t" << i+1 << "r\t" << ir.avg_vi_distance[i] << "\t" 
-    //   << ir.percent_vi_completion[i] << "%" << std::endl;
-    // stream << "HS\t" << i+1 << "r\t" << ir.avg_hi_distance[i] << "\t" 
-    //   << ir.percent_hi_completion[i] << "%" << std::endl;
   }
   return stream;
 }
@@ -82,14 +76,14 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
     + "_" + vi_policy_file;
 
   float pixel_visibility_range = visibility_range / map.info.resolution;
-  boost::shared_ptr<PersonModel2> model(
-      new PersonModel2(graph, map, goal_idx, indexed_model_file, 
+  boost::shared_ptr<PersonModelQRR14> model(
+      new PersonModelQRR14(graph, map, goal_idx, indexed_model_file, 
         allow_robot_current_idx, pixel_visibility_range,
         allow_goal_visibility));
-  boost::shared_ptr<PersonEstimator2> estimator(new PersonEstimator2);
+  boost::shared_ptr<PersonEstimatorQRR14> estimator(new PersonEstimatorQRR14);
   float epsilon = 0.05f / map.info.resolution;
   float delta = -500.0f / map.info.resolution;
-  ValueIteration<State, Action> vi(model, estimator, 1.0, epsilon, 1000, 0.0f,
+  ValueIteration<StateQRR14, ActionQRR14> vi(model, estimator, 1.0, epsilon, 1000, 0.0f,
       delta);
   HeuristicSolver hi(map, graph, goal_idx, allow_robot_current_idx,
       pixel_visibility_range, allow_goal_visibility); 
@@ -105,61 +99,72 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
       << indexed_vi_file << std::endl;
   }
 
-  for (int method = 0; method < 2; ++method) {
-    for (int starting_robots = 1; starting_robots <= 5; ++starting_robots) {
+  StateQRR14 true_state;
+  true_state.graph_id = start_idx;
+  true_state.direction = start_direction;
+  true_state.num_robots_left = 5;
+  true_state.robot_direction = NONE;
+  true_state.visible_robot = NONE;
+  float true_distance = -estimator->getValue(true_state);
+  result.true_vi_value = true_distance;
+  result.true_vi_value *= map.info.resolution;
+
+    for (int starting_robots = 1; starting_robots <= 15; ++starting_robots) {
 
       float sum_instance_distance = 0;
       int count_successful = 0;
-      float true_distance = 0;
 
       for (int run = 0; run < runs_per_instance; ++run) {
 
-        State current_state; 
+        StateQRR14 current_state; 
         current_state.graph_id = start_idx;
         current_state.direction = start_direction;
         current_state.num_robots_left = starting_robots;
         current_state.robot_direction = NONE;
         current_state.visible_robot = NONE;
-        true_distance = -estimator->getValue(current_state);
 
-        /* std::cout << " - start " << current_state << std::endl; */
+        /* std::cout << " START " << current_state << std::endl; */
 
         float reward = 0;
         float reward_limit = -((float)distance_limit) / map.info.resolution;
 
         while (current_state.graph_id != goal_idx && reward >= reward_limit) {
 
-          std::vector<State> next_states;
+          std::vector<StateQRR14> next_states;
           std::vector<float> probabilities;
           std::vector<float> rewards;
 
+          int increase_robots = 0;
           // Deterministic system transitions
           while (true) {
+            increase_robots = 0;
 
-            Action action;
-            if (method == 0) {
-              action = vi.getBestAction(current_state);
-            } else {
+            ActionQRR14 action;
               action = hi.getBestAction(current_state);
-            }
             /* std::cout << "   action: " << action << std::endl; */
 
+            if (current_state.num_robots_left > 3) {
+              increase_robots = current_state.num_robots_left - 3;
+              current_state.num_robots_left = 3;
+            }
             model->getTransitionDynamics(current_state, action, next_states, 
                 rewards, probabilities);
 
             if (action.type == DO_NOTHING) {
               // Manual transition
               break;
-            }
+            } 
 
             // The human does not move for this action, and a single next state is present
             current_state = next_states[0];
+            current_state.num_robots_left += increase_robots;
             /* std::cout << " - auto " << current_state << std::endl; */
           }
 
           // Select next state choice based on probabilities
           int choice = select(probabilities);
           current_state = next_states[choice];
+          current_state.num_robots_left += increase_robots;
           /* std::cout << " - manual " << current_state << std::endl; */
           reward += rewards[choice];
         }
@@ -170,24 +175,13 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
         sum_instance_distance += -reward;
       }
 
-      if (method == 0) {
-        result.avg_vi_distance[starting_robots - 1] = 
-          sum_instance_distance / runs_per_instance;
-        result.avg_vi_distance[starting_robots - 1] *= map.info.resolution;
-        result.percent_vi_completion[starting_robots - 1] =
-          ((float) count_successful * 100.0f) / runs_per_instance;
-        result.true_vi_value[starting_robots - 1] = true_distance;
-        result.true_vi_value[starting_robots - 1] *= map.info.resolution;
-      } else {
         result.avg_hi_distance[starting_robots - 1] = 
           sum_instance_distance / runs_per_instance;
         result.avg_hi_distance[starting_robots - 1] *= map.info.resolution;
         result.percent_hi_completion[starting_robots - 1] =
           ((float) count_successful * 100.0f) / runs_per_instance;
-      }
 
     }
-  }
 
   return result;
 
@@ -285,10 +279,10 @@ int main(int argc, char** argv) {
       goal_idx = idx_gen();
     }
     int start_direction = direction_gen();
+    std::cout << "#" << i << " Testing [" << start_idx << "," <<
+      start_direction << "," << goal_idx << "]: " << std::endl;
     InstanceResult res = testInstance(graph, map, start_idx, start_direction, goal_idx);
-    std::cout << "#" << i << " Testing [" << start_idx << "," << start_direction << "," << goal_idx
-      << "]: " << std::endl;
-    // std::cout << res << std::endl;
+    std::cout << res << std::endl;
     fout << i << "," << start_idx << "," << start_direction << "," << goal_idx
       << "," << res << std::endl;
   }

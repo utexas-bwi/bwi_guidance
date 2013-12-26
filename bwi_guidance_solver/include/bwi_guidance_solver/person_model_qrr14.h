@@ -5,7 +5,7 @@
 
 #include <nav_msgs/OccupancyGrid.h>
 #include <rl_pursuit/planning/PredictiveModel.h>
-#include <bwi_guidance_solver/structures.h>
+#include <bwi_guidance_solver/structures_qrr14.h>
 #include <bwi_mapper/graph.h>
 
 namespace boost {
@@ -16,57 +16,57 @@ namespace boost {
 
 namespace bwi_guidance {
 
-  class PersonModel2 : public PredictiveModel<State, Action> {
+  class PersonModelQRR14 : public PredictiveModel<StateQRR14, ActionQRR14> {
 
     public:
 
-      PersonModel2(const bwi_mapper::Graph& graph, 
+      PersonModelQRR14(const bwi_mapper::Graph& graph, 
           const nav_msgs::OccupancyGrid& map, size_t goal_idx, 
           const std::string& file = "", bool allow_robot_current_idx = false,
           float visibility_range = 0.0f, bool allow_goal_visibility = false,
           unsigned int max_robots = 5);
 
-      virtual bool isTerminalState(const State& state) const;
-      virtual void getStateVector(std::vector<State>& states);
-      virtual void getActionsAtState(const State &state, 
-          std::vector<Action>& actions);
-      virtual void getTransitionDynamics(const State &s, 
-          const Action &a, std::vector<State> &next_states, 
+      virtual bool isTerminalState(const StateQRR14& state) const;
+      virtual void getStateVector(std::vector<StateQRR14>& states);
+      virtual void getActionsAtState(const StateQRR14 &state, 
+          std::vector<ActionQRR14>& actions);
+      virtual void getTransitionDynamics(const StateQRR14 &s, 
+          const ActionQRR14 &a, std::vector<StateQRR14> &next_states, 
           std::vector<float> &rewards, std::vector<float> &probabilities);
 
-      virtual ~PersonModel2() {};
+      virtual ~PersonModelQRR14() {};
       virtual std::string generateDescription(unsigned int indentation = 0) {
         return std::string("stub");
       }
 
-      void getNextStates(const State& state, const Action& action, 
-          std::vector<State>& next_states);
+      void getNextStates(const StateQRR14& state, const ActionQRR14& action, 
+          std::vector<StateQRR14>& next_states);
 
     private:
 
-      /* State space cache */
+      /* StateQRR14 space cache */
       std::map<int, std::vector<int> > adjacent_vertices_map_;
       std::map<int, std::vector<int> > visible_vertices_map_;
       void computeAdjacentVertices();
       void computeVisibleVertices();
-      std::vector<State> state_cache_;
+      std::vector<StateQRR14> state_cache_;
       void initializeStateSpace();
 
       /* Actions cache */
       void initializeActionCache();
-      void constructActionsAtState(const State& state, 
-          std::vector<Action>& actions);
-      std::vector<Action>& getActionsAtState(const State &state);
-      std::map<State, std::vector<Action> > action_cache_;
+      void constructActionsAtState(const StateQRR14& state, 
+          std::vector<ActionQRR14>& actions);
+      std::vector<ActionQRR14>& getActionsAtState(const StateQRR14 &state);
+      std::map<StateQRR14, std::vector<ActionQRR14> > action_cache_;
 
       /* Next states and transitions cache */
       void initializeNextStateCache();
-      std::map<State, std::map<Action, std::vector<float> > > 
+      std::map<StateQRR14, std::map<ActionQRR14, std::vector<float> > > 
         ns_distribution_cache_;
-      void constructTransitionProbabilities(const State& state, 
-          const Action& action, std::vector<float>& probabilities);
-      std::vector<float>& getTransitionProbabilities(const State& state,
-          const Action& action);
+      void constructTransitionProbabilities(const StateQRR14& state, 
+          const ActionQRR14& action, std::vector<float>& probabilities);
+      std::vector<float>& getTransitionProbabilities(const StateQRR14& state,
+          const ActionQRR14& action);
 
       unsigned int num_vertices_;
       unsigned int max_robots_;
@@ -95,6 +95,6 @@ namespace bwi_guidance {
   
 } /* bwi_guidance */
 
-BOOST_CLASS_TRACKING(bwi_guidance::PersonModel2, boost::serialization::track_never)
+BOOST_CLASS_TRACKING(bwi_guidance::PersonModelQRR14, boost::serialization::track_never)
 
 #endif /* end of include guard: PERSON_MODEL_2 */

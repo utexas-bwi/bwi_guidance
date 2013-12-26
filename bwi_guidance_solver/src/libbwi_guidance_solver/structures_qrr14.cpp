@@ -1,18 +1,18 @@
-#include <bwi_guidance_solver/structures.h>
+#include <bwi_guidance_solver/structures_qrr14.h>
 #include <bwi_mapper/graph.h>
 
 namespace bwi_guidance {
 
 
-  Action::Action() : type(DO_NOTHING), graph_id(0) {}
-  Action::Action(ActionType a, size_t g) : type(a), graph_id(g) {}
+  ActionQRR14::ActionQRR14() : type(DO_NOTHING), graph_id(0) {}
+  ActionQRR14::ActionQRR14(ActionType a, size_t g) : type(a), graph_id(g) {}
 
-  bool operator<(const Action& l, const Action& r) {
+  bool operator<(const ActionQRR14& l, const ActionQRR14& r) {
     return (l.type < r.type) ||
       ((l.type == r.type) && (l.graph_id < r.graph_id)); 
   }
 
-  std::ostream& operator<<(std::ostream& stream, const Action& a) {
+  std::ostream& operator<<(std::ostream& stream, const ActionQRR14& a) {
     std::string action_str[3];
     action_str[DO_NOTHING] = "DO_NOTHING";
     action_str[PLACE_ROBOT] = "PLACE_ROBOT";
@@ -26,7 +26,7 @@ namespace bwi_guidance {
     return stream;
   }
 
-  bool operator<(const State& l, const State& r ) {
+  bool operator<(const StateQRR14& l, const StateQRR14& r ) {
     if (l.graph_id < r.graph_id) return true;
     if (l.graph_id > r.graph_id) return false;
 
@@ -45,7 +45,7 @@ namespace bwi_guidance {
     return false;
   }
 
-  bool operator==(const State& l, const State& r ) {
+  bool operator==(const StateQRR14& l, const StateQRR14& r ) {
     return (l.graph_id == r.graph_id &&
         l.direction == r.direction &&
         l.num_robots_left == r.num_robots_left &&
@@ -53,7 +53,7 @@ namespace bwi_guidance {
         l.visible_robot == r.visible_robot);
   }
 
-  std::ostream& operator<<(std::ostream& stream, const State& s) {
+  std::ostream& operator<<(std::ostream& stream, const StateQRR14& s) {
     stream << "[" << s.graph_id << ", " 
         << s.direction << ", " 
         << s.num_robots_left << ", " 
