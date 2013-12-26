@@ -1,5 +1,5 @@
-#ifndef PERSON_ESTIMATOR2_O2FD6383
-#define PERSON_ESTIMATOR2_O2FD6383
+#ifndef BWI_GUIDANCE_SOLVER_PERSON_ESTIMATOR_QRR14
+#define BWI_GUIDANCE_SOLVER_PERSON_ESTIMATOR_QRR14
 
 #include <boost/lexical_cast.hpp>
 #include <stdexcept>
@@ -48,4 +48,4 @@ namespace bwi_guidance {
 
 } /* bwi_guidance */
 
-#endif /* end of include guard: PERSON_ESTIMATOR2_O2FD6383 */
+#endif /* end of include guard: BWI_GUIDANCE_SOLVER_PERSON_ESTIMATOR_QRR14 */

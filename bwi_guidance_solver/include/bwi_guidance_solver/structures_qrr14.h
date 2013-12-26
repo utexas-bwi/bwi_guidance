@@ -46,6 +46,7 @@ namespace bwi_guidance {
     }
   };
 
+  bool operator==(const ActionQRR14& l, const ActionQRR14& r);
   bool operator<(const ActionQRR14& l, const ActionQRR14& r);
   std::ostream& operator<<(std::ostream& stream, const ActionQRR14& a);
 

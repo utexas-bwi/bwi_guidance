@@ -1,11 +1,13 @@
-#ifndef PERSON_MODEL_2
-#define PERSON_MODEL_2
-
-#include <stdint.h>
+#ifndef BWI_GUIDANCE_SOLVER_PERSON_MODEL_QRR14
+#define BWI_GUIDANCE_SOLVER_PERSON_MODEL_QRR14
 
 #include <nav_msgs/OccupancyGrid.h>
+#include <rl_pursuit/planning/Model.h>
 #include <rl_pursuit/planning/PredictiveModel.h>
+#include <stdint.h>
+
 #include <bwi_guidance_solver/structures_qrr14.h>
+#include <bwi_guidance_solver/utils.h>
 #include <bwi_mapper/graph.h>
 
 namespace boost {
@@ -16,7 +18,8 @@ namespace boost {
 
 namespace bwi_guidance {
 
-  class PersonModelQRR14 : public PredictiveModel<StateQRR14, ActionQRR14> {
+  class PersonModelQRR14 : public PredictiveModel<StateQRR14, ActionQRR14>,
+                           public Model<StateQRR14, ActionQRR14> {
 
     public:
 
@@ -26,6 +29,7 @@ namespace bwi_guidance {
           float visibility_range = 0.0f, bool allow_goal_visibility = false,
           unsigned int max_robots = 5);
 
+      /* Functions inherited from PredictiveModel */
       virtual bool isTerminalState(const StateQRR14& state) const;
       virtual void getStateVector(std::vector<StateQRR14>& states);
       virtual void getActionsAtState(const StateQRR14 &state, 
@@ -35,14 +39,28 @@ namespace bwi_guidance {
           std::vector<float> &rewards, std::vector<float> &probabilities);
 
       virtual ~PersonModelQRR14() {};
+
       virtual std::string generateDescription(unsigned int indentation = 0) {
         return std::string("stub");
       }
+
+      /* Functions inherited from Model */
+      virtual void setState(const StateQRR14 &state);
+      virtual void takeAction(const ActionQRR14 &action, float &reward, 
+          StateQRR14 &state, bool &terminal);
+      virtual void getFirstAction(const StateQRR14 &state, ActionQRR14 &action);
+      virtual bool getNextAction(const StateQRR14 &state, ActionQRR14 &action);
+
+      void initializeRNG(URGenPtr generator);
 
       void getNextStates(const StateQRR14& state, const ActionQRR14& action, 
           std::vector<StateQRR14>& next_states);
 
     private:
+
+      /* Current state for generative model */
+      StateQRR14 current_state_;
+      URGenPtr generator_;
 
       /* StateQRR14 space cache */
       std::map<int, std::vector<int> > adjacent_vertices_map_;
@@ -95,6 +113,7 @@ namespace bwi_guidance {
   
 } /* bwi_guidance */
 
-BOOST_CLASS_TRACKING(bwi_guidance::PersonModelQRR14, boost::serialization::track_never)
+BOOST_CLASS_TRACKING(bwi_guidance::PersonModelQRR14, 
+    boost::serialization::track_never)
 
-#endif /* end of include guard: PERSON_MODEL_2 */
+#endif /* end of include guard: BWI_GUIDANCE_SOLVER_PERSON_MODEL_QRR14 */

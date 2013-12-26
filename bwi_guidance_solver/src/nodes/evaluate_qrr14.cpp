@@ -4,23 +4,18 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
-#include <boost/random/uniform_real.hpp>
-#include <boost/random/uniform_int.hpp>
-#include <boost/random/variate_generator.hpp>
-#include <boost/random/mersenne_twister.hpp>
 
 #include <rl_pursuit/planning/ValueIteration.h>
 #include <bwi_guidance_solver/heuristic_solver_qrr14.h>
 #include <bwi_guidance_solver/person_estimator_qrr14.h>
 #include <bwi_guidance_solver/person_model_qrr14.h>
+#include <bwi_guidance_solver/utils.h>
 #include <bwi_mapper/map_loader.h>
 #include <bwi_mapper/map_utils.h>
 
 using namespace bwi_guidance;
 
-boost::shared_ptr<
-  boost::variate_generator<boost::mt19937&, boost::uniform_real<float> > 
-  > rng;
+URGenPtr rng;
 
 std::string data_directory = "";
 std::string vi_policy_file = "vi.txt";
@@ -56,16 +51,6 @@ std::ostream& operator<< (std::ostream& stream, const InstanceResult& ir) {
     //   << ir.percent_hi_completion[i] << "%" << std::endl;
   }
   return stream;
-}
-
-int select(std::vector<float>& probabilities) {
-  float random_value = (*rng)();
-  float prob_sum = probabilities[0];
-  for (int i = 1; i < probabilities.size(); ++i) {
-    if (random_value < prob_sum) return i - 1;
-    prob_sum += probabilities[i];
-  }
-  return probabilities.size() - 1;
 }
 
 InstanceResult testInstance(bwi_mapper::Graph& graph, 
@@ -158,7 +143,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
           }
 
           // Select next state choice based on probabilities
-          int choice = select(probabilities);
+          int choice = select(probabilities, rng);
           current_state = next_states[choice];
           /* std::cout << " - manual " << current_state << std::endl; */
           reward += rewards[choice];
@@ -260,9 +245,7 @@ int main(int argc, char** argv) {
   std::cout << "Allowing robot at current idx: " << allow_robot_current_idx << std::endl;
   boost::mt19937 mt(seed);
   boost::uniform_real<float> u(0.0f, 1.0f);
-  rng.reset(new boost::variate_generator<
-      boost::mt19937&, 
-      boost::uniform_real<float> >(mt, u));
+  rng.reset(new URGen(mt, u));
 
   bwi_mapper::MapLoader mapper(map_file);
   bwi_mapper::Graph graph;
@@ -271,11 +254,9 @@ int main(int argc, char** argv) {
   bwi_mapper::readGraphFromFile(graph_file, map.info, graph);
 
   boost::uniform_int<int> idx_dist(0, boost::num_vertices(graph) - 1);
-  boost::variate_generator<boost::mt19937&, boost::uniform_int<int> >
-    idx_gen(mt, idx_dist);
+  UIGen idx_gen(mt, idx_dist);
   boost::uniform_int<int> direction_dist(0, 15);
-  boost::variate_generator<boost::mt19937&, boost::uniform_int<int> >
-    direction_gen(mt, direction_dist);
+  UIGen direction_gen(mt, direction_dist);
   
   std::ofstream fout((data_directory + results_file).c_str());
   for (int i = 0; i < num_instances; ++i) {

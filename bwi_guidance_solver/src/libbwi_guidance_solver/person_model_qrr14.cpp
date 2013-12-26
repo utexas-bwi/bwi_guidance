@@ -88,6 +88,55 @@ namespace bwi_guidance {
     }
   }
 
+  void PersonModelQRR14::setState(const StateQRR14 &state) {
+    current_state_ = state;
+  }
+
+  void PersonModelQRR14::takeAction(const ActionQRR14 &action, float &reward, 
+      StateQRR14 &state, bool &terminal) {
+
+    if (!generator_) {
+      throw std::runtime_error("Call initializeRNG() before takeAction()");
+    }
+
+    if (isTerminalState(current_state_)) {
+      throw std::runtime_error("Cannot call takeAction() on terminal state");
+    }
+
+    std::vector<StateQRR14> next_states;
+    std::vector<float> probabilities;
+    std::vector<float> rewards;
+    getTransitionDynamics(state, action, next_states, probabilities, rewards);
+
+    int idx = select(probabilities, generator_);
+    current_state_ = next_states[idx];
+    reward = rewards[idx];
+    state = current_state_;
+    terminal = isTerminalState(current_state_);
+  }
+
+  void PersonModelQRR14::getFirstAction(const StateQRR14 &state, 
+      ActionQRR14 &action) {
+    std::vector<ActionQRR14>& actions = getActionsAtState(state);
+    action = actions[0];
+  }
+
+  bool PersonModelQRR14::getNextAction(const StateQRR14 &state, 
+      ActionQRR14 &action) {
+    std::vector<ActionQRR14>& actions = getActionsAtState(state);
+    for (size_t i = 0; i < actions.size() - 1; ++i) {
+      if (actions[i] == action) {
+        action = actions[i + 1];
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  void PersonModelQRR14::initializeRNG(URGenPtr generator) {
+    generator_ = generator;
+  }
+
   void PersonModelQRR14::computeAdjacentVertices() {
     adjacent_vertices_map_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {

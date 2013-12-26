@@ -7,6 +7,10 @@ namespace bwi_guidance {
   ActionQRR14::ActionQRR14() : type(DO_NOTHING), graph_id(0) {}
   ActionQRR14::ActionQRR14(ActionType a, size_t g) : type(a), graph_id(g) {}
 
+  bool operator==(const ActionQRR14& l, const ActionQRR14& r) {
+    return (l.type == r.type) && (l.graph_id == r.graph_id);
+  }
+
   bool operator<(const ActionQRR14& l, const ActionQRR14& r) {
     return (l.type < r.type) ||
       ((l.type == r.type) && (l.graph_id < r.graph_id)); 
