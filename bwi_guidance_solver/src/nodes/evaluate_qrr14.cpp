@@ -22,6 +22,12 @@
 
 #define MAX_ROBOTS 5
 
+#ifdef EVALUATE_DEBUG
+#define EVALUATE_OUTPUT(x) std::cout << x << std::endl
+#else
+#define EVALUATE_OUTPUT(x) ((void) 0)
+#endif
+
 using namespace bwi_guidance;
 
 URGenPtr rng;
@@ -144,7 +150,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
         current_state.visible_robot = NONE;
         true_distance = -estimator->getValue(current_state);
 
-        std::cout << " - start " << current_state << std::endl;
+        EVALUATE_OUTPUT(" - start " << current_state);
 
         if (method == MCTS_METHOD) {
           mcts->restart();
@@ -171,7 +177,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
             } else if (method == MCTS_METHOD) {
               action = mcts->selectWorldAction(current_state);
             }
-            std::cout << "   action: " << action << std::endl;
+            EVALUATE_OUTPUT("   action: " << action);
 
             model->getTransitionDynamics(current_state, action, next_states, 
                 rewards, probabilities);
@@ -184,7 +190,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
             // The human does not move for this action, and a single next state
             // is present
             current_state = next_states[0];
-            std::cout << " - auto " << current_state << std::endl;
+            EVALUATE_OUTPUT(" - auto " << current_state);
           }
 
           // Select next state choice based on probabilities
@@ -197,7 +203,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
             }
           }
           current_state = next_states[choice];
-          std::cout << " - manual " << current_state << std::endl;
+          EVALUATE_OUTPUT(" - manual " << current_state)
           reward += rewards[choice];
         }
 
