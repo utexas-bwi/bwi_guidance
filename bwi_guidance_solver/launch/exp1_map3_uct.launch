@@ -2,8 +2,11 @@
   <arg name="map_file" default="$(find bwi_guidance)/maps/map3.yaml" />
   <arg name="graph_file" default="$(find bwi_guidance)/maps/graph_map3.yaml" />
   <arg name="data_dir" default="$(find bwi_guidance_solver)/data/exp1/map3/" />
-  <arg name="mcts_params" default="$(find bwi_guidance_solver)/config/mcts_params.json" />
-  <arg name="mcts_estimator_params" default="$(find bwi_guidance_solver)/config/mcts_estimator_params.json" />
-  <node name="evaluate" pkg="bwi_guidance_solver" type="evaluate_qrr14_uct"  output="screen"
+  <arg name="mcts_params" 
+    default="$(find bwi_guidance_solver)/config/mcts_params.json" />
+  <arg name="mcts_estimator_params" 
+    default="$(find bwi_guidance_solver)/config/mcts_estimator_params.json" />
+  <node name="evaluate" pkg="bwi_guidance_solver" type="evaluate_qrr14"  
+    output="screen"
     args="--map-file $(arg map_file) --graph-file $(arg graph_file) -D $(arg data_dir) -a --num-instances 1000 --mcts-params $(arg mcts_params) --mcts-estimator-params $(arg mcts_estimator_params)" />
 </launch>

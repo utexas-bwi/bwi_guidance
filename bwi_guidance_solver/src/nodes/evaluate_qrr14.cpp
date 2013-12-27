@@ -7,6 +7,12 @@
 
 #include <rl_pursuit/planning/ValueIteration.h>
 
+#include <rl_pursuit/common/Util.h>
+#include <rl_pursuit/planning/MCTS.h>
+#include <rl_pursuit/planning/UCTEstimator.h>
+#include <rl_pursuit/planning/ModelUpdaterSingle.h>
+#include <rl_pursuit/planning/IdentityStateMapping.h>
+
 #include <bwi_guidance_solver/heuristic_solver_qrr14.h>
 #include <bwi_guidance_solver/person_estimator_qrr14.h>
 #include <bwi_guidance_solver/person_model_qrr14.h>
@@ -14,10 +20,16 @@
 #include <bwi_mapper/map_loader.h>
 #include <bwi_mapper/map_utils.h>
 
+#define MAX_ROBOTS 5
+
 using namespace bwi_guidance;
 
 URGenPtr rng;
+boost::shared_ptr<RNG> mcts_rng;
+UCTEstimator<StateQRR14, ActionQRR14>::Params mcts_estimator_params;
+MCTS<StateQRR14, ActionQRR14>::Params mcts_params;
 
+/* Parameters with default values */
 std::string data_directory = "";
 std::string vi_policy_file = "vi.txt";
 std::string model_file = "model.txt";
@@ -31,25 +43,32 @@ float distance_limit = 300.f;
 bool allow_robot_current_idx = false;
 float visibility_range = 0.0f;
 bool allow_goal_visibility = false;
+bool mcts_enabled = false;
+
+/* if mcts is enabled, bump num_methods to MAX_METHODS */
+enum Method {
+  VI = 0,
+  HEURISTIC = 1,
+  MCTS_METHOD = 2,
+  MAX_METHODS = 3
+};
+int num_methods = 2;
 
 struct InstanceResult {
-  float avg_vi_distance[5];
-  float percent_vi_completion[5]; 
-  float avg_hi_distance[5];
-  float percent_hi_completion[5];
-  float true_vi_value[5];
+  float avg_distance[MAX_METHODS][MAX_ROBOTS];
+  float percent_completion[MAX_METHODS][MAX_ROBOTS];
+  float true_vi_value[MAX_ROBOTS];
 };
 
 std::ostream& operator<< (std::ostream& stream, const InstanceResult& ir) {
-  for (int i = 0; i < 5; ++i) {
-    stream << ir.avg_vi_distance[i] << "," << ir.avg_hi_distance[i] << "," << ir.true_vi_value[i];
-    /* stream << ir.avg_vi_distance[i] << "," << ir.percent_vi_completion[i] << "," << ir.avg_hi_distance[i] << "," << ir.percent_hi_completion[i]; */
-    if (i!=4) 
+  for (int i = 0; i < MAX_ROBOTS; ++i) {
+    for (int j = 0; j < num_methods; ++j) {
+      stream << ir.avg_distance[j][i] << ",";
+    }
+    stream << ir.true_vi_value[i];
+    if (i != MAX_ROBOTS - 1) {
       stream << ",";
-    // stream << "VI\t" << i+1 << "r\t" << ir.avg_vi_distance[i] << "\t" 
-    //   << ir.percent_vi_completion[i] << "%" << std::endl;
-    // stream << "HS\t" << i+1 << "r\t" << ir.avg_hi_distance[i] << "\t" 
-    //   << ir.percent_hi_completion[i] << "%" << std::endl;
+    }
   }
   return stream;
 }
@@ -75,10 +94,26 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
   boost::shared_ptr<PersonEstimatorQRR14> estimator(new PersonEstimatorQRR14);
   float epsilon = 0.05f / map.info.resolution;
   float delta = -500.0f / map.info.resolution;
-  ValueIteration<StateQRR14, ActionQRR14> vi(model, estimator, 1.0, epsilon, 1000, 0.0f,
-      delta);
-  HeuristicSolver hi(map, graph, goal_idx, allow_robot_current_idx,
+
+  ValueIteration<StateQRR14, ActionQRR14> vi (model, estimator, 1.0, epsilon,
+      1000, 0.0f, delta);
+  HeuristicSolver hs(map, graph, goal_idx, allow_robot_current_idx,
       pixel_visibility_range, allow_goal_visibility); 
+
+  boost::shared_ptr<MCTS<StateQRR14, ActionQRR14> > mcts;
+  if (mcts_enabled) {
+    model->initializeRNG(rng); 
+    boost::shared_ptr<ModelUpdaterSingle<StateQRR14, ActionQRR14> >
+      mcts_model_updator(
+          new ModelUpdaterSingle<StateQRR14, ActionQRR14>(model));
+    boost::shared_ptr<IdentityStateMapping<StateQRR14> > mcts_state_mapping(
+        new IdentityStateMapping<StateQRR14>);
+    boost::shared_ptr<UCTEstimator<StateQRR14, ActionQRR14> > uct_estimator(
+        new UCTEstimator<StateQRR14, ActionQRR14>( mcts_rng,
+          mcts_estimator_params));
+    mcts.reset(new MCTS<StateQRR14, ActionQRR14>(uct_estimator,
+          mcts_model_updator, mcts_state_mapping, mcts_params));
+  }
 
   std::ifstream vi_ifs(indexed_vi_file.c_str());
   if (vi_ifs.good()) {
@@ -91,9 +126,10 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
       << indexed_vi_file << std::endl;
   }
 
-  for (int method = 0; method < 2; ++method) {
+  for (int method = 0; method < num_methods; ++method) {
     for (int starting_robots = 1; starting_robots <= 5; ++starting_robots) {
 
+      std::cout << "Testing with " << starting_robots << " robots" << std::endl; 
       float sum_instance_distance = 0;
       int count_successful = 0;
       float true_distance = 0;
@@ -108,7 +144,12 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
         current_state.visible_robot = NONE;
         true_distance = -estimator->getValue(current_state);
 
-        /* std::cout << " - start " << current_state << std::endl; */
+        std::cout << " - start " << current_state << std::endl;
+
+        if (method == MCTS_METHOD) {
+          mcts->restart();
+          mcts->search(current_state); // Initial search for 10 seconds
+        }
 
         float reward = 0;
         float reward_limit = -((float)distance_limit) / map.info.resolution;
@@ -123,12 +164,14 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
           while (true) {
 
             ActionQRR14 action;
-            if (method == 0) {
+            if (method == VI) {
               action = vi.getBestAction(current_state);
-            } else {
-              action = hi.getBestAction(current_state);
+            } else if (method == HEURISTIC) {
+              action = hs.getBestAction(current_state);
+            } else if (method == MCTS_METHOD) {
+              action = mcts->selectWorldAction(current_state);
             }
-            /* std::cout << "   action: " << action << std::endl; */
+            std::cout << "   action: " << action << std::endl;
 
             model->getTransitionDynamics(current_state, action, next_states, 
                 rewards, probabilities);
@@ -138,15 +181,23 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
               break;
             }
 
-            // The human does not move for this action, and a single next state is present
+            // The human does not move for this action, and a single next state
+            // is present
             current_state = next_states[0];
-            /* std::cout << " - auto " << current_state << std::endl; */
+            std::cout << " - auto " << current_state << std::endl;
           }
 
           // Select next state choice based on probabilities
           int choice = select(probabilities, rng);
+
+          // If we are testing MCTS_METHOD, this is the time to search. 
+          if (method == MCTS_METHOD) {
+            if (current_state.num_robots_left > 0) {
+              mcts->search(current_state);
+            }
+          }
           current_state = next_states[choice];
-          /* std::cout << " - manual " << current_state << std::endl; */
+          std::cout << " - manual " << current_state << std::endl;
           reward += rewards[choice];
         }
 
@@ -156,21 +207,16 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
         sum_instance_distance += -reward;
       }
 
-      if (method == 0) {
-        result.avg_vi_distance[starting_robots - 1] = 
-          sum_instance_distance / runs_per_instance;
-        result.avg_vi_distance[starting_robots - 1] *= map.info.resolution;
-        result.percent_vi_completion[starting_robots - 1] =
-          ((float) count_successful * 100.0f) / runs_per_instance;
+      if (method == VI) {
         result.true_vi_value[starting_robots - 1] = true_distance;
         result.true_vi_value[starting_robots - 1] *= map.info.resolution;
-      } else {
-        result.avg_hi_distance[starting_robots - 1] = 
-          sum_instance_distance / runs_per_instance;
-        result.avg_hi_distance[starting_robots - 1] *= map.info.resolution;
-        result.percent_hi_completion[starting_robots - 1] =
-          ((float) count_successful * 100.0f) / runs_per_instance;
-      }
+      } 
+
+      result.avg_distance[method][starting_robots - 1] = 
+        sum_instance_distance / runs_per_instance;
+      result.avg_distance[method][starting_robots - 1] *= map.info.resolution;
+      result.percent_completion[method][starting_robots - 1] =
+        ((float) count_successful * 100.0f) / runs_per_instance;
 
     }
   }
@@ -181,6 +227,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
 
 int processOptions(int argc, char** argv) {
 
+  std::string mcts_params_file, mcts_estimator_params_file;
   std::string appName = boost::filesystem::basename(argv[0]); 
   std::vector<std::string> sentence; 
 
@@ -189,16 +236,27 @@ int processOptions(int argc, char** argv) {
   namespace po = boost::program_options; 
   po::options_description desc("Options"); 
   desc.add_options() 
-    ("map-file,M", po::value<std::string>(&map_file)->required(), "YAML map file") 
-    ("graph-file,G", po::value<std::string>(&graph_file)->required(), "YAML graph file") 
-    ("data-directory,D", po::value<std::string>(&data_directory), "Data directory (defaults to runtime directory)") 
+    ("map-file,M", po::value<std::string>(&map_file)->required(), 
+     "YAML map file") 
+    ("graph-file,G", po::value<std::string>(&graph_file)->required(), 
+     "YAML graph file corresponding to the map") 
+    ("mcts-params", po::value<std::string>(&mcts_params_file), 
+     "JSON MCTS Parameter File") 
+    ("mcts-estimator-params", 
+     po::value<std::string>(&mcts_estimator_params_file), 
+     "JSON MCTS Estimator Parameter File") 
+    ("data-directory,D", po::value<std::string>(&data_directory), 
+     "Data directory (defaults to runtime directory)") 
     ("allow-robot-current,a", "Allow robot to be placed at current index") 
+    ("allow-goal-visibility,V", "Allow goal visibility to affect human model")
     ("seed,s", po::value<int>(&seed), "Random seed")  
     ("num-instances,n", po::value<int>(&num_instances), "Number of Instances") 
-    ("runs-per-instance,r", po::value<int>(&runs_per_instance), "Averge each instance over these many runs") 
-    ("allow-goal-visibility,V", "Allow goal visibility to affect human model")
-    ("visibility-range,r", po::value<float>(&visibility_range), "Simulator visibility")
-    ("distance-limit,d", po::value<float>(&distance_limit), "Max distance at which to terminate episode"); 
+    ("runs-per-instance,r", po::value<int>(&runs_per_instance), 
+     "Averge each instance over these many runs") 
+    ("visibility-range,r", po::value<float>(&visibility_range), 
+     "Simulator visibility range in meters.")
+    ("distance-limit,d", po::value<float>(&distance_limit), 
+     "Max distance at which to terminate episode."); 
 
   // po::positional_options_description positionalOptions; 
   // positionalOptions.add("map-file", 1); 
@@ -231,6 +289,20 @@ int processOptions(int argc, char** argv) {
     allow_goal_visibility = true;
   }
 
+  if (!mcts_params_file.empty() && !mcts_estimator_params_file.empty()) {
+    Json::Value mcts_json, mcts_estimator_json;
+    if (!readJson(mcts_params_file, mcts_json)) {
+      return -1;
+    }
+    mcts_params.fromJson(mcts_json);
+    if (!readJson(mcts_estimator_params_file, mcts_estimator_json)) {
+      return -1;
+    }
+    mcts_estimator_params.fromJson(mcts_estimator_json);
+    mcts_enabled = true;
+    num_methods = MAX_METHODS;
+  }
+
   return 0;
 }
 
@@ -243,10 +315,13 @@ int main(int argc, char** argv) {
 
   std::cout << "Using random seed: " << seed << std::endl;
   std::cout << "Number of instances: " << num_instances << std::endl;
-  std::cout << "Allowing robot at current idx: " << allow_robot_current_idx << std::endl;
+  std::cout << "Allowing robot at current idx: " << allow_robot_current_idx <<
+    std::endl;
   boost::mt19937 mt(seed);
   boost::uniform_real<float> u(0.0f, 1.0f);
   rng.reset(new URGen(mt, u));
+
+  mcts_rng.reset(new RNG(seed));
 
   bwi_mapper::MapLoader mapper(map_file);
   bwi_mapper::Graph graph;
@@ -267,9 +342,12 @@ int main(int argc, char** argv) {
       goal_idx = idx_gen();
     }
     int start_direction = direction_gen();
-    InstanceResult res = testInstance(graph, map, start_idx, start_direction, goal_idx);
-    std::cout << "#" << i << " Testing [" << start_idx << "," << start_direction << "," << goal_idx
-      << "]: " << std::endl;
+    std::cout << "#" << i << " Testing [" << start_idx << "," <<
+      start_direction << "," << goal_idx << "]: " << std::endl;
+    InstanceResult res = 
+      testInstance(graph, map, start_idx, start_direction, goal_idx);
+    std::cout << "  ... Done" << std::endl;
+
     // std::cout << res << std::endl;
     fout << i << "," << start_idx << "," << start_direction << "," << goal_idx
       << "," << res << std::endl;
