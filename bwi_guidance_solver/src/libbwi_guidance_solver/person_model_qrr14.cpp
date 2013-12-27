@@ -106,7 +106,8 @@ namespace bwi_guidance {
     std::vector<StateQRR14> next_states;
     std::vector<float> probabilities;
     std::vector<float> rewards;
-    getTransitionDynamics(state, action, next_states, probabilities, rewards);
+    getTransitionDynamics(current_state_, action, 
+        next_states, rewards, probabilities);
 
     int idx = select(probabilities, generator_);
     current_state_ = next_states[idx];

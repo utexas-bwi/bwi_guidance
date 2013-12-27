@@ -24,6 +24,7 @@ catkin_package(
 ###########
 
 add_definitions(-DVI_DEBUG)
+#add_definitions(-DMCTS_DEBUG)
 
 include_directories(
   include
@@ -66,6 +67,12 @@ add_executable(evaluate_qrr14
   src/nodes/evaluate_qrr14.cpp
 )
 target_link_libraries(evaluate_qrr14
+  bwi_guidance_solver
+)
+add_executable(evaluate_qrr14_uct
+  src/nodes/evaluate_qrr14_uct.cpp
+)
+target_link_libraries(evaluate_qrr14_uct
   bwi_guidance_solver
 )
 add_executable(metric_map2_qrr14 

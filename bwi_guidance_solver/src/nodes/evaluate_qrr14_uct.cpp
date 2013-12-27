@@ -7,6 +7,12 @@
 
 #include <rl_pursuit/planning/ValueIteration.h>
 
+#include <rl_pursuit/common/Util.h>
+#include <rl_pursuit/planning/MCTS.h>
+#include <rl_pursuit/planning/UCTEstimator.h>
+#include <rl_pursuit/planning/ModelUpdaterSingle.h>
+#include <rl_pursuit/planning/IdentityStateMapping.h>
+
 #include <bwi_guidance_solver/heuristic_solver_qrr14.h>
 #include <bwi_guidance_solver/person_estimator_qrr14.h>
 #include <bwi_guidance_solver/person_model_qrr14.h>
@@ -17,6 +23,9 @@
 using namespace bwi_guidance;
 
 URGenPtr rng;
+boost::shared_ptr<RNG> mcts_rng;
+UCTEstimator<StateQRR14, ActionQRR14>::Params mcts_estimator_params;
+MCTS<StateQRR14, ActionQRR14>::Params mcts_params;
 
 std::string data_directory = "";
 std::string vi_policy_file = "vi.txt";
@@ -37,12 +46,14 @@ struct InstanceResult {
   float percent_vi_completion[5]; 
   float avg_hi_distance[5];
   float percent_hi_completion[5];
+  float avg_uct_distance[5];
+  float percent_uct_completion[5];
   float true_vi_value[5];
 };
 
 std::ostream& operator<< (std::ostream& stream, const InstanceResult& ir) {
   for (int i = 0; i < 5; ++i) {
-    stream << ir.avg_vi_distance[i] << "," << ir.avg_hi_distance[i] << "," << ir.true_vi_value[i];
+    stream << ir.avg_vi_distance[i] << "," << ir.avg_hi_distance[i] << "," << ir.avg_uct_distance[i] << "," << ir.true_vi_value[i];
     /* stream << ir.avg_vi_distance[i] << "," << ir.percent_vi_completion[i] << "," << ir.avg_hi_distance[i] << "," << ir.percent_hi_completion[i]; */
     if (i!=4) 
       stream << ",";
@@ -80,20 +91,34 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
   HeuristicSolver hi(map, graph, goal_idx, allow_robot_current_idx,
       pixel_visibility_range, allow_goal_visibility); 
 
-  std::ifstream vi_ifs(indexed_vi_file.c_str());
-  if (vi_ifs.good()) {
-    vi.loadPolicy(indexed_vi_file);
-    vi.savePolicy(indexed_vi_file);
-  } else {
-    vi.computePolicy();
-    vi.savePolicy(indexed_vi_file);
-    std::cout << "Computed and saved policy for " << goal_idx << " to file: " 
-      << indexed_vi_file << std::endl;
-  }
+  model->initializeRNG(rng);
+  boost::shared_ptr<ModelUpdaterSingle<StateQRR14, ActionQRR14> >
+    mcts_model_updator(new ModelUpdaterSingle<StateQRR14, ActionQRR14>(model));
+  boost::shared_ptr<IdentityStateMapping<StateQRR14> >
+    mcts_state_mapping(new IdentityStateMapping<StateQRR14>);
+  boost::shared_ptr<UCTEstimator<StateQRR14, ActionQRR14> >
+    uct_estimator(new UCTEstimator<StateQRR14, ActionQRR14>(
+          mcts_rng, mcts_estimator_params));
+  MCTS<StateQRR14, ActionQRR14> mcts(uct_estimator, mcts_model_updator,
+    mcts_state_mapping, mcts_params);
 
-  for (int method = 0; method < 2; ++method) {
+  // std::ifstream vi_ifs(indexed_vi_file.c_str());
+  // if (vi_ifs.good()) {
+  //   vi.loadPolicy(indexed_vi_file);
+  //   vi.savePolicy(indexed_vi_file);
+  // } else {
+  //   vi.computePolicy();
+  //   vi.savePolicy(indexed_vi_file);
+  //   std::cout << "Computed and saved policy for " << goal_idx << " to file: " 
+  //     << indexed_vi_file << std::endl;
+  // }
+
+  for (int method = 0; method < 3; ++method) {
+    if (method == 0) 
+      continue;
     for (int starting_robots = 1; starting_robots <= 5; ++starting_robots) {
 
+      std::cout << "Testing with " << starting_robots << " robots" << std::endl; 
       float sum_instance_distance = 0;
       int count_successful = 0;
       float true_distance = 0;
@@ -125,10 +150,17 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
             ActionQRR14 action;
             if (method == 0) {
               action = vi.getBestAction(current_state);
-            } else {
+            } else if (method == 1) {
               action = hi.getBestAction(current_state);
+            } else if (method == 2) {
+              std::vector<ActionQRR14> actions;
+              model->getActionsAtState(current_state, actions);
+              if (actions.size() > 1) {
+                mcts.search(current_state);
+              }
+              action = mcts.selectWorldAction(current_state);
             }
-            /* std::cout << "   action: " << action << std::endl; */
+            std::cout << "   action: " << action << std::endl;
 
             model->getTransitionDynamics(current_state, action, next_states, 
                 rewards, probabilities);
@@ -140,13 +172,13 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
 
             // The human does not move for this action, and a single next state is present
             current_state = next_states[0];
-            /* std::cout << " - auto " << current_state << std::endl; */
+            std::cout << " - auto " << current_state << std::endl;
           }
 
           // Select next state choice based on probabilities
           int choice = select(probabilities, rng);
           current_state = next_states[choice];
-          /* std::cout << " - manual " << current_state << std::endl; */
+          std::cout << " - manual " << current_state << std::endl;
           reward += rewards[choice];
         }
 
@@ -164,7 +196,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
           ((float) count_successful * 100.0f) / runs_per_instance;
         result.true_vi_value[starting_robots - 1] = true_distance;
         result.true_vi_value[starting_robots - 1] *= map.info.resolution;
-      } else {
+      } else if (method == 1) {
         result.avg_hi_distance[starting_robots - 1] = 
           sum_instance_distance / runs_per_instance;
         result.avg_hi_distance[starting_robots - 1] *= map.info.resolution;
@@ -181,6 +213,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
 
 int processOptions(int argc, char** argv) {
 
+  std::string mcts_params_file, mcts_estimator_params_file;
   std::string appName = boost::filesystem::basename(argv[0]); 
   std::vector<std::string> sentence; 
 
@@ -191,6 +224,8 @@ int processOptions(int argc, char** argv) {
   desc.add_options() 
     ("map-file,M", po::value<std::string>(&map_file)->required(), "YAML map file") 
     ("graph-file,G", po::value<std::string>(&graph_file)->required(), "YAML graph file") 
+    ("mcts-params", po::value<std::string>(&mcts_params_file)->required(), "JSON MCTS Parameter File") 
+    ("mcts-estimator-params", po::value<std::string>(&mcts_estimator_params_file)->required(), "JSON MCTS Estimator Parameter File") 
     ("data-directory,D", po::value<std::string>(&data_directory), "Data directory (defaults to runtime directory)") 
     ("allow-robot-current,a", "Allow robot to be placed at current index") 
     ("seed,s", po::value<int>(&seed), "Random seed")  
@@ -231,6 +266,16 @@ int processOptions(int argc, char** argv) {
     allow_goal_visibility = true;
   }
 
+  Json::Value mcts_json, mcts_estimator_json;
+  if (!readJson(mcts_params_file, mcts_json)) {
+    return -1;
+  }
+  mcts_params.fromJson(mcts_json);
+  if (!readJson(mcts_estimator_params_file, mcts_estimator_json)) {
+    return -1;
+  }
+  mcts_estimator_params.fromJson(mcts_estimator_json);
+
   return 0;
 }
 
@@ -247,6 +292,8 @@ int main(int argc, char** argv) {
   boost::mt19937 mt(seed);
   boost::uniform_real<float> u(0.0f, 1.0f);
   rng.reset(new URGen(mt, u));
+
+  mcts_rng.reset(new RNG(seed));
 
   bwi_mapper::MapLoader mapper(map_file);
   bwi_mapper::Graph graph;
@@ -267,9 +314,11 @@ int main(int argc, char** argv) {
       goal_idx = idx_gen();
     }
     int start_direction = direction_gen();
-    InstanceResult res = testInstance(graph, map, start_idx, start_direction, goal_idx);
     std::cout << "#" << i << " Testing [" << start_idx << "," << start_direction << "," << goal_idx
       << "]: " << std::endl;
+    InstanceResult res = testInstance(graph, map, start_idx, start_direction, goal_idx);
+    std::cout << "  ... Done" << std::endl;
+
     // std::cout << res << std::endl;
     fout << i << "," << start_idx << "," << start_direction << "," << goal_idx
       << "," << res << std::endl;
