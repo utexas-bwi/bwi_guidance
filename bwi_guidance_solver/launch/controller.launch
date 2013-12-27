@@ -20,7 +20,7 @@
   </node>
 
   <node name="robot_positioner" pkg="bwi_guidance_solver" 
-        type="vi_robot_positioner2">
+        type="robot_positioner_qrr14">
     <param name="map_file" value="$(find bwi_guidance)/maps/map3.yaml" />
     <param name="graph_file" value="$(find bwi_guidance)/maps/graph_map3.yaml" />
     <param name="experiment_file" 
