@@ -7,7 +7,7 @@
 
   <!-- launch the experiment controller node -->
   <node name="experiment_controller" pkg="bwi_guidance" type="controller.py" output="screen">
-    <param name="graph_file" value="$(find bwi_guidance)/maps/graph_exp1.yaml" />
+    <param name="graph_file" value="$(find bwi_guidance)/maps/graph_map3.yaml" />
     <param name="experiment_file" 
            value="$(find bwi_guidance_solver)/config/experiment.yaml" />
     <param name="user_file" value="$(find bwi_guidance_solver)/data/exp2/users/users.yaml" />
@@ -21,8 +21,8 @@
 
   <node name="robot_positioner" pkg="bwi_guidance_solver" 
         type="vi_robot_positioner2">
-    <param name="map_file" value="$(find bwi_guidance)/maps/exp1.yaml" />
-    <param name="graph_file" value="$(find bwi_guidance)/maps/graph_exp1.yaml" />
+    <param name="map_file" value="$(find bwi_guidance)/maps/map3.yaml" />
+    <param name="graph_file" value="$(find bwi_guidance)/maps/graph_map3.yaml" />
     <param name="experiment_file" 
            value="$(find bwi_guidance_solver)/config/experiment.yaml" />
     <param name="default_robot_file" 

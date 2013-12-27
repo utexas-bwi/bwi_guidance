@@ -1,0 +1,3 @@
+<launch>
+  <node name="map_server" pkg="map_server" type="map_server" args="$(find bwi_guidance)/maps/map3.yaml" />
+</launch>

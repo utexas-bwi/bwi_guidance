@@ -89,7 +89,7 @@
         <collision name="geom_1">
           <geometry>
             <mesh>
-              <uri>exp1.dae</uri>
+              <uri>map3.dae</uri>
             </mesh>
           </geometry>
           <surface>
@@ -105,7 +105,7 @@
         <visual name="visual_1">
           <geometry>
             <mesh>
-              <uri>exp1.dae</uri>
+              <uri>map3.dae</uri>
             </mesh>
           </geometry>
           <material>

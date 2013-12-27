@@ -17100,22 +17100,22 @@
     </library_effects>
     <library_images>
         <image id="ID133">
-            <init_from>exp1/tx1.jpg</init_from>
+            <init_from>map3/tx1.jpg</init_from>
         </image>
         <image id="ID146">
-            <init_from>exp1/Blinds_Cellular_White_.jpg</init_from>
+            <init_from>map3/Blinds_Cellular_White_.jpg</init_from>
         </image>
         <image id="ID167">
-            <init_from>exp1/Blinds_Vertical_Pattern_.jpg</init_from>
+            <init_from>map3/Blinds_Vertical_Pattern_.jpg</init_from>
         </image>
         <image id="ID180">
-            <init_from>exp1/Blinds_Vertical_Stripe_Gray_.jpg</init_from>
+            <init_from>map3/Blinds_Vertical_Stripe_Gray_.jpg</init_from>
         </image>
         <image id="ID213">
-            <init_from>exp1/Brick_Antique_.jpg</init_from>
+            <init_from>map3/Brick_Antique_.jpg</init_from>
         </image>
         <image id="ID370">
-            <init_from>exp1/__Blinds_Vertical_Stripe_Gray_1.jpg</init_from>
+            <init_from>map3/__Blinds_Vertical_Stripe_Gray_1.jpg</init_from>
         </image>
     </library_images>
     <scene>

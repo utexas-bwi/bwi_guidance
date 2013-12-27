@@ -16,7 +16,7 @@
   </node>
 
   <node name="robot_positioner" pkg="bwi_guidance" type="robot_positioner">
-    <param name="map_file" value="$(find bwi_guidance)/maps/exp1.yaml" />
+    <param name="map_file" value="$(find bwi_guidance)/maps/map3.yaml" />
     <param name="graph_file" value="$(find bwi_guidance)/maps/graph.yaml" />
     <param name="experiment_file" 
            value="$(find bwi_guidance)/config/data_collection_experiment.yaml" />

@@ -1,7 +1,7 @@
 <launch>
 
-  <arg name="map_file_1" default="$(find bwi_guidance)/maps/exp1.yaml" />
-  <arg name="graph_file_1" default="$(find bwi_guidance)/maps/graph_exp1.yaml" />
+  <arg name="map_file_1" default="$(find bwi_guidance)/maps/map3.yaml" />
+  <arg name="graph_file_1" default="$(find bwi_guidance)/maps/graph_map3.yaml" />
   <node name="generate_graph_1" pkg="bwi_mapper" type="generate_graph"
     args="$(arg map_file_1) $(arg graph_file_1)" />
 

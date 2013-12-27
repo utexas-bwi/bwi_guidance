@@ -1,6 +1,6 @@
 <launch>
 
-  <include file="$(find bwi_guidance)/launch/exp1.launch">
+  <include file="$(find bwi_guidance)/launch/map3.launch">
     <arg name="gui" value="false" />
   </include>
 
