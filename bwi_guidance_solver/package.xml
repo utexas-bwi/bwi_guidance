@@ -19,5 +19,6 @@
   <run_depend>bwi_guidance</run_depend>
   <run_depend>bwi_mapper</run_depend>
   <run_depend>rl_pursuit</run_depend>
+  <run_depend>python-scipy</run_depend>
 
 </package>

@@ -203,7 +203,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
             }
           }
           current_state = next_states[choice];
-          EVALUATE_OUTPUT(" - manual " << current_state)
+          EVALUATE_OUTPUT(" - manual " << current_state);
           reward += rewards[choice];
         }
 

@@ -7,6 +7,10 @@ import numpy as np
 import scipy.stats as stats
 import sys
 
+MAX_ROBOTS = 5
+METHOD_NAMES = ['VI', 'H', 'UCT']
+METHOD_COLORS = ['y', 'r', 'b']
+
 def mean_standard_error(data):
     a = 1.0 * np.array(data)
     n = len(a)
@@ -24,71 +28,73 @@ def is_significant(a, b, confidence=0.95):
     t, p = stats.ttest_ind(a, b)
     return p < (1.0 - confidence)
 
-hs = [[], [], [], [], []]
-hs_vals = [[], [], [], [], []]
-vi = [[], [], [], [], []] 
+num_methods = 3 
+samples = []
+means = []
+confs = []
+for i in range(num_methods):
+    samples.append([])
+    means.append([])
+    confs.append([])
+    for j in range(MAX_ROBOTS):
+        samples[i].append([])
 
+first = True
 print 'Reading from: ' + sys.argv[1]
 with open(sys.argv[1], 'rb') as csvfile:
     content_reader = csv.reader(csvfile, delimiter=',')
     for line in content_reader:
-        for i in range(5):
-            vi[i].append(float(line[4 + 3*i]) / float(line[18]))
-            hs[i].append(float(line[5 + 3*i]) / float(line[18]))
-            if float(line[4 + 3*i]) > 20.0 and float(line[5 + 3*i]) > 20.0:
-                hs_vals[i].append([vi[i][-1], [line[1], line[2], line[3]]])
+        if first:
+            if len(line) != (num_methods + 1) * MAX_ROBOTS + 4:
+                num_methods = 2
+            first = False
+        for i in range(num_methods):
+            for j in range(MAX_ROBOTS):
+                samples[i][j].append(float(line[(i+4) + (num_methods+1)*j]) / 
+                             float(line[-1]))
 
-# for i in range(5):
-#     hs_vals[i].sort(reverse=True, key=lambda x: x[0])
-#     print hs_vals[i][0:15]
 
-vi_means = []
-vi_conf = []
+for i in range(num_methods):
+    for j in range(MAX_ROBOTS):
+        m, h = mean_standard_error(samples[i][j])
+        means[i].append(m)
+        confs[i].append(h)
 
-hs_means = []
-hs_conf = []
-
-sigs = []
-
-for i in range(5):
-    m, h = mean_standard_error(vi[i])
-    vi_means.append(m)
-    vi_conf.append(h)
-    m, h = mean_standard_error(hs[i])
-    hs_means.append(m)
-    hs_conf.append(h)
-    sig = is_significant(vi[i], hs[i])
-    if sig:
-        print "For " + str(i + 1) + " robots, diff is significant" 
-    else:
-        print "For " + str(i + 1) + " robots, diff is not significant"
-    sigs.append(sig)
+# sigs = []
+#     sig = is_significant(vi[i], hs[i])
+#     if sig:
+#         print "For " + str(i + 1) + " robots, diff is significant" 
+#     else:
+#         print "For " + str(i + 1) + " robots, diff is not significant"
+#     sigs.append(sig)
 
 ind = np.arange(5)
-width = 0.35
+width = 1.0 / (num_methods + 1)
 fig, ax = plt.subplots()
-rects1 = ax.bar(ind, hs_means, width, color='y', yerr=hs_conf)
-rects2 = ax.bar(ind+width, vi_means, width, color='r', yerr=vi_conf)
+rects = []
+for i in range(num_methods):
+    rect = ax.bar(ind + i*width, means[i], width, color=METHOD_COLORS[i], yerr=confs[i])
+    rects.append(rect)
 ax.set_ylabel('Normalized Distance')
 ax.set_title('Average Normalized Distance - ' + sys.argv[2])
 ax.set_xticks(ind+width)
 ax.set_xticklabels( ('1 Robot', '2 Robots', '3 Robots', '4 Robots', '5 Robots') )
 
-ax.legend( (rects1[0], rects2[0]), ('Heuristic', 'VI') )
+ax.legend(rects, METHOD_NAMES[:len(rects)])
 
 # attach some text labels
-for r in range(len(rects1)):
-    height = max(rects1[r].get_height(), rects2[r].get_height())
-    font = FontProperties()
-    if sigs[r]:
-        font.set_weight('bold')
-    ax.text(rects1[r].get_x()+width, 1.1*height, '%.3f'%(hs_means[r]/vi_means[r]),
-            ha='center', va='bottom', fontproperties=font)
+# for r in range(len(rects1)):
+#     height = max(rects1[r].get_height(), rects2[r].get_height())
+#     font = FontProperties()
+#     if sigs[r]:
+#         font.set_weight('bold')
+#     ax.text(rects1[r].get_x()+width, 1.1*height, '%.3f'%(hs_means[r]/vi_means[r]),
+#             ha='center', va='bottom', fontproperties=font)
 
 plt.axhline(y=1.0, xmin=0, xmax=6, linewidth=1, color="black") 
 plt.axis([0, 5, 0, 6])
-# plt.show()
+plt.show()
 
-fig = plt.gcf()
-fig.set_size_inches(6,4)
-plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=100)
+# fig = plt.gcf()
+# fig.set_size_inches(6,4)
+# plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=100)
