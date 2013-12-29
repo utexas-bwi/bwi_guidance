@@ -53,8 +53,8 @@ bool mcts_enabled = false;
 
 /* if mcts is enabled, bump num_methods to MAX_METHODS */
 enum Method {
-  VI = 0,
-  HEURISTIC = 1,
+  HEURISTIC = 0,
+  VI = 1,
   MCTS_METHOD = 2,
   MAX_METHODS = 3
 };
@@ -69,11 +69,10 @@ struct InstanceResult {
 std::ostream& operator<< (std::ostream& stream, const InstanceResult& ir) {
   for (int i = 0; i < MAX_ROBOTS; ++i) {
     for (int j = 0; j < num_methods; ++j) {
-      stream << ir.avg_distance[j][i] << ",";
-    }
-    stream << ir.true_vi_value[i];
-    if (i != MAX_ROBOTS - 1) {
-      stream << ",";
+      stream << ir.avg_distance[j][i] / ir.true_vi_value[MAX_ROBOTS - 1];
+      if (i != MAX_ROBOTS - 1 || j != num_methods -1) {
+        stream << ",";
+      }
     }
   }
   return stream;
@@ -93,6 +92,12 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
     + "_" + vi_policy_file;
 
   float pixel_visibility_range = visibility_range / map.info.resolution;
+
+  /* Method 1 - Heuristic Solver */
+  HeuristicSolver hs(map, graph, goal_idx, allow_robot_current_idx,
+      pixel_visibility_range, allow_goal_visibility); 
+
+  /* Method 2 - Value Iteration */
   boost::shared_ptr<PersonModelQRR14> model(
       new PersonModelQRR14(graph, map, goal_idx, indexed_model_file, 
         allow_robot_current_idx, pixel_visibility_range,
@@ -103,9 +108,8 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
 
   ValueIteration<StateQRR14, ActionQRR14> vi (model, estimator, 1.0, epsilon,
       1000, 0.0f, delta);
-  HeuristicSolver hs(map, graph, goal_idx, allow_robot_current_idx,
-      pixel_visibility_range, allow_goal_visibility); 
 
+  /* Method 3 - MCTS - may or may not be enabled */
   boost::shared_ptr<MCTS<StateQRR14, ActionQRR14> > mcts;
   if (mcts_enabled) {
     model->initializeRNG(rng); 
@@ -135,7 +139,9 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
   for (int method = 0; method < num_methods; ++method) {
     for (int starting_robots = 1; starting_robots <= 5; ++starting_robots) {
 
-      std::cout << "Testing with " << starting_robots << " robots" << std::endl; 
+      EVALUATE_OUTPUT("Testing method " << method << " with " << 
+          starting_robots << " robots.");
+
       float sum_instance_distance = 0;
       int count_successful = 0;
       float true_distance = 0;
@@ -149,18 +155,23 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
         current_state.robot_direction = NONE;
         current_state.visible_robot = NONE;
         true_distance = -estimator->getValue(current_state);
+        float instance_distance = 0;
 
         EVALUATE_OUTPUT(" - start " << current_state);
 
         if (method == MCTS_METHOD) {
           mcts->restart();
-          mcts->search(current_state); // Initial search for 10 seconds
+          for (int i = 0; i < 10; ++i) {
+            mcts->search(current_state); // Initial search for 10 seconds
+          }
         }
 
         float reward = 0;
-        float reward_limit = -((float)distance_limit) / map.info.resolution;
+        float distance_limit_pxl = 
+          ((float)distance_limit) / map.info.resolution;
 
-        while (current_state.graph_id != goal_idx && reward >= reward_limit) {
+        while (current_state.graph_id != goal_idx && instance_distance <=
+            distance_limit_pxl) {
 
           std::vector<StateQRR14> next_states;
           std::vector<float> probabilities;
@@ -190,19 +201,39 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
             // The human does not move for this action, and a single next state
             // is present
             current_state = next_states[0];
+            if (method == MCTS_METHOD) {
+              std::cout << " - performing single MCTS search (1s)" << std::endl;
+              mcts->search(current_state);
+            }
             EVALUATE_OUTPUT(" - auto " << current_state);
           }
 
           // Select next state choice based on probabilities
           int choice = select(probabilities, rng);
+          StateQRR14 old_state = current_state;
+          current_state = next_states[choice];
+          float transition_distance =
+            bwi_mapper::getEuclideanDistance(old_state.graph_id,
+                current_state.graph_id, graph);
+          instance_distance += transition_distance;
 
-          // If we are testing MCTS_METHOD, this is the time to search. 
-          if (method == MCTS_METHOD) {
-            if (current_state.num_robots_left > 0) {
-              mcts->search(current_state);
+          // Perform an MCTS search after next state is decided (not perfect)
+          // Only perform search if system is left with any future action choice
+          if (!model->isTerminalState(current_state) &&
+              (current_state.num_robots_left != 0 ||
+               current_state.visible_robot != NONE)) {
+            if (method == MCTS_METHOD) {
+              int distance = transition_distance * map.info.resolution;
+              EVALUATE_OUTPUT(" - performing MCTS search for " << distance <<
+                  " seconds");
+              std::cout << " - performing MCTS search for " << distance <<
+                " seconds" << std::endl;
+              for (int i = 0; i < distance; ++i) {
+                mcts->search(current_state);
+              }
             }
           }
-          current_state = next_states[choice];
+
           EVALUATE_OUTPUT(" - manual " << current_state);
           reward += rewards[choice];
         }
@@ -210,7 +241,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
         if (current_state.graph_id == goal_idx) {
           ++count_successful;
         }
-        sum_instance_distance += -reward;
+        sum_instance_distance += instance_distance;
       }
 
       if (method == VI) {
@@ -355,8 +386,7 @@ int main(int argc, char** argv) {
     std::cout << "  ... Done" << std::endl;
 
     // std::cout << res << std::endl;
-    fout << i << "," << start_idx << "," << start_direction << "," << goal_idx
-      << "," << res << std::endl;
+    fout << res << std::endl;
   }
   fout.close();
 

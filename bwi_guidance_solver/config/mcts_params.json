@@ -1,4 +1,5 @@
 {
-  "maxPlanningTime": 10,
+  // "maxPlayouts": 1000,
+  "maxPlanningTime": 1,
   "maxDepth": 100
 }

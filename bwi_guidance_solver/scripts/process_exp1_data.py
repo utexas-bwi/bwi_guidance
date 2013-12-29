@@ -8,8 +8,9 @@ import scipy.stats as stats
 import sys
 
 MAX_ROBOTS = 5
-METHOD_NAMES = ['VI', 'H', 'UCT']
-METHOD_COLORS = ['y', 'r', 'b']
+METHOD_NAMES = ['Heuristic', 'VI', 'UCT']
+METHOD_COLORS = ['y', 'r', 'lightblue']
+METHOD_HATCH = ['/', '\\', 'x']
 
 def mean_standard_error(data):
     a = 1.0 * np.array(data)
@@ -45,13 +46,11 @@ with open(sys.argv[1], 'rb') as csvfile:
     content_reader = csv.reader(csvfile, delimiter=',')
     for line in content_reader:
         if first:
-            if len(line) != (num_methods + 1) * MAX_ROBOTS + 4:
-                num_methods = 2
+            num_methods = len(line) / MAX_ROBOTS
             first = False
         for i in range(num_methods):
             for j in range(MAX_ROBOTS):
-                samples[i][j].append(float(line[(i+4) + (num_methods+1)*j]) / 
-                             float(line[-1]))
+                samples[i][j].append(float(line[i + num_methods*j]))
 
 
 for i in range(num_methods):
@@ -73,7 +72,7 @@ width = 1.0 / (num_methods + 1)
 fig, ax = plt.subplots()
 rects = []
 for i in range(num_methods):
-    rect = ax.bar(ind + i*width, means[i], width, color=METHOD_COLORS[i], yerr=confs[i])
+    rect = ax.bar(ind + i*width, means[i], width, color=METHOD_COLORS[i], hatch=METHOD_HATCH[i], yerr=confs[i])
     rects.append(rect)
 ax.set_ylabel('Normalized Distance')
 ax.set_title('Average Normalized Distance - ' + sys.argv[2])
