@@ -85,9 +85,6 @@ namespace bwi_guidance {
       rewards[ns - next_states.begin()] =
         -bwi_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
             graph_);
-      if (isTerminalState(*ns)) {
-        rewards[ns - next_states.begin()] += 10000;
-      }
     }
   }
 
