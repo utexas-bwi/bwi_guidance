@@ -130,10 +130,11 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
     vi.loadPolicy(indexed_vi_file);
     vi.savePolicy(indexed_vi_file);
   } else {
+    EVALUATE_OUTPUT("VI policy not found. Computing...");
     vi.computePolicy();
     vi.savePolicy(indexed_vi_file);
-    std::cout << "Computed and saved policy for " << goal_idx << " to file: " 
-      << indexed_vi_file << std::endl;
+    EVALUATE_OUTPUT("Computed and saved policy for " << goal_idx << " to file: " 
+      << indexed_vi_file);
   }
 
   for (int method = 0; method < num_methods; ++method) {
@@ -162,6 +163,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
         if (method == MCTS_METHOD) {
           mcts->restart();
           for (int i = 0; i < 10; ++i) {
+            EVALUATE_OUTPUT(" - performing initial MCTS search for 1s");
             mcts->search(current_state); // Initial search for 10 seconds
           }
         }
@@ -202,7 +204,7 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
             // is present
             current_state = next_states[0];
             if (method == MCTS_METHOD) {
-              std::cout << " - performing single MCTS search (1s)" << std::endl;
+              EVALUATE_OUTPUT(" - performing post-action MCTS search for 1s");
               mcts->search(current_state);
             }
             EVALUATE_OUTPUT(" - auto " << current_state);
@@ -224,10 +226,8 @@ InstanceResult testInstance(bwi_mapper::Graph& graph,
                current_state.visible_robot != NONE)) {
             if (method == MCTS_METHOD) {
               int distance = transition_distance * map.info.resolution;
-              EVALUATE_OUTPUT(" - performing MCTS search for " << distance <<
-                  " seconds");
-              std::cout << " - performing MCTS search for " << distance <<
-                " seconds" << std::endl;
+              EVALUATE_OUTPUT(" - performing post-wait MCTS search for " <<
+                  distance << "s");
               for (int i = 0; i < distance; ++i) {
                 mcts->search(current_state);
               }
@@ -380,12 +380,11 @@ int main(int argc, char** argv) {
     }
     int start_direction = direction_gen();
     std::cout << "#" << i << " Testing [" << start_idx << "," <<
-      start_direction << "," << goal_idx << "]: " << std::endl;
+      start_direction << "," << goal_idx << "]... " << std::endl;
     InstanceResult res = 
       testInstance(graph, map, start_idx, start_direction, goal_idx);
     std::cout << "  ... Done" << std::endl;
 
-    // std::cout << res << std::endl;
     fout << res << std::endl;
   }
   fout.close();
