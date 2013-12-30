@@ -1,0 +1,9 @@
+results1
+ - initial planning time 10s
+ - rewardBound 10000
+results2
+ - initial planning time 10s
+ - rewardBound 2000
+results3
+ - initial planning time 10s
+ - rewardBound 500
