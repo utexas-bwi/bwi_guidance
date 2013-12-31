@@ -374,9 +374,9 @@ InstanceResult testInstance(int instance_number, bwi_mapper::Graph& graph,
     MethodResult normalized_result;
     for (int i = 0; i < MAX_ROBOTS; ++i) {
       normalized_result.reward[i] = 
-        method_result.reward[i] * normalization_reward;
+        method_result.reward[i] / normalization_reward;
       normalized_result.distance[i] = 
-        method_result.distance[i] * normalization_distance;
+        method_result.distance[i] / normalization_distance;
     }
     result.normalized_results.push_back(normalized_result);
   }
