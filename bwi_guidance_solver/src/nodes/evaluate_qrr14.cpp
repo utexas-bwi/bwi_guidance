@@ -359,7 +359,8 @@ InstanceResult testInstance(int instance_number, bwi_mapper::Graph& graph,
 
   // Produce normalized results - distance is easy
   float normalization_distance = 
-    getDistanceNormalizationValue(graph, goal_idx, start_idx);
+    getDistanceNormalizationValue(graph, goal_idx, start_idx) *
+    map.info.resolution;
 
   // Normalizing rewards is more tricky - only do this if VI was one of the
   // methods, and the estimator was computed
@@ -374,7 +375,7 @@ InstanceResult testInstance(int instance_number, bwi_mapper::Graph& graph,
     MethodResult normalized_result;
     for (int i = 0; i < MAX_ROBOTS; ++i) {
       normalized_result.reward[i] = 
-        method_result.reward[i] / normalization_reward;
+        method_result.reward[i] / fabs(normalization_reward);
       normalized_result.distance[i] = 
         method_result.distance[i] / normalization_distance;
     }
