@@ -22,6 +22,14 @@ namespace bwi_guidance {
   visibility_range_(visibility_range),
   allow_goal_visibility_(allow_goal_visibility), max_robots_(max_robots) {
 
+    // Initialize intrinsic reward cache
+    for (size_t i = 0; i < boost::num_vertices(graph_); ++i) {
+      std::vector<size_t> temp_path;
+      intrinsic_reward_cache_.push_back(bwi_mapper::getShortestPathWithDistance(
+            i, goal_idx_, temp_path, graph_));
+    }
+    std::cout << intrinsic_reward_cache_.size() << std::endl;
+
     if (!file.empty()) {
       std::ifstream ifs(file.c_str());
       if (ifs.is_open()) {
@@ -82,9 +90,22 @@ namespace bwi_guidance {
     // Compute reward based on euclidean distance between state graph ids
     for (std::vector<StateQRR14>::const_iterator ns = next_states.begin();
         ns != next_states.end(); ++ns) {
+
+      // Regular reward formulation
+      // rewards[ns - next_states.begin()] =
+      //   -bwi_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
+      //       graph_);
+
+      // Intrinsic reward formulation
       rewards[ns - next_states.begin()] =
-        -bwi_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
-            graph_);
+        intrinsic_reward_cache_[ns->graph_id] - 
+        intrinsic_reward_cache_[state.graph_id];
+
+      if (isTerminalState(*ns)) {
+        rewards[ns - next_states.begin()] += 10000;
+      }
+      //std::cout << rewards[ns - next_states.begin()] << std::endl;
+
     }
   }
 

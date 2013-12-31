@@ -61,6 +61,7 @@ namespace bwi_guidance {
       /* Current state for generative model */
       StateQRR14 current_state_;
       URGenPtr generator_;
+      std::vector<float> intrinsic_reward_cache_;
 
       /* StateQRR14 space cache */
       std::map<int, std::vector<int> > adjacent_vertices_map_;
