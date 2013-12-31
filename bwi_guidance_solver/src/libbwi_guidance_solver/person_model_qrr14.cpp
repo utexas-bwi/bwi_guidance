@@ -16,11 +16,13 @@ namespace bwi_guidance {
   PersonModelQRR14::PersonModelQRR14(const bwi_mapper::Graph& graph, const
       nav_msgs::OccupancyGrid& map,  size_t goal_idx, const std::string& file,
       bool allow_robot_current_idx, float visibility_range, bool
-      allow_goal_visibility, unsigned int max_robots) : graph_(graph),
+      allow_goal_visibility, unsigned int max_robots, float success_reward,
+      bool use_intrinsic_reward) : graph_(graph),
   map_(map), goal_idx_(goal_idx),
   allow_robot_current_idx_(allow_robot_current_idx),
   visibility_range_(visibility_range),
-  allow_goal_visibility_(allow_goal_visibility), max_robots_(max_robots) {
+  allow_goal_visibility_(allow_goal_visibility), max_robots_(max_robots),
+  success_reward_(success_reward), use_intrinsic_reward_(use_intrinsic_reward) {
 
     // Initialize intrinsic reward cache
     for (size_t i = 0; i < boost::num_vertices(graph_); ++i) {
@@ -28,7 +30,6 @@ namespace bwi_guidance {
       intrinsic_reward_cache_.push_back(bwi_mapper::getShortestPathWithDistance(
             i, goal_idx_, temp_path, graph_));
     }
-    std::cout << intrinsic_reward_cache_.size() << std::endl;
 
     if (!file.empty()) {
       std::ifstream ifs(file.c_str());
@@ -92,19 +93,22 @@ namespace bwi_guidance {
         ns != next_states.end(); ++ns) {
 
       // Regular reward formulation
-      // rewards[ns - next_states.begin()] =
-      //   -bwi_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
-      //       graph_);
 
       // Intrinsic reward formulation
-      rewards[ns - next_states.begin()] =
-        intrinsic_reward_cache_[ns->graph_id] - 
-        intrinsic_reward_cache_[state.graph_id];
+      if (use_intrinsic_reward_) {
+        rewards[ns - next_states.begin()] =
+          intrinsic_reward_cache_[ns->graph_id] - 
+          intrinsic_reward_cache_[state.graph_id];
+      } else {
+        // Standard reward formulation
+        rewards[ns - next_states.begin()] =
+          -bwi_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
+              graph_);
+      }
 
       if (isTerminalState(*ns)) {
-        rewards[ns - next_states.begin()] += 10000;
+        rewards[ns - next_states.begin()] += success_reward_;
       }
-      //std::cout << rewards[ns - next_states.begin()] << std::endl;
 
     }
   }
@@ -157,6 +161,12 @@ namespace bwi_guidance {
   
   void PersonModelQRR14::initializeRNG(URGenPtr generator) {
     generator_ = generator;
+  }
+
+  void PersonModelQRR14::updateRewardStructure(float success_reward, 
+      bool use_intrinsic_reward) {
+    success_reward_ = success_reward;
+    use_intrinsic_reward_ = use_intrinsic_reward;
   }
 
   void PersonModelQRR14::computeAdjacentVertices() {

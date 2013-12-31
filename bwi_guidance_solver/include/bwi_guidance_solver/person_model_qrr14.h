@@ -27,7 +27,8 @@ namespace bwi_guidance {
           const nav_msgs::OccupancyGrid& map, size_t goal_idx, 
           const std::string& file = "", bool allow_robot_current_idx = false,
           float visibility_range = 0.0f, bool allow_goal_visibility = false,
-          unsigned int max_robots = 5);
+          unsigned int max_robots = 5, float success_reward = 0.0f,
+          bool use_intrinsic_reward = false);
 
       /* Functions inherited from PredictiveModel */
       virtual bool isTerminalState(const StateQRR14& state) const;
@@ -52,6 +53,8 @@ namespace bwi_guidance {
       virtual bool getNextAction(const StateQRR14 &state, ActionQRR14 &action);
 
       void initializeRNG(URGenPtr generator);
+      void updateRewardStructure(float success_reward, bool
+          use_intrinsic_reward);
 
       void getNextStates(const StateQRR14& state, const ActionQRR14& action, 
           std::vector<StateQRR14>& next_states);
@@ -62,6 +65,8 @@ namespace bwi_guidance {
       StateQRR14 current_state_;
       URGenPtr generator_;
       std::vector<float> intrinsic_reward_cache_;
+      bool use_intrinsic_reward_;
+      float success_reward_;
 
       /* StateQRR14 space cache */
       std::map<int, std::vector<int> > adjacent_vertices_map_;
