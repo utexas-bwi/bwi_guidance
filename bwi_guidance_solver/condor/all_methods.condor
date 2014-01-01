@@ -1,0 +1,19 @@
+######################################### 
+# 
+# Example 4: Show off some fancy features 
+# and local predicates. 
+# 
+#########################################
+
++Group = "GRAD" 
++Project = "AI_ROBOTICS"
+
+Executable = /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/condor/all_methods.sh
+Arguments = /projects/agents1/piyushk/ $(Process)
+Requirements = Arch == "X86_64" 
+
+Error = /projects/agents1/piyushk/logs/err.$(Process) 
+Output = /projects/agents1/piyushk/logs/out.$(Process) 
+Log = condor.log
+
+Queue 1000
