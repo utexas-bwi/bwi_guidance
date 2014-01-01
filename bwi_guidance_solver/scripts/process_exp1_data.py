@@ -7,11 +7,43 @@ import numpy as np
 import scipy.stats as stats
 import sys
 
-MAX_ROBOTS = 5
+# Method names corresponding to method types
 METHOD_NAMES = ['Heuristic', 'VI', 'UCT']
+MAX_ROBOTS = 5 # Compute this from the first line you encounter
+
 METHOD_COLORS = ['y', 'r', 'lightblue']
 METHOD_HATCH = ['/', '\\', 'x']
 
+"""
+import json
+methods = json.load(config_file)
+num_methods = len(methods['methods'])
+method_names = []
+for method in methods['methods']:
+    name = METHOD_NAMES[method['type']]
+    num_parameters = len(method) - 1 # type is not a parameter
+    if len(method) > 1:
+        name += "["
+        parameter_count = 0
+        for key,value in method.iteritems():
+            if key == "gamma":
+                name += "gamma=" + str(value) # TODO get symbol for gamma, formatted float value
+            elif key == "use_intrinsic_reward":
+                name += "IntrinsicReward"
+            elif key == "success_reward":
+                name += "SuccessReward=" + str(value) # This parameter needs to be names
+            elif key == "mtcs_reward_bound":
+                name += "C=" + str(value) # Might change if parameter changes
+            elif key == "mtcs_initial_planning_time":
+                name += "InitialPlanningTime=" + str(value) + "s"
+
+            parameter_count += 1
+            if parameter_count != num_parameters:
+                name += ","
+        name += "]"
+    method_names.append(name)
+
+"""
 def mean_standard_error(data):
     a = 1.0 * np.array(data)
     n = len(a)
