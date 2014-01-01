@@ -139,7 +139,8 @@ std::string getIndexedVIFile(int goal_idx, const Method::Params& params) {
 boost::shared_ptr<PersonModelQRR14> getModel(bwi_mapper::Graph& graph,
     nav_msgs::OccupancyGrid& map, int goal_idx) {
 
-  std::string indexed_model_file = getIndexedModelFile(goal_idx);
+  //std::string indexed_model_file = getIndexedModelFile(goal_idx);
+  std::string indexed_model_file; // Do not load or save models to file
   float pixel_visibility_range = visibility_range_ / map.info.resolution;
 
   boost::shared_ptr<PersonModelQRR14> model(

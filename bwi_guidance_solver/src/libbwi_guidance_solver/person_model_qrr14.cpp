@@ -49,13 +49,16 @@ namespace bwi_guidance {
     initializeActionCache();
     initializeNextStateCache();
 
-    std::string out_file = (file.empty()) ? "model.txt" : file;
-    std::cout << "PersonModel: Model computed. Saving to file: " << file <<
-      std::endl;
-    std::ofstream ofs(out_file.c_str());
-    boost::archive::binary_oarchive oa(ofs);
-    oa << *this;
-    ofs.close();
+    std::cout << "PersonModel: Model Computed!!" << std::endl;
+
+    if (!file.empty()) {
+      std::cout << " - Saving to file: " << file <<
+        std::endl;
+      std::ofstream ofs(file.c_str());
+      boost::archive::binary_oarchive oa(ofs);
+      oa << *this;
+      ofs.close();
+    }
   }
 
   bool PersonModelQRR14::isTerminalState(const StateQRR14& state) const {
