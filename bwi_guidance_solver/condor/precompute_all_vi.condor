@@ -8,8 +8,8 @@
 +Group = "GRAD" 
 +Project = "AI_ROBOTICS"
 
-Executable = /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/condor/roslaunch.sh
-Arguments = bwi_guidance_solver precompute_all_vi_iros2014.launch data_dir:=/projects/agents1/piyushk/ goal_idx:=$(Process)
+Executable = /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/condor/precompute_all_vi.sh
+Arguments = /projects/agents1/piyushk/ $(Process)
 Requirements = Arch == "X86_64" 
 
 Error = /projects/agents1/piyushk/logs/err.$(Process) 
