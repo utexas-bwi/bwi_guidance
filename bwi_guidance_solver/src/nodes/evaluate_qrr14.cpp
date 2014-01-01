@@ -156,13 +156,14 @@ boost::shared_ptr<ValueIteration<StateQRR14, ActionQRR14> > getVIInstance(
     const boost::shared_ptr<PersonEstimatorQRR14>& estimator, int goal_idx, 
     const Method::Params& params) {
 
-  float epsilon = 0.05f / map.info.resolution;
-  float delta = -500.0f / map.info.resolution;
+  float epsilon = 0.05f / map.info.resolution; // stop VI if maxchange < epsilon
+  float delta = -500.0f / map.info.resolution; // lower value bound for VI
   int num_iterations = 1000;
 
   boost::shared_ptr<ValueIteration<StateQRR14, ActionQRR14> > vi(
       new ValueIteration<StateQRR14, ActionQRR14>(model, estimator, 
-        params.gamma, epsilon, num_iterations, -delta, delta));
+        params.gamma, epsilon, num_iterations, 
+        std::numeric_limits<float>::max(), delta));
 
   std::string indexed_vi_file = getIndexedVIFile(goal_idx, params);
   std::ifstream vi_ifs(indexed_vi_file.c_str());
