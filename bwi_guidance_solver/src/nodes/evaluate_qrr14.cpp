@@ -204,7 +204,7 @@ float getRewardNormalizationValue(
 
 void precomputeVI(bwi_mapper::Graph& graph, nav_msgs::OccupancyGrid& map,
     int goal_idx, const Method::Params& params) {
-  EVALUATE_OUTPUT("Precomputing policy for " << params);
+  EVALUATE_OUTPUT("Precomputing policy for goal " << goal_idx << params);
   boost::shared_ptr<PersonModelQRR14> model = getModel(graph, map, goal_idx);
   boost::shared_ptr<PersonEstimatorQRR14> estimator(new PersonEstimatorQRR14);
   getVIInstance(map, model, estimator, goal_idx, params);

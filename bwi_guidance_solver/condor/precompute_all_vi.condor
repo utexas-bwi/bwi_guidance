@@ -8,12 +8,12 @@
 +Group = "GRAD" 
 +Project = "AI_ROBOTICS"
 
-Executable = /u/piyushk/catkin_ws/bwi_guidance/bwi_guidance_solver/condor/roslaunch.sh
+Executable = /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/condor/roslaunch.sh
 Arguments = bwi_guidance_solver precompute_all_vi_iros2014.launch data_dir:=/projects/agents1/piyushk/ goal_idx:=$(Process)
-Requirements = Memory >= 2000 && Arch == "X86_64" 
+Requirements = Arch == "X86_64" 
 
 Error = /projects/agents1/piyushk/logs/err.$(Process) 
 Output = /projects/agents1/piyushk/logs/out.$(Process) 
-Log = chipsim.log
+Log = condor.log
 
-Queue 1
+Queue 2

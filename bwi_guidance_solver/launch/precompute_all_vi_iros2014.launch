@@ -1,6 +1,6 @@
 <launch>
   <arg name="goal_idx" default="0" />
-  <arg name="num_instancecs" default="1" />
+  <arg name="num_instances" default="1" />
   <arg name="map_file" default="$(find bwi_guidance)/maps/map3.yaml" />
   <arg name="graph_file" default="$(find bwi_guidance)/maps/graph_map3.yaml" />
   <arg name="data_dir" default="$(find bwi_guidance_solver)/data/exp1/map3/" />
