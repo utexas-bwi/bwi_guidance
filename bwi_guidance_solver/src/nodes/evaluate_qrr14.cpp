@@ -31,17 +31,17 @@
 using namespace bwi_guidance;
 
 /* Constants */
-std::string VI_POLICY_FILE_SUFFIX = "vi";
-std::string MODEL_FILE_SUFFIX = "model";
-std::string DISTANCE_FILE_SUFFIX = "distance.txt";
-std::string REWARD_FILE_SUFFIX = "reward.txt";
+const std::string VI_POLICY_FILE_SUFFIX = "vi";
+const std::string MODEL_FILE_SUFFIX = "model";
+const std::string DISTANCE_FILE_SUFFIX = "distance.txt";
+const std::string REWARD_FILE_SUFFIX = "reward.txt";
 
 /* Parameters (with their defaults) */
 std::string data_directory_ = "";
 std::string map_file_ = "";
 std::string graph_file_ = "";
 int seed_ = 12345;
-int num_instances_ = 1000;
+int num_instances_ = 1;
 float distance_limit_ = 300.f;
 bool allow_robot_current_idx_ = false;
 float visibility_range_ = 0.0f; // Infinite visibility
@@ -51,6 +51,11 @@ bool mcts_enabled_ = false;
 int precompute_vi_ = -1;
 
 /* Structures used to define a single method */
+const std::string METHOD_TYPE_NAMES[3] = {
+  "Heuristic",
+  "VI",
+  "UCT"
+};
 enum MethodType {
   HEURISTIC = 0,
   VI = 1,
@@ -76,6 +81,25 @@ namespace Method {
 }
 
 std::vector<Method::Params> methods_;
+
+std::ostream& operator<< (std::ostream& stream, const Method::Params& params) {
+  stream << "[" << METHOD_TYPE_NAMES[params.type];
+  if (params.type != HEURISTIC) {
+    stream << ": gamma=" << params.gamma << ", success_reward=" << 
+      params.success_reward << ", ";
+    if (params.use_intrinsic_reward) {
+      stream << "intrinsic reward";
+    } else {
+      stream << "standard reward";
+    }
+    if (params.type == MCTS_TYPE) {
+      stream << ", initial_planning_time=" << params.mcts_initial_planning_time;
+      stream << ", reward_bound=" << params.mcts_reward_bound;
+    }
+  }
+  stream << "]";
+  return stream;
+}
 
 /* Structures used to define a single problem instance */
 
@@ -142,6 +166,7 @@ boost::shared_ptr<ValueIteration<StateQRR14, ActionQRR14> > getVIInstance(
   std::string indexed_vi_file = getIndexedVIFile(goal_idx, params);
   std::ifstream vi_ifs(indexed_vi_file.c_str());
   if (vi_ifs.good()) {
+    EVALUATE_OUTPUT("VI policy found from file: " << indexed_vi_file);
     vi->loadPolicy(indexed_vi_file);
   } else {
     EVALUATE_OUTPUT("VI policy not found. Computing...");
@@ -178,6 +203,7 @@ float getRewardNormalizationValue(
 
 void precomputeVI(bwi_mapper::Graph& graph, nav_msgs::OccupancyGrid& map,
     int goal_idx, const Method::Params& params) {
+  EVALUATE_OUTPUT("Precomputing policy for " << params);
   boost::shared_ptr<PersonModelQRR14> model = getModel(graph, map, goal_idx);
   boost::shared_ptr<PersonEstimatorQRR14> estimator(new PersonEstimatorQRR14);
   getVIInstance(map, model, estimator, goal_idx, params);
@@ -256,7 +282,7 @@ InstanceResult testInstance(int instance_number, bwi_mapper::Graph& graph,
     for (int starting_robots = 1; starting_robots <= MAX_ROBOTS;
         ++starting_robots) {
 
-      EVALUATE_OUTPUT("Evaluating method " << method << " with " << 
+      EVALUATE_OUTPUT("Evaluating method " << params << " with " << 
           starting_robots << " robots.");
       
       StateQRR14 current_state; 
@@ -464,6 +490,11 @@ int processOptions(int argc, char** argv) {
     methods_.push_back(params);
   }
 
+  if (num_instances_ < 1) {
+    std::cerr << "ERROR: num-instances must be positive!!" << std::endl; 
+    return -1;
+  }
+
   return 0;
 }
 
@@ -474,7 +505,7 @@ int main(int argc, char** argv) {
     return ret;
   }
 
-  std::cout << "Using random seed_: " << seed_ << std::endl;
+  std::cout << "Using random seed: " << seed_ << std::endl;
   std::cout << "Number of instances: " << num_instances_ << std::endl;
 
   bwi_mapper::MapLoader mapper(map_file_);
@@ -495,15 +526,22 @@ int main(int argc, char** argv) {
 
     // We are simply initializing the specified VI instance
     // Locate the first vi instance in specified methods
+    int count = 0;
     BOOST_FOREACH(const Method::Params& params, methods_) {
       if (params.type == VI) {
-        precomputeVI(graph, map, precompute_vi_, params);
-        return 0;
+        for (int i = precompute_vi_; i < precompute_vi_ + num_instances_; ++i) {
+          precomputeVI(graph, map, i, params);
+          ++count;
+        }
       }
     }
 
     // If we reach here, no parameters provided in methods file
-    throw std::runtime_error("No VI parameters provided in methods file");
+    if (count == 0) {
+      throw std::runtime_error("No VI parameters provided in methods file");
+    }
+
+    return 0;
   }
 
   // If we reach here, we are trying to evaluate approaches
