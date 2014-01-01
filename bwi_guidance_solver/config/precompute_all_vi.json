@@ -1,0 +1,22 @@
+{
+  "methods" : [ 
+  {
+    "type" : 1
+  }, 
+  {
+    "type" : 1,
+    "gamma" : 0.9,
+    "use_intrinsic_reward" : true
+  },
+  {
+    "type" : 1,
+    "gamma" : 0.95,
+    "use_intrinsic_reward" : true
+  },
+  {
+    "type" : 1,
+    "gamma" : 0.99,
+    "use_intrinsic_reward" : true
+  }
+  ]
+}

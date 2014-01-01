@@ -23,7 +23,7 @@ catkin_package(
 ## Build ##
 ###########
 
-#add_definitions(-DVI_DEBUG)
+add_definitions(-DVI_DEBUG)
 #add_definitions(-DMCTS_DEBUG)
 add_definitions(-DUCT_DEBUG)
 add_definitions(-DEVALUATE_DEBUG)
