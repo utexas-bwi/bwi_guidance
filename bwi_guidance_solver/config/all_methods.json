@@ -4,43 +4,46 @@
     "type" : 1
   }, 
   {
+    "type" : 2
+  }, 
+  {
     "type" : 2,
     "gamma" : 0.9,
     "use_intrinsic_reward" : true,
-    "rewardBound" : 500
+    "mcts_reward_bound" : 500
   },
   {
     "type" : 2,
     "gamma" : 0.95,
     "use_intrinsic_reward" : true,
-    "rewardBound" : 500
+    "mcts_reward_bound" : 500
   },
   {
     "type" : 2,
     "gamma" : 0.99,
     "use_intrinsic_reward" : true,
-    "rewardBound" : 500
+    "mcts_reward_bound" : 500
   },
   {
     "type" : 2,
     "gamma" : 0.9,
     "success_reward" : 1000, 
     "use_intrinsic_reward" : true,
-    "rewardBound" : 1000
+    "mcts_reward_bound" : 1000
   },
   {
     "type" : 2,
     "gamma" : 0.95,
     "success_reward" : 1000, 
     "use_intrinsic_reward" : true,
-    "rewardBound" : 1000
+    "mcts_reward_bound" : 1000
   },
   {
     "type" : 2,
     "gamma" : 0.99,
     "success_reward" : 1000, 
     "use_intrinsic_reward" : true,
-    "rewardBound" : 1000
+    "mcts_reward_bound" : 1000
   },
   {
     "type" : 2,
@@ -58,6 +61,63 @@
     "type" : 2,
     "gamma" : 0.99,
     "success_reward" : 10000, 
+    "use_intrinsic_reward" : true
+  },
+  {
+    "type" : 1,
+    "gamma" : 0.9,
+    "use_intrinsic_reward" : true,
+    "mcts_reward_bound" : 500
+  },
+  {
+    "type" : 1,
+    "gamma" : 0.95,
+    "use_intrinsic_reward" : true,
+    "mcts_reward_bound" : 500
+  },
+  {
+    "type" : 1,
+    "gamma" : 0.99,
+    "use_intrinsic_reward" : true,
+    "mcts_reward_bound" : 500
+  },
+  {
+    "type" : 1,
+    "gamma" : 0.9,
+    "success_reward" : 1000, // i.e. 50m
+    "use_intrinsic_reward" : true,
+    "mcts_reward_bound" : 1000
+  },
+  {
+    "type" : 1,
+    "gamma" : 0.95,
+    "success_reward" : 1000, // i.e. 50m
+    "use_intrinsic_reward" : true,
+    "mcts_reward_bound" : 1000
+  },
+  {
+    "type" : 1,
+    "gamma" : 0.99,
+    "success_reward" : 1000, // i.e. 50m
+    "use_intrinsic_reward" : true,
+    "mcts_reward_bound" : 1000
+  },
+  {
+    "type" : 1,
+    "gamma" : 0.9,
+    "success_reward" : 10000, // i.e. 500m
+    "use_intrinsic_reward" : true
+  },
+  {
+    "type" : 1,
+    "gamma" : 0.95,
+    "success_reward" : 10000, // i.e. 500m
+    "use_intrinsic_reward" : true
+  },
+  {
+    "type" : 1,
+    "gamma" : 0.99,
+    "success_reward" : 10000, // i.e. 500m
     "use_intrinsic_reward" : true
   }
   ]
