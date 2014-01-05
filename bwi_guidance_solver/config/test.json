@@ -1,10 +1,12 @@
 {
   "methods" : [ 
   {
-    "type" : 1
+    "type" : 2
   }, 
   {
-    "type" : 2
+    "type" : 2,
+    "use_intrinsic_reward" : true,
+    "mcts_reward_bound" : 500
   } 
   ]
 }

@@ -128,12 +128,12 @@ std::string getIndexedModelFile(int goal_idx) {
 }
 
 std::string getIndexedVIFile(int goal_idx, const Method::Params& params) {
-  return data_directory_ +
-    "goal" + boost::lexical_cast<std::string>(goal_idx) + "_" + 
-    "gamma" + boost::lexical_cast<std::string>(params.gamma) + "_" + "intRw"
-    + boost::lexical_cast<std::string>(params.use_intrinsic_reward) + "_" + 
-    "successRw" + boost::lexical_cast<std::string>(params.success_reward) + 
-    "_" + VI_POLICY_FILE_SUFFIX;
+  std::ostringstream ss;
+  ss << std::fixed << std::setprecision(2);
+  ss << data_directory_ << "goal" << goal_idx << "_gamma" << params.gamma <<
+    "_intRw" << params.use_intrinsic_reward << "_successRw" << 
+    params.success_reward << "_" << VI_POLICY_FILE_SUFFIX;
+  return ss.str();
 }
 
 boost::shared_ptr<PersonModelQRR14> getModel(bwi_mapper::Graph& graph,
@@ -171,7 +171,8 @@ boost::shared_ptr<ValueIteration<StateQRR14, ActionQRR14> > getVIInstance(
     EVALUATE_OUTPUT("VI policy found from file: " << indexed_vi_file);
     vi->loadPolicy(indexed_vi_file);
   } else {
-    EVALUATE_OUTPUT("VI policy not found. Computing...");
+    EVALUATE_OUTPUT("VI policy NOT found at file: " << indexed_vi_file << 
+        ". Computing...");
     vi->computePolicy();
     vi->savePolicy(indexed_vi_file);
     EVALUATE_OUTPUT("Computed and saved policy for " << goal_idx << " to file: " 

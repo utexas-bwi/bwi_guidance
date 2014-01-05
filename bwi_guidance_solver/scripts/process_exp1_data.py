@@ -108,20 +108,24 @@ for method in methods['methods']:
         name += "["
         parameter_count = 0
         for key,value in method.iteritems():
+            param = None
             if key == "gamma":
-                name += "gamma=" + str(value) # TODO get symbol for gamma, formatted float value
+                param = "gamma=" + str(value) # TODO get symbol for gamma, formatted float value
             elif key == "use_intrinsic_reward":
-                name += "IntrinsicReward"
+                param = "IntrinsicReward"
             elif key == "success_reward":
-                name += "SuccessReward=" + str(value) # This parameter needs to be names
+                param = "SuccessReward=" + str(value) # This parameter needs to be names
             elif key == "mtcs_reward_bound":
-                name += "C=" + str(value) # Might change if parameter changes
+                param = "C=" + str(value) # Might change if parameter changes
             elif key == "mtcs_initial_planning_time":
-                name += "InitialPlanningTime=" + str(value) + "s"
-
-            parameter_count += 1
-            if parameter_count != num_parameters:
+                param = "InitialPlanningTime=" + str(value) + "s"
+            
+            if param and parameter_count != 0:
                 name += ","
+            if param:
+                name += param
+                parameter_count += 1
+
         name += "]"
     method_names.append(name)
 
