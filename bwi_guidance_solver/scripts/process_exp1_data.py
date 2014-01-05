@@ -95,8 +95,9 @@ def draw_bar_chart(samples, top_level_names, second_level_names=None,
     return fig, ax, rects
 
 MAX_ROBOTS = 5 # Compute this from the first line you encounter
-config_file = sys.argv[1]
-print 'Reading from: ' + config_file
+config_file_name = sys.argv[1]
+print 'Reading from: ' + config_file_name
+config_file = open(config_file_name, "r")
 methods = json.load(config_file)
 num_methods = len(methods['methods'])
 method_names = []
@@ -131,8 +132,8 @@ for i in range(num_methods):
         samples[i].append([])
 
 first = True
-print 'Reading from: ' + sys.argv[1]
-with open(sys.argv[1], 'rb') as csvfile:
+print 'Reading from: ' + sys.argv[2]
+with open(sys.argv[2], 'rb') as csvfile:
     content_reader = csv.reader(csvfile, delimiter=',')
     for line in content_reader:
         for i in range(num_methods):
@@ -164,7 +165,7 @@ fig, ax, rects = \
 #             ha='center', va='bottom', fontproperties=font)
 
 plt.axhline(y=1.0, xmin=0, xmax=6, linewidth=1, color="black") 
-plt.axis([0, 6, 0, 6])
+plt.axis([0, 5, 0, 20])
 plt.show()
 
 # fig = plt.gcf()

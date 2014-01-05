@@ -100,8 +100,8 @@ namespace bwi_guidance {
       // Intrinsic reward formulation
       if (use_intrinsic_reward_) {
         rewards[ns - next_states.begin()] =
-          intrinsic_reward_cache_[ns->graph_id] - 
-          intrinsic_reward_cache_[state.graph_id];
+          intrinsic_reward_cache_[state.graph_id] - 
+          intrinsic_reward_cache_[ns->graph_id];
       } else {
         // Standard reward formulation
         rewards[ns - next_states.begin()] =
