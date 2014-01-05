@@ -86,7 +86,7 @@ def draw_bar_chart(samples, top_level_names, second_level_names=None,
         ax.set_title(title)
 
     if second_level_grouping_available:
-        ax.set_xticks(ind+width)
+        ax.set_xticks(ind+0.5-width/2)
         if second_level_names:
             ax.set_xticklabels(second_level_names)
 
@@ -169,7 +169,7 @@ fig, ax, rects = \
 #             ha='center', va='bottom', fontproperties=font)
 
 plt.axhline(y=1.0, xmin=0, xmax=6, linewidth=1, color="black") 
-plt.axis([0, 5, 0, 20])
+plt.axis([0, 5, 0, 7])
 plt.show()
 
 # fig = plt.gcf()

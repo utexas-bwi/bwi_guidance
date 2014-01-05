@@ -40,7 +40,7 @@ const std::string REWARD_FILE_SUFFIX = "reward.txt";
 std::string data_directory_ = "";
 std::string map_file_ = "";
 std::string graph_file_ = "";
-int seed_ = 12345;
+int seed_ = 0;
 int num_instances_ = 1;
 float distance_limit_ = 300.f;
 bool allow_robot_current_idx_ = false;
@@ -212,7 +212,7 @@ void precomputeVI(bwi_mapper::Graph& graph, nav_msgs::OccupancyGrid& map,
   getVIInstance(map, model, estimator, goal_idx, params);
 }
 
-InstanceResult testInstance(int instance_number, bwi_mapper::Graph& graph, 
+InstanceResult testInstance(int seed, bwi_mapper::Graph& graph, 
     nav_msgs::OccupancyGrid& map, int start_idx, int start_direction, 
     int goal_idx, const std::vector<Method::Params>& methods) {
 
@@ -257,13 +257,12 @@ InstanceResult testInstance(int instance_number, bwi_mapper::Graph& graph,
       uct_estimator_params.rewardBound = params.mcts_reward_bound;
 
       // Create the RNG required by the generative model 
-      boost::mt19937 mt(2 * seed_ * (method + 1) + instance_number);
+      boost::mt19937 mt(2 * (seed + 1) * (method + 1));
       boost::uniform_real<float> u(0.0f, 1.0f);
       URGenPtr generative_model_rng(new URGen(mt, u));
 
       // Create the RNG required for mcts rollouts
-      boost::shared_ptr<RNG> mcts_rng(
-          new RNG(3 * seed_ * (method + 1) + instance_number));
+      boost::shared_ptr<RNG> mcts_rng(new RNG(3 * (seed + 1) * (method + 1)));
 
       model->initializeRNG(generative_model_rng); 
       boost::shared_ptr<ModelUpdaterSingle<StateQRR14, ActionQRR14> >
@@ -278,7 +277,7 @@ InstanceResult testInstance(int instance_number, bwi_mapper::Graph& graph,
             mcts_model_updator, mcts_state_mapping, mcts_params_));
     }
 
-    boost::mt19937 mt(4 * seed_ * (method + 1) + instance_number);
+    boost::mt19937 mt(4 * (seed + 1) * (method + 1));
     boost::uniform_real<float> u(0.0f, 1.0f);
     URGenPtr transition_rng(new URGen(mt, u));
 
@@ -548,12 +547,6 @@ int main(int argc, char** argv) {
   }
 
   // If we reach here, we are trying to evaluate approaches
-  boost::mt19937 mt(seed_);
-  boost::uniform_int<int> idx_dist(0, boost::num_vertices(graph) - 1);
-  UIGen idx_gen(mt, idx_dist);
-  boost::uniform_int<int> direction_dist(0, 15);
-  UIGen direction_gen(mt, direction_dist);
-  
   std::ofstream dfout((data_directory_ +  
         boost::lexical_cast<std::string>(seed_) + "_" +
         DISTANCE_FILE_SUFFIX).c_str());
@@ -562,6 +555,13 @@ int main(int argc, char** argv) {
         REWARD_FILE_SUFFIX).c_str());
 
   for (int i = 0; i < num_instances_; ++i) {
+
+    boost::mt19937 mt(seed_ + i);
+    boost::uniform_int<int> idx_dist(0, boost::num_vertices(graph) - 1);
+    UIGen idx_gen(mt, idx_dist);
+    boost::uniform_int<int> direction_dist(0, 15);
+    UIGen direction_gen(mt, direction_dist);
+    
     int start_idx = idx_gen();
     int goal_idx = idx_gen();
     while (goal_idx == start_idx) {
@@ -570,7 +570,7 @@ int main(int argc, char** argv) {
     int start_direction = direction_gen();
     std::cout << "#" << i << " Testing [" << start_idx << "," <<
       start_direction << "," << goal_idx << "]... " << std::endl;
-    InstanceResult res = testInstance(i, graph, map, start_idx,
+    InstanceResult res = testInstance(seed_ + i, graph, map, start_idx,
         start_direction, goal_idx, methods_);
     std::cout << "  ... Done" << std::endl;
 

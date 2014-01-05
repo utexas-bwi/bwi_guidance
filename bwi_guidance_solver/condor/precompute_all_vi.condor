@@ -8,8 +8,8 @@
 +Group = "GRAD" 
 +Project = "AI_ROBOTICS"
 
-Executable = /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/condor/precompute_all_vi.sh
-Arguments = /projects/agents1/piyushk/ $(Process)
+Executable = /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/condor/condor_runner.sh
+Arguments = --precompute-vi $(Process) --methods-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/config/all_methods.json
 Requirements = Arch == "X86_64" 
 
 Error = /projects/agents1/piyushk/logs/err.$(Process) 
