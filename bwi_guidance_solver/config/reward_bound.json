@@ -7,9 +7,6 @@
     "type" : 1
   }, 
   {
-    "type" : 2
-  }, 
-  {
     "type" : 2,
     "mcts_reward_bound" : 20
   }, 
@@ -23,7 +20,23 @@
   }, 
   {
     "type" : 2,
+    "mcts_reward_bound" : 2000
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000
+  }, 
+  {
+    "type" : 2,
     "mcts_reward_bound" : 10000
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 20000
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 50000
   }, 
   {
     "type" : 2,

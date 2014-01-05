@@ -114,10 +114,10 @@ for method in methods['methods']:
             elif key == "use_intrinsic_reward":
                 param = "IntrinsicReward"
             elif key == "success_reward":
-                param = "SuccessReward=" + str(value) # This parameter needs to be names
-            elif key == "mtcs_reward_bound":
-                param = "C=" + str(value) # Might change if parameter changes
-            elif key == "mtcs_initial_planning_time":
+                param = "EndReward=" + str(value) # This parameter needs to be names
+            elif key == "mcts_reward_bound":
+                param = "RewardBound=" + str(value) # Might change if parameter changes
+            elif key == "mcts_initial_planning_time":
                 param = "InitialPlanningTime=" + str(value) + "s"
             
             if param and parameter_count != 0:
