@@ -18,6 +18,12 @@ namespace boost {
 
 namespace bwi_guidance {
 
+  enum RewardStructure {
+    STANDARD_REWARD = 0,
+    INTRINSIC_REWARD = 1,
+    SHAPING_REWARD = 2
+  };
+
   class PersonModelQRR14 : public PredictiveModel<StateQRR14, ActionQRR14>,
                            public Model<StateQRR14, ActionQRR14> {
 
@@ -28,7 +34,7 @@ namespace bwi_guidance {
           const std::string& file = "", bool allow_robot_current_idx = false,
           float visibility_range = 0.0f, bool allow_goal_visibility = false,
           unsigned int max_robots = 5, float success_reward = 0.0f,
-          bool use_intrinsic_reward = false);
+          RewardStructure reward_structure = STANDARD_REWARD);
 
       /* Functions inherited from PredictiveModel */
       virtual bool isTerminalState(const StateQRR14& state) const;
@@ -53,8 +59,8 @@ namespace bwi_guidance {
       virtual bool getNextAction(const StateQRR14 &state, ActionQRR14 &action);
 
       void initializeRNG(URGenPtr generator);
-      void updateRewardStructure(float success_reward, bool
-          use_intrinsic_reward);
+      void updateRewardStructure(float success_reward, RewardStructure
+          reward_structure);
 
       void getNextStates(const StateQRR14& state, const ActionQRR14& action, 
           std::vector<StateQRR14>& next_states);
@@ -65,7 +71,7 @@ namespace bwi_guidance {
       StateQRR14 current_state_;
       URGenPtr generator_;
       std::vector<float> intrinsic_reward_cache_;
-      bool use_intrinsic_reward_;
+      RewardStructure reward_structure_;
       float success_reward_;
 
       /* StateQRR14 space cache */

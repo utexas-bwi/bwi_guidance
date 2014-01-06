@@ -11,109 +11,26 @@
     "mcts_reward_bound" : 5000
   }, 
   {
-    "type" : 1,
-    "gamma" : 0.9,
-    "use_intrinsic_reward" : true
-  },
-  {
     "type" : 2,
-    "gamma" : 0.9,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 100
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.9,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 200
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.9,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 500
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.9,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 1000
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.9,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 2000
-  },
+    "reward_structure" : 2,
+    "mcts_reward_bound" : 5000
+  }, 
   {
     "type" : 1,
     "gamma" : 0.95,
-    "use_intrinsic_reward" : true
+    "reward_structure" : 1
   },
   {
     "type" : 2,
     "gamma" : 0.95,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 100
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.95,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 200
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.95,
-    "use_intrinsic_reward" : true,
+    "reward_structure" : 1,
     "mcts_reward_bound" : 500
   },
   {
     "type" : 2,
     "gamma" : 0.95,
-    "use_intrinsic_reward" : true,
+    "reward_structure" : 1,
     "mcts_reward_bound" : 1000
   },
-  {
-    "type" : 2,
-    "gamma" : 0.95,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 2000
-  },
-  {
-    "type" : 1,
-    "gamma" : 0.99,
-    "use_intrinsic_reward" : true
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.99,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 100
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.99,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 200
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.99,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 500
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.99,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 1000
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.99,
-    "use_intrinsic_reward" : true,
-    "mcts_reward_bound" : 2000
-  }
   ]
 }

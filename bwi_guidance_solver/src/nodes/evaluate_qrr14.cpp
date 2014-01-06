@@ -71,7 +71,7 @@ namespace Method {
 #define PARAMS(_) \
   _(int,type,type,MCTS_TYPE) \
   _(float,gamma,gamma,1.0) \
-  _(bool,use_intrinsic_reward,use_intrinsic_reward,false) \
+  _(int,reward_structure,reward_structure,STANDARD_REWARD) \
   _(float,success_reward,success_reward,0.0) \
   _(float,mcts_initial_planning_time,mcts_initial_planning_time,10.0) \
   _(float,mcts_reward_bound,mcts_reward_bound,10000.0) 
@@ -87,10 +87,12 @@ std::ostream& operator<< (std::ostream& stream, const Method::Params& params) {
   if (params.type != HEURISTIC) {
     stream << ": gamma=" << params.gamma << ", success_reward=" << 
       params.success_reward << ", ";
-    if (params.use_intrinsic_reward) {
+    if (params.reward_structure == STANDARD_REWARD) {
+      stream << "standard reward";
+    } else if (params.reward_structure == INTRINSIC_REWARD) {
       stream << "intrinsic reward";
     } else {
-      stream << "standard reward";
+      stream << "shaping reward";
     }
     if (params.type == MCTS_TYPE) {
       stream << ", initial_planning_time=" << params.mcts_initial_planning_time;
@@ -131,7 +133,7 @@ std::string getIndexedVIFile(int goal_idx, const Method::Params& params) {
   std::ostringstream ss;
   ss << std::fixed << std::setprecision(2);
   ss << data_directory_ << "goal" << goal_idx << "_gamma" << params.gamma <<
-    "_intRw" << params.use_intrinsic_reward << "_successRw" << 
+    "_intRw" << params.reward_structure << "_successRw" << 
     params.success_reward << "_" << VI_POLICY_FILE_SUFFIX;
   return ss.str();
 }
@@ -235,7 +237,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
     const Method::Params& params = methods[method];
     model->updateRewardStructure(params.success_reward, 
-        params.use_intrinsic_reward);
+        (RewardStructure) params.reward_structure);
 
     if (params.type == HEURISTIC) {
       hs.reset(new HeuristicSolver(map, graph, goal_idx,

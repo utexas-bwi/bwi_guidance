@@ -169,7 +169,7 @@ fig, ax, rects = \
 #             ha='center', va='bottom', fontproperties=font)
 
 plt.axhline(y=1.0, xmin=0, xmax=6, linewidth=1, color="black") 
-plt.axis([0, 5, 0, 7])
+plt.axis([0, 5, 0, 8])
 plt.show()
 
 # fig = plt.gcf()

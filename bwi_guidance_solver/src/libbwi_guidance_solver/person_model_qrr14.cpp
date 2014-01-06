@@ -17,12 +17,12 @@ namespace bwi_guidance {
       nav_msgs::OccupancyGrid& map,  size_t goal_idx, const std::string& file,
       bool allow_robot_current_idx, float visibility_range, bool
       allow_goal_visibility, unsigned int max_robots, float success_reward,
-      bool use_intrinsic_reward) : graph_(graph),
+      RewardStructure reward_structure) : graph_(graph),
   map_(map), goal_idx_(goal_idx),
   allow_robot_current_idx_(allow_robot_current_idx),
   visibility_range_(visibility_range),
   allow_goal_visibility_(allow_goal_visibility), max_robots_(max_robots),
-  success_reward_(success_reward), use_intrinsic_reward_(use_intrinsic_reward) {
+  success_reward_(success_reward), reward_structure_(reward_structure) {
 
     // Initialize intrinsic reward cache
     for (size_t i = 0; i < boost::num_vertices(graph_); ++i) {
@@ -95,14 +95,18 @@ namespace bwi_guidance {
     for (std::vector<StateQRR14>::const_iterator ns = next_states.begin();
         ns != next_states.end(); ++ns) {
 
-      // Regular reward formulation
+      rewards[ns - next_states.begin()] = 0;
 
-      // Intrinsic reward formulation
-      if (use_intrinsic_reward_) {
-        rewards[ns - next_states.begin()] =
+      // Add shaping reward as necessary
+      if (reward_structure_ == INTRINSIC_REWARD ||
+          reward_structure_ == SHAPING_REWARD) {
+        rewards[ns - next_states.begin()] +=
           intrinsic_reward_cache_[state.graph_id] - 
           intrinsic_reward_cache_[ns->graph_id];
-      } else {
+      }
+
+      if (reward_structure_ == STANDARD_REWARD ||
+          reward_structure_ == SHAPING_REWARD) {
         // Standard reward formulation
         rewards[ns - next_states.begin()] =
           -bwi_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
@@ -167,9 +171,9 @@ namespace bwi_guidance {
   }
 
   void PersonModelQRR14::updateRewardStructure(float success_reward, 
-      bool use_intrinsic_reward) {
+      RewardStructure reward_structure) {
     success_reward_ = success_reward;
-    use_intrinsic_reward_ = use_intrinsic_reward;
+    reward_structure_ = reward_structure;
   }
 
   void PersonModelQRR14::computeAdjacentVertices() {
