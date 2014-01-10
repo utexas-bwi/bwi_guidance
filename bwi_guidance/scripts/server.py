@@ -115,7 +115,7 @@ class ExperimentServer:
 
     def close_all_processes(self):
         for process in self.processes:
-            bwi_guidance.stop_roslaunch_process(process)
+            bwi_tools.stop_roslaunch_process(process)
         self.processes = []
             
     def start_experiments(self, name, email):
@@ -130,7 +130,7 @@ class ExperimentServer:
             use_heuristic = 'true' if self.use_heuristic else 'false'
             self.use_heuristic = not self.use_heuristic #switch for next person
             rospy.loginfo("  use heuristic: " + use_heuristic)
-            process = bwi_guidance.start_roslaunch_process(
+            process = bwi_tools.start_roslaunch_process(
                     self.package, self.script,
                     args={'uid': uid, 'name': name, 'email': email, 
                           'use_heuristic': use_heuristic},
