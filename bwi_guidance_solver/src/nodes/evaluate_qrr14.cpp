@@ -259,12 +259,12 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       uct_estimator_params.rewardBound = params.mcts_reward_bound;
 
       // Create the RNG required by the generative model 
-      boost::mt19937 mt(2 * (seed + 1) * (method + 1));
+      boost::mt19937 mt(2 * (seed + 1));
       boost::uniform_real<float> u(0.0f, 1.0f);
       URGenPtr generative_model_rng(new URGen(mt, u));
 
       // Create the RNG required for mcts rollouts
-      boost::shared_ptr<RNG> mcts_rng(new RNG(3 * (seed + 1) * (method + 1)));
+      boost::shared_ptr<RNG> mcts_rng(new RNG(3 * (seed + 1)));
 
       model->initializeRNG(generative_model_rng); 
       boost::shared_ptr<ModelUpdaterSingle<StateQRR14, ActionQRR14> >
@@ -279,7 +279,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             mcts_model_updator, mcts_state_mapping, mcts_params_));
     }
 
-    boost::mt19937 mt(4 * (seed + 1) * (method + 1));
+    boost::mt19937 mt(4 * (seed + 1));
     boost::uniform_real<float> u(0.0f, 1.0f);
     URGenPtr transition_rng(new URGen(mt, u));
 

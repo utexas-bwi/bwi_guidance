@@ -9,11 +9,11 @@
 +Project = "AI_ROBOTICS"
 
 Executable = /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/condor/condor_runner.sh
-Arguments = --seed $(Process) --data-directory /projects/agents1/piyushk/map3/ --methods-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/config/all_methods.json --map-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance/maps/map3.yaml --graph-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance/maps/graph_map3.yaml 
+Arguments = --seed $(Process) --data-directory /projects/agents1/piyushk/map1/ --methods-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/config/qrr14.json --map-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance/maps/map1.yaml --graph-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance/maps/graph_map1.yaml 
 Requirements = Arch == "X86_64" 
 
 Error = /projects/agents1/piyushk/logs/err.$(Process) 
 Output = /projects/agents1/piyushk/logs/out.$(Process) 
 Log = condor.log
 
-Queue 1000
+Queue 10
