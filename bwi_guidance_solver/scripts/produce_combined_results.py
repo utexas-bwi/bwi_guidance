@@ -16,8 +16,8 @@ outfile = open("out.txt", "w")
 suffix = '_distance.txt'
 for i in range(max_results):
     cur_input_file = data_directory + str(i) + suffix
-    print "Processing " + cur_input_file
     if os.path.exists(cur_input_file):
+	print "Processing " + cur_input_file
         infile = open(cur_input_file,  "r")
         line = infile.readline()
         if line:
