@@ -572,6 +572,7 @@ int main(int argc, char** argv) {
     int start_direction = direction_gen();
     std::cout << "#" << i << " Testing [" << start_idx << "," <<
       start_direction << "," << goal_idx << "]... " << std::endl;
+    std::cout << "Using seed: " << seed_ + i << ", " << seed_ << "+" << i << std::endl; 
     InstanceResult res = testInstance(seed_ + i, graph, map, start_idx,
         start_direction, goal_idx, methods_);
     std::cout << "  ... Done" << std::endl;
@@ -587,6 +588,9 @@ int main(int argc, char** argv) {
         }
       }
     }
+
+    dfout << std::endl;
+    rfout << std::endl;
 
   }
 
