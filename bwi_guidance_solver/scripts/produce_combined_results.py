@@ -21,7 +21,7 @@ for i in range(max_results):
         infile = open(cur_input_file,  "r")
         line = infile.readline()
         if line:
-            outfile.write(line + '\n')
+            outfile.write(line)
         else:
             print "File " + cur_input_file + "exists, but no data"
         infile.close()
