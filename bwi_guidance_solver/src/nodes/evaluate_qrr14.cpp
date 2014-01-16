@@ -483,6 +483,7 @@ int processOptions(int argc, char** argv) {
   }
 
   /* Read in methods */
+  std::cout << "Methods File: " << methods_file << std::endl;
   Json::Value methods_json, methods_array;
   if (!readJson(methods_file, methods_json)) {
     return -1;
@@ -511,6 +512,12 @@ int main(int argc, char** argv) {
 
   std::cout << "Using random seed: " << seed_ << std::endl;
   std::cout << "Number of instances: " << num_instances_ << std::endl;
+  std::cout << "Map File: " << map_file_ << std::endl;
+  std::cout << "Graph File: " << graph_file_ << std::endl;
+  std::cout << "Visibility Range: " << visibility_range_ << std::endl;
+  std::cout << "Distance Limit: " << distance_limit_ << std::endl;
+  std::cout << "Allow Goal Visibiliy: " << allow_goal_visibility_ << std::endl;
+  std::cout << "Allow Robot Current: " << allow_robot_current_idx_ << std::endl;
 
   bwi_mapper::MapLoader mapper(map_file_);
   bwi_mapper::Graph graph;

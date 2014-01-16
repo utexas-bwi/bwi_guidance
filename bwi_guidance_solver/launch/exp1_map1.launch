@@ -12,7 +12,7 @@
   <node name="evaluate" pkg="bwi_guidance_solver" type="evaluate_qrr14"  
     output="screen"
     args="--map-file $(arg map_file) --graph-file $(arg graph_file)
-    --data-directory $(arg data_dir) -allow-robot-current --seed $(arg seed)
+    --data-directory $(arg data_dir) --allow-robot-current --seed $(arg seed)
     --mcts-params $(arg mcts_params) --methods-file $(arg methods_file)
     --num-instances $(arg num_instances)" 
     required="true" />
