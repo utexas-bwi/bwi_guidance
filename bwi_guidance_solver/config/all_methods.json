@@ -24,17 +24,6 @@
     "type" : 2,
     "reward_structure" : 2,
     "mcts_reward_bound" : 10000
-  }, 
-  {
-    "type" : 1,
-    "gamma" : 0.95,
-    "reward_structure" : 1
-  },
-  {
-    "type" : 2,
-    "gamma" : 0.95,
-    "reward_structure" : 1,
-    "mcts_reward_bound" : 500
-  }
+  } 
   ]
 }
