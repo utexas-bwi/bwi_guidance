@@ -74,7 +74,7 @@ namespace Method {
   _(int,reward_structure,reward_structure,STANDARD_REWARD) \
   _(float,success_reward,success_reward,0.0) \
   _(float,mcts_initial_planning_time,mcts_initial_planning_time,10.0) \
-  _(float,mcts_planning_time_multiplier,mcts_initial_planning_time,1.0) \
+  _(float,mcts_planning_time_multiplier,mcts_planning_time_multiplier,1.0) \
   _(float,mcts_reward_bound,mcts_reward_bound,10000.0) 
 
   Params_STRUCT(PARAMS)

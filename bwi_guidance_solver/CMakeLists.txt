@@ -26,7 +26,7 @@ catkin_package(
 #add_definitions(-DVI_DEBUG)
 #add_definitions(-DMCTS_DEBUG)
 #add_definitions(-DUCT_DEBUG)
-#add_definitions(-DEVALUATE_DEBUG)
+add_definitions(-DEVALUATE_DEBUG)
 
 include_directories(
   include
