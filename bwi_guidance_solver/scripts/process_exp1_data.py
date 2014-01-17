@@ -5,6 +5,7 @@ import csv
 import simplejson as json
 import matplotlib.pyplot as plt; plt.rcdefaults()
 from matplotlib.font_manager import FontProperties
+import pylab
 import sys
 
 # Method names corresponding to method types
@@ -101,3 +102,12 @@ fig.set_size_inches(6,4)
 plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=100)
 
 plt.show()
+
+pylab.figure()
+for method in range(num_methods): 
+    pylab.hist(samples[method][4], [1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 20.0, 50.0, 100.0], histtype='step', label=method_names[method])
+    #pylab.hist(samples[method][4], 100, histtype='step', label=method_names[method])
+pylab.yscale('log')
+pylab.xscale('log')
+pylab.legend()
+pylab.show()
