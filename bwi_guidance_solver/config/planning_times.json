@@ -13,12 +13,12 @@
   {
     "type" : 2,
     "mcts_reward_bound" : 5000,
-    "mcts_initial_planning_time" : 60.0,
+    "mcts_initial_planning_time" : 60.0
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 5000,
-    "mcts_planning_time_multiplier" : 6.0,
+    "mcts_planning_time_multiplier" : 6.0
   } 
   ]
 }
