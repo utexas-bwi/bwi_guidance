@@ -108,7 +108,7 @@ namespace bwi_guidance {
       if (reward_structure_ == STANDARD_REWARD ||
           reward_structure_ == SHAPING_REWARD) {
         // Standard reward formulation
-        rewards[ns - next_states.begin()] +=
+        rewards[ns - next_states.begin()] =
           -bwi_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
               graph_);
       }
