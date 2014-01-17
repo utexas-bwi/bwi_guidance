@@ -74,6 +74,7 @@ namespace Method {
   _(int,reward_structure,reward_structure,STANDARD_REWARD) \
   _(float,success_reward,success_reward,0.0) \
   _(float,mcts_initial_planning_time,mcts_initial_planning_time,10.0) \
+  _(float,mcts_planning_time_multiplier,mcts_initial_planning_time,1.0) \
   _(float,mcts_reward_bound,mcts_reward_bound,10000.0) 
 
   Params_STRUCT(PARAMS)
@@ -81,27 +82,6 @@ namespace Method {
 }
 
 std::vector<Method::Params> methods_;
-
-std::ostream& operator<< (std::ostream& stream, const Method::Params& params) {
-  stream << "[" << METHOD_TYPE_NAMES[params.type];
-  if (params.type != HEURISTIC) {
-    stream << ": gamma=" << params.gamma << ", success_reward=" << 
-      params.success_reward << ", ";
-    if (params.reward_structure == STANDARD_REWARD) {
-      stream << "standard reward";
-    } else if (params.reward_structure == INTRINSIC_REWARD) {
-      stream << "intrinsic reward";
-    } else {
-      stream << "shaping reward";
-    }
-    if (params.type == MCTS_TYPE) {
-      stream << ", initial_planning_time=" << params.mcts_initial_planning_time;
-      stream << ", reward_bound=" << params.mcts_reward_bound;
-    }
-  }
-  stream << "]";
-  return stream;
-}
 
 /* Structures used to define a single problem instance */
 
@@ -369,6 +349,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
           if (params.type == MCTS_TYPE) {
             // Assumes 1m/s velocity for converting distance to time
             int distance = transition_distance * map.info.resolution;
+            distance += params.mcts_planning_time_multiplier;
             EVALUATE_OUTPUT(" - performing post-wait MCTS search for " <<
                 distance << "s");
             for (int i = 0; i < distance; ++i) {
@@ -489,10 +470,12 @@ int processOptions(int argc, char** argv) {
     return -1;
   }
   methods_array = methods_json["methods"];
+  std::cout << "Processing Methods: " << std::endl;
   for (size_t i = 0; i < methods_array.size(); ++i) {
     Method::Params params;
     params.fromJson(methods_array[i]);
     methods_.push_back(params);
+    std::cout << "Method " << i << ": " << params << std::endl;
   }
 
   if (num_instances_ < 1) {
