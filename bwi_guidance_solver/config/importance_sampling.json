@@ -13,18 +13,18 @@
   {
     "type" : 2,
     "reward_structure" : 2,
-    "mcts_reward_bound" : 2000
+    "mcts_reward_bound" : 5000
   }, 
   {
-    "type" : 1,
-    "gamma" : 0.95,
-    "reward_structure" : 1
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "mcts_importance_sampling" : true
   },
   {
     "type" : 2,
-    "gamma" : 0.95,
-    "reward_structure" : 1,
-    "mcts_reward_bound" : 500
-  }
+    "reward_structure" : 2,
+    "mcts_reward_bound" : 5000,
+    "mcts_importance_sampling" : true
+  } 
   ]
 }
