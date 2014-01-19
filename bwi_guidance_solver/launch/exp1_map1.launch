@@ -1,8 +1,19 @@
 <launch>
+  <arg name="data_dir" default="$(find bwi_guidance_solver)/data/exp1/map1/" />
+  <arg name="seed" default="0" />
+  <arg name="num_instances" default="1000" />
+
   <arg name="map_file" default="$(find bwi_guidance)/maps/map1.yaml" />
   <arg name="graph_file" default="$(find bwi_guidance)/maps/graph_map1.yaml" />
-  <arg name="data_dir" default="$(find bwi_guidance_solver)/data/exp1/map1/" />
-  <node name="evaluate" pkg="bwi_guidance_solver" type="evaluate_qrr14" 
+  <arg name="mcts_params" 
+    default="$(find bwi_guidance_solver)/config/mcts_params.json" />
+  <arg name="methods_file" 
+    default="$(find bwi_guidance_solver)/config/qrr14.json" />
+  <node name="evaluate" pkg="bwi_guidance_solver" type="evaluate_qrr14"  
     output="screen"
-    args="--map-file $(arg map_file) --graph-file $(arg graph_file) -D $(arg data_dir) -a --num-instances 1000" />
+    args="--map-file $(arg map_file) --graph-file $(arg graph_file)
+    --data-directory $(arg data_dir) --allow-robot-current --seed $(arg seed)
+    --mcts-params $(arg mcts_params) --methods-file $(arg methods_file)
+    --num-instances $(arg num_instances)" 
+    required="true" />
 </launch>

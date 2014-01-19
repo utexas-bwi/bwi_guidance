@@ -28,5 +28,14 @@ int main(int argc, char** argv) {
     }
   }
 
+  std::cout << std::endl << "Shortest Distances: " << std::endl;
+  for (int i = 4; i < num_ids; i+=2) {
+    std::vector<size_t> path;
+    float distance = 
+      bwi_mapper::getShortestPathWithDistance(ids[i], ids[i+1], path, graph);
+    distance *= map.info.resolution;
+    std::cout << distance << std::endl;
+  }
+
   return 0;
 }

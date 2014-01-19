@@ -74,6 +74,7 @@ namespace Method {
   _(int,reward_structure,reward_structure,STANDARD_REWARD) \
   _(float,success_reward,success_reward,0.0) \
   _(float,mcts_initial_planning_time,mcts_initial_planning_time,10.0) \
+  _(float,mcts_planning_time_multiplier,mcts_planning_time_multiplier,1.0) \
   _(float,mcts_reward_bound,mcts_reward_bound,10000.0) \
   _(bool,mcts_importance_sampling,mcts_importance_sampling,false) 
 
@@ -83,27 +84,6 @@ namespace Method {
 
 std::vector<Method::Params> methods_;
 
-// std::ostream& operator<< (std::ostream& stream, const Method::Params& params) {
-//   stream << "[" << METHOD_TYPE_NAMES[params.type];
-//   if (params.type != HEURISTIC) {
-//     stream << ": gamma=" << params.gamma << ", success_reward=" << 
-//       params.success_reward << ", ";
-//     if (params.reward_structure == STANDARD_REWARD) {
-//       stream << "standard reward";
-//     } else if (params.reward_structure == INTRINSIC_REWARD) {
-//       stream << "intrinsic reward";
-//     } else {
-//       stream << "shaping reward";
-//     }
-//     if (params.type == MCTS_TYPE) {
-//       stream << ", initial_planning_time=" << params.mcts_initial_planning_time;
-//       stream << ", reward_bound=" << params.mcts_reward_bound;
-//     }
-//   }
-//   stream << "]";
-//   return stream;
-// }
-// 
 /* Structures used to define a single problem instance */
 
 struct InstanceResult {
@@ -263,12 +243,12 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
         params.mcts_importance_sampling;
 
       // Create the RNG required by the generative model 
-      boost::mt19937 mt(2 * (seed + 1) * (method + 1));
+      boost::mt19937 mt(2 * (seed + 1));
       boost::uniform_real<float> u(0.0f, 1.0f);
       URGenPtr generative_model_rng(new URGen(mt, u));
 
       // Create the RNG required for mcts rollouts
-      boost::shared_ptr<RNG> mcts_rng(new RNG(3 * (seed + 1) * (method + 1)));
+      boost::shared_ptr<RNG> mcts_rng(new RNG(3 * (seed + 1)));
 
       model->initializeRNG(generative_model_rng); 
       boost::shared_ptr<ModelUpdaterSingle<StateQRR14, ActionQRR14> >
@@ -283,7 +263,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             mcts_model_updator, mcts_state_mapping, mcts_params_));
     }
 
-    boost::mt19937 mt(4 * (seed + 1) * (method + 1));
+    boost::mt19937 mt(4 * (seed + 1));
     boost::uniform_real<float> u(0.0f, 1.0f);
     URGenPtr transition_rng(new URGen(mt, u));
 
@@ -373,6 +353,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
           if (params.type == MCTS_TYPE) {
             // Assumes 1m/s velocity for converting distance to time
             int distance = transition_distance * map.info.resolution;
+            distance += params.mcts_planning_time_multiplier;
             EVALUATE_OUTPUT(" - performing post-wait MCTS search for " <<
                 distance << "s");
             for (int i = 0; i < distance; ++i) {
@@ -487,15 +468,18 @@ int processOptions(int argc, char** argv) {
   }
 
   /* Read in methods */
+  std::cout << "Methods File: " << methods_file << std::endl;
   Json::Value methods_json, methods_array;
   if (!readJson(methods_file, methods_json)) {
     return -1;
   }
   methods_array = methods_json["methods"];
+  std::cout << "Processing Methods: " << std::endl;
   for (size_t i = 0; i < methods_array.size(); ++i) {
     Method::Params params;
     params.fromJson(methods_array[i]);
     methods_.push_back(params);
+    std::cout << "Method " << i << ": " << params << std::endl;
   }
 
   if (num_instances_ < 1) {
@@ -515,6 +499,12 @@ int main(int argc, char** argv) {
 
   std::cout << "Using random seed: " << seed_ << std::endl;
   std::cout << "Number of instances: " << num_instances_ << std::endl;
+  std::cout << "Map File: " << map_file_ << std::endl;
+  std::cout << "Graph File: " << graph_file_ << std::endl;
+  std::cout << "Visibility Range: " << visibility_range_ << std::endl;
+  std::cout << "Distance Limit: " << distance_limit_ << std::endl;
+  std::cout << "Allow Goal Visibiliy: " << allow_goal_visibility_ << std::endl;
+  std::cout << "Allow Robot Current: " << allow_robot_current_idx_ << std::endl;
 
   bwi_mapper::MapLoader mapper(map_file_);
   bwi_mapper::Graph graph;
@@ -576,6 +566,7 @@ int main(int argc, char** argv) {
     int start_direction = direction_gen();
     std::cout << "#" << i << " Testing [" << start_idx << "," <<
       start_direction << "," << goal_idx << "]... " << std::endl;
+    std::cout << "Using seed: " << seed_ + i << ", " << seed_ << "+" << i << std::endl; 
     InstanceResult res = testInstance(seed_ + i, graph, map, start_idx,
         start_direction, goal_idx, methods_);
     std::cout << "  ... Done" << std::endl;
@@ -591,6 +582,9 @@ int main(int argc, char** argv) {
         }
       }
     }
+
+    dfout << std::endl;
+    rfout << std::endl;
 
   }
 

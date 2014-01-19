@@ -1,6 +1,6 @@
 <launch>
 
-  <include file="$(find bwi_guidance)/launch/map3.launch">
+  <include file="$(find bwi_guidance)/launch/map3_gazebo.launch">
     <arg name="gui" value="false" />
   </include>
 
