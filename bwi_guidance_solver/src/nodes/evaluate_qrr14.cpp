@@ -71,6 +71,7 @@ namespace Method {
 #define PARAMS(_) \
   _(int,type,type,MCTS_TYPE) \
   _(float,gamma,gamma,1.0) \
+  _(float,lambda,lambda,0.9) \
   _(int,reward_structure,reward_structure,STANDARD_REWARD) \
   _(float,success_reward,success_reward,0.0) \
   _(float,mcts_initial_planning_time,mcts_initial_planning_time,10.0) \
@@ -238,6 +239,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
       UCTEstimator<StateQRR14, ActionQRR14>::Params uct_estimator_params;
       uct_estimator_params.gamma = params.gamma;
+      uct_estimator_params.lambda = params.lambda;
       uct_estimator_params.rewardBound = params.mcts_reward_bound;
       uct_estimator_params.useImportanceSampling =
         params.mcts_importance_sampling;

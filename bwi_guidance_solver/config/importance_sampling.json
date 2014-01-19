@@ -25,6 +25,30 @@
     "reward_structure" : 2,
     "mcts_reward_bound" : 5000,
     "mcts_importance_sampling" : true
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 1.0
+  }, 
+  {
+    "type" : 2,
+    "reward_structure" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 1.0
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "mcts_importance_sampling" : true,
+    "lambda" : 1.0
+  },
+  {
+    "type" : 2,
+    "reward_structure" : 2,
+    "mcts_reward_bound" : 5000,
+    "mcts_importance_sampling" : true,
+    "lambda" : 1.0
   } 
   ]
 }
