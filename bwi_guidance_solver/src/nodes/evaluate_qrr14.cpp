@@ -74,7 +74,8 @@ namespace Method {
   _(int,reward_structure,reward_structure,STANDARD_REWARD) \
   _(float,success_reward,success_reward,0.0) \
   _(float,mcts_initial_planning_time,mcts_initial_planning_time,10.0) \
-  _(float,mcts_reward_bound,mcts_reward_bound,10000.0) 
+  _(float,mcts_reward_bound,mcts_reward_bound,10000.0) \
+  _(bool,mcts_importance_sampling,mcts_importance_sampling,false) 
 
   Params_STRUCT(PARAMS)
 #undef PARAMS
@@ -82,27 +83,27 @@ namespace Method {
 
 std::vector<Method::Params> methods_;
 
-std::ostream& operator<< (std::ostream& stream, const Method::Params& params) {
-  stream << "[" << METHOD_TYPE_NAMES[params.type];
-  if (params.type != HEURISTIC) {
-    stream << ": gamma=" << params.gamma << ", success_reward=" << 
-      params.success_reward << ", ";
-    if (params.reward_structure == STANDARD_REWARD) {
-      stream << "standard reward";
-    } else if (params.reward_structure == INTRINSIC_REWARD) {
-      stream << "intrinsic reward";
-    } else {
-      stream << "shaping reward";
-    }
-    if (params.type == MCTS_TYPE) {
-      stream << ", initial_planning_time=" << params.mcts_initial_planning_time;
-      stream << ", reward_bound=" << params.mcts_reward_bound;
-    }
-  }
-  stream << "]";
-  return stream;
-}
-
+// std::ostream& operator<< (std::ostream& stream, const Method::Params& params) {
+//   stream << "[" << METHOD_TYPE_NAMES[params.type];
+//   if (params.type != HEURISTIC) {
+//     stream << ": gamma=" << params.gamma << ", success_reward=" << 
+//       params.success_reward << ", ";
+//     if (params.reward_structure == STANDARD_REWARD) {
+//       stream << "standard reward";
+//     } else if (params.reward_structure == INTRINSIC_REWARD) {
+//       stream << "intrinsic reward";
+//     } else {
+//       stream << "shaping reward";
+//     }
+//     if (params.type == MCTS_TYPE) {
+//       stream << ", initial_planning_time=" << params.mcts_initial_planning_time;
+//       stream << ", reward_bound=" << params.mcts_reward_bound;
+//     }
+//   }
+//   stream << "]";
+//   return stream;
+// }
+// 
 /* Structures used to define a single problem instance */
 
 struct InstanceResult {
@@ -237,7 +238,8 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
     const Method::Params& params = methods[method];
     model->updateRewardStructure(params.success_reward, 
-        (RewardStructure) params.reward_structure);
+        (RewardStructure) params.reward_structure,
+        params.mcts_importance_sampling);
 
     if (params.type == HEURISTIC) {
       hs.reset(new HeuristicSolver(map, graph, goal_idx,
@@ -257,6 +259,8 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       UCTEstimator<StateQRR14, ActionQRR14>::Params uct_estimator_params;
       uct_estimator_params.gamma = params.gamma;
       uct_estimator_params.rewardBound = params.mcts_reward_bound;
+      uct_estimator_params.useImportanceSampling =
+        params.mcts_importance_sampling;
 
       // Create the RNG required by the generative model 
       boost::mt19937 mt(2 * (seed + 1) * (method + 1));

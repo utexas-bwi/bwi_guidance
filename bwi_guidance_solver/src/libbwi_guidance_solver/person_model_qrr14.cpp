@@ -17,12 +17,13 @@ namespace bwi_guidance {
       nav_msgs::OccupancyGrid& map,  size_t goal_idx, const std::string& file,
       bool allow_robot_current_idx, float visibility_range, bool
       allow_goal_visibility, unsigned int max_robots, float success_reward,
-      RewardStructure reward_structure) : graph_(graph),
+      RewardStructure reward_structure, bool use_importance_sampling) : graph_(graph),
   map_(map), goal_idx_(goal_idx),
   allow_robot_current_idx_(allow_robot_current_idx),
   visibility_range_(visibility_range),
   allow_goal_visibility_(allow_goal_visibility), max_robots_(max_robots),
-  success_reward_(success_reward), reward_structure_(reward_structure) {
+  success_reward_(success_reward), reward_structure_(reward_structure),
+  use_importance_sampling_(use_importance_sampling) {
 
     // Initialize intrinsic reward cache
     for (size_t i = 0; i < boost::num_vertices(graph_); ++i) {
@@ -141,6 +142,18 @@ namespace bwi_guidance {
     getTransitionDynamics(current_state_, action, 
         next_states, rewards, probabilities);
 
+    // Modify probability distribution to improve occurence of rare events
+    if (use_importance_sampling_) {
+      float probability_sum = 0;
+      for (unsigned int i = 0; i < probabilities.size(); ++i) {
+        probabilities[i] = 0.1 + 0.8 * probabilities[i];
+        probability_sum += probabilities[i];
+      }
+      for (unsigned int i = 0; i < probabilities.size(); ++i) {
+        probabilities[i] /= probability_sum;
+      }
+    }
+
     int idx = select(probabilities, generator_);
     current_state_ = next_states[idx];
     reward = rewards[idx];
@@ -166,14 +179,28 @@ namespace bwi_guidance {
     return false;
   }
   
+  float PersonModelQRR14::getTransitionProbability(const StateQRR14& state,
+      const ActionQRR14& action, const StateQRR14& next_state) {
+    std::vector<float>& probabilities = 
+      getTransitionProbabilities(state, action);
+    std::vector<StateQRR14> next_states;
+    getNextStates(state, action, next_states);
+    for (unsigned int i = 0; i < next_states.size(); ++i) {
+      if (next_states[i] == next_state)
+        return probabilities[i];
+    }
+    return 0;
+  }
+  
   void PersonModelQRR14::initializeRNG(URGenPtr generator) {
     generator_ = generator;
   }
 
   void PersonModelQRR14::updateRewardStructure(float success_reward, 
-      RewardStructure reward_structure) {
+      RewardStructure reward_structure, bool use_importance_sampling) {
     success_reward_ = success_reward;
     reward_structure_ = reward_structure;
+    use_importance_sampling_ = use_importance_sampling;
   }
 
   void PersonModelQRR14::computeAdjacentVertices() {

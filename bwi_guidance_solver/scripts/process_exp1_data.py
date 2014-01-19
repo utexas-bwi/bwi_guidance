@@ -111,8 +111,10 @@ for method in methods['methods']:
             param = None
             if key == "gamma":
                 param = "gamma=" + str(value) # TODO get symbol for gamma, formatted float value
-            elif key == "use_intrinsic_reward":
+            elif key == "reward_structure" and value == 1:
                 param = "IntrinsicReward"
+            elif key == "reward_structure" and value == 2:
+                param = "ShapingReward"
             elif key == "success_reward":
                 param = "EndReward=" + str(value) # This parameter needs to be names
             elif key == "mcts_reward_bound":

@@ -34,7 +34,8 @@ namespace bwi_guidance {
           const std::string& file = "", bool allow_robot_current_idx = false,
           float visibility_range = 0.0f, bool allow_goal_visibility = false,
           unsigned int max_robots = 5, float success_reward = 0.0f,
-          RewardStructure reward_structure = STANDARD_REWARD);
+          RewardStructure reward_structure = STANDARD_REWARD,
+          bool use_importance_sampling = false);
 
       /* Functions inherited from PredictiveModel */
       virtual bool isTerminalState(const StateQRR14& state) const;
@@ -57,10 +58,12 @@ namespace bwi_guidance {
           StateQRR14 &state, bool &terminal);
       virtual void getFirstAction(const StateQRR14 &state, ActionQRR14 &action);
       virtual bool getNextAction(const StateQRR14 &state, ActionQRR14 &action);
+      virtual float getTransitionProbability(const StateQRR14& state, 
+          const ActionQRR14& action, const StateQRR14& next_state);
 
       void initializeRNG(URGenPtr generator);
       void updateRewardStructure(float success_reward, RewardStructure
-          reward_structure);
+          reward_structure, bool use_importance_sampling);
 
       void getNextStates(const StateQRR14& state, const ActionQRR14& action, 
           std::vector<StateQRR14>& next_states);
@@ -73,6 +76,7 @@ namespace bwi_guidance {
       std::vector<float> intrinsic_reward_cache_;
       RewardStructure reward_structure_;
       float success_reward_;
+      bool use_importance_sampling_;
 
       /* StateQRR14 space cache */
       std::map<int, std::vector<int> > adjacent_vertices_map_;
