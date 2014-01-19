@@ -28,6 +28,8 @@ for method in methods['methods']:
             param = None
             if key == "gamma":
                 param = "gamma=" + str(value) # TODO get symbol for gamma, formatted float value
+            if key == "lambda":
+                param = "lambda=" + str(value) # TODO get symbol for gamma, formatted float value
             elif key == "reward_structure" and value == 0:
                 param = "StandardReward"
             elif key == "reward_structure" and value == 1:
