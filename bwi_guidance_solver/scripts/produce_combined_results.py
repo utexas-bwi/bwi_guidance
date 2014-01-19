@@ -3,7 +3,7 @@
 import os
 import sys
 
-data_directory = '/projects/agents1/piyushk/'
+data_directory = '/projects/agents1/piyushk/map3/'
 if len(sys.argv) > 1:
     data_directory = sys.argv[1]
     print "Processing directory: " + data_directory

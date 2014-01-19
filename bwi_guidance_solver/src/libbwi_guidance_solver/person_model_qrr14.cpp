@@ -143,16 +143,16 @@ namespace bwi_guidance {
         next_states, rewards, probabilities);
 
     // Modify probability distribution to improve occurence of rare events
-    if (use_importance_sampling_) {
-      float probability_sum = 0.0f;
-      for (unsigned int i = 0; i < probabilities.size(); ++i) {
-        probabilities[i] = 1.0f + 10.0f * probabilities[i];
-        probability_sum += probabilities[i];
-      }
-      for (unsigned int i = 0; i < probabilities.size(); ++i) {
-        probabilities[i] /= probability_sum;
-      }
-    }
+    // if (use_importance_sampling_) {
+    //   float probability_sum = 0.0f;
+    //   for (unsigned int i = 0; i < probabilities.size(); ++i) {
+    //     probabilities[i] = 1.0f + 10.0f * probabilities[i];
+    //     probability_sum += probabilities[i];
+    //   }
+    //   for (unsigned int i = 0; i < probabilities.size(); ++i) {
+    //     probabilities[i] /= probability_sum;
+    //   }
+    // }
 
     int idx = select(probabilities, generator_);
     current_state_ = next_states[idx];

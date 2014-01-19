@@ -40,6 +40,8 @@ for method in methods['methods']:
                 param = "RewardBound=" + str(value) # Might change if parameter changes
             elif key == "mcts_initial_planning_time":
                 param = "InitialPlanningTime=" + str(value) + "s"
+            elif key == "mcts_importance_sampling" and value == True:
+                param = "IS"
             
             if param and parameter_count != 0:
                 name += ","
