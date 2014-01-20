@@ -49,6 +49,42 @@
     "mcts_reward_bound" : 5000,
     "mcts_importance_sampling" : true,
     "lambda" : 1.0
+  },
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000
+  }, 
+  {
+    "type" : 2,
+    "reward_structure" : 2,
+    "mcts_reward_bound" : 5000
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 0.5
+  }, 
+  {
+    "type" : 2,
+    "reward_structure" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 0.5
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "mcts_importance_sampling" : true,
+    "lambda" : 0.5
+  },
+  {
+    "type" : 2,
+    "reward_structure" : 2,
+    "mcts_reward_bound" : 5000,
+    "mcts_importance_sampling" : true,
+    "lambda" : 0.5
+  },
+  {
+    "type" : 1
   } 
   ]
 }
