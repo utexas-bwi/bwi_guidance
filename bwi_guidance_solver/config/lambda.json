@@ -9,52 +9,62 @@
   {
     "type" : 2,
     "mcts_reward_bound" : 1000,
-    "lambda" : 0.9
+    "lambda" : 0.9,
+    "reward_structure" : 2
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 2000,
-    "lambda" : 0.9
+    "lambda" : 0.9,
+    "reward_structure" : 2
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 5000,
-    "lambda" : 0.9
+    "lambda" : 0.9,
+    "reward_structure" : 2
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 10000,
-    "lambda" : 0.9
+    "lambda" : 0.9,
+    "reward_structure" : 2
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 1000,
-    "lambda" : 1.0
+    "lambda" : 1.0,
+    "reward_structure" : 2
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 2000,
-    "lambda" : 1.0
+    "lambda" : 1.0,
+    "reward_structure" : 2
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 5000,
-    "lambda" : 1.0
+    "lambda" : 1.0,
+    "reward_structure" : 2
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 10000,
-    "lambda" : 1.0
+    "lambda" : 1.0,
+    "reward_structure" : 2
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 20000,
-    "lambda" : 1.0
+    "lambda" : 1.0,
+    "reward_structure" : 2
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 50000,
-    "lambda" : 1.0
+    "lambda" : 1.0,
+    "reward_structure" : 2
   } 
   ]
 }
