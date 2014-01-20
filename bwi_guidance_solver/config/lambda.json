@@ -22,7 +22,7 @@
     "type" : 2,
     "mcts_reward_bound" : 10000,
     "lambda" : 1.0,
-    "reward_structure" : 2
+    "reward_structure" : 0
   }, 
   {
     "type" : 2,
