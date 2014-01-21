@@ -27,19 +27,19 @@ for method in methods['methods']:
         for key,value in method.iteritems():
             param = None
             if key == "gamma":
-                param = "gamma=" + str(value) # TODO get symbol for gamma, formatted float value
+                param = "g=" + str(value) # TODO get symbol for gamma, formatted float value
             if key == "lambda":
-                param = "lambda=" + str(value) # TODO get symbol for gamma, formatted float value
+                param = "l=" + str(value) # TODO get symbol for gamma, formatted float value
             elif key == "reward_structure" and value == 0:
-                param = "StandardReward"
+                param = "StandardR"
             elif key == "reward_structure" and value == 1:
-                param = "IntrinsicReward"
+                param = "IntrinsicR"
             elif key == "reward_structure" and value == 2:
-                param = "ShapingReward"
+                param = "ShapingR"
             elif key == "success_reward":
                 param = "EndReward=" + str(value) # This parameter needs to be names
             elif key == "mcts_reward_bound":
-                param = "RewardBound=" + str(value) # Might change if parameter changes
+                param = "RBound=" + str(value) # Might change if parameter changes
             elif key == "mcts_initial_planning_time":
                 param = "InitialPlanningTime=" + str(value) + "s"
             elif key == "mcts_importance_sampling" and value == True:
@@ -99,7 +99,7 @@ if sigs:
                 ha='center', va='bottom', fontproperties=font)
 
 plt.axhline(y=1.0, xmin=0, xmax=6, linewidth=1, color="black") 
-plt.axis([0, 5, 0, 7])
+plt.axis([0, 5, 0, 9])
 
 fig = plt.gcf()
 fig.set_size_inches(6,4)
@@ -107,11 +107,11 @@ plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=100)
 
 plt.show()
 
-pylab.figure()
-for method in range(num_methods): 
-    pylab.hist(samples[method][4], [1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 20.0, 50.0, 100.0], histtype='step', label=method_names[method])
-    #pylab.hist(samples[method][4], 100, histtype='step', label=method_names[method])
-pylab.yscale('log')
-pylab.xscale('log')
-pylab.legend()
-pylab.show()
+# pylab.figure()
+# for method in range(num_methods): 
+#     pylab.hist(samples[method][4], [1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 20.0, 50.0, 100.0], histtype='step', label=method_names[method])
+#     #pylab.hist(samples[method][4], 100, histtype='step', label=method_names[method])
+# pylab.yscale('log')
+# pylab.xscale('log')
+# pylab.legend()
+# pylab.show()
