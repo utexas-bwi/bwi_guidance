@@ -15,4 +15,9 @@
   <node name="generate_graph_1" pkg="bwi_mapper" type="generate_graph"
     args="$(arg map_file_1) $(arg graph_file_1)" />
 
+  <arg name="map_file_1" default="$(find bwi_guidance)/maps/graph.yaml" />
+  <arg name="graph_file_1" default="$(find bwi_guidance)/maps/graph_graph.yaml" />
+  <node name="generate_graph_1" pkg="bwi_mapper" type="generate_graph"
+    args="$(arg map_file_1) $(arg graph_file_1)" />
+
 </launch>
