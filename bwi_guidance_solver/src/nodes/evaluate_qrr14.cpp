@@ -35,6 +35,8 @@ const std::string VI_POLICY_FILE_SUFFIX = "vi";
 const std::string MODEL_FILE_SUFFIX = "model";
 const std::string DISTANCE_FILE_SUFFIX = "distance.txt";
 const std::string REWARD_FILE_SUFFIX = "reward.txt";
+const std::string PLAYOUTS_FILE_SUFFIX = "playouts.txt";
+const std::string TERMINATIONS_FILE_SUFFIX = "terminations.txt";
 
 /* Parameters (with their defaults) */
 std::string data_directory_ = "";
@@ -63,6 +65,8 @@ enum MethodType {
 };
 
 struct MethodResult {
+  unsigned int mcts_playouts[MAX_ROBOTS];
+  unsigned int mcts_terminations[MAX_ROBOTS];
   float reward[MAX_ROBOTS];
   float distance[MAX_ROBOTS];
 };
@@ -287,13 +291,18 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
       EVALUATE_OUTPUT(" - start " << current_state);
 
+      method_result.mcts_terminations[starting_robots - 1] = 0;
+      method_result.mcts_playouts[starting_robots - 1] = 0;
       if (params.type == MCTS_TYPE) {
         mcts->restart();
         EVALUATE_OUTPUT(" - performing initial MCTS search for " +
             boost::lexical_cast<std::string>(
               params.mcts_initial_planning_time) + "s");
         for (int i = 0; i < params.mcts_initial_planning_time; ++i) {
-          mcts->search(current_state); // Initial search for 10 seconds
+          unsigned int playouts, terminations;
+          playouts = mcts->search(current_state, terminations);
+          method_result.mcts_playouts[starting_robots - 1] = playouts;
+          method_result.mcts_terminations[starting_robots - 1] += terminations;
         }
       }
 
@@ -333,7 +342,8 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
           current_state = next_states[0];
           if (params.type == MCTS_TYPE) {
             EVALUATE_OUTPUT(" - performing post-action MCTS search for 1s");
-            mcts->search(current_state);
+            unsigned int terminations;
+            mcts->search(current_state, terminations);
           }
           EVALUATE_OUTPUT(" - auto " << current_state);
         }
@@ -359,7 +369,8 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             EVALUATE_OUTPUT(" - performing post-wait MCTS search for " <<
                 distance << "s");
             for (int i = 0; i < distance; ++i) {
-              mcts->search(current_state);
+              unsigned int terminations;
+              mcts->search(current_state, terminations);
             }
           }
         }
@@ -391,6 +402,9 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     MethodResult& method_result = result.results[method];
     MethodResult normalized_result;
     for (int i = 0; i < MAX_ROBOTS; ++i) {
+      normalized_result.mcts_playouts[i] = method_result.mcts_playouts[i];
+      normalized_result.mcts_terminations[i] = 
+        method_result.mcts_terminations[i];
       normalized_result.reward[i] = 
         method_result.reward[i] / fabs(normalization_reward);
       normalized_result.distance[i] = 
@@ -551,6 +565,12 @@ int main(int argc, char** argv) {
   std::ofstream rfout((data_directory_ +  
         boost::lexical_cast<std::string>(seed_) + "_" +
         REWARD_FILE_SUFFIX).c_str());
+  std::ofstream pfout((data_directory_ +  
+        boost::lexical_cast<std::string>(seed_) + "_" +
+        PLAYOUTS_FILE_SUFFIX).c_str());
+  std::ofstream tfout((data_directory_ +  
+        boost::lexical_cast<std::string>(seed_) + "_" +
+        TERMINATIONS_FILE_SUFFIX).c_str());
 
   for (int i = 0; i < num_instances_; ++i) {
 
@@ -578,20 +598,28 @@ int main(int argc, char** argv) {
       for (unsigned int m = 0; m < methods_.size(); ++m) {
         dfout << res.normalized_results[m].distance[r]; 
         rfout << res.normalized_results[m].reward[r]; 
+        pfout << res.results[m].mcts_playouts[r]; 
+        tfout << res.results[m].mcts_terminations[r]; 
         if (r != MAX_ROBOTS - 1 || m != methods_.size() - 1) {
           dfout << ",";
           rfout << ",";
+          pfout << ",";
+          tfout << ",";
         }
       }
     }
 
     dfout << std::endl;
     rfout << std::endl;
+    pfout << std::endl;
+    tfout << std::endl;
 
   }
 
   dfout.close();
   rfout.close();
+  pfout.close();
+  tfout.close();
 
   return 0;
 }
