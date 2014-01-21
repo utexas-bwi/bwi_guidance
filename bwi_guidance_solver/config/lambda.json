@@ -8,39 +8,129 @@
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 5000,
+    "mcts_reward_bound" : 2000,
     "lambda" : 0.9,
-    "reward_structure" : 0
+    "reward_structure" : 0,
+    "mcts_importance_sampling" : true
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 2000,
+    "lambda" : 0.9,
+    "reward_structure" : 2,
+    "mcts_importance_sampling" : true
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 5000,
     "lambda" : 0.9,
-    "reward_structure" : 2
+    "reward_structure" : 0,
+    "mcts_importance_sampling" : true
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 0.9,
+    "reward_structure" : 2,
+    "mcts_importance_sampling" : true
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 10000,
+    "lambda" : 0.9,
+    "reward_structure" : 0,
+    "mcts_importance_sampling" : true
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 10000,
+    "lambda" : 0.9,
+    "reward_structure" : 2,
+    "mcts_importance_sampling" : true
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 0.95,
+    "reward_structure" : 0,
+    "mcts_importance_sampling" : true
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 0.95,
+    "reward_structure" : 2,
+    "mcts_importance_sampling" : true
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 10000,
     "lambda" : 0.95,
-    "reward_structure" : 0
+    "reward_structure" : 0,
+    "mcts_importance_sampling" : true
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 10000,
     "lambda" : 0.95,
-    "reward_structure" : 2
+    "reward_structure" : 2,
+    "mcts_importance_sampling" : true
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 20000,
+    "lambda" : 0.95,
+    "reward_structure" : 0,
+    "mcts_importance_sampling" : true
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 20000,
+    "lambda" : 0.95,
+    "reward_structure" : 2,
+    "mcts_importance_sampling" : true
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 10000,
+    "lambda" : 1.0,
+    "reward_structure" : 0,
+    "mcts_importance_sampling" : true
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 10000,
+    "lambda" : 1.0,
+    "reward_structure" : 2,
+    "mcts_importance_sampling" : true
+  } 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 20000,
+    "lambda" : 1.0,
+    "reward_structure" : 0,
+    "mcts_importance_sampling" : true
   }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 20000,
     "lambda" : 1.0,
-    "reward_structure" : 0
+    "reward_structure" : 2,
+    "mcts_importance_sampling" : true
+  } 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 50000,
+    "lambda" : 1.0,
+    "reward_structure" : 0,
+    "mcts_importance_sampling" : true
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 20000,
+    "mcts_reward_bound" : 50000,
     "lambda" : 1.0,
-    "reward_structure" : 2
+    "reward_structure" : 2,
+    "mcts_importance_sampling" : true
   } 
   ]
 }
