@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="data_dir" default="$(find bwi_guidance_solver)/data/exp1/map3/" />
+  <arg name="data_dir" default="$(find bwi_guidance_solver)/data/exp1/graph/" />
   <arg name="seed" default="0" />
   <arg name="num_instances" default="1000" />
 
