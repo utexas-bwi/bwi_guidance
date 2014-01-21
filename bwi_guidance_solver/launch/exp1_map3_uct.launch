@@ -4,8 +4,8 @@
   <arg name="seed" default="0" />
   <arg name="num_instances" default="1000" />
 
-  <arg name="map_file" default="$(find bwi_guidance)/maps/map3.yaml" />
-  <arg name="graph_file" default="$(find bwi_guidance)/maps/graph_map3.yaml" />
+  <arg name="map_file" default="$(find bwi_guidance)/maps/graph.yaml" />
+  <arg name="graph_file" default="$(find bwi_guidance)/maps/graph_graph.yaml" />
   <arg name="mcts_params" 
     default="$(find bwi_guidance_solver)/config/mcts_params.json" />
   <arg name="methods_file" 
