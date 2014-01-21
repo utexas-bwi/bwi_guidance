@@ -1,0 +1,60 @@
+{
+  "methods" : [ 
+  {
+    "type" : 0
+  }, 
+  {
+    "type" : 1
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 0.5
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 10000,
+    "lambda" : 0.5
+  },
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 0.6
+  },
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 10000,
+    "lambda" : 0.6
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 0.7
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 10000,
+    "lambda" : 0.7
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 0.8
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 10000,
+    "lambda" : 0.8
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 5000,
+    "lambda" : 0.9
+  }, 
+  {
+    "type" : 2,
+    "mcts_reward_bound" : 10000,
+    "lambda" : 0.9
+  } 
+  ]
+}
