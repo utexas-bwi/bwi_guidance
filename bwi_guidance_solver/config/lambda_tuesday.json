@@ -8,58 +8,14 @@
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 5000
-  },
-  {
-    "type" : 2,
-    "mcts_reward_bound" : 500,
-    "lambda" : 0.0
-  },
-  {
-    "type" : 2,
-    "mcts_reward_bound" : 1000,
-    "lambda" : 0.0
-  },
-  {
-    "type" : 2,
-    "mcts_reward_bound" : 2000,
-    "lambda" : 0.0
-  },
-  {
-    "type" : 2,
     "mcts_reward_bound" : 5000,
     "lambda" : 0.0
-  },
-  {
-    "type" : 2,
-    "mcts_reward_bound" : 10000,
-    "lambda" : 0.0
-  },
-  {
-    "type" : 2,
-    "mcts_reward_bound" : 5000,
-    "lambda" : 0.0,
-    "reward_structure" : 2
   },
   {
     "type" : 2,
     "mcts_reward_bound" : 5000,
     "lambda" : 0.0,
     "mcts_importance_sampling" : true
-  },
-  {
-    "type" : 2,
-    "mcts_reward_bound" : 5000,
-    "lambda" : 0.0,
-    "reward_structure" : 2,
-    "mcts_importance_sampling" : true
-  },
-  {
-    "type" : 2,
-    "mcts_reward_bound" : 5000,
-    "lambda" : 0.0,
-    "mcts_initial_planning_time" : 80.0,
-    "mcts_planning_time_multiplier" : 8.0
   }
   ]
 }
