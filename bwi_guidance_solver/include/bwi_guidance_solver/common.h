@@ -1,6 +1,8 @@
 #ifndef BWI_GUIDANCE_SOLVER_COMMON_H
 #define BWI_GUIDANCE_SOLVER_COMMON_H
 
+#include <bwi_mapper/graph.h>
+
 namespace bwi_guidance {
 
   const unsigned NUM_DIRECTIONS = 16;
@@ -24,6 +26,7 @@ namespace bwi_guidance {
   void computeVisibleVertices(
       std::map<int, std::vector<int> > adjacent_vertices_map,
       const bwi_mapper::Graph& graph,
+      const nav_msgs::OccupancyGrid& map,
       float visibility_range);
 };
 

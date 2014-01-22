@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <ostream>
 
+#include <bwi_guidance_solver/common.h>
 #include <bwi_mapper/graph.h>
 
 namespace boost {

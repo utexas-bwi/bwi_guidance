@@ -1,5 +1,4 @@
 #include <bwi_guidance_solver/structures_qrr14.h>
-#include <bwi_mapper/graph.h>
 
 namespace bwi_guidance {
 
@@ -64,30 +63,6 @@ namespace bwi_guidance {
         << s.robot_direction << ", " << 
         s.visible_robot << "]";
     return stream;
-  }
-
-  size_t computeNextDirection(size_t dir, size_t graph_id, 
-      size_t next_graph_id, const bwi_mapper::Graph& graph) {
-    float angle = 
-      bwi_mapper::getNodeAngle(graph_id, next_graph_id, graph);
-    return getDiscretizedAngle(angle);
-  }
-
-  size_t getDiscretizedAngle(float angle) {
-    angle = angle + M_PI / NUM_DIRECTIONS;
-    while (angle < 0) angle += 2 * M_PI;
-    while (angle >= 2 * M_PI) angle -= 2 * M_PI;
-    return (angle * NUM_DIRECTIONS) / (2 * M_PI);
-  }
-
-  float getAngleInRadians(size_t dir) {
-    return ((2 * M_PI) / NUM_DIRECTIONS) * dir;
-  }
-
-  float getAbsoluteAngleDifference(float angle1, float angle2) {
-    while (angle2 > angle1 + M_PI) angle2 -= 2 * M_PI;
-    while (angle2 <= angle1 - M_PI) angle2 += 2 * M_PI;
-    return fabs (angle1 - angle2);
   }
 
 } /* bwi_guidance */

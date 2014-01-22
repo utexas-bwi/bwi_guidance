@@ -203,33 +203,13 @@ namespace bwi_guidance {
     use_importance_sampling_ = use_importance_sampling;
   }
 
-  void PersonModelQRR14::computeAdjacentVertices() {
-    adjacent_vertices_map_.clear();
-    for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
-      std::vector<size_t> adjacent_vertices;
-      bwi_mapper::getAdjacentNodes(graph_id, graph_, adjacent_vertices); 
-      adjacent_vertices_map_[graph_id] = 
-        std::vector<int>(adjacent_vertices.begin(), adjacent_vertices.end());
-    }
-  }
-
-  void PersonModelQRR14::computeVisibleVertices() {
-    visible_vertices_map_.clear();
-    for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
-      std::vector<size_t> visible_vertices;
-      bwi_mapper::getVisibleNodes(graph_id, graph_, map_,
-          visible_vertices, visibility_range_); 
-      visible_vertices_map_[graph_id] = 
-        std::vector<int>(visible_vertices.begin(), visible_vertices.end());
-    }
-  }
-
   void PersonModelQRR14::initializeStateSpace() {
 
     num_vertices_ = boost::num_vertices(graph_);
 
-    computeAdjacentVertices();
-    computeVisibleVertices();
+    computeAdjacentVertices(adjacent_vertices_map_, graph_);
+    computeVisibleVertices(visible_vertices_map_, graph_, map_,
+        visibility_range_);
 
     state_cache_.clear();
     for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
