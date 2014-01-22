@@ -81,8 +81,6 @@ namespace bwi_guidance {
       /* StateQRR14 space cache */
       std::map<int, std::vector<int> > adjacent_vertices_map_;
       std::map<int, std::vector<int> > visible_vertices_map_;
-      void computeAdjacentVertices();
-      void computeVisibleVertices();
       std::vector<StateQRR14> state_cache_;
       void initializeStateSpace();
 

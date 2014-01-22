@@ -15,15 +15,6 @@ namespace boost {
 
 namespace bwi_guidance {
   
-  /* Constants */
-
-  const unsigned NUM_DIRECTIONS = 16;
-
-  enum MDPConstants {
-    NONE = -1,
-    DIR_UNASSIGNED = -2
-  };
-
   /* Actions */
 
   enum ActionType {
@@ -73,14 +64,6 @@ namespace bwi_guidance {
   bool operator<(const StateQRR14& l, const StateQRR14& r); 
   bool operator==(const StateQRR14& l, const StateQRR14& r);
   std::ostream& operator<<(std::ostream& stream, const StateQRR14& s);
-
-  /* Helper Functions */
-
-  size_t computeNextDirection(size_t dir, size_t graph_id, size_t
-      next_graph_id, const bwi_mapper::Graph& graph);
-  size_t getDiscretizedAngle(float angle);
-  float getAngleInRadians(size_t dir);
-  float getAbsoluteAngleDifference(float angle1, float angle2);
 
 } /* bwi_guidance */
 
