@@ -16,7 +16,7 @@
     "mcts_reward_bound" : 5000,
     "lambda" : 0.0,
     "mcts_importance_sampling" : true
-  }
+  },
   {
     "type" : 2,
     "mcts_reward_bound" : 5000,
