@@ -28,7 +28,7 @@ namespace bwi_guidance {
   }
 
   void computeAdjacentVertices(
-      std::map<int, std::vector<int> > adjacent_vertices_map,
+      std::map<int, std::vector<int> >& adjacent_vertices_map,
       const bwi_mapper::Graph& graph) {
     adjacent_vertices_map.clear();
     for (int graph_id = 0; graph_id < boost::num_vertices(graph); ++graph_id) {
@@ -40,7 +40,7 @@ namespace bwi_guidance {
   }
 
   void computeVisibleVertices(
-      std::map<int, std::vector<int> > visible_vertices_map,
+      std::map<int, std::vector<int> >& visible_vertices_map,
       const bwi_mapper::Graph& graph,
       const nav_msgs::OccupancyGrid& map,
       float visibility_range) {

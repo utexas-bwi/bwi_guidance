@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <ostream>
 
-#include <bwi_guidance_solver/structures_qrr14.h>
+#include <bwi_guidance_solver/common.h>
 #include <bwi_mapper/graph.h>
 
 namespace boost {
@@ -19,21 +19,23 @@ namespace bwi_guidance {
   /* Actions */
   enum ActionTypeIROS14 {
     DO_NOTHING = 0,
-    DIRECT_ROBOT = 1,
+    ASSIGN_ROBOT = 1,
     RELEASE_ROBOT = 2
   };
 
   struct ActionIROS14 {
     ActionIROS14();
-    ActionIROS14(ActionTypeIROS14 a, int destination, int graph_id);
+    ActionIROS14(ActionTypeIROS14 a, int at_graph_id, int guide_graph_id);
     ActionTypeIROS14 type;
-    size_t graph_id; // with PLACE ROBOT, identifies the direction pointed to
+    int at_graph_id; // with ASSIGN_ROBOT, identifies the destination
+    int guide_graph_id; // with ASSIGN_ROBOT, identifies the direction the robot should point in
 
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version) {
       ar & type;
-      ar & graph_id;
+      ar & at_graph_id;
+      ar & guide_graph_id;
     }
   };
 
@@ -45,7 +47,6 @@ namespace bwi_guidance {
   struct RobotStateIROS14 {
     int graph_id; //~50
     int destination; //~50
-
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
@@ -75,14 +76,6 @@ namespace bwi_guidance {
   bool operator<(const StateIROS14& l, const StateIROS14& r); 
   bool operator==(const StateIROS14& l, const StateIROS14& r);
   std::ostream& operator<<(std::ostream& stream, const StateIROS14& s);
-
-  /* Helper Functions */
-
-  size_t computeNextDirection(size_t dir, size_t graph_id, size_t
-      next_graph_id, const bwi_mapper::Graph& graph);
-  size_t getDiscretizedAngle(float angle);
-  float getAngleInRadians(size_t dir);
-  float getAbsoluteAngleDifference(float angle1, float angle2);
 
 } /* bwi_guidance */
 

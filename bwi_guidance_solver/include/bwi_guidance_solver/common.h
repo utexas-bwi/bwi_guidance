@@ -20,11 +20,11 @@ namespace bwi_guidance {
   float getAbsoluteAngleDifference(float angle1, float angle2);
 
   void computeAdjacentVertices(
-      std::map<int, std::vector<int> > adjacent_vertices_map,
+      std::map<int, std::vector<int> >& adjacent_vertices_map,
       const bwi_mapper::Graph& graph);
 
   void computeVisibleVertices(
-      std::map<int, std::vector<int> > adjacent_vertices_map,
+      std::map<int, std::vector<int> >& adjacent_vertices_map,
       const bwi_mapper::Graph& graph,
       const nav_msgs::OccupancyGrid& map,
       float visibility_range);
