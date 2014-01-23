@@ -40,6 +40,7 @@ add_library(bwi_guidance_solver
   src/libbwi_guidance_solver/heuristic_solver_qrr14.cpp
   src/libbwi_guidance_solver/person_estimator_qrr14.cpp
   src/libbwi_guidance_solver/person_model_qrr14.cpp
+  src/libbwi_guidance_solver/structures_iros14.cpp
   src/libbwi_guidance_solver/structures_qrr14.cpp
 )
 target_link_libraries(bwi_guidance_solver 

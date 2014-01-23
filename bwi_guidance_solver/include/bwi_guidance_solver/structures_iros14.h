@@ -25,7 +25,7 @@ namespace bwi_guidance {
 
   struct ActionIROS14 {
     ActionIROS14();
-    ActionIROS14(ActionTypeIROS14 a, int at_graph_id, int guide_graph_id);
+    ActionIROS14(ActionTypeIROS14 a, int dest, int dir);
     ActionTypeIROS14 type;
     int at_graph_id; // with ASSIGN_ROBOT, identifies the destination
     int guide_graph_id; // with ASSIGN_ROBOT, identifies the direction the robot should point in
@@ -54,11 +54,15 @@ namespace bwi_guidance {
       ar & destination;
     }
   };
+  bool operator<(const RobotStateIROS14& l, const RobotStateIROS14& r); 
+  bool operator==(const RobotStateIROS14& l, const RobotStateIROS14& r);
+  bool operator>(const RobotStateIROS14& l, const RobotStateIROS14& r); 
 
   struct StateIROS14 {
     int graph_id; // ~50
     int direction; // ~8 
     std::vector<RobotStateIROS14> robots; // ~10 * 50 * 50
+    int selected_robot; // ~10
     int robot_destination; // ~20
     int robot_direction; // ~5
 
@@ -68,6 +72,7 @@ namespace bwi_guidance {
       ar & graph_id;
       ar & direction;
       ar & BOOST_SERIALIZATION_NVP(robots);
+      ar & selected_robot;
       ar & robot_destination;
       ar & robot_direction;
     }
