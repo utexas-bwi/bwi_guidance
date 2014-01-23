@@ -3,6 +3,7 @@
 
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/uniform_int.hpp>
+#include <boost/random/poisson_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
@@ -15,6 +16,10 @@ namespace bwi_guidance {
   typedef boost::variate_generator<boost::mt19937&, boost::uniform_int<int> >
     UIGen;
   typedef boost::shared_ptr<UIGen> UIGenPtr;
+
+  typedef boost::variate_generator<boost::mt19937&, 
+                                   boost::poisson_distribution<int> > PIGen;
+  typedef boost::shared_ptr<PIGen> PIGenPtr;
 
   int select(std::vector<float>& probabilities, URGenPtr rng) {
     float random_value = (*rng)();
