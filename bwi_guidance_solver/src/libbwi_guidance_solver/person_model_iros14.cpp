@@ -51,6 +51,7 @@ namespace bwi_guidance {
   void PersonModelIROS14::getActionsAtState(const StateIROS14& state, 
       std::vector<ActionIROS14>& actions) {
     actions.clear();
+    actions.push_back(
 
   }
 
