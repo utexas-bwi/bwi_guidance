@@ -23,8 +23,8 @@ namespace bwi_guidance {
 
       PersonModelIROS14(const bwi_mapper::Graph& graph, 
           const nav_msgs::OccupancyGrid& map, size_t goal_idx, 
-          const std::string& file = "", float visibility_range = 0.0f, 
-          bool allow_goal_visibility = false);
+          int action_vertex_visibility_depth = 2, int max_robots_in_use = 2,
+          float visibility_range = 0.0f, bool allow_goal_visibility = false);
 
       /* Functions inherited from PredictiveModel */
       virtual ~PersonModelIROS14() {};
@@ -50,10 +50,11 @@ namespace bwi_guidance {
 
     private:
 
-      /* Current state for generative model */
+      /* Mapped state for generative model */
       StateIROS14 current_state_;
+      std::vector<float> robot_position_at_graph_node; // Takes values from -1 to +1
       URGenPtr ugen_;
-      float success_reward_;
+      PIGenPtr pgen_;
 
       /* StateIROS14 space cache */
       std::map<int, std::vector<int> > adjacent_vertices_map_;
@@ -63,27 +64,26 @@ namespace bwi_guidance {
       /* Actions */
       void getActionsAtState(const StateIROS14 &state,
           std::vector<ActionIROS14>& actions);
+      bool isTerminalState(const StateIROS14& state) const;
 
       /* Next states and transitions */
       void getTransitionDynamics(const StateIROS14 &s, 
           const ActionIROS14 &a, std::vector<StateIROS14> &next_states, 
           std::vector<float> &rewards, std::vector<float> &probabilities);
 
-      /* Robot goal generator */
-      int generateNewGoal(int from_graph_id); 
-      unsigned int num_vertices_;
-
       friend class boost::serialization::access;
       template<class Archive>
       void serialize(Archive & ar, const unsigned int version) {
         ar & BOOST_SERIALIZATION_NVP(adjacent_vertices_map_);
         ar & BOOST_SERIALIZATION_NVP(visible_vertices_map_);
+        ar & BOOST_SERIALIZATION_NVP(action_vertices_map_);
         ar & num_vertices_;
       }
 
       bwi_mapper::Graph graph_;
       nav_msgs::OccupancyGrid map_;
 
+      unsigned int num_vertices_;
       size_t goal_idx_;
       bool allow_goal_visibility_;
       float visibility_range_;

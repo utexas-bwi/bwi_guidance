@@ -57,14 +57,28 @@ namespace bwi_guidance {
   bool operator<(const RobotStateIROS14& l, const RobotStateIROS14& r); 
   bool operator==(const RobotStateIROS14& l, const RobotStateIROS14& r);
   bool operator>(const RobotStateIROS14& l, const RobotStateIROS14& r); 
+  
+  struct InUseRobotStateIROS14 {
+    int robot_id; //~10
+    int destination; //~20
+    int direction; //~5
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+      ar & robot_id;
+      ar & destination;
+      ar & direction;
+    }
+  };
+  bool operator<(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r); 
+  bool operator==(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r);
+  bool operator>(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r); 
 
   struct StateIROS14 {
     int graph_id; // ~50
     int direction; // ~8 
     std::vector<RobotStateIROS14> robots; // ~10 * 50 * 50
-    int selected_robot; // ~10
-    int robot_destination; // ~20
-    int robot_direction; // ~5
+    std::vector<InUseRobotStateIROS14> in_use_robots; // ~10 * 20 * 5
 
     friend class boost::serialization::access;
     template<class Archive>
@@ -72,9 +86,7 @@ namespace bwi_guidance {
       ar & graph_id;
       ar & direction;
       ar & BOOST_SERIALIZATION_NVP(robots);
-      ar & selected_robot;
-      ar & robot_destination;
-      ar & robot_direction;
+      ar & BOOST_SERIALIZATION_NVP(in_use_robots);
     }
   };
 
