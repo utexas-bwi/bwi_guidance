@@ -21,7 +21,7 @@ namespace bwi_guidance {
                                    boost::poisson_distribution<int> > PIGen;
   typedef boost::shared_ptr<PIGen> PIGenPtr;
 
-  int select(std::vector<float>& probabilities, URGenPtr rng) {
+  inline int select(std::vector<float>& probabilities, URGenPtr rng) {
     float random_value = (*rng)();
     float prob_sum = probabilities[0];
     for (int i = 1; i < probabilities.size(); ++i) {

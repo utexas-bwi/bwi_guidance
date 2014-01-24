@@ -1,4 +1,5 @@
 #include <boost/foreach.hpp>
+#include <cassert>
 #include <cmath>
 #include <fstream>
 
@@ -7,19 +8,20 @@
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
 
-#include <bwi_guidance_solver/person_model_qrr14.h>
+#include <bwi_guidance_solver/person_model_iros14.h>
 #include <bwi_mapper/point_utils.h>
 #include <bwi_mapper/map_utils.h>
 
 namespace bwi_guidance {
 
   PersonModelIROS14::PersonModelIROS14(const bwi_mapper::Graph& graph, const
-      nav_msgs::OccupancyGrid& map, size_t goal_idx, 
-      int action_vertex_visibility_depth, int max_robots_in_use,
-      float visibility_range, bool
-      allow_goal_visibility) : graph_(graph),
+      nav_msgs::OccupancyGrid& map, size_t goal_idx, int
+      action_vertex_visibility_depth, int max_robots_in_use, float
+      visibility_range, bool allow_goal_visibility, float human_speed,
+      float robot_speed) : graph_(graph),
   map_(map), goal_idx_(goal_idx), max_robots_in_use_(max_robots_in_use),
-  allow_goal_visibility_(allow_goal_visibility) {
+  allow_goal_visibility_(allow_goal_visibility), human_speed_(human_speed),
+  robot_speed_(robot_speed) {
 
     num_vertices_ = boost::num_vertices(graph_);
     computeAdjacentVertices(adjacent_vertices_map_, graph_);
@@ -36,8 +38,7 @@ namespace bwi_guidance {
           action_vertices.insert(adjacent_vertices_map_[vtx].begin(),
               adjacent_vertices_map_[vtx].end());
         }
-        action_vertices_map_[i].clear();
-        action_vertices_map_[i].insert(action_vertices.begin(),
+        action_vertices_map_[i] = std::vector<int>(action_vertices.begin(),
             action_vertices.end());
       }
     }
@@ -51,446 +52,69 @@ namespace bwi_guidance {
   void PersonModelIROS14::getActionsAtState(const StateIROS14& state, 
       std::vector<ActionIROS14>& actions) {
     actions.clear();
-    actions.push_back(
-
-  }
-
-  /** Get the predictions of the MDP model for a given state action */
-  void PersonModelIROS14::getTransitionDynamics(const StateIROS14& state, 
-      const ActionIROS14& action, std::vector<StateIROS14> &next_states, 
-      std::vector<float> &rewards, std::vector<float> &probabilities) {
-
-    next_states.clear();
-    rewards.clear();
-    probabilities.clear();
-
-    if (isTerminalState(state)) {
-      return; // no next states for you!
+    actions.push_back(ActionIROS14(DO_NOTHING, 0, 0));
+    for (int i = 0; i < state.in_use_robots.size(); ++i) {
+      actions.push_back(ActionIROS14(RELEASE_ROBOT, 
+                                     state.in_use_robots[i].robot_id,
+                                     0));
     }
-
-    getNextStates(state, action, next_states); // copy cost
-    probabilities = getTransitionProbabilities(state, action);
-
-    rewards.resize(next_states.size());
-    // Compute reward based on euclidean distance between state graph ids
-    for (std::vector<StateIROS14>::const_iterator ns = next_states.begin();
-        ns != next_states.end(); ++ns) {
-
-      rewards[ns - next_states.begin()] = 0;
-
-      // Add shaping reward as necessary
-      if (reward_structure_ == INTRINSIC_REWARD ||
-          reward_structure_ == SHAPING_REWARD) {
-        rewards[ns - next_states.begin()] +=
-          intrinsic_reward_cache_[state.graph_id] - 
-          intrinsic_reward_cache_[ns->graph_id];
-      }
-
-      if (reward_structure_ == STANDARD_REWARD ||
-          reward_structure_ == SHAPING_REWARD) {
-        // Standard reward formulation
-        rewards[ns - next_states.begin()] +=
-          -bwi_mapper::getEuclideanDistance(state.graph_id, ns->graph_id,
-              graph_);
-      }
-
-      if (isTerminalState(*ns)) {
-        rewards[ns - next_states.begin()] += success_reward_;
-      }
-
-    }
-  }
-
-  void PersonModelIROS14::setState(const StateIROS14 &state) {
-    current_state_ = state;
-  }
-
-  void PersonModelIROS14::takeAction(const ActionIROS14 &action, float &reward, 
-      StateIROS14 &state, bool &terminal) {
-
-    if (!generator_) {
-      throw std::runtime_error("Call initializeRNG() before takeAction()");
-    }
-
-    if (isTerminalState(current_state_)) {
-      throw std::runtime_error("Cannot call takeAction() on terminal state");
-    }
-
-    std::vector<StateIROS14> next_states;
-    std::vector<float> probabilities;
-    std::vector<float> rewards;
-    getTransitionDynamics(current_state_, action, 
-        next_states, rewards, probabilities);
-
-    // Modify probability distribution to improve occurence of rare events
-    // if (use_importance_sampling_) {
-    //   float probability_sum = 0.0f;
-    //   for (unsigned int i = 0; i < probabilities.size(); ++i) {
-    //     probabilities[i] = 1.0f + 50.0f * probabilities[i];
-    //     probability_sum += probabilities[i];
-    //   }
-    //   for (unsigned int i = 0; i < probabilities.size(); ++i) {
-    //     probabilities[i] /= probability_sum;
-    //   }
-    // }
-
-    int idx = select(probabilities, generator_);
-    current_state_ = next_states[idx];
-    reward = rewards[idx];
-    state = current_state_;
-    terminal = isTerminalState(current_state_);
-  }
-
-  void PersonModelIROS14::getFirstAction(const StateIROS14 &state, 
-      ActionIROS14 &action) {
-    std::vector<ActionIROS14>& actions = getActionsAtState(state);
-    action = actions[0];
-  }
-
-  bool PersonModelIROS14::getNextAction(const StateIROS14 &state, 
-      ActionIROS14 &action) {
-    std::vector<ActionIROS14>& actions = getActionsAtState(state);
-    for (size_t i = 0; i < actions.size() - 1; ++i) {
-      if (actions[i] == action) {
-        action = actions[i + 1];
-        return true;
-      }
-    }
-    return false;
-  }
-  
-  float PersonModelIROS14::getTransitionProbability(const StateIROS14& state,
-      const ActionIROS14& action, const StateIROS14& next_state) {
-    std::vector<float>& probabilities = 
-      getTransitionProbabilities(state, action);
-    std::vector<StateIROS14> next_states;
-    getNextStates(state, action, next_states);
-    for (unsigned int i = 0; i < next_states.size(); ++i) {
-      if (next_states[i] == next_state) {
-        return probabilities[i];
-      }
-    }
-    return 0;
-  }
-  
-  void PersonModelIROS14::initializeRNG(URGenPtr generator) {
-    generator_ = generator;
-  }
-
-  void PersonModelIROS14::updateRewardStructure(float success_reward, 
-      RewardStructure reward_structure, bool use_importance_sampling) {
-    success_reward_ = success_reward;
-    reward_structure_ = reward_structure;
-    use_importance_sampling_ = use_importance_sampling;
-  }
-
-  void PersonModelIROS14::initializeStateSpace() {
-
-    num_vertices_ = boost::num_vertices(graph_);
-
-    computeAdjacentVertices(adjacent_vertices_map_, graph_);
-    computeVisibleVertices(visible_vertices_map_, graph_, map_,
-        visibility_range_);
-
-    state_cache_.clear();
-    for (int graph_id = 0; graph_id < num_vertices_; ++graph_id) {
-      std::vector<int>& adjacent_vertices = adjacent_vertices_map_[graph_id];
-      std::vector<int>& visible_vertices = visible_vertices_map_[graph_id];
-      for (int direction = 0; direction < NUM_DIRECTIONS; ++direction) {
-        for (int robots = 0; robots <= max_robots_; ++robots) {
-
-          StateIROS14 state;
-          state.graph_id = graph_id;
-          state.direction = direction;
-          state.num_robots_left = robots;
-
-          // If all 5 robots are available, then no other robots can be placed
-          if (robots == max_robots_) {
-            state.robot_direction = NONE;
-            state.visible_robot = NONE;
-            state_cache_.push_back(state);
-            continue;
-          }
-
-          // Otherwise, place all other robots
-          for (int rd = DIR_UNASSIGNED; rd < (int)adjacent_vertices.size();
-              ++rd) {
-
-            if (rd == DIR_UNASSIGNED || rd == NONE) { // insert as is
-              state.robot_direction = rd; 
-            } else { // resolve to adjacent node
-              state.robot_direction = adjacent_vertices[rd];
-            }
-
-            for (int vr = NONE; vr < (int)visible_vertices.size(); ++vr) {
-              // Don't add current_node as an option to visible_robot
-              if (vr >= 0 && visible_vertices[vr] == graph_id) {
-                continue; 
-              }
-              if (vr == NONE) { // insert as is
-                state.visible_robot = vr;
-              } else { // resolve to visible node
-                state.visible_robot = visible_vertices[vr];
-              }
-              state_cache_.push_back(state);
-            }
-          }
+    if (state.in_use_robots.size() != max_robots_in_use_) {
+      BOOST_FOREACH(int vtx, action_vertices_map_[state.graph_id]) {
+        BOOST_FOREACH(int adj, adjacent_vertices_map_[vtx]) {
+          actions.push_back(ActionIROS14(ASSIGN_ROBOT, vtx, adj));
         }
       }
     }
   }
 
-  void PersonModelIROS14::initializeActionCache() {
-    action_cache_.clear();
-    for (std::vector<StateIROS14>::iterator it = state_cache_.begin(); 
-        it != state_cache_.end(); ++it) {
-      constructActionsAtState(*it, action_cache_[*it]);
-    }
-  }
+  float PersonModelIROS14::takeActionAtCurrentState(
+      const ActionIROS14& action) {
 
-  void PersonModelIROS14::constructActionsAtState(const StateIROS14& state, 
-      std::vector<ActionIROS14>& actions) {
+    assert(!isTerminalState(current_state_));
 
-    actions.clear();
-
-    // If a direction has to be assigned in the current state, only one of many
-    // DIRECT_PERSON actions can be taken
-    if (state.robot_direction == DIR_UNASSIGNED) {
-      BOOST_FOREACH(int id, adjacent_vertices_map_[state.graph_id]) {
-        actions.push_back(ActionIROS14(DIRECT_PERSON, id));
+    if (action.type == RELEASE_ROBOT) {
+      int mark_for_removal = -1;
+      for (int i = 0; i < current_state_.in_use_robots.size(); ++i) {
+        if (action.at_graph_id == current_state_.in_use_robots[i].robot_id) {
+          mark_for_removal = i;
+          break;
+        }
       }
-      return;
+      assert(mark_for_removal != -1);
+      current_state_.in_use_robots.erase(
+          current_state_.in_use_robots.begin() + mark_for_removal);
+      return 0;
+    }
+
+    if (action.type == ASSIGN_ROBOT) {
+      assert(current_state_.in_use_robots.size() < max_robots_in_use_);
+      float distance_to_destination = bwi_mapper::getShortestPathDistance(
+          current_state_.graph_id, action.at_graph_id, graph_); 
+      float time_to_destination = distance_to_destination * human_speed_; 
+      InUseRobotStateIROS14 r;
+      r.robot_id = 
+        selectBestRobotForTask(action.at_graph_id, time_to_destination);
+      r.destination = action.at_graph_id;
+      r.direction = action.guide_graph_id;
+      current_state_.in_use_robots.push_back(r);
+      return 0;
+    }
+
+    // alright, need to wait for the human to take an action - let's first
+    // figure out what action he takes
+    float expected_dir = getAngleInRadians(current_state_.direction);
+    float robot_dir = 0;
+    if (!isRobotDirectionAvailable(robot_dir)) {
+      expected_dir = robot_dir;
     }
     
-    // Otherwise have the DO_NOTHING option
-    actions.push_back(ActionIROS14(DO_NOTHING,0));
-
-    // Check if the system can place robots
-    if (state.num_robots_left != 0) {
-      BOOST_FOREACH(int id, visible_vertices_map_[state.graph_id]) {
-        if (state.graph_id != id) {
-          if (state.visible_robot == NONE) {
-            actions.push_back(ActionIROS14(PLACE_ROBOT, id)); 
-          }
-        } else {
-          if (allow_robot_current_idx_ && state.robot_direction == NONE) {
-            actions.push_back(ActionIROS14(PLACE_ROBOT, id)); 
-          }
-        }
-      }
-    }
-
-  }
-
-  std::vector<ActionIROS14>& PersonModelIROS14::getActionsAtState(
-      const StateIROS14& state) {
-    return action_cache_[state];
-  }
-
-  void PersonModelIROS14::initializeNextStateCache() {
-
-    ns_distribution_cache_.clear();
-    BOOST_FOREACH(const StateIROS14& state, state_cache_) {
-      std::vector<ActionIROS14>& actions = getActionsAtState(state);
-      BOOST_FOREACH(const ActionIROS14& action, actions) {
-        constructTransitionProbabilities(state, action, 
-            ns_distribution_cache_[state][action]);
-      }
-    }
-
-  }
-
-  void PersonModelIROS14::getNextStates(const StateIROS14& state, const ActionIROS14& action, 
-      std::vector<StateIROS14>& next_states) {
-
-    next_states.clear();
-
-    // getNextStates does not check if this action was indeed allowed at the
-    // given state. With an incorrect action, this function will probably lead
-    // you to a non existent state.
-
-    if (isTerminalState(state)) {
-      return; // no next states
-    }
-
-    // First figure out next states for all actions that will end up in a
-    // deterministic state transition
-    if (action.type == PLACE_ROBOT) {
-      StateIROS14 next_state = state;
-      next_state.num_robots_left--;
-      if (action.graph_id != state.graph_id) {
-        next_state.visible_robot = action.graph_id;
-        next_states.push_back(next_state);
-        return;
-      } else {
-        next_state.robot_direction = DIR_UNASSIGNED;
-        next_states.push_back(next_state);
-        return;
-      }
-    }
-
-    if (action.type == DIRECT_PERSON) {
-      StateIROS14 next_state = state;
-      next_state.robot_direction = action.graph_id;
-      next_states.push_back(next_state);
-      return;
-    }
-
-    // Implies action.type == DO_NOTHING. The next state will not be
-    // deterministic. Compute all possible next states. Each next state graph
-    // id willl be a member of adjacent nodes, and the direction will be
-    // computed automatically
-   
-    // Get all adjacent ids the person can transition to
-    // Algorithm 1 in paper
-    BOOST_FOREACH(int next_node, adjacent_vertices_map_[state.graph_id]) {
-      StateIROS14 next_state;
-      if (state.visible_robot == NONE) {
-        // If no robot was visible in previous state, no robot can be present
-        next_state.robot_direction = NONE;
-        next_state.visible_robot = NONE;
-      } else {
-        if (state.visible_robot == next_node) {
-          // We moved up to a robot, setup a robot here without an assigned dir
-          next_state.robot_direction = DIR_UNASSIGNED;
-          next_state.visible_robot = NONE; // no longer tracked 
-        } else if (std::find(visible_vertices_map_[next_node].begin(),
-              visible_vertices_map_[next_node].end(), state.visible_robot) ==
-            visible_vertices_map_[next_node].end()) { 
-          // The person moved such that a previously visible robot is no 
-          // longer visible. Decomission the robot.
-          next_state.robot_direction = NONE;
-          next_state.visible_robot = NONE;
-        } else {
-          // The case where the tracked robot is still visible
-          next_state.robot_direction = NONE;
-          next_state.visible_robot = state.visible_robot;
-        }
-      }
-    
-      next_state.direction = computeNextDirection(state.direction,
-          state.graph_id, next_node, graph_);
-      next_state.num_robots_left = state.num_robots_left;
-      next_state.graph_id = next_node;
-      next_states.push_back(next_state);
-    }
-  }
-
-  void PersonModelIROS14::constructTransitionProbabilities(const StateIROS14& state, 
-      const ActionIROS14& action, std::vector<float>& probabilities) {
-
-    probabilities.clear();
-
-    // constructTransitionProbabilities does not check if this action was
-    // indeed allowed at the given state. With an incorrect action, this
-    // function will probably lead you to a non existent state.
-
-    if (isTerminalState(state)) {
-      return; // since next_states.size == 0
-    }
-
-    if (action.type == DIRECT_PERSON || action.type == PLACE_ROBOT) {
-      probabilities.push_back(1.0f); //since next_states.size == 1
-      return;
-    }
-
-    // If the person is going to make the transition here (i.e action = DO_NOTHING),
-    // then use the hand-coded human motion model for producing the transition
-    // function
-
-    // In the future this human motion model needs to be abstracted to an 
-    // independent data structure so that it can be learned given a state 
-    // feature vector.
-
-    /* CASE 1 */
-
-    // In case the next robot is somewhere in the direction of where the person
-    // wants to go, this should significantly increase the probablity of seeing
-    // the next robot and moving towards it.
-
-    std::vector<int>& visible_vertices = 
-      visible_vertices_map_[state.graph_id];
-    bool goal_visible = allow_goal_visibility_ &&
-      std::find(visible_vertices.begin(), visible_vertices.end(), goal_idx_) !=
-      visible_vertices.end();
-    bool case_1_invalid = true;
-    if (state.visible_robot != NONE || goal_visible) {
-      int target = (goal_visible) ? goal_idx_ : state.visible_robot;
-      // Check angle to target
-      float expected_dir = 
-        bwi_mapper::getNodeAngle(state.graph_id, target, graph_);
-      float angle_diff = getAbsoluteAngleDifference(expected_dir, 
-          getAngleInRadians(state.direction));
-      if (angle_diff < M_PI / 3) {
-        // target is inside visibility cone, so we are pretty sure it has been
-        // seen. case 1 is finally true!
-        case_1_invalid = false;
-
-        std::vector<StateIROS14> next_states;
-        getNextStates(state, action, next_states);
-
-        std::vector<float> differences;
-        BOOST_FOREACH(const StateIROS14& next_state, next_states) {
-          float ns_angle = bwi_mapper::getNodeAngle(state.graph_id,
-              next_state.graph_id, graph_);
-          float ns_difference = getAbsoluteAngleDifference(expected_dir,
-              ns_angle);
-          differences.push_back(ns_difference);
-        }
-        unsigned best_ns = std::distance(differences.begin(),
-            std::min_element(differences.begin(), differences.end()));
-
-        unsigned robot_dir = (state.robot_direction != NONE) ? 
-          state.robot_direction : next_states[best_ns].graph_id;
-
-        unsigned next_state_counter = 0;
-        float probablity_sum = 0.0f;
-        BOOST_FOREACH(const StateIROS14& next_state, next_states) {
-          float probablity = 0.01f / next_states.size();
-          if (best_ns == next_state_counter)
-            probablity += 0.495f;
-          if (robot_dir == next_state.graph_id)
-            probablity += 0.495f;
-          probablity_sum += probablity;
-          if (next_state_counter == next_states.size() - 1) {
-            // Account for floating point errors. No surprises!
-            probablity += 1.0f - probablity_sum; 
-          }
-          probabilities.push_back(probablity);
-          next_state_counter++;
-        }
-      }
-    }
-
-    if (!case_1_invalid) {
-      return;
-    }
-
-    /* Case 2 and 3 */
-    float expected_dir;
-    if (state.robot_direction != NONE) {
-      // Case 2
-      if (state.robot_direction == DIR_UNASSIGNED) {
-        // The DO_NOTHING action should not be possible in this state
-        throw std::runtime_error("Human Model: unassigned robot_dir!!!");
-      }
-      expected_dir = bwi_mapper::getNodeAngle(state.graph_id,
-          state.robot_direction, graph_);
-    } else {
-      expected_dir = getAngleInRadians(state.direction);
-    }
-
-    // Now compute the weight of each next state. Get the favored direction
-    // and compute transition probabilities
-    std::vector<StateIROS14> next_states;
-    getNextStates(state, action, next_states);
-
+    // Now assume that the person moves to one the adjacent locations
     float weight_sum = 0;
     std::vector<float> weights;
-    BOOST_FOREACH(const StateIROS14& next_state, next_states) {
+    BOOST_FOREACH(int adj, adjacent_vertices_map_[current_state_.graph_id]) {
 
       float next_state_direction = bwi_mapper::getNodeAngle(
-          state.graph_id, next_state.graph_id, graph_);
+          current_state_.graph_id, adj, graph_);
       float angle_difference = getAbsoluteAngleDifference(next_state_direction, 
           expected_dir);
 
@@ -500,8 +124,8 @@ namespace bwi_guidance {
       weight_sum += weight;
     }
 
-    // Normalize probabilities. Ensure sum == 1 with last non zero probability 
     float probability_sum = 0;
+    std::vector<float> probabilities;
     for (size_t probability_counter = 0; probability_counter < weights.size();
         ++probability_counter) {
       float probability = 0.9 * (weights[probability_counter] / weight_sum) +
@@ -514,11 +138,64 @@ namespace bwi_guidance {
       probabilities.push_back(probability);
     }
 
+    int next_node = select(probabilities, ugen_);
+
+    // Now that we've decided which vertex the person is moving to, compute
+    // time/distance to that vertex and update all the robots
+    float time_to_vertex = human_speed_ * bwi_mapper::getEuclideanDistance(
+        next_node, current_state_.graph_id, graph_);
+
+    // Transition to next state
+    current_state_.direction = computeNextDirection(
+        current_state_.direction, current_state_.graph_id, next_node, graph_);
+    current_state_.graph_id = next_node;
+    moveRobots(time_to_vertex);
+
+    // Compute reward
+    float reward = -time_to_vertex;
+    // TODO how to incorporate utility? Is there any good way to add utility 
+    // incrementally?
+    return reward;
   }
 
-  std::vector<float>& PersonModelIROS14::getTransitionProbabilities(
-      const StateIROS14& state, const ActionIROS14& action) {
-    return ns_distribution_cache_[state][action];
+  void PersonModelIROS14::setState(const StateIROS14 &state) {
+    current_state_ = state;
+  }
+
+  void PersonModelIROS14::takeAction(const ActionIROS14 &action, float &reward, 
+      StateIROS14 &state, bool &terminal) {
+
+    assert(ugen_ != NULL && pgen_ != NULL);
+    assert(!isTerminalState(current_state_));
+
+    reward = takeActionAtCurrentState(action);
+    state = current_state_;
+    terminal = isTerminalState(current_state_);
+  }
+
+  void PersonModelIROS14::getFirstAction(const StateIROS14 &state, 
+      ActionIROS14 &action) {
+    std::vector<ActionIROS14> actions;
+    getActionsAtState(state, actions);
+    action = actions[0];
+  }
+
+  bool PersonModelIROS14::getNextAction(const StateIROS14 &state, 
+      ActionIROS14 &action) {
+    std::vector<ActionIROS14> actions;
+    getActionsAtState(state, actions);
+    for (size_t i = 0; i < actions.size() - 1; ++i) {
+      if (actions[i] == action) {
+        action = actions[i + 1];
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  void PersonModelIROS14::initializeRNG(URGenPtr ugen, PIGenPtr pgen) {
+    ugen_ = ugen;
+    pgen_ = pgen;
   }
 
 } /* bwi_guidance */

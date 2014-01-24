@@ -5,7 +5,7 @@
 #include <rl_pursuit/planning/Model.h>
 #include <stdint.h>
 
-#include <bwi_guidance_solver/structures_qrr14.h>
+#include <bwi_guidance_solver/structures_iros14.h>
 #include <bwi_guidance_solver/utils.h>
 #include <bwi_mapper/graph.h>
 
@@ -21,10 +21,11 @@ namespace bwi_guidance {
 
     public:
 
-      PersonModelIROS14(const bwi_mapper::Graph& graph, 
-          const nav_msgs::OccupancyGrid& map, size_t goal_idx, 
-          int action_vertex_visibility_depth = 2, int max_robots_in_use = 2,
-          float visibility_range = 0.0f, bool allow_goal_visibility = false);
+      PersonModelIROS14(const bwi_mapper::Graph& graph, const
+          nav_msgs::OccupancyGrid& map, size_t goal_idx, int
+          action_vertex_visibility_depth = 2, int max_robots_in_use = 2, float
+          visibility_range = 0.0f, bool allow_goal_visibility = false, float
+          human_speed = 1.0, float robot_speed = 0.75);
 
       /* Functions inherited from PredictiveModel */
       virtual ~PersonModelIROS14() {};
@@ -35,24 +36,19 @@ namespace bwi_guidance {
           StateIROS14 &state, bool &terminal);
       virtual void getFirstAction(const StateIROS14 &state, ActionIROS14 &action);
       virtual bool getNextAction(const StateIROS14 &state, ActionIROS14 &action);
-      virtual float getTransitionProbability(const StateIROS14& state, 
-          const ActionIROS14& action, const StateIROS14& next_state);
       virtual std::string generateDescription(unsigned int indentation = 0) {
         return std::string("stub");
       }
 
       void initializeRNG(URGenPtr ugen, PIGenPtr pgen);
-      void updateRewardStructure(float success_reward, RewardStructure
-          reward_structure, bool use_importance_sampling);
-
-      void getNextStates(const StateIROS14& state, const ActionIROS14& action, 
-          std::vector<StateIROS14>& next_states);
 
     private:
 
       /* Mapped state for generative model */
       StateIROS14 current_state_;
-      std::vector<float> robot_position_at_graph_node; // Takes values from -1 to +1
+      /* Takes value from -0.5 to 0.5 */
+      std::vector<float> robot_position_at_graph_node; 
+      std::vector<int> previous_robot_position; 
       URGenPtr ugen_;
       PIGenPtr pgen_;
 
@@ -62,14 +58,18 @@ namespace bwi_guidance {
       std::map<int, std::vector<int> > action_vertices_map_;
 
       /* Actions */
+      bool isTerminalState(const StateIROS14& state) const;
       void getActionsAtState(const StateIROS14 &state,
           std::vector<ActionIROS14>& actions);
-      bool isTerminalState(const StateIROS14& state) const;
 
       /* Next states and transitions */
-      void getTransitionDynamics(const StateIROS14 &s, 
-          const ActionIROS14 &a, std::vector<StateIROS14> &next_states, 
-          std::vector<float> &rewards, std::vector<float> &probabilities);
+      float takeActionAtCurrentState(const ActionIROS14 &a);
+
+      /* Helper Functions */
+      int selectBestRobotForTask(int destination, float time_to_destination);
+      float getTrueTimeToLocation(int robot_id, int location);
+      bool isRobotDirectionAvailable(float& robot_dir);
+      void moveRobots(float time);
 
       friend class boost::serialization::access;
       template<class Archive>
@@ -84,9 +84,13 @@ namespace bwi_guidance {
       nav_msgs::OccupancyGrid map_;
 
       unsigned int num_vertices_;
+      int max_robots_in_use_;
+
       size_t goal_idx_;
-      bool allow_goal_visibility_;
       float visibility_range_;
+      bool allow_goal_visibility_;
+      float human_speed_;
+      float robot_speed_;
 
   };
   
