@@ -25,7 +25,7 @@ int main(int argc, const char *argv[]) {
 
   StateIROS14 s;
   s.graph_id = 5;
-  s.direction = 8;
+  s.direction = 0;
 
   boost::mt19937 mt(0);
   boost::uniform_int<int> i(0, boost::num_vertices(graph) - 1);
@@ -38,15 +38,24 @@ int main(int argc, const char *argv[]) {
 
   model.setState(s);
   unsigned char c = 0;
-  while(c != 27) {
+  int count = 0;
+  float reward;
+  bool terminal = false;
+  StateIROS14 state;
+  while(!terminal && c != 27) {
     mapper.drawMap(image, map);
     model.drawCurrentState(image);
     cv::imshow("out", image);
     c = cv::waitKey(-1);
-    float reward;
-    bool terminal;
-    StateIROS14 state;
-    model.takeAction(ActionIROS14(), reward, state, terminal);
+    if (count == 0) {
+      model.takeAction(ActionIROS14(ASSIGN_ROBOT, 3, 43), reward, state, terminal);
+    } else if (count == 5) {
+      model.takeAction(ActionIROS14(RELEASE_ROBOT, 3, 0), reward, state, terminal);
+    } else {
+      model.takeAction(ActionIROS14(), reward, state, terminal);
+    }
+    std::cout << "Reward: " << reward << std::endl;
+    ++count;
   }
 
   return 0;

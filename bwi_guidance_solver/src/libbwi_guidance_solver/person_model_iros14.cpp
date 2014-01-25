@@ -237,7 +237,7 @@ namespace bwi_guidance {
   }
 
   void PersonModelIROS14::moveRobots(float time) {
-    std::cout << "Moving ahead for " << time << " seconds" << std::endl;
+    /* std::cout << "Moving ahead for " << time << " seconds" << std::endl; */
     // Optimized!!!
     for (int i = 0; i < current_state_.robots.size(); ++i) {
       RobotStateIROS14& robot = current_state_.robots[i];
@@ -312,7 +312,7 @@ namespace bwi_guidance {
     if (action.type == RELEASE_ROBOT) {
       int mark_for_removal = -1;
       for (int i = 0; i < current_state_.in_use_robots.size(); ++i) {
-        if (action.at_graph_id == current_state_.in_use_robots[i].robot_id) {
+        if (action.at_graph_id == current_state_.in_use_robots[i].destination) {
           mark_for_removal = i;
           break;
         }
@@ -363,6 +363,7 @@ namespace bwi_guidance {
 
     float probability_sum = 0;
     std::vector<float> probabilities;
+    std::cout << "Transition probabilities: " << std::endl;
     for (size_t probability_counter = 0; probability_counter < weights.size();
         ++probability_counter) {
       float probability = 0.9 * (weights[probability_counter] / weight_sum) +
@@ -373,6 +374,9 @@ namespace bwi_guidance {
         probability += 1.0f - probability_sum; 
       }
       probabilities.push_back(probability);
+      std::cout << "  to " << 
+        adjacent_vertices_map_[current_state_.graph_id][probability_counter] <<
+        ": " << probability << std::endl;
     }
 
     int next_node = adjacent_vertices_map_[current_state_.graph_id]
@@ -458,12 +462,29 @@ namespace bwi_guidance {
   }
 
   void PersonModelIROS14::drawCurrentState(cv::Mat& image) {
-    // TODO OPTIMIZE!!!
+    // TODO OPTIMIZE, and use different colors for selected robots!!!
     assert(initialized_);
     bwi_mapper::drawCircleOnGraph(image, graph_, current_state_.graph_id);
+    bwi_mapper::drawArrowOnGraph(image, graph_, 
+        std::make_pair(current_state_.graph_id,
+                       getAngleInRadians(current_state_.direction) + M_PI/2),
+        map_.info.width, map_.info.height);
     for (int r = 0; r < current_state_.robots.size(); ++r) {
       RobotStateIROS14& robot = current_state_.robots[r];
-      cv::Scalar color((r * 12345) % 128, (r * 23456) % 128, (r * 34567) % 128);
+      cv::Scalar color((r * 12345) % 128, 128, 128);
+      bool robot_in_use = false;
+      int destination = robot.destination;
+      for (int j = 0; j < current_state_.in_use_robots.size(); ++j) {
+        if (current_state_.in_use_robots[j].robot_id == r) {
+          destination = current_state_.in_use_robots[j].destination;
+          robot_in_use = true;
+          break;
+        }
+      }
+      if (robot_in_use) {
+        color = cv::Scalar(128, (r * 12345) % 128, 128);
+      }
+      
       cv::Point2f robot_pos;
       if (robot.precision < 0.0f) {
         robot_pos = 
@@ -484,7 +505,7 @@ namespace bwi_guidance {
           (robot.precision) * bwi_mapper::getLocationFromGraphId(next_node, graph_);
       }
       cv::circle(image, robot_pos, 10, color, -1);
-      bwi_mapper::drawSquareOnGraph(image, graph_, robot.destination, color);
+      bwi_mapper::drawSquareOnGraph(image, graph_, destination, color);
     }
   }
 
