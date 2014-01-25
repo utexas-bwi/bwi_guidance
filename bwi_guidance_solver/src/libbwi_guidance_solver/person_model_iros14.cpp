@@ -218,7 +218,7 @@ namespace bwi_guidance {
           current_precision += coverable_distance / edge_distance;
           coverable_distance = current_precision * edge_distance; 
           current_precision = 
-            std::max(0.0f, current_precision);
+            std::min(0.0f, current_precision);
         } else if (next_node_id != -1) {
           float edge_distance = bwi_mapper::getEuclideanDistance(
               current_graph_id, next_node_id, graph_);
@@ -232,15 +232,24 @@ namespace bwi_guidance {
             next_node_id = (next_node_counter >= 0) ?
               shortest_path[next_node_counter] : -1;
           }
+        } else {
+          if (robot_in_use) {
+            // Won't be doing anything more until the robot gets released
+            coverable_distance = 0.0f;
+          } else {
+            destination = generateNewGoalFrom(destination);
+            if (current_graph_id != destination) {
+              getShortestPathWithDistance(
+                  current_graph_id, destination, shortest_path, graph_);
+            }
+            shortest_path.insert(shortest_path.begin(), destination);
+            next_node_counter = (int)shortest_path.size() - 2;
+            next_node_id = (next_node_counter >= 0) ?
+              shortest_path[next_node_counter] : -1;
+          }
         }
       }
 
-      // If a robot is not in use, generate a new goal move towards it
-      if (!robot_in_use) {
-        destination = generateNewGoalFrom(destination);
-        // Reprocess this robot
-        --i;
-      }
     }
   }
 
@@ -398,20 +407,28 @@ namespace bwi_guidance {
     assert(initialized_);
     bwi_mapper::drawCircleOnGraph(image, graph_, current_state_.graph_id);
     for (int r = 0; r < current_state_.robots.size(); ++r) {
-      RobotStateIROS14& robot = current_state_.robots[i];
-      cv::Scalar color(rand() % 128, rand() % 128, rand() % 128);
+      RobotStateIROS14& robot = current_state_.robots[r];
+      cv::Scalar color((r * 12345) % 128, (r * 23456) % 128, (r * 34567) % 128);
       cv::Point2f robot_pos;
       if (robot.robot_precision < 0.0f) {
         robot_pos = 
           -robot.robot_precision * bwi_mapper::getLocationFromGraphId(robot.from_graph_node, graph_) + 
           (1 + robot.robot_precision) * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_);
       } else {
-        if robot_pos
-
+        int next_node = robot.graph_id;
+        std::vector<size_t> shortest_path;
+        if (robot.graph_id != robot.destination) {
+          bwi_mapper::getShortestPathWithDistance(robot.graph_id, robot.destination, shortest_path, graph_);
+        }
+        shortest_path.insert(shortest_path.begin(), robot.destination);
+        if (shortest_path.size() >= 2) {
+          next_node = shortest_path[shortest_path.size() - 2];
+        }
         robot_pos = 
-          robot.robot_precision * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
-          (1 - robot.robot_precision) * bwi_mapper::getLocationFromGraphId(next_node, graph_);
+          (1 - robot.robot_precision) * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
+          (robot.robot_precision) * bwi_mapper::getLocationFromGraphId(next_node, graph_);
       }
+      cv::circle(image, robot_pos, 10, color, -1);
       bwi_mapper::drawSquareOnGraph(image, graph_, robot.destination, color);
     }
   }

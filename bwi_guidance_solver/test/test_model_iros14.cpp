@@ -20,9 +20,8 @@ int main(int argc, const char *argv[]) {
   mapper.getMap(map);
   bwi_mapper::readGraphFromFile(graph_file, map.info, graph);
 
-  PersonModelIROS14 model(graph, map, 0, 5);
+  PersonModelIROS14 model(graph, map, 0, 1);
   cv::Mat image;
-  mapper.drawMap(image, map);
 
   StateIROS14 s;
   s.graph_id = 5;
@@ -30,17 +29,21 @@ int main(int argc, const char *argv[]) {
   boost::mt19937 mt(0);
   boost::uniform_int<int> i(0, boost::num_vertices(graph) - 1);
   boost::uniform_real<float> u(0.0f, 1.0f);
-  boost::poisson_distribution<int> p(3);
+  boost::poisson_distribution<int> p(2);
   URGenPtr generative_model_gen(new URGen(mt, u));
   UIGenPtr idx_gen(new UIGen(mt, i));
   PIGenPtr robot_goal_gen(new PIGen(mt, p));
   model.initializeRNG(idx_gen, generative_model_gen, robot_goal_gen);
 
   model.setState(s);
-  model.drawCurrentState(image);
+  unsigned char c = 0;
+  while(c != 27) {
+    mapper.drawMap(image, map);
+    model.drawCurrentState(image);
+    cv::imshow("out", image);
+    c = cv::waitKey(-1);
+    model.moveRobots(15.0);
+  }
 
-  cv::imshow("out", image);
-  cv::waitKey(-1);
-  
   return 0;
 }

@@ -41,6 +41,7 @@ namespace bwi_guidance {
       }
 
       void addRobots(int n);
+      void moveRobots(float time);
       void initializeRNG(UIGenPtr uigen, URGenPtr ugen, PIGenPtr pgen);
 
       /* Debugging only */
@@ -73,7 +74,6 @@ namespace bwi_guidance {
       bool isRobotDirectionAvailable(float& robot_dir);
       int generateNRewGoalFrom(int idx);
       int generateNewGoalFrom(int idx);
-      void moveRobots(float time);
 
       friend class boost::serialization::access;
       template<class Archive>
