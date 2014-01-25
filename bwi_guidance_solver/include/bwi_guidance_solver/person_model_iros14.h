@@ -22,10 +22,10 @@ namespace bwi_guidance {
     public:
 
       PersonModelIROS14(const bwi_mapper::Graph& graph, const
-          nav_msgs::OccupancyGrid& map, size_t goal_idx, int
-          action_vertex_visibility_depth = 2, int max_robots_in_use = 2, float
-          visibility_range = 0.0f, bool allow_goal_visibility = false, float
-          human_speed = 1.0, float robot_speed = 0.75);
+          nav_msgs::OccupancyGrid& map, size_t goal_idx, int max_robots = 10,
+          int max_robots_in_use = 2, int action_vertex_visibility_depth = 2,
+          float visibility_range = 0.0f, bool allow_goal_visibility = false,
+          float human_speed = 1.0, float robot_speed = 0.75);
 
       /* Functions inherited from PredictiveModel */
       virtual ~PersonModelIROS14() {};
@@ -40,12 +40,17 @@ namespace bwi_guidance {
         return std::string("stub");
       }
 
-      void initializeRNG(URGenPtr ugen, PIGenPtr pgen);
+      void addRobots(int n);
+      void initializeRNG(UIGenPtr uigen, URGenPtr ugen, PIGenPtr pgen);
+
+      /* Debugging only */
+      void drawCurrentState(cv::Mat& image);
 
     private:
 
       /* Mapped state for generative model */
       StateIROS14 current_state_;
+      UIGenPtr uigen_;
       URGenPtr ugen_;
       PIGenPtr pgen_;
 
@@ -66,6 +71,7 @@ namespace bwi_guidance {
       float getTrueDistanceTo(const RobotStateIROS14& state, int destination);
       int selectBestRobotForTask(int destination, float time_to_destination);
       bool isRobotDirectionAvailable(float& robot_dir);
+      int generateNRewGoalFrom(int idx);
       int generateNewGoalFrom(int idx);
       void moveRobots(float time);
 
@@ -81,7 +87,9 @@ namespace bwi_guidance {
       bwi_mapper::Graph graph_;
       nav_msgs::OccupancyGrid map_;
 
+      bool initialized_;
       unsigned int num_vertices_;
+      int max_robots_;
       int max_robots_in_use_;
 
       size_t goal_idx_;

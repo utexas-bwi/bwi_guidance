@@ -67,6 +67,14 @@ target_link_libraries(generate_exp2_robots_qrr14
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
+add_executable(test_model_iros14 
+  test/test_model_iros14.cpp
+)
+target_link_libraries(test_model_iros14
+  bwi_guidance_solver
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+)
 
 add_executable(evaluate_qrr14 
   src/nodes/evaluate_qrr14.cpp

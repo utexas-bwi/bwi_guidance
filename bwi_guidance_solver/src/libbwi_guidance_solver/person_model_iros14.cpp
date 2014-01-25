@@ -15,13 +15,13 @@
 namespace bwi_guidance {
 
   PersonModelIROS14::PersonModelIROS14(const bwi_mapper::Graph& graph, const
-      nav_msgs::OccupancyGrid& map, size_t goal_idx, int
-      action_vertex_visibility_depth, int max_robots_in_use, float
-      visibility_range, bool allow_goal_visibility, float human_speed,
-      float robot_speed) : graph_(graph),
-  map_(map), goal_idx_(goal_idx), max_robots_in_use_(max_robots_in_use),
+      nav_msgs::OccupancyGrid& map, size_t goal_idx, int max_robots, int
+      max_robots_in_use, int action_vertex_visibility_depth, float
+      visibility_range, bool allow_goal_visibility, float human_speed, float
+      robot_speed) : graph_(graph),
+  map_(map), goal_idx_(goal_idx), max_robots_(max_robots), max_robots_in_use_(max_robots_in_use),
   allow_goal_visibility_(allow_goal_visibility), human_speed_(human_speed),
-  robot_speed_(robot_speed) {
+  robot_speed_(robot_speed), initialized_(false) {
 
     robot_speed_ /= map_.info.resolution;
     human_speed_ /= map_.info.resolution;
@@ -154,15 +154,34 @@ namespace bwi_guidance {
   }
 
   int PersonModelIROS14::generateNewGoalFrom(int idx) {
-    // TODO
-    return rand() % num_vertices_;
-    // assert(pgen_);
-    // int graph_distance = (*pgen_)();
-    // for (int i = 0; i < num_vertices_; ++i) {
+    assert(pgen_ && uigen_);
+    while(true) {
+      int graph_distance = (*pgen_)();
+      if (graph_distance == 0) {
+        continue;
+      }
+      std::set<int> closed_set, current_set;
+      current_set.insert(idx);
+      for (int i = 0; current_set.size() != 0 && i < graph_distance; ++i) {
+        std::set<int> open_set;
+        BOOST_FOREACH(int c, current_set) {
+          BOOST_FOREACH(int a, adjacent_vertices_map_[c]) {
+            if (std::find(closed_set.begin(), closed_set.end(), a) ==
+                closed_set.end()) {
+              open_set.insert(a);
+            }
+          }
+        }
+        closed_set.insert(current_set.begin(), current_set.end());
+        current_set = open_set;
+      }
 
-
-
-    // }
+      if (current_set.size() != 0) {
+        std::set<int>::iterator it = current_set.begin();
+        std::advance(it, (*uigen_)() % current_set.size());
+        return *it;
+      }
+    }
   }
 
   void PersonModelIROS14::moveRobots(float time) {
@@ -227,8 +246,6 @@ namespace bwi_guidance {
 
   float PersonModelIROS14::takeActionAtCurrentState(
       const ActionIROS14& action) {
-
-    assert(!isTerminalState(current_state_));
 
     if (action.type == RELEASE_ROBOT) {
       int mark_for_removal = -1;
@@ -320,11 +337,17 @@ namespace bwi_guidance {
 
   void PersonModelIROS14::setState(const StateIROS14 &state) {
     current_state_ = state;
+    if (current_state_.robots.size() == 0) {
+      assert(current_state_.in_use_robots.size() == 0);
+      addRobots(max_robots_);
+    }
+    initialized_ = true;
   }
 
   void PersonModelIROS14::takeAction(const ActionIROS14 &action, float &reward, 
       StateIROS14 &state, bool &terminal) {
 
+    assert(initialized_);
     assert(ugen_);
     assert(!isTerminalState(current_state_));
 
@@ -352,10 +375,45 @@ namespace bwi_guidance {
     }
     return false;
   }
-  
-  void PersonModelIROS14::initializeRNG(URGenPtr ugen, PIGenPtr pgen) {
+
+  void PersonModelIROS14::addRobots(int n) {
+    assert(uigen_);
+    for (int r = 0; r < n; ++r) {
+      RobotStateIROS14 robot;
+      robot.graph_id = (*uigen_)();
+      robot.destination = generateNewGoalFrom(robot.graph_id); 
+      robot.robot_precision = 0.0f;
+      current_state_.robots.push_back(robot);
+    }
+  }
+
+  void PersonModelIROS14::initializeRNG(UIGenPtr uigen, URGenPtr ugen, 
+      PIGenPtr pgen) {
+    uigen_ = uigen;
     ugen_ = ugen;
     pgen_ = pgen;
+  }
+
+  void PersonModelIROS14::drawCurrentState(cv::Mat& image) {
+    assert(initialized_);
+    bwi_mapper::drawCircleOnGraph(image, graph_, current_state_.graph_id);
+    for (int r = 0; r < current_state_.robots.size(); ++r) {
+      RobotStateIROS14& robot = current_state_.robots[i];
+      cv::Scalar color(rand() % 128, rand() % 128, rand() % 128);
+      cv::Point2f robot_pos;
+      if (robot.robot_precision < 0.0f) {
+        robot_pos = 
+          -robot.robot_precision * bwi_mapper::getLocationFromGraphId(robot.from_graph_node, graph_) + 
+          (1 + robot.robot_precision) * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_);
+      } else {
+        if robot_pos
+
+        robot_pos = 
+          robot.robot_precision * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
+          (1 - robot.robot_precision) * bwi_mapper::getLocationFromGraphId(next_node, graph_);
+      }
+      bwi_mapper::drawSquareOnGraph(image, graph_, robot.destination, color);
+    }
   }
 
 } /* bwi_guidance */
