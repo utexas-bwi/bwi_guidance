@@ -84,8 +84,9 @@ namespace bwi_guidance {
     }
 
     // Shouldn't ever be running with different robot sizes.
-    if (l.robots.size() < r.robots.size()) return true;
-    if (l.robots.size() > r.robots.size()) return false;
+    assert(l.robots.size() == r.robots.size());
+    // if (l.robots.size() < r.robots.size()) return true;
+    // if (l.robots.size() > r.robots.size()) return false;
 
     for (unsigned int i = 0; i < l.robots.size(); ++i) {
       if (l.robots[i] < r.robots[i]) return true;
@@ -100,13 +101,11 @@ namespace bwi_guidance {
         l.direction == r.direction &&
         l.in_use_robots.size() != r.in_use_robots.size());
 
-    if (!retval) return retval;
-
     for (unsigned int i = 0; retval && (i < l.in_use_robots.size()); ++i) {
       retval = retval && (l.in_use_robots[i] == r.in_use_robots[i]);
     }
 
-    if (!retval) return retval;
+    assert(l.robots.size() == r.robots.size());
 
     for (unsigned int i = 0; retval && (i < l.robots.size()); ++i) {
       retval = retval && (l.robots[i] == r.robots[i]);

@@ -46,9 +46,6 @@ namespace bwi_guidance {
 
       /* Mapped state for generative model */
       StateIROS14 current_state_;
-      /* Takes value from -0.5 to 0.5 */
-      std::vector<float> robot_position_at_graph_node; 
-      std::vector<int> previous_robot_position; 
       URGenPtr ugen_;
       PIGenPtr pgen_;
 
@@ -66,9 +63,10 @@ namespace bwi_guidance {
       float takeActionAtCurrentState(const ActionIROS14 &a);
 
       /* Helper Functions */
+      float getTrueDistanceTo(const RobotStateIROS14& state, int destination);
       int selectBestRobotForTask(int destination, float time_to_destination);
-      float getTrueTimeToLocation(int robot_id, int location);
       bool isRobotDirectionAvailable(float& robot_dir);
+      int generateNewGoalFrom(int idx);
       void moveRobots(float time);
 
       friend class boost::serialization::access;

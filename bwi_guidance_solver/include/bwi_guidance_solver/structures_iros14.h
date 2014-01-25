@@ -47,6 +47,12 @@ namespace bwi_guidance {
   struct RobotStateIROS14 {
     int graph_id; //~50
     int destination; //~50
+
+    /* Ignored while being kept in a map, the extra precision is lost there.
+     * Don't use these members in operator<, == or > overloading */
+    float robot_precision; // value from -0.5 to 0.5
+    int from_graph_node;
+
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
