@@ -20,11 +20,12 @@ int main(int argc, const char *argv[]) {
   mapper.getMap(map);
   bwi_mapper::readGraphFromFile(graph_file, map.info, graph);
 
-  PersonModelIROS14 model(graph, map, 0, 5);
+  PersonModelIROS14 model(graph, map, 0, 10);
   cv::Mat image;
 
   StateIROS14 s;
   s.graph_id = 5;
+  s.direction = 8;
 
   boost::mt19937 mt(0);
   boost::uniform_int<int> i(0, boost::num_vertices(graph) - 1);
@@ -41,8 +42,11 @@ int main(int argc, const char *argv[]) {
     mapper.drawMap(image, map);
     model.drawCurrentState(image);
     cv::imshow("out", image);
-    c = cv::waitKey(50);
-    model.moveRobots(0.5);
+    c = cv::waitKey(-1);
+    float reward;
+    bool terminal;
+    StateIROS14 state;
+    model.takeAction(ActionIROS14(), reward, state, terminal);
   }
 
   return 0;

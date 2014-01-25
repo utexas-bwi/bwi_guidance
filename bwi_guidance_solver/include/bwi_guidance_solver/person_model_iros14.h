@@ -40,12 +40,15 @@ namespace bwi_guidance {
         return std::string("stub");
       }
 
-      void addRobots(int n);
-      void moveRobots(float time);
       void initializeRNG(UIGenPtr uigen, URGenPtr ugen, PIGenPtr pgen);
 
       /* Debugging only */
       void drawCurrentState(cv::Mat& image);
+
+      /* Private functions that are public only for testing */
+      void addRobots(int n);
+      void moveRobots(float time);
+      void printDistanceToDestination(int idx);
 
     private:
 
@@ -74,6 +77,15 @@ namespace bwi_guidance {
       bool isRobotDirectionAvailable(float& robot_dir);
       int generateNRewGoalFrom(int idx);
       int generateNewGoalFrom(int idx);
+
+      /* Goal Caching */
+      void cacheNewGoalsByDistance();
+      std::vector<std::vector<std::vector<int> > > goals_by_distance_;
+
+      /* Path Caching */
+      std::vector<std::vector<std::vector<size_t> > > shortest_paths_;
+      std::vector<std::vector<float> > shortest_distances_;
+      void cacheShortestPaths();
 
       friend class boost::serialization::access;
       template<class Archive>

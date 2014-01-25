@@ -50,7 +50,7 @@ namespace bwi_guidance {
 
     /* Ignored while being kept in a map, the extra precision is lost there.
      * Don't use these members in operator<, == or > overloading */
-    float robot_precision; // value from -0.5 to 0.5
+    float precision; // value from -0.5 to 0.5
     int from_graph_node;
 
     friend class boost::serialization::access;
