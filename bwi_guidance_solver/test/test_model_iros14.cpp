@@ -20,7 +20,7 @@ int main(int argc, const char *argv[]) {
   mapper.getMap(map);
   bwi_mapper::readGraphFromFile(graph_file, map.info, graph);
 
-  PersonModelIROS14 model(graph, map, 0, 1);
+  PersonModelIROS14 model(graph, map, 0, 5);
   cv::Mat image;
 
   StateIROS14 s;
@@ -41,8 +41,8 @@ int main(int argc, const char *argv[]) {
     mapper.drawMap(image, map);
     model.drawCurrentState(image);
     cv::imshow("out", image);
-    c = cv::waitKey(-1);
-    model.moveRobots(15.0);
+    c = cv::waitKey(50);
+    model.moveRobots(0.5);
   }
 
   return 0;
