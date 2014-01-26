@@ -1,4 +1,5 @@
-#include<fstream>
+#include <iostream>
+#include <fstream>
 
 #include <rl_pursuit/planning/ValueIteration.h>
 #include <rl_pursuit/planning/PredictiveModel.h>

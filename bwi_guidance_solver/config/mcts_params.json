@@ -1,5 +1,5 @@
 {
-  // "maxPlayouts": 1000, // Uncomment to make simulation deterministic
-  "maxPlanningTime": 1, // Uncomment to make simulation non-deterministic
+  "maxPlayouts": 1000, // Uncomment to make simulation deterministic
+  //"maxPlanningTime": 1, // Uncomment to make simulation non-deterministic
   "maxDepth": 50
 }

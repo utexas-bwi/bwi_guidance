@@ -1,11 +1,11 @@
 {
   "methods" : [ 
-  {
-    "type" : 0
-  }, 
-  {
-    "type" : 1
-  }, 
+  // {
+  //   "type" : 0
+  // }, 
+  // {
+  //   "type" : 1
+  // }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 5000,

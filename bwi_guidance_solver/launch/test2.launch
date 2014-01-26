@@ -9,13 +9,10 @@
   <arg name="mcts_params" 
     default="$(find bwi_guidance_solver)/config/mcts_params.json" />
   <arg name="methods_file" 
-    default="$(find bwi_guidance_solver)/config/lambda_sunday.json" />
-  <!-- <arg name="methods_file"  -->
-  <!--   default="$(find bwi_guidance_solver)/config/iros/lambda_tuesday.json" /> -->
+    default="$(find bwi_guidance_solver)/config/lambda_tuesday.json" />
 
-  <!-- <node name="evaluate" pkg="bwi_guidance_solver" type="evaluate_iros14"   -->
   <node name="evaluate" pkg="bwi_guidance_solver" type="evaluate_qrr14"  
-    output="screen"  launch-prefix="gdb -ex run --args"
+    output="screen"
     args="--map-file $(arg map_file) --graph-file $(arg graph_file)
     --data-directory $(arg data_dir) --allow-robot-current --seed $(arg seed)
     --mcts-params $(arg mcts_params) --methods-file $(arg methods_file)
