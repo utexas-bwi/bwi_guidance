@@ -23,7 +23,7 @@ namespace bwi_guidance {
 
       PersonModelIROS14(const bwi_mapper::Graph& graph, const
           nav_msgs::OccupancyGrid& map, size_t goal_idx, int max_robots_in_use
-          = 2, int action_vertex_visibility_depth = 0, float visibility_range =
+          = 1, int action_vertex_visibility_depth = 0, float visibility_range =
           0.0f, bool allow_goal_visibility = false, float human_speed = 1.0,
           float robot_speed = 0.75);
 
@@ -78,7 +78,9 @@ namespace bwi_guidance {
       int generateNewGoalFrom(int idx);
 
       /* Action generation caching */
-      StateIROS14 previous_action_state_;
+      StateIROS14 get_action_state_;
+      std::vector<ActionIROS14> get_actions_;
+      int get_actions_counter_;
 
       /* Goal Caching */
       void cacheNewGoalsByDistance();

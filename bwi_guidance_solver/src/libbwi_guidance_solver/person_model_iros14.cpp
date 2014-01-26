@@ -75,17 +75,23 @@ namespace bwi_guidance {
       std::vector<ActionIROS14>& actions) {
     actions.clear();
     actions.push_back(ActionIROS14(DO_NOTHING, 0, 0));
-    std::vector<int> assigned_vertices;
+    std::vector<int> cant_assign_vertices = state.relieved_locations;
     for (int i = 0; i < state.in_use_robots.size(); ++i) {
-      actions.push_back(ActionIROS14(RELEASE_ROBOT, 
-                                     state.in_use_robots[i].destination,
-                                     0));
-      assigned_vertices.push_back(state.in_use_robots[i].destination);
+      if (std::find(state.acquired_locations.begin(),
+            state.acquired_locations.end(),
+            state.in_use_robots[i].destination) ==
+          state.acquired_locations.end()) {
+        actions.push_back(ActionIROS14(RELEASE_ROBOT, 
+                                       state.in_use_robots[i].destination,
+                                       0));
+      }
+      cant_assign_vertices.push_back(state.in_use_robots[i].destination);
     }
     if (state.in_use_robots.size() != max_robots_in_use_) {
       BOOST_FOREACH(int vtx, action_vertices_map_[state.graph_id]) {
-        if (std::find(assigned_vertices.begin(), assigned_vertices.end(), vtx) ==
-            assigned_vertices.end()) {
+        if (std::find(cant_assign_vertices.begin(), 
+                      cant_assign_vertices.end(), vtx) ==
+            cant_assign_vertices.end()) {
           BOOST_FOREACH(int adj, adjacent_vertices_map_[vtx]) {
             actions.push_back(ActionIROS14(ASSIGN_ROBOT, vtx, adj));
           }
@@ -340,6 +346,7 @@ namespace bwi_guidance {
       MODEL_IROS14_REQUIRE(mark_for_removal != -1);
       current_state_.in_use_robots.erase(
           current_state_.in_use_robots.begin() + mark_for_removal);
+      current_state_.relieved_locations.push_back(action.at_graph_id);
       return 0.0;
     }
 
@@ -354,6 +361,7 @@ namespace bwi_guidance {
       r.destination = action.at_graph_id;
       r.direction = action.guide_graph_id;
       current_state_.in_use_robots.push_back(r);
+      current_state_.acquired_locations.push_back(action.at_graph_id);
       return -10.0;
     }
 
@@ -411,6 +419,8 @@ namespace bwi_guidance {
     current_state_.direction = computeNextDirection(
         current_state_.direction, current_state_.graph_id, next_node, graph_);
     current_state_.graph_id = next_node;
+    current_state_.acquired_locations.clear();
+    current_state_.relieved_locations.clear();
 
     // TODO allow moving robots and people slowly for visualization
     moveRobots(time_to_vertex);
@@ -452,41 +462,48 @@ namespace bwi_guidance {
   void PersonModelIROS14::getFirstAction(const StateIROS14 &state, 
       ActionIROS14 &action) {
     // Optimized!
-    previous_action_state_ = state;
-    action = ActionIROS14(DO_NOTHING, 0, 0);
+    get_action_state_ = state;
+    getActionsAtState(state, get_actions_);
+    action = get_actions_[0];
+    get_actions_counter_ = 1;
   }
 
   bool PersonModelIROS14::getNextAction(const StateIROS14 &state, 
       ActionIROS14 &action) {
-    MODEL_IROS14_REQUIRE(state == previous_action_state_);
-    bool return_next = action.type == DO_NOTHING;
-    std::vector<int> assigned_vertices(state.in_use_robots.size());
-    for (int i = 0; i < state.in_use_robots.size(); ++i) {
-      ActionIROS14 next_action(RELEASE_ROBOT, 
-                               state.in_use_robots[i].destination, 0);
-      assigned_vertices[i] = state.in_use_robots[i].destination;
-      if (return_next) {
-        action = next_action;
-        return true;
-      }
-      return_next = action == next_action;
-    }
-    if (state.in_use_robots.size() != max_robots_in_use_) {
-      BOOST_FOREACH(int vtx, action_vertices_map_[state.graph_id]) {
-        if (std::find(assigned_vertices.begin(), assigned_vertices.end(), vtx) ==
-            assigned_vertices.end()) {
-          BOOST_FOREACH(int adj, adjacent_vertices_map_[vtx]) {
-            ActionIROS14 next_action(ASSIGN_ROBOT, vtx, adj);
-            if (return_next) {
-              action = next_action;
-              return true;
-            }
-            return_next = action == next_action;
-          }
-        }
-      }
+    MODEL_IROS14_REQUIRE(state == get_action_state_);
+    if (get_actions_counter_ < get_actions_.size()) {
+      action = get_actions_[get_actions_counter_++];
+      return true;
     }
     return false;
+    // bool return_next = action.type == DO_NOTHING;
+    // std::vector<int> assigned_vertices(state.in_use_robots.size());
+    // for (int i = 0; i < state.in_use_robots.size(); ++i) {
+    //   ActionIROS14 next_action(RELEASE_ROBOT, 
+    //                            state.in_use_robots[i].destination, 0);
+    //   assigned_vertices[i] = state.in_use_robots[i].destination;
+    //   if (return_next) {
+    //     action = next_action;
+    //     return true;
+    //   }
+    //   return_next = action == next_action;
+    // }
+    // if (state.in_use_robots.size() != max_robots_in_use_) {
+    //   BOOST_FOREACH(int vtx, action_vertices_map_[state.graph_id]) {
+    //     if (std::find(assigned_vertices.begin(), assigned_vertices.end(), vtx) ==
+    //         assigned_vertices.end()) {
+    //       BOOST_FOREACH(int adj, adjacent_vertices_map_[vtx]) {
+    //         ActionIROS14 next_action(ASSIGN_ROBOT, vtx, adj);
+    //         if (return_next) {
+    //           action = next_action;
+    //           return true;
+    //         }
+    //         return_next = action == next_action;
+    //       }
+    //     }
+    //   }
+    // }
+    // return false;
   }
 
   void PersonModelIROS14::addRobots(StateIROS14& state, int n) {

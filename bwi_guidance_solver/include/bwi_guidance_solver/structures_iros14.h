@@ -86,6 +86,10 @@ namespace bwi_guidance {
     std::vector<RobotStateIROS14> robots; // ~10 * 50 * 50
     std::vector<InUseRobotStateIROS14> in_use_robots; // ~10 * 20 * 5
 
+    /* These just prevent bad action choices */
+    std::vector<int> acquired_locations;
+    std::vector<int> relieved_locations;
+
     friend class boost::serialization::access;
     template<class Archive>
     void serialize(Archive &ar, const unsigned int version) {
