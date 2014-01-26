@@ -97,21 +97,25 @@ namespace bwi_guidance {
   }
 
   bool operator==(const StateIROS14& l, const StateIROS14& r ) {
-    bool retval = (l.graph_id == r.graph_id &&
-        l.direction == r.direction &&
-        l.in_use_robots.size() != r.in_use_robots.size());
+    return l.graph_id == r.graph_id &&
+      l.direction == r.direction &&
+      l.in_use_robots == r.in_use_robots &&
+      l.robots == r.robots;
+    // bool retval = (l.graph_id == r.graph_id &&
+    //     l.direction == r.direction &&
+    //     l.in_use_robots.size() != r.in_use_robots.size());
 
-    for (unsigned int i = 0; retval && (i < l.in_use_robots.size()); ++i) {
-      retval = retval && (l.in_use_robots[i] == r.in_use_robots[i]);
-    }
+    // for (unsigned int i = 0; retval && (i < l.in_use_robots.size()); ++i) {
+    //   retval = retval && (l.in_use_robots[i] == r.in_use_robots[i]);
+    // }
 
-    assert(l.robots.size() == r.robots.size());
+    // assert(l.robots.size() == r.robots.size());
 
-    for (unsigned int i = 0; retval && (i < l.robots.size()); ++i) {
-      retval = retval && (l.robots[i] == r.robots[i]);
-    }
+    // for (unsigned int i = 0; retval && (i < l.robots.size()); ++i) {
+    //   retval = retval && (l.robots[i] == r.robots[i]);
+    // }
 
-    return retval;
+    // return retval;
   }
 
   std::ostream& operator<<(std::ostream& stream, const StateIROS14& s) {
@@ -123,7 +127,7 @@ namespace bwi_guidance {
         stream << ","; 
     }
     stream << "), ";
-    if (s.in_use_robots.size() == NONE) {
+    if (s.in_use_robots.size() == 0) {
       stream << "No robots in use";
     } else {
       for (unsigned int i = 0; i < s.in_use_robots.size(); ++i) {

@@ -1,0 +1,8 @@
+{
+  "methods" : [ 
+  {
+    "type" : 1,
+    "mcts_initial_planning_time" : 800.0
+  }
+  ]
+}

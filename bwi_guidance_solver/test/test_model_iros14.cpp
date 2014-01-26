@@ -1,3 +1,4 @@
+#include <boost/foreach.hpp>
 #include <bwi_mapper/graph.h>
 #include <bwi_mapper/map_loader.h>
 #include <bwi_guidance_solver/person_model_iros14.h>
@@ -20,7 +21,7 @@ int main(int argc, const char *argv[]) {
   mapper.getMap(map);
   bwi_mapper::readGraphFromFile(graph_file, map.info, graph);
 
-  PersonModelIROS14 model(graph, map, 0, 10);
+  PersonModelIROS14 model(graph, map, 0);
   cv::Mat image;
 
   StateIROS14 s;
@@ -36,7 +37,9 @@ int main(int argc, const char *argv[]) {
   PIGenPtr robot_goal_gen(new PIGen(mt, p));
   model.initializeRNG(idx_gen, generative_model_gen, robot_goal_gen);
 
+  model.addRobots(s, 10);
   model.setState(s);
+
   unsigned char c = 0;
   int count = 0;
   float reward;
@@ -46,7 +49,12 @@ int main(int argc, const char *argv[]) {
     mapper.drawMap(image, map);
     model.drawCurrentState(image);
     cv::imshow("out", image);
-    c = cv::waitKey(-1);
+    std::vector<ActionIROS14> actions;
+    model.getActionsAtState(s, actions);
+    std::cout << "Actions: " << std::endl;
+    BOOST_FOREACH(ActionIROS14 a, actions) {
+      std::cout << a << " ";
+    }
     if (count == 0) {
       model.takeAction(ActionIROS14(ASSIGN_ROBOT, 3, 43), reward, state, terminal);
     } else if (count == 5) {
@@ -54,6 +62,7 @@ int main(int argc, const char *argv[]) {
     } else {
       model.takeAction(ActionIROS14(), reward, state, terminal);
     }
+    c = cv::waitKey(-1);
     std::cout << "Reward: " << reward << std::endl;
     ++count;
   }

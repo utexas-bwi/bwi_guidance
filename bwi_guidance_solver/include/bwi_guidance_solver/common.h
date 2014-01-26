@@ -24,7 +24,7 @@ namespace bwi_guidance {
       const bwi_mapper::Graph& graph);
 
   void computeVisibleVertices(
-      std::map<int, std::vector<int> >& adjacent_vertices_map,
+      std::map<int, std::vector<int> >& visible_vertices_map,
       const bwi_mapper::Graph& graph,
       const nav_msgs::OccupancyGrid& map,
       float visibility_range);

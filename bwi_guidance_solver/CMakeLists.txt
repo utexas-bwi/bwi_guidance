@@ -82,6 +82,12 @@ add_executable(evaluate_qrr14
 target_link_libraries(evaluate_qrr14
   bwi_guidance_solver
 )
+add_executable(evaluate_iros14 
+  src/nodes/evaluate_iros14.cpp
+)
+target_link_libraries(evaluate_iros14
+  bwi_guidance_solver
+)
 add_executable(metric_map2_qrr14 
   src/nodes/metric_map2_qrr14.cpp
 )

@@ -2,18 +2,19 @@
 
   <arg name="data_dir" default="$(find bwi_guidance_solver)/data/exp1/map3/" />
   <arg name="seed" default="0" />
-  <arg name="num_instances" default="1000" />
+  <arg name="num_instances" default="1" />
 
   <arg name="map_file" default="$(find bwi_guidance)/maps/map3.yaml" />
   <arg name="graph_file" default="$(find bwi_guidance)/maps/graph_map3.yaml" />
   <arg name="mcts_params" 
     default="$(find bwi_guidance_solver)/config/mcts_params.json" />
   <arg name="methods_file" 
-    default="$(find bwi_guidance_solver)/config/lambda_tuesday.json" />
-  <node name="evaluate" pkg="bwi_guidance_solver" type="evaluate_qrr14"  
+    default="$(find bwi_guidance_solver)/config/iros/lambda_tuesday.json" />
+
+  <node name="evaluate" pkg="bwi_guidance_solver" type="evaluate_iros14"  
     output="screen"
     args="--map-file $(arg map_file) --graph-file $(arg graph_file)
-    --data-directory $(arg data_dir) --allow-robot-current --seed $(arg seed)
+    --data-directory $(arg data_dir) --seed $(arg seed)
     --mcts-params $(arg mcts_params) --methods-file $(arg methods_file)
     --num-instances $(arg num_instances)" 
     required="true" />

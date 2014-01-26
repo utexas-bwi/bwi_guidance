@@ -5,6 +5,7 @@
 
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
 
@@ -12,14 +13,20 @@
 #include <bwi_mapper/point_utils.h>
 #include <bwi_mapper/map_utils.h>
 
+#ifdef MODEL_IROS14_DEBUG
+  #define MODEL_IROS14_REQUIRE(x) assert(x)
+#else
+  #define MODEL_IROS14_REQUIRE(x) 
+#endif
+
 namespace bwi_guidance {
 
   PersonModelIROS14::PersonModelIROS14(const bwi_mapper::Graph& graph, const
-      nav_msgs::OccupancyGrid& map, size_t goal_idx, int max_robots, int
+      nav_msgs::OccupancyGrid& map, size_t goal_idx, int
       max_robots_in_use, int action_vertex_visibility_depth, float
       visibility_range, bool allow_goal_visibility, float human_speed, float
       robot_speed) : graph_(graph),
-  map_(map), goal_idx_(goal_idx), max_robots_(max_robots), max_robots_in_use_(max_robots_in_use),
+  map_(map), goal_idx_(goal_idx), max_robots_in_use_(max_robots_in_use),
   allow_goal_visibility_(allow_goal_visibility), human_speed_(human_speed),
   robot_speed_(robot_speed), initialized_(false) {
 
@@ -28,7 +35,7 @@ namespace bwi_guidance {
 
     num_vertices_ = boost::num_vertices(graph_);
     computeAdjacentVertices(adjacent_vertices_map_, graph_);
-    computeVisibleVertices(visible_vertices_map_, graph_, map_, visibility_range_);
+    computeVisibleVertices(visible_vertices_map_, graph_, map_, visibility_range);
 
     // Compute Action Vertices
     // Start with the visible vertices and expand with adjacent vertices until needed
@@ -46,6 +53,15 @@ namespace bwi_guidance {
       }
     }
 
+    // std::cout << "Action Vertices Map:" << std::endl;
+    // for (int i = 0; i < num_vertices_; ++i) {
+    //   std::cout << " For vtx " << i << ": ";
+    //   BOOST_FOREACH(int vtx, action_vertices_map_[i]) {
+    //     std::cout << vtx << " ";
+    //   }
+    //   std::cout << std::endl;
+    // }
+
     cacheNewGoalsByDistance();
     cacheShortestPaths();
 
@@ -62,9 +78,9 @@ namespace bwi_guidance {
     std::vector<int> assigned_vertices;
     for (int i = 0; i < state.in_use_robots.size(); ++i) {
       actions.push_back(ActionIROS14(RELEASE_ROBOT, 
-                                     state.in_use_robots[i].robot_id,
+                                     state.in_use_robots[i].destination,
                                      0));
-      assigned_vertices.push_back(state.in_use_robots[i].direction);
+      assigned_vertices.push_back(state.in_use_robots[i].destination);
     }
     if (state.in_use_robots.size() != max_robots_in_use_) {
       BOOST_FOREACH(int vtx, action_vertices_map_[state.graph_id]) {
@@ -223,7 +239,7 @@ namespace bwi_guidance {
 
   int PersonModelIROS14::generateNewGoalFrom(int idx) {
     // Optimized!!!
-    assert(pgen_ && uigen_ && goals_by_distance_.size() == num_vertices_);
+    MODEL_IROS14_REQUIRE(pgen_ && uigen_ && goals_by_distance_.size() == num_vertices_);
     while(true) {
       int graph_distance = (*pgen_)();
       if (graph_distance == 0 || 
@@ -266,7 +282,7 @@ namespace bwi_guidance {
           // Moving to robot.graph_id
           float edge_distance =
             shortest_distances_[robot.graph_id][robot.from_graph_node];
-          assert(edge_distance != 0);
+          MODEL_IROS14_REQUIRE(edge_distance != 0);
           robot.precision += coverable_distance / edge_distance;
           coverable_distance = robot.precision * edge_distance; 
           robot.precision = std::min(0.0f, robot.precision);
@@ -274,7 +290,7 @@ namespace bwi_guidance {
           // Moving away from robot.graph_id
           float edge_distance = 
             shortest_distances_[robot.graph_id][next_node_id];
-          assert(edge_distance != 0);
+          MODEL_IROS14_REQUIRE(edge_distance != 0);
           robot.precision += coverable_distance / edge_distance;
           coverable_distance = (robot.precision - 0.5f) * edge_distance; 
           if (coverable_distance > 0.0f) {
@@ -317,14 +333,18 @@ namespace bwi_guidance {
           break;
         }
       }
-      assert(mark_for_removal != -1);
+      if (mark_for_removal == -1) {
+        std::cout << "State: " << current_state_ << std::endl;
+        std::cout << "Action: " << action << std::endl;
+      }
+      MODEL_IROS14_REQUIRE(mark_for_removal != -1);
       current_state_.in_use_robots.erase(
           current_state_.in_use_robots.begin() + mark_for_removal);
-      return 0;
+      return 0.0;
     }
 
     if (action.type == ASSIGN_ROBOT) {
-      assert(current_state_.in_use_robots.size() < max_robots_in_use_);
+      MODEL_IROS14_REQUIRE(current_state_.in_use_robots.size() < max_robots_in_use_);
       float distance_to_destination = bwi_mapper::getShortestPathDistance(
           current_state_.graph_id, action.at_graph_id, graph_); 
       float time_to_destination = distance_to_destination / human_speed_; 
@@ -334,7 +354,7 @@ namespace bwi_guidance {
       r.destination = action.at_graph_id;
       r.direction = action.guide_graph_id;
       current_state_.in_use_robots.push_back(r);
-      return 0;
+      return -10.0;
     }
 
     // alright, need to wait for the human to take an action - let's first
@@ -363,7 +383,7 @@ namespace bwi_guidance {
 
     float probability_sum = 0;
     std::vector<float> probabilities;
-    std::cout << "Transition probabilities: " << std::endl;
+    /* std::cout << "Transition probabilities: " << std::endl; */
     for (size_t probability_counter = 0; probability_counter < weights.size();
         ++probability_counter) {
       float probability = 0.9 * (weights[probability_counter] / weight_sum) +
@@ -374,9 +394,9 @@ namespace bwi_guidance {
         probability += 1.0f - probability_sum; 
       }
       probabilities.push_back(probability);
-      std::cout << "  to " << 
-        adjacent_vertices_map_[current_state_.graph_id][probability_counter] <<
-        ": " << probability << std::endl;
+      // std::cout << "  to " << 
+      //   adjacent_vertices_map_[current_state_.graph_id][probability_counter] <<
+      //   ": " << probability << std::endl;
     }
 
     int next_node = adjacent_vertices_map_[current_state_.graph_id]
@@ -384,8 +404,8 @@ namespace bwi_guidance {
 
     // Now that we've decided which vertex the person is moving to, compute
     // time/distance to that vertex and update all the robots
-    float time_to_vertex = bwi_mapper::getEuclideanDistance(
-        next_node, current_state_.graph_id, graph_) / human_speed_;
+    float time_to_vertex = 
+      shortest_distances_[current_state_.graph_id][next_node] / human_speed_;
 
     // Transition to next state
     current_state_.direction = computeNextDirection(
@@ -397,60 +417,86 @@ namespace bwi_guidance {
 
     // Compute reward
     float reward = -time_to_vertex;
-    // TODO how to incorporate utility? Is there any good way to add utility 
-    // incrementally?
+    // TODO how to incorporate utility? 
+    //   - At the time of release would be easy and correct, but then the 
+    //     robots won't get released
+    //   - At the time of acquire would only be estimated
+    //   - Any way to do this incrementally, but still get correct value (best)
     return reward;
   }
 
   void PersonModelIROS14::setState(const StateIROS14 &state) {
+    MODEL_IROS14_REQUIRE(state.robots.size() != 0);
     current_state_ = state;
-    if (current_state_.robots.size() == 0) {
-      assert(current_state_.in_use_robots.size() == 0);
-      addRobots(max_robots_);
-    }
     initialized_ = true;
   }
 
   void PersonModelIROS14::takeAction(const ActionIROS14 &action, float &reward, 
       StateIROS14 &state, bool &terminal) {
 
-    assert(initialized_);
-    assert(ugen_);
-    assert(!isTerminalState(current_state_));
+    //boost::posix_time::ptime mst1 = boost::posix_time::microsec_clock::local_time();
+
+    MODEL_IROS14_REQUIRE(initialized_);
+    MODEL_IROS14_REQUIRE(ugen_);
+    MODEL_IROS14_REQUIRE(!isTerminalState(current_state_));
 
     reward = takeActionAtCurrentState(action);
     state = current_state_;
     terminal = isTerminalState(current_state_);
+
+    // boost::posix_time::ptime mst2 = boost::posix_time::microsec_clock::local_time();
+    // std::cout << "Time elapsed: " << (mst2 - mst1).total_microseconds() << 
+    //   std::endl;
   }
 
   void PersonModelIROS14::getFirstAction(const StateIROS14 &state, 
       ActionIROS14 &action) {
-    std::vector<ActionIROS14> actions;
-    getActionsAtState(state, actions);
-    action = actions[0];
+    // Optimized!
+    previous_action_state_ = state;
+    action = ActionIROS14(DO_NOTHING, 0, 0);
   }
 
   bool PersonModelIROS14::getNextAction(const StateIROS14 &state, 
       ActionIROS14 &action) {
-    std::vector<ActionIROS14> actions;
-    getActionsAtState(state, actions);
-    for (size_t i = 0; i < actions.size() - 1; ++i) {
-      if (actions[i] == action) {
-        action = actions[i + 1];
+    MODEL_IROS14_REQUIRE(state == previous_action_state_);
+    bool return_next = action.type == DO_NOTHING;
+    std::vector<int> assigned_vertices(state.in_use_robots.size());
+    for (int i = 0; i < state.in_use_robots.size(); ++i) {
+      ActionIROS14 next_action(RELEASE_ROBOT, 
+                               state.in_use_robots[i].destination, 0);
+      assigned_vertices[i] = state.in_use_robots[i].destination;
+      if (return_next) {
+        action = next_action;
         return true;
+      }
+      return_next = action == next_action;
+    }
+    if (state.in_use_robots.size() != max_robots_in_use_) {
+      BOOST_FOREACH(int vtx, action_vertices_map_[state.graph_id]) {
+        if (std::find(assigned_vertices.begin(), assigned_vertices.end(), vtx) ==
+            assigned_vertices.end()) {
+          BOOST_FOREACH(int adj, adjacent_vertices_map_[vtx]) {
+            ActionIROS14 next_action(ASSIGN_ROBOT, vtx, adj);
+            if (return_next) {
+              action = next_action;
+              return true;
+            }
+            return_next = action == next_action;
+          }
+        }
       }
     }
     return false;
   }
 
-  void PersonModelIROS14::addRobots(int n) {
-    assert(uigen_);
+  void PersonModelIROS14::addRobots(StateIROS14& state, int n) {
+    MODEL_IROS14_REQUIRE(uigen_);
     for (int r = 0; r < n; ++r) {
       RobotStateIROS14 robot;
       robot.graph_id = (*uigen_)();
       robot.destination = generateNewGoalFrom(robot.graph_id); 
       robot.precision = 0.0f;
-      current_state_.robots.push_back(robot);
+      state.robots.push_back(robot);
     }
   }
 
@@ -462,8 +508,8 @@ namespace bwi_guidance {
   }
 
   void PersonModelIROS14::drawCurrentState(cv::Mat& image) {
-    // TODO OPTIMIZE, and use different colors for selected robots!!!
-    assert(initialized_);
+    // TODO OPTIMIZE
+    MODEL_IROS14_REQUIRE(initialized_);
     bwi_mapper::drawCircleOnGraph(image, graph_, current_state_.graph_id);
     bwi_mapper::drawArrowOnGraph(image, graph_, 
         std::make_pair(current_state_.graph_id,
@@ -510,7 +556,7 @@ namespace bwi_guidance {
   }
 
   void PersonModelIROS14::printDistanceToDestination(int idx) {
-    assert(idx >= 0 && idx < current_state_.robots.size());
+    MODEL_IROS14_REQUIRE(idx >= 0 && idx < current_state_.robots.size());
     std::cout << "Distance of Robot " << idx << " to its destination: " <<
       getTrueDistanceTo(current_state_.robots[idx],
           current_state_.robots[idx].destination) << std::endl;

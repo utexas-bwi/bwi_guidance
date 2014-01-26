@@ -22,10 +22,10 @@ namespace bwi_guidance {
     public:
 
       PersonModelIROS14(const bwi_mapper::Graph& graph, const
-          nav_msgs::OccupancyGrid& map, size_t goal_idx, int max_robots = 10,
-          int max_robots_in_use = 2, int action_vertex_visibility_depth = 2,
-          float visibility_range = 0.0f, bool allow_goal_visibility = false,
-          float human_speed = 1.0, float robot_speed = 0.75);
+          nav_msgs::OccupancyGrid& map, size_t goal_idx, int max_robots_in_use
+          = 2, int action_vertex_visibility_depth = 0, float visibility_range =
+          0.0f, bool allow_goal_visibility = false, float human_speed = 1.0,
+          float robot_speed = 0.75);
 
       /* Functions inherited from PredictiveModel */
       virtual ~PersonModelIROS14() {};
@@ -41,14 +41,16 @@ namespace bwi_guidance {
       }
 
       void initializeRNG(UIGenPtr uigen, URGenPtr ugen, PIGenPtr pgen);
+      void addRobots(StateIROS14& state, int n);
 
       /* Debugging only */
       void drawCurrentState(cv::Mat& image);
 
       /* Private functions that are public only for testing */
-      void addRobots(int n);
       void moveRobots(float time);
       void printDistanceToDestination(int idx);
+      void getActionsAtState(const StateIROS14 &state,
+          std::vector<ActionIROS14>& actions);
 
     private:
 
@@ -65,8 +67,6 @@ namespace bwi_guidance {
 
       /* Actions */
       bool isTerminalState(const StateIROS14& state) const;
-      void getActionsAtState(const StateIROS14 &state,
-          std::vector<ActionIROS14>& actions);
 
       /* Next states and transitions */
       float takeActionAtCurrentState(const ActionIROS14 &a);
@@ -75,8 +75,10 @@ namespace bwi_guidance {
       float getTrueDistanceTo(const RobotStateIROS14& state, int destination);
       int selectBestRobotForTask(int destination, float time_to_destination);
       bool isRobotDirectionAvailable(float& robot_dir);
-      int generateNRewGoalFrom(int idx);
       int generateNewGoalFrom(int idx);
+
+      /* Action generation caching */
+      StateIROS14 previous_action_state_;
 
       /* Goal Caching */
       void cacheNewGoalsByDistance();
@@ -101,11 +103,9 @@ namespace bwi_guidance {
 
       bool initialized_;
       unsigned int num_vertices_;
-      int max_robots_;
       int max_robots_in_use_;
 
       size_t goal_idx_;
-      float visibility_range_;
       bool allow_goal_visibility_;
       float human_speed_;
       float robot_speed_;
