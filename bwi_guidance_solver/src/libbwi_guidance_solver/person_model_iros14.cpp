@@ -515,6 +515,8 @@ namespace bwi_guidance {
 
     current_state_.direction = computeNextDirection(
         current_state_.direction, current_state_.graph_id, next_node, graph_);
+    current_state_.precision = 0.0f;
+    current_state_.from_graph_node = current_state_.graph_id;
     current_state_.graph_id = next_node;
     current_state_.acquired_locations.clear();
     current_state_.relieved_locations.clear();

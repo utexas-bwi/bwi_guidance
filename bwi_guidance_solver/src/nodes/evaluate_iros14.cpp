@@ -240,24 +240,26 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
         break;
       }
 
-      // Assumes 1m/s velocity for converting distance to time
-      // TODO account for human speed from method params
-      int distance = transition_distance * map.info.resolution;
-      if (distance < 1) distance = 1;
-      /* distance *= params.mcts_planning_time_multiplier; */
-      EVALUATE_OUTPUT(" - performing post-wait MCTS search for " <<
-          distance << "s");
-
-      for (int i = 0; i < 10 * distance; ++i) {
-        cv::Mat out_img = base_image_.clone();
-        evaluation_model->drawCurrentState(out_img);
-        cv::imshow("out", out_img);
-        cv::waitKey(25);
-        unsigned int terminations;
-        for (int i = 0; i < params.mcts_planning_time_multiplier; ++i) {
-          mcts->search(current_state, terminations);
+      if (action.type != DO_NOTHING) {
+        EVALUATE_OUTPUT(" - performing non-wait MCTS search for 1s");
+        for (int i = 0; i < 10; ++i) {
+          unsigned int terminations;
+          //mcts->search(current_state, terminations);
         }
-        evaluation_model->moveRobots(0.1);
+      } else {
+        float total_time = 0.0f;
+        while(!evaluation_model->moveRobots(0.1)) { 
+          cv::Mat out_img = base_image_.clone();
+          evaluation_model->drawCurrentState(out_img);
+          cv::imshow("out", out_img);
+          cv::waitKey(25);
+          unsigned int terminations;
+          for (int i = 0; i < params.mcts_planning_time_multiplier; ++i) {
+            total_time += 0.1f;
+            //mcts->search(current_state, terminations);
+          }
+        }
+        EVALUATE_OUTPUT(" - performing wait MCTS search for " << total_time << "s");
       }
     }
 
