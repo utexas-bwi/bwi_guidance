@@ -125,7 +125,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     mcts_model->initializeRNG(idx_gen, generative_model_gen, robot_goal_gen);
 
     boost::shared_ptr<PersonModelIROS14> evaluation_model(
-        new PersonModelIROS14(graph, map, goal_idx));
+        new PersonModelIROS14(graph, map, goal_idx, false));
     boost::mt19937 mt2(3 * (seed + 1));
     boost::uniform_int<int> i2(0, boost::num_vertices(graph) - 1);
     boost::uniform_real<float> u2(0.0f, 1.0f);
@@ -192,7 +192,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       EVALUATE_OUTPUT(" - performing initial MCTS search for " +
           boost::lexical_cast<std::string>(
             params.mcts_initial_planning_time) + "s");
-      for (int i = 0; i < params.mcts_initial_planning_time; ++i) {
+      for (int i = 0; i < 10 * params.mcts_initial_planning_time; ++i) {
         unsigned int playouts, terminations;
         playouts = mcts->search(current_state, terminations);
         method_result.mcts_playouts = playouts;
@@ -206,20 +206,27 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
     while (instance_distance <= distance_limit_pxl) {
 
-      if (graphical_) {
-        cv::Mat out_img = base_image_.clone();
-        evaluation_model->drawCurrentState(out_img);
-        cv::imshow("out", out_img);
-        cv::waitKey(-1);
+      std::vector<ActionIROS14> actions;
+      evaluation_model->getActionsAtState(current_state, actions);
+      std::cout << "Actions: ";
+      int count = 0;
+      BOOST_FOREACH(const ActionIROS14& a, actions) {
+        std::cout << count << ":" << a << std::endl;
+        ++count;
       }
 
       ActionIROS14 action;
       action = mcts->selectWorldAction(current_state);
+      // std::cout << "Select: " << std::endl;
+      // int choice;
+      // std::cin >> choice;
+      // action = actions[choice];
       EVALUATE_OUTPUT("   action: " << action);
       float reward;
       StateIROS14 next_state;
       bool terminal;
-      evaluation_model->takeAction(action, reward, next_state, terminal);
+      int depth_count;
+      evaluation_model->takeAction(action, reward, next_state, terminal, depth_count);
       std::cout << "Received Reward: " << reward << std::endl;
       float transition_distance = 
         bwi_mapper::getEuclideanDistance(next_state.graph_id,
@@ -233,17 +240,24 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
         break;
       }
 
-      if (params.type == MCTS_TYPE) {
-        // Assumes 1m/s velocity for converting distance to time
-        // TODO account for human speed from method params
-        int distance = transition_distance * map.info.resolution;
-        distance += params.mcts_planning_time_multiplier;
-        EVALUATE_OUTPUT(" - performing post-wait MCTS search for " <<
-            distance << "s");
-        for (int i = 0; i < distance; ++i) {
-          unsigned int terminations;
+      // Assumes 1m/s velocity for converting distance to time
+      // TODO account for human speed from method params
+      int distance = transition_distance * map.info.resolution;
+      if (distance < 1) distance = 1;
+      /* distance *= params.mcts_planning_time_multiplier; */
+      EVALUATE_OUTPUT(" - performing post-wait MCTS search for " <<
+          distance << "s");
+
+      for (int i = 0; i < 10 * distance; ++i) {
+        cv::Mat out_img = base_image_.clone();
+        evaluation_model->drawCurrentState(out_img);
+        cv::imshow("out", out_img);
+        cv::waitKey(25);
+        unsigned int terminations;
+        for (int i = 0; i < params.mcts_planning_time_multiplier; ++i) {
           mcts->search(current_state, terminations);
         }
+        evaluation_model->moveRobots(0.1);
       }
     }
 

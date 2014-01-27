@@ -37,36 +37,46 @@ namespace bwi_guidance {
   }
 
   bool operator<(const RobotStateIROS14& l, const RobotStateIROS14& r) {
-    return (l.graph_id < r.graph_id) ||
-      ((l.graph_id == r.graph_id) && (l.destination < r.destination)); 
+    return (l.graph_id < r.graph_id);
+    // ||
+    //   ((l.graph_id == r.graph_id) && (l.destination < r.destination)); 
   }
   
   bool operator==(const RobotStateIROS14& l, const RobotStateIROS14& r) {
-    return (l.graph_id == r.graph_id) && (l.destination == r.destination); 
+    return (l.graph_id == r.graph_id);
+    //&& (l.destination == r.destination); 
   }
 
   bool operator>(const RobotStateIROS14& l, const RobotStateIROS14& r) {
-    return (l.graph_id > r.graph_id) ||
-      ((l.graph_id == r.graph_id) && (l.destination > r.destination)); 
+    return (l.graph_id > r.graph_id);
+    // ||
+    //   ((l.graph_id == r.graph_id) && (l.destination > r.destination)); 
   }
 
   bool operator<(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r) {
     return (l.robot_id < r.robot_id) ||
       ((l.robot_id == r.robot_id) && (l.destination < r.destination)) ||
       ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
-       (l.direction < r.direction));
+       (l.direction < r.direction)) ||
+      ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
+       (l.direction == r.direction) && 
+       (l.reached_destination < r.reached_destination));
   }
   
   bool operator==(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r) {
     return (l.robot_id == r.robot_id) && (l.destination == r.destination) &&
-      (l.direction == r.direction); 
+      (l.direction == r.direction) && 
+      (l.reached_destination == r.reached_destination); 
   }
 
   bool operator>(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r) {
     return (l.robot_id > r.robot_id) ||
       ((l.robot_id == r.robot_id) && (l.destination > r.destination)) ||
       ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
-       (l.direction > r.direction));
+       (l.direction > r.direction)) ||
+      ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
+       (l.direction == r.direction) && 
+       (l.reached_destination > r.reached_destination));
   }
 
   bool operator<(const StateIROS14& l, const StateIROS14& r ) {
@@ -147,7 +157,8 @@ namespace bwi_guidance {
       for (unsigned int i = 0; i < s.in_use_robots.size(); ++i) {
         stream << s.in_use_robots[i].robot_id << ":" <<
           s.in_use_robots[i].destination << "->" <<
-          s.in_use_robots[i].direction;
+          s.in_use_robots[i].direction << ":" <<
+          s.in_use_robots[i].reached_destination;
         if (i != s.in_use_robots.size() - 1)
           stream << ","; 
       }

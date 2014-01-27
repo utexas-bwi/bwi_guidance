@@ -24,7 +24,7 @@ namespace bwi_guidance {
     public:
 
       PersonModelIROS14(const bwi_mapper::Graph& graph, const
-          nav_msgs::OccupancyGrid& map, size_t goal_idx, int max_robots_in_use
+          nav_msgs::OccupancyGrid& map, size_t goal_idx, bool auto_move = true, int max_robots_in_use
           = 1, int action_vertex_visibility_depth = 0, float visibility_range =
           0.0f, bool allow_goal_visibility = false, float human_speed = 1.0,
           float robot_speed = 0.75);
@@ -35,7 +35,7 @@ namespace bwi_guidance {
       /* Functions inherited from Model */
       virtual void setState(const StateIROS14 &state);
       virtual void takeAction(const ActionIROS14 &action, float &reward, 
-          StateIROS14 &state, bool &terminal);
+          StateIROS14 &state, bool &terminal, int &depth_count);
       virtual void getFirstAction(const StateIROS14 &state, ActionIROS14 &action);
       virtual bool getNextAction(const StateIROS14 &state, ActionIROS14 &action);
       virtual std::string generateDescription(unsigned int indentation = 0) {
@@ -49,7 +49,8 @@ namespace bwi_guidance {
       void drawCurrentState(cv::Mat& image);
 
       /* Private functions that are public only for testing */
-      void moveRobots(float time);
+      bool isRobotDirectionAvailable(const StateIROS14& state, int& robot_dir);
+      bool moveRobots(float time);
       void printDistanceToDestination(int idx);
       void getActionsAtState(const StateIROS14 &state,
           std::vector<ActionIROS14>& actions);
@@ -76,7 +77,6 @@ namespace bwi_guidance {
       /* Helper Functions */
       float getTrueDistanceTo(const RobotStateIROS14& state, int destination);
       int selectBestRobotForTask(int destination, float time_to_destination);
-      bool isRobotDirectionAvailable(int& robot_dir);
       int generateNewGoalFrom(int idx);
 
       /* Action generation caching */
@@ -105,6 +105,7 @@ namespace bwi_guidance {
       bwi_mapper::Graph graph_;
       nav_msgs::OccupancyGrid map_;
 
+      bool auto_move_;
       bool initialized_;
       unsigned int num_vertices_;
       int max_robots_in_use_;

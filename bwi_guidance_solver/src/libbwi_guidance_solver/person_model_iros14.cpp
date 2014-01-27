@@ -16,11 +16,11 @@
 namespace bwi_guidance {
 
   PersonModelIROS14::PersonModelIROS14(const bwi_mapper::Graph& graph, const
-      nav_msgs::OccupancyGrid& map, size_t goal_idx, int
+      nav_msgs::OccupancyGrid& map, size_t goal_idx, bool auto_move, int
       max_robots_in_use, int action_vertex_visibility_depth, float
       visibility_range, bool allow_goal_visibility, float human_speed, float
       robot_speed) : graph_(graph),
-  map_(map), goal_idx_(goal_idx), max_robots_in_use_(max_robots_in_use),
+  map_(map), goal_idx_(goal_idx), auto_move_(auto_move), max_robots_in_use_(max_robots_in_use),
   allow_goal_visibility_(allow_goal_visibility), human_speed_(human_speed),
   robot_speed_(robot_speed), initialized_(false) {
 
@@ -69,10 +69,10 @@ namespace bwi_guidance {
       std::vector<ActionIROS14>& actions) {
     actions.clear();
     int dir;
-    if (isRobotDirectionAvailable(dir)) {
+    if (isRobotDirectionAvailable(state, dir)) {
       if (dir == DIR_UNASSIGNED) {
-        BOOST_FOREACH(int adj, adjacent_vertices_map_[current_state_.graph_id]) {
-          actions.push_back(ActionIROS14(GUIDE_PERSON, current_state_.graph_id, adj));
+        BOOST_FOREACH(int adj, adjacent_vertices_map_[state.graph_id]) {
+          actions.push_back(ActionIROS14(GUIDE_PERSON, state.graph_id, adj));
         }
         return; // Only choose a direction here
       }
@@ -122,7 +122,11 @@ namespace bwi_guidance {
   int PersonModelIROS14::selectBestRobotForTask(int destination, 
       float time_to_destination) {
 
-    std::vector<float> utility_loss(current_state_.robots.size(),
+    std::vector<float> utility_loss_all(current_state_.robots.size(),
+        std::numeric_limits<float>::max());
+    std::vector<float> utility_loss_in_time(current_state_.robots.size(),
+        std::numeric_limits<float>::max());
+    std::vector<float> time(current_state_.robots.size(),
         std::numeric_limits<float>::max());
     for (int i = 0; i < current_state_.robots.size(); ++i) {
       bool robot_in_use = false;
@@ -145,23 +149,36 @@ namespace bwi_guidance {
           std::max(new_distance_1 / robot_speed_, time_to_destination) + 
           new_distance_2 / robot_speed_;
         // TODO - introduce utility multiplier here
-        utility_loss[i] = new_time - original_time;
+        utility_loss_all[i] = new_time - original_time;
+        if (new_distance_1 / robot_speed_ <= time_to_destination) {
+          // The robot will reach there in time
+          utility_loss_in_time[i] = new_time - original_time;
+        }
+        time[i] = new_distance_1 / robot_speed_;
       }
     }
-    return std::min_element(utility_loss.begin(), utility_loss.end()) - 
-      utility_loss.begin();
+    
+    if (*(std::min_element(utility_loss_in_time.begin(), utility_loss_in_time.end())) != 
+          std::numeric_limits<float>::max()) {
+      return std::min_element(utility_loss_in_time.begin(), utility_loss_in_time.end()) - 
+        utility_loss_in_time.begin();
+    } else {
+      return std::min_element(time.begin(), time.end()) - time.begin();
+    }
+
   }
 
-  bool PersonModelIROS14::isRobotDirectionAvailable(int& robot_dir) {
+  bool PersonModelIROS14::isRobotDirectionAvailable(const StateIROS14& state,
+      int& robot_dir) {
     // Figure out if there is a robot at the current position
-    for (int i = 0; i < current_state_.in_use_robots.size(); ++i) {
-      int destination = current_state_.in_use_robots[i].destination;
-      int direction = current_state_.in_use_robots[i].direction;
-      int robot_graph_id = current_state_.robots[current_state_.in_use_robots[i].robot_id].graph_id;
-      float robot_precision = current_state_.robots[current_state_.in_use_robots[i].robot_id].precision;
-      if (destination != current_state_.graph_id ||
-          robot_graph_id != current_state_.graph_id ||
-          robot_precision < 0.0f)
+    for (int i = 0; i < state.in_use_robots.size(); ++i) {
+      int destination = state.in_use_robots[i].destination;
+      int direction = state.in_use_robots[i].direction;
+      int robot_graph_id = state.robots[state.in_use_robots[i].robot_id].graph_id;
+      bool reached_destination = state.in_use_robots[i].reached_destination;
+      if (destination != state.graph_id ||
+          robot_graph_id != state.graph_id ||
+          !reached_destination)
         continue;
       robot_dir = direction;
         //bwi_mapper::getNodeAngle(current_robot_id, direction, graph_);
@@ -251,7 +268,22 @@ namespace bwi_guidance {
     }
   }
 
-  void PersonModelIROS14::moveRobots(float time) {
+  bool PersonModelIROS14::moveRobots(float time) {
+    // Move the human
+    bool ready_for_next_action = true;
+    if (!auto_move_) {
+      float human_coverable_distance = time * human_speed_;
+      float human_edge_distance = shortest_distances_[current_state_.from_graph_node][current_state_.graph_id];
+      float added_precision = human_coverable_distance / human_edge_distance;
+      current_state_.precision += added_precision;
+      if (current_state_.precision < 1.0f) {
+        ready_for_next_action = false;
+      } else {
+        time -= (current_state_.precision - 1.0f) * human_edge_distance / human_speed_;
+        current_state_.precision = 1.0f;
+      }
+    }
+    
     /* std::cout << "Moving ahead for " << time << " seconds" << std::endl; */
     // Optimized!!!
     for (int i = 0; i < current_state_.robots.size(); ++i) {
@@ -260,9 +292,11 @@ namespace bwi_guidance {
       // Check if we are moving this robot under our control or not
       int destination = robot.destination;
       bool robot_in_use = false;
+      bool* robot_reached = NULL;
       for (int j = 0; j < current_state_.in_use_robots.size(); ++j) {
         if (current_state_.in_use_robots[j].robot_id == i) {
           destination = current_state_.in_use_robots[j].destination;
+          robot_reached = &(current_state_.in_use_robots[j].reached_destination);
           robot_in_use = true;
           break;
         }
@@ -306,6 +340,7 @@ namespace bwi_guidance {
           if (robot_in_use) {
             // Won't be doing anything more until the robot gets released
             coverable_distance = 0.0f;
+            *robot_reached = true;
           } else {
             // Assign new goal and move towards that goal
             robot.destination = generateNewGoalFrom(ROBOT_HOME_BASE[i]);
@@ -319,6 +354,8 @@ namespace bwi_guidance {
       }
 
     }
+
+    return ready_for_next_action;
   }
 
   float PersonModelIROS14::takeActionAtCurrentState(
@@ -326,8 +363,10 @@ namespace bwi_guidance {
 
     if (action.type == RELEASE_ROBOT) {
       int mark_for_removal = -1;
+      int robot_id;
       for (int i = 0; i < current_state_.in_use_robots.size(); ++i) {
         if (action.at_graph_id == current_state_.in_use_robots[i].destination) {
+          robot_id = current_state_.in_use_robots[i].robot_id;
           mark_for_removal = i;
           break;
         }
@@ -340,6 +379,25 @@ namespace bwi_guidance {
       current_state_.in_use_robots.erase(
           current_state_.in_use_robots.begin() + mark_for_removal);
       current_state_.relieved_locations.push_back(action.at_graph_id);
+
+      // Since we are changing destinations, we need to make sure that if precision > 0.0f, values are changed appropriately.
+      RobotStateIROS14& robot = current_state_.robots[robot_id];
+      if (robot.precision > 0.0f) {
+        if (robot.graph_id == robot.destination ||
+            (shortest_paths_[robot.graph_id][robot.destination][0] !=
+             shortest_paths_[robot.graph_id][action.at_graph_id][0])) {
+          // Need to change from post_precision to pre_precision
+          robot.from_graph_node = shortest_paths_[robot.graph_id][action.at_graph_id][0];
+          robot.precision = -robot.precision;
+        }
+      } else {
+        // Make sure that robot cannot be flipped around
+        if (robot.destination != robot.graph_id &&
+            robot.from_graph_node == shortest_paths_[robot.graph_id][robot.destination][0]) {
+          // Flip the robot direction
+          robot.precision = -robot.precision;
+        }
+      }
       return 0.0;
     }
 
@@ -352,8 +410,31 @@ namespace bwi_guidance {
         selectBestRobotForTask(action.at_graph_id, time_to_destination);
       r.destination = action.at_graph_id;
       r.direction = DIR_UNASSIGNED;
+      r.reached_destination = 
+        current_state_.robots[r.robot_id].graph_id == r.destination &&
+        current_state_.robots[r.robot_id].precision == 0.0f;
       current_state_.in_use_robots.push_back(r);
       current_state_.acquired_locations.push_back(action.at_graph_id);
+
+      // Since we are changing destinations, we need to make sure that if precision > 0.0f, values are changed appropriately.
+      RobotStateIROS14& robot = current_state_.robots[r.robot_id];
+      if (robot.precision > 0.0f) {
+        if (robot.graph_id == r.destination ||
+            (shortest_paths_[robot.graph_id][robot.destination][0] !=
+             shortest_paths_[robot.graph_id][r.destination][0])) {
+
+          // Need to change from post_precision to pre_precision
+          robot.from_graph_node = shortest_paths_[robot.graph_id][robot.destination][0];
+          robot.precision = -robot.precision;
+        }
+      } else {
+        // Make sure that robot cannot be flipped around
+        if (r.destination != robot.graph_id &&
+            robot.from_graph_node == shortest_paths_[robot.graph_id][r.destination][0]) {
+          // Flip the robot direction
+          robot.precision = -robot.precision;
+        }
+      }
       return -20.0;
     }
 
@@ -367,17 +448,20 @@ namespace bwi_guidance {
       }
       assert(mark != -1);
       current_state_.in_use_robots[mark].direction = action.guide_graph_id;
+      return 0.0;
     }
 
     // alright, need to wait for the human to take an action - let's first
     // figure out what action he takes
     float expected_dir = getAngleInRadians(current_state_.direction);
     int robot_dir = 0;
-    if (isRobotDirectionAvailable(robot_dir)) {
-      assert(robot_dir != DIR_UNASSIGNED);
+    if (isRobotDirectionAvailable(current_state_, robot_dir)) {
+      //assert(robot_dir != DIR_UNASSIGNED);
       if (robot_dir != DIR_UNASSIGNED) {
         expected_dir = bwi_mapper::getNodeAngle(
           current_state_.graph_id, robot_dir, graph_);
+      } else {
+        std::cout << "oh no!" << std::endl;
       }
     }
     
@@ -402,8 +486,9 @@ namespace bwi_guidance {
     /* std::cout << "Transition probabilities: " << std::endl; */
     for (size_t probability_counter = 0; probability_counter < weights.size();
         ++probability_counter) {
-      float probability = 0.9 * (weights[probability_counter] / weight_sum) +
-        0.1 * (1.0f / weights.size());
+      /* std::cout << weights[probability_counter] << " " << weight_sum << std::endl; */
+      float probability = 1.0 * (weights[probability_counter] / weight_sum) +
+        0.0 * (1.0f / weights.size());
       probability_sum += probability;
       if (probability_counter == weights.size() - 1) {
         // Account for floating point errors. No surprises!
@@ -435,7 +520,9 @@ namespace bwi_guidance {
     current_state_.relieved_locations.clear();
 
     // TODO allow moving robots and people slowly for visualization
-    moveRobots(time_to_vertex);
+    if (auto_move_) {
+      moveRobots(time_to_vertex);
+    }
 
     // Compute reward
     float reward = -time_to_vertex;
@@ -456,7 +543,7 @@ namespace bwi_guidance {
   }
 
   void PersonModelIROS14::takeAction(const ActionIROS14 &action, float &reward, 
-      StateIROS14 &state, bool &terminal) {
+      StateIROS14 &state, bool &terminal, int &depth_count) {
 
     //boost::posix_time::ptime mst1 = boost::posix_time::microsec_clock::local_time();
 
@@ -467,6 +554,8 @@ namespace bwi_guidance {
     reward = takeActionAtCurrentState(action);
     state = current_state_;
     terminal = isTerminalState(current_state_);
+
+    depth_count = (action.type != DO_NOTHING) ? 0 : 1; 
 
     // boost::posix_time::ptime mst2 = boost::posix_time::microsec_clock::local_time();
     // std::cout << "Time elapsed: " << (mst2 - mst1).total_microseconds() << 
@@ -541,11 +630,18 @@ namespace bwi_guidance {
   void PersonModelIROS14::drawCurrentState(cv::Mat& image) {
     assert(initialized_);
 
-    bwi_mapper::drawCircleOnGraph(image, graph_, current_state_.graph_id);
-    bwi_mapper::drawArrowOnGraph(image, graph_, 
-        std::make_pair(current_state_.graph_id,
-                       getAngleInRadians(current_state_.direction) + M_PI/2),
-        map_.info.width, map_.info.height);
+    if (current_state_.precision == 1.0f) {
+      bwi_mapper::drawCircleOnGraph(image, graph_, current_state_.graph_id);
+      bwi_mapper::drawArrowOnGraph(image, graph_, 
+          std::make_pair(current_state_.graph_id,
+                         getAngleInRadians(current_state_.direction) + M_PI/2),
+          map_.info.width, map_.info.height);
+    } else {
+      cv::Point2f human_pos = 
+          (1 - current_state_.precision) * bwi_mapper::getLocationFromGraphId(current_state_.from_graph_node, graph_) + 
+          current_state_.precision * bwi_mapper::getLocationFromGraphId(current_state_.graph_id, graph_);
+      cv::circle(image, human_pos, 20, cv::Scalar(0,0,255), 2);
+    }
 
     for (int r = 0; r < current_state_.robots.size(); ++r) {
       RobotStateIROS14& robot = current_state_.robots[r];

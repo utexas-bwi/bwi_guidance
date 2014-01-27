@@ -21,11 +21,11 @@ int main(int argc, const char *argv[]) {
   mapper.getMap(map);
   bwi_mapper::readGraphFromFile(graph_file, map.info, graph);
 
-  PersonModelIROS14 model(graph, map, 0);
+  PersonModelIROS14 model(graph, map, 48);
   cv::Mat image;
 
   StateIROS14 s;
-  s.graph_id = 5;
+  s.graph_id = 47;
   s.direction = 0;
 
   boost::mt19937 mt(0);
@@ -44,7 +44,9 @@ int main(int argc, const char *argv[]) {
   int count = 0;
   float reward;
   bool terminal = false;
+  int depth_count;
   StateIROS14 state;
+  std::map<StateIROS14, int> test_map;
   while(!terminal && c != 27) {
     mapper.drawMap(image, map);
     model.drawCurrentState(image);
@@ -56,17 +58,26 @@ int main(int argc, const char *argv[]) {
       std::cout << a << " ";
     }
     std::cout << std::endl;
-    if (count == 0) {
-      model.takeAction(ActionIROS14(ASSIGN_ROBOT, 3, DIR_UNASSIGNED), reward, state, terminal);
-    } else if (count == 3) {
-      model.takeAction(ActionIROS14(GUIDE_PERSON, 3, 43), reward, state, terminal);
-    } else if (count == 5) {
-      model.takeAction(ActionIROS14(RELEASE_ROBOT, 3, 0), reward, state, terminal);
-    } else {
-      model.takeAction(ActionIROS14(), reward, state, terminal);
-    }
+    // if (count == 0) {
+    //   model.takeAction(ActionIROS14(ASSIGN_ROBOT, 3, DIR_UNASSIGNED), reward, state, terminal, depth_count);
+    // } else if (count == 1) {
+    //   model.takeAction(ActionIROS14(), reward, state, terminal, depth_count);
+    //   test_map[state] = 1;
+    //   std::cout << state << std::endl;
+    //   state.in_use_robots[0].reached_destination = true;
+    //   std::cout << state << std::endl;
+    //   test_map[state] = 2;
+    //   std::cout << test_map.size() << std::endl;
+    // } else if (count == 3) {
+    //   model.takeAction(ActionIROS14(GUIDE_PERSON, 3, 43), reward, state, terminal, depth_count);
+    // } else if (count == 5) {
+    //   model.takeAction(ActionIROS14(RELEASE_ROBOT, 3, 0), reward, state, terminal, depth_count);
+    // } else {
+      model.takeAction(ActionIROS14(), reward, state, terminal, depth_count);
+    /* } */
     c = cv::waitKey(-1);
     std::cout << "Reward: " << reward << std::endl;
+    std::cout << "  Depth: " << depth_count << std::endl;
     ++count;
   }
 
