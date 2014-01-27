@@ -76,7 +76,7 @@ namespace bwi_guidance {
       /* Helper Functions */
       float getTrueDistanceTo(const RobotStateIROS14& state, int destination);
       int selectBestRobotForTask(int destination, float time_to_destination);
-      bool isRobotDirectionAvailable(float& robot_dir);
+      bool isRobotDirectionAvailable(int& robot_dir);
       int generateNewGoalFrom(int idx);
 
       /* Action generation caching */

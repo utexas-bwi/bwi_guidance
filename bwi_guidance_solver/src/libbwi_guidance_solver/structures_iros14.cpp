@@ -23,6 +23,7 @@ namespace bwi_guidance {
   const std::string ACTION_IROS14_NAMES[] = {
     "DO_NOTHING",
     "ASSIGN_ROBOT",
+    "DIRECT_PERSON",
     "RELEASE_ROBOT"
   };
   std::ostream& operator<<(std::ostream& stream, const ActionIROS14& a) {

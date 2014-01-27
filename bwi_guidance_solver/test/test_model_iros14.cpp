@@ -55,8 +55,11 @@ int main(int argc, const char *argv[]) {
     BOOST_FOREACH(ActionIROS14 a, actions) {
       std::cout << a << " ";
     }
+    std::cout << std::endl;
     if (count == 0) {
-      model.takeAction(ActionIROS14(ASSIGN_ROBOT, 3, 43), reward, state, terminal);
+      model.takeAction(ActionIROS14(ASSIGN_ROBOT, 3, DIR_UNASSIGNED), reward, state, terminal);
+    } else if (count == 3) {
+      model.takeAction(ActionIROS14(GUIDE_PERSON, 3, 43), reward, state, terminal);
     } else if (count == 5) {
       model.takeAction(ActionIROS14(RELEASE_ROBOT, 3, 0), reward, state, terminal);
     } else {

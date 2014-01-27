@@ -68,6 +68,15 @@ namespace bwi_guidance {
   void PersonModelIROS14::getActionsAtState(const StateIROS14& state, 
       std::vector<ActionIROS14>& actions) {
     actions.clear();
+    int dir;
+    if (isRobotDirectionAvailable(dir)) {
+      if (dir == DIR_UNASSIGNED) {
+        BOOST_FOREACH(int adj, adjacent_vertices_map_[current_state_.graph_id]) {
+          actions.push_back(ActionIROS14(GUIDE_PERSON, current_state_.graph_id, adj));
+        }
+        return; // Only choose a direction here
+      }
+    }
     actions.push_back(ActionIROS14(DO_NOTHING, 0, 0));
     std::vector<int> cant_assign_vertices = state.relieved_locations;
     for (int i = 0; i < state.in_use_robots.size(); ++i) {
@@ -86,9 +95,9 @@ namespace bwi_guidance {
         if (std::find(cant_assign_vertices.begin(), 
                       cant_assign_vertices.end(), vtx) ==
             cant_assign_vertices.end()) {
-          BOOST_FOREACH(int adj, adjacent_vertices_map_[vtx]) {
-            actions.push_back(ActionIROS14(ASSIGN_ROBOT, vtx, adj));
-          }
+          /* BOOST_FOREACH(int adj, adjacent_vertices_map_[vtx]) { */
+          actions.push_back(ActionIROS14(ASSIGN_ROBOT, vtx, DIR_UNASSIGNED));
+          /* } */
         }
       }
     }
@@ -143,30 +152,21 @@ namespace bwi_guidance {
       utility_loss.begin();
   }
 
-  bool PersonModelIROS14::isRobotDirectionAvailable(float& robot_dir) {
+  bool PersonModelIROS14::isRobotDirectionAvailable(int& robot_dir) {
     // Figure out if there is a robot at the current position
-    for (int i = 0; i < current_state_.robots.size(); ++i) {
-      bool robot_in_use = false;
-      int destination, direction;
-      for (int j = 0; j < current_state_.in_use_robots.size(); ++j) {
-        if (current_state_.in_use_robots[j].robot_id == i) {
-          destination = current_state_.in_use_robots[j].destination;
-          direction = current_state_.in_use_robots[j].direction;
-          robot_in_use = true;
-          break;
-        }
-      }
-      if (!robot_in_use || destination != current_state_.graph_id)
+    for (int i = 0; i < current_state_.in_use_robots.size(); ++i) {
+      int destination = current_state_.in_use_robots[i].destination;
+      int direction = current_state_.in_use_robots[i].direction;
+      int robot_graph_id = current_state_.robots[current_state_.in_use_robots[i].robot_id].graph_id;
+      float robot_precision = current_state_.robots[current_state_.in_use_robots[i].robot_id].precision;
+      if (destination != current_state_.graph_id ||
+          robot_graph_id != current_state_.graph_id ||
+          robot_precision < 0.0f)
         continue;
-      int current_robot_id = current_state_.robots[i].graph_id;
-      if (current_robot_id == current_state_.graph_id &&
-          current_state_.robots[i].precision >= 0.0f) {
-        robot_dir = 
-          bwi_mapper::getNodeAngle(current_robot_id, direction, graph_);
-        return true;
-      }
+      robot_dir = direction;
+        //bwi_mapper::getNodeAngle(current_robot_id, direction, graph_);
+      return true;
     }
-    
     return false;
   }
 
@@ -332,10 +332,10 @@ namespace bwi_guidance {
           break;
         }
       }
-      if (mark_for_removal == -1) {
-        std::cout << "State: " << current_state_ << std::endl;
-        std::cout << "Action: " << action << std::endl;
-      }
+      // if (mark_for_removal == -1) {
+      //   std::cout << "State: " << current_state_ << std::endl;
+      //   std::cout << "Action: " << action << std::endl;
+      // }
       assert(mark_for_removal != -1);
       current_state_.in_use_robots.erase(
           current_state_.in_use_robots.begin() + mark_for_removal);
@@ -345,25 +345,40 @@ namespace bwi_guidance {
 
     if (action.type == ASSIGN_ROBOT) {
       assert(current_state_.in_use_robots.size() < max_robots_in_use_);
-      float distance_to_destination = bwi_mapper::getShortestPathDistance(
-          current_state_.graph_id, action.at_graph_id, graph_); 
+      float distance_to_destination = shortest_distances_[current_state_.graph_id][action.at_graph_id];
       float time_to_destination = distance_to_destination / human_speed_; 
       InUseRobotStateIROS14 r;
       r.robot_id = 
         selectBestRobotForTask(action.at_graph_id, time_to_destination);
       r.destination = action.at_graph_id;
-      r.direction = action.guide_graph_id;
+      r.direction = DIR_UNASSIGNED;
       current_state_.in_use_robots.push_back(r);
       current_state_.acquired_locations.push_back(action.at_graph_id);
       return -20.0;
     }
 
+    if (action.type == GUIDE_PERSON) {
+      int mark = -1;
+      for (int i = 0; i < current_state_.in_use_robots.size(); ++i) {
+        if (action.at_graph_id == current_state_.in_use_robots[i].destination) {
+          mark = i;
+          break;
+        }
+      }
+      assert(mark != -1);
+      current_state_.in_use_robots[mark].direction = action.guide_graph_id;
+    }
+
     // alright, need to wait for the human to take an action - let's first
     // figure out what action he takes
     float expected_dir = getAngleInRadians(current_state_.direction);
-    float robot_dir = 0;
+    int robot_dir = 0;
     if (isRobotDirectionAvailable(robot_dir)) {
-      expected_dir = robot_dir;
+      assert(robot_dir != DIR_UNASSIGNED);
+      if (robot_dir != DIR_UNASSIGNED) {
+        expected_dir = bwi_mapper::getNodeAngle(
+          current_state_.graph_id, robot_dir, graph_);
+      }
     }
     
     // Now assume that the person moves to one the adjacent locations

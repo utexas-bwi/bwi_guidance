@@ -20,7 +20,8 @@ namespace bwi_guidance {
   enum ActionTypeIROS14 {
     DO_NOTHING = 0,
     ASSIGN_ROBOT = 1,
-    RELEASE_ROBOT = 2
+    GUIDE_PERSON = 2,
+    RELEASE_ROBOT = 3
   };
 
   struct ActionIROS14 {
