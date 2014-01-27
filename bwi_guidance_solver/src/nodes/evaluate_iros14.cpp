@@ -11,6 +11,8 @@
 #include <rl_pursuit/planning/ModelUpdaterSingle.h>
 #include <rl_pursuit/planning/IdentityStateMapping.h>
 
+#include <opencv/highgui.h>
+
 #include <bwi_guidance_solver/person_model_iros14.h>
 #include <bwi_guidance_solver/utils.h>
 #include <bwi_mapper/map_loader.h>
@@ -44,6 +46,8 @@ float visibility_range_ = 0.0f; // Infinite visibility
 bool allow_goal_visibility_ = false;
 MCTS<StateIROS14, ActionIROS14>::Params mcts_params_;
 bool mcts_enabled_ = false;
+bool graphical_ = true;
+cv::Mat base_image_;
 
 /* Structures used to define a single method */
 const std::string METHOD_TYPE_NAMES[3] = {
@@ -114,7 +118,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     boost::mt19937 mt(2 * (seed + 1));
     boost::uniform_int<int> i(0, boost::num_vertices(graph) - 1);
     boost::uniform_real<float> u(0.0f, 1.0f);
-    boost::poisson_distribution<int> p(2);
+    boost::poisson_distribution<int> p(1);
     URGenPtr generative_model_gen(new URGen(mt, u));
     UIGenPtr idx_gen(new UIGen(mt, i));
     PIGenPtr robot_goal_gen(new PIGen(mt, p));
@@ -125,7 +129,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     boost::mt19937 mt2(3 * (seed + 1));
     boost::uniform_int<int> i2(0, boost::num_vertices(graph) - 1);
     boost::uniform_real<float> u2(0.0f, 1.0f);
-    boost::poisson_distribution<int> p2(2);
+    boost::poisson_distribution<int> p2(1);
     URGenPtr generative_model_gen2(new URGen(mt, u2));
     UIGenPtr idx_gen2(new UIGen(mt, i2));
     PIGenPtr robot_goal_gen2(new PIGen(mt, p2));
@@ -202,6 +206,13 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
     while (instance_distance <= distance_limit_pxl) {
 
+      if (graphical_) {
+        cv::Mat out_img = base_image_.clone();
+        evaluation_model->drawCurrentState(out_img);
+        cv::imshow("out", out_img);
+        cv::waitKey(-1);
+      }
+
       ActionIROS14 action;
       action = mcts->selectWorldAction(current_state);
       EVALUATE_OUTPUT("   action: " << action);
@@ -209,6 +220,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       StateIROS14 next_state;
       bool terminal;
       evaluation_model->takeAction(action, reward, next_state, terminal);
+      std::cout << "Received Reward: " << reward << std::endl;
       float transition_distance = 
         bwi_mapper::getEuclideanDistance(next_state.graph_id,
             current_state.graph_id, graph);
@@ -368,6 +380,7 @@ int main(int argc, char** argv) {
   nav_msgs::OccupancyGrid map;
   mapper.getMap(map);
   bwi_mapper::readGraphFromFile(graph_file_, map.info, graph);
+  mapper.drawMap(base_image_);
 
   // If we reach here, we are trying to evaluate approaches
   std::ofstream dfout((data_directory_ +  

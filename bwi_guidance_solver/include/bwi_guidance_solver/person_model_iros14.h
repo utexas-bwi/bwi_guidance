@@ -17,6 +17,8 @@ namespace boost {
 
 namespace bwi_guidance {
 
+  const int ROBOT_HOME_BASE[] = {27, 25, 23, 37, 36, 45, 13, 42, 43, 8};
+
   class PersonModelIROS14 : public Model<StateIROS14, ActionIROS14> {
 
     public:

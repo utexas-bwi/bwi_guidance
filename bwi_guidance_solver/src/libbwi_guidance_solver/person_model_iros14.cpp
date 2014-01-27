@@ -13,12 +13,6 @@
 #include <bwi_mapper/point_utils.h>
 #include <bwi_mapper/map_utils.h>
 
-#ifdef MODEL_IROS14_DEBUG
-  #define MODEL_IROS14_REQUIRE(x) assert(x)
-#else
-  #define MODEL_IROS14_REQUIRE(x) 
-#endif
-
 namespace bwi_guidance {
 
   PersonModelIROS14::PersonModelIROS14(const bwi_mapper::Graph& graph, const
@@ -245,11 +239,10 @@ namespace bwi_guidance {
 
   int PersonModelIROS14::generateNewGoalFrom(int idx) {
     // Optimized!!!
-    MODEL_IROS14_REQUIRE(pgen_ && uigen_ && goals_by_distance_.size() == num_vertices_);
+    assert(pgen_ && uigen_ && goals_by_distance_.size() == num_vertices_);
     while(true) {
       int graph_distance = (*pgen_)();
-      if (graph_distance == 0 || 
-          graph_distance >= goals_by_distance_[idx].size()) {
+      if (graph_distance >= goals_by_distance_[idx].size()) {
         continue;
       }
       std::vector<int>& possible_goals = 
@@ -288,7 +281,7 @@ namespace bwi_guidance {
           // Moving to robot.graph_id
           float edge_distance =
             shortest_distances_[robot.graph_id][robot.from_graph_node];
-          MODEL_IROS14_REQUIRE(edge_distance != 0);
+          assert(edge_distance != 0);
           robot.precision += coverable_distance / edge_distance;
           coverable_distance = robot.precision * edge_distance; 
           robot.precision = std::min(0.0f, robot.precision);
@@ -296,7 +289,7 @@ namespace bwi_guidance {
           // Moving away from robot.graph_id
           float edge_distance = 
             shortest_distances_[robot.graph_id][next_node_id];
-          MODEL_IROS14_REQUIRE(edge_distance != 0);
+          assert(edge_distance != 0);
           robot.precision += coverable_distance / edge_distance;
           coverable_distance = (robot.precision - 0.5f) * edge_distance; 
           if (coverable_distance > 0.0f) {
@@ -315,7 +308,7 @@ namespace bwi_guidance {
             coverable_distance = 0.0f;
           } else {
             // Assign new goal and move towards that goal
-            robot.destination = generateNewGoalFrom(destination);
+            robot.destination = generateNewGoalFrom(ROBOT_HOME_BASE[i]);
             shortest_path =
               &(shortest_paths_[robot.graph_id][robot.destination]);
             next_node_counter = 0;
@@ -343,7 +336,7 @@ namespace bwi_guidance {
         std::cout << "State: " << current_state_ << std::endl;
         std::cout << "Action: " << action << std::endl;
       }
-      MODEL_IROS14_REQUIRE(mark_for_removal != -1);
+      assert(mark_for_removal != -1);
       current_state_.in_use_robots.erase(
           current_state_.in_use_robots.begin() + mark_for_removal);
       current_state_.relieved_locations.push_back(action.at_graph_id);
@@ -351,7 +344,7 @@ namespace bwi_guidance {
     }
 
     if (action.type == ASSIGN_ROBOT) {
-      MODEL_IROS14_REQUIRE(current_state_.in_use_robots.size() < max_robots_in_use_);
+      assert(current_state_.in_use_robots.size() < max_robots_in_use_);
       float distance_to_destination = bwi_mapper::getShortestPathDistance(
           current_state_.graph_id, action.at_graph_id, graph_); 
       float time_to_destination = distance_to_destination / human_speed_; 
@@ -362,7 +355,7 @@ namespace bwi_guidance {
       r.direction = action.guide_graph_id;
       current_state_.in_use_robots.push_back(r);
       current_state_.acquired_locations.push_back(action.at_graph_id);
-      return -10.0;
+      return -20.0;
     }
 
     // alright, need to wait for the human to take an action - let's first
@@ -416,6 +409,10 @@ namespace bwi_guidance {
       shortest_distances_[current_state_.graph_id][next_node] / human_speed_;
 
     // Transition to next state
+    float distance_closed = 
+      shortest_distances_[current_state_.graph_id][goal_idx_] -
+      shortest_distances_[next_node][goal_idx_];
+
     current_state_.direction = computeNextDirection(
         current_state_.direction, current_state_.graph_id, next_node, graph_);
     current_state_.graph_id = next_node;
@@ -427,6 +424,8 @@ namespace bwi_guidance {
 
     // Compute reward
     float reward = -time_to_vertex;
+    reward += distance_closed / human_speed_;
+
     // TODO how to incorporate utility? 
     //   - At the time of release would be easy and correct, but then the 
     //     robots won't get released
@@ -436,7 +435,7 @@ namespace bwi_guidance {
   }
 
   void PersonModelIROS14::setState(const StateIROS14 &state) {
-    MODEL_IROS14_REQUIRE(state.robots.size() != 0);
+    assert(state.robots.size() != 0);
     current_state_ = state;
     initialized_ = true;
   }
@@ -446,9 +445,9 @@ namespace bwi_guidance {
 
     //boost::posix_time::ptime mst1 = boost::posix_time::microsec_clock::local_time();
 
-    MODEL_IROS14_REQUIRE(initialized_);
-    MODEL_IROS14_REQUIRE(ugen_);
-    MODEL_IROS14_REQUIRE(!isTerminalState(current_state_));
+    assert(initialized_);
+    assert(ugen_);
+    assert(!isTerminalState(current_state_));
 
     reward = takeActionAtCurrentState(action);
     state = current_state_;
@@ -470,7 +469,7 @@ namespace bwi_guidance {
 
   bool PersonModelIROS14::getNextAction(const StateIROS14 &state, 
       ActionIROS14 &action) {
-    MODEL_IROS14_REQUIRE(state == get_action_state_);
+    assert(state == get_action_state_);
     if (get_actions_counter_ < get_actions_.size()) {
       action = get_actions_[get_actions_counter_++];
       return true;
@@ -507,10 +506,10 @@ namespace bwi_guidance {
   }
 
   void PersonModelIROS14::addRobots(StateIROS14& state, int n) {
-    MODEL_IROS14_REQUIRE(uigen_);
+    assert(uigen_);
     for (int r = 0; r < n; ++r) {
       RobotStateIROS14 robot;
-      robot.graph_id = (*uigen_)();
+      robot.graph_id = ROBOT_HOME_BASE[r];
       robot.destination = generateNewGoalFrom(robot.graph_id); 
       robot.precision = 0.0f;
       state.robots.push_back(robot);
@@ -525,16 +524,17 @@ namespace bwi_guidance {
   }
 
   void PersonModelIROS14::drawCurrentState(cv::Mat& image) {
-    // TODO OPTIMIZE
-    MODEL_IROS14_REQUIRE(initialized_);
+    assert(initialized_);
+
     bwi_mapper::drawCircleOnGraph(image, graph_, current_state_.graph_id);
     bwi_mapper::drawArrowOnGraph(image, graph_, 
         std::make_pair(current_state_.graph_id,
                        getAngleInRadians(current_state_.direction) + M_PI/2),
         map_.info.width, map_.info.height);
+
     for (int r = 0; r < current_state_.robots.size(); ++r) {
       RobotStateIROS14& robot = current_state_.robots[r];
-      cv::Scalar color((r * 12345) % 128, 128, 128);
+      cv::Scalar color((r * 12345) % 192,128, (r * 23456) % 192);
       bool robot_in_use = false;
       int destination = robot.destination;
       for (int j = 0; j < current_state_.in_use_robots.size(); ++j) {
@@ -545,27 +545,43 @@ namespace bwi_guidance {
         }
       }
       if (robot_in_use) {
-        color = cv::Scalar(128, (r * 12345) % 128, 128);
+        color = cv::Scalar(128, 0, 128);
       }
       
       cv::Point2f robot_pos;
+      bool draw_first_link;
+      std::vector<size_t>& shortest_path = shortest_paths_[robot.graph_id][destination];
       if (robot.precision < 0.0f) {
         robot_pos = 
           -robot.precision * bwi_mapper::getLocationFromGraphId(robot.from_graph_node, graph_) + 
           (1 + robot.precision) * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_);
+        cv::line(image,
+            bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_),
+            robot_pos, color, 2);
+        draw_first_link = true;
       } else {
         int next_node = robot.graph_id;
-        std::vector<size_t> shortest_path;
-        if (robot.graph_id != robot.destination) {
-          bwi_mapper::getShortestPathWithDistance(robot.graph_id, robot.destination, shortest_path, graph_);
-        }
-        shortest_path.insert(shortest_path.begin(), robot.destination);
-        if (shortest_path.size() >= 2) {
-          next_node = shortest_path[shortest_path.size() - 2];
+        if (shortest_path.size() > 0) {
+          next_node = shortest_path[0];
         }
         robot_pos = 
           (1 - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
           (robot.precision) * bwi_mapper::getLocationFromGraphId(next_node, graph_);
+        cv::line(image,
+            bwi_mapper::getLocationFromGraphId(next_node, graph_),
+            robot_pos, color, 2);
+        draw_first_link = false;
+      }
+      int current_node = robot.graph_id;
+      for (int s = 0; s < shortest_path.size(); ++s) {
+        int next_node = shortest_path[s];
+        if (s != 0 || draw_first_link) {
+          cv::line(image,
+              bwi_mapper::getLocationFromGraphId(current_node, graph_),
+              bwi_mapper::getLocationFromGraphId(next_node, graph_),
+              color, 2);
+        }
+        current_node = next_node;
       }
       cv::circle(image, robot_pos, 10, color, -1);
       bwi_mapper::drawSquareOnGraph(image, graph_, destination, color);
@@ -573,7 +589,7 @@ namespace bwi_guidance {
   }
 
   void PersonModelIROS14::printDistanceToDestination(int idx) {
-    MODEL_IROS14_REQUIRE(idx >= 0 && idx < current_state_.robots.size());
+    assert(idx >= 0 && idx < current_state_.robots.size());
     std::cout << "Distance of Robot " << idx << " to its destination: " <<
       getTrueDistanceTo(current_state_.robots[idx],
           current_state_.robots[idx].destination) << std::endl;
