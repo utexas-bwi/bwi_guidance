@@ -54,28 +54,28 @@ namespace bwi_guidance {
   }
 
   bool operator<(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r) {
-    return (l.robot_id < r.robot_id) ||
-      ((l.robot_id == r.robot_id) && (l.destination < r.destination)) ||
-      ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
+    return //(l.robot_id < r.robot_id) ||
+      (/*(l.robot_id == r.robot_id) && */(l.destination < r.destination)) ||
+      (/*(l.robot_id == r.robot_id) && */(l.destination == r.destination) &&
        (l.direction < r.direction)) ||
-      ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
+      (/*(l.robot_id == r.robot_id) && */(l.destination == r.destination) &&
        (l.direction == r.direction) && 
        (l.reached_destination < r.reached_destination));
   }
   
   bool operator==(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r) {
-    return (l.robot_id == r.robot_id) && 
+    return //(l.robot_id == r.robot_id) && 
       (l.destination == r.destination) &&
       (l.direction == r.direction) && 
       (l.reached_destination == r.reached_destination); 
   }
 
   bool operator>(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r) {
-    return (l.robot_id > r.robot_id) ||
-      ((l.robot_id == r.robot_id) && (l.destination > r.destination)) ||
-      ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
+    return //(l.robot_id > r.robot_id) ||
+      (/*(l.robot_id == r.robot_id) && */(l.destination > r.destination)) ||
+      (/*(l.robot_id == r.robot_id) && */(l.destination == r.destination) &&
        (l.direction > r.direction)) ||
-      ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
+      (/*(l.robot_id == r.robot_id) && */(l.destination == r.destination) &&
        (l.direction == r.direction) && 
        (l.reached_destination > r.reached_destination));
   }
@@ -90,6 +90,13 @@ namespace bwi_guidance {
     if (l.in_use_robots.size() < r.in_use_robots.size()) return true;
     if (l.in_use_robots.size() > r.in_use_robots.size()) return false;
 
+    if (l.acquired_locations.size() < r.acquired_locations.size()) return true;
+    if (l.acquired_locations.size() > r.acquired_locations.size()) return false;
+
+    if (l.relieved_locations.size() < r.relieved_locations.size()) return true;
+    if (l.relieved_locations.size() > r.relieved_locations.size()) return false;
+
+
     // int v = memcmp(&(l.in_use_robots[0]), &(r.in_use_robots[0]), 
     //       sizeof(InUseRobotStateIROS14) * l.in_use_robots.size());
     // if (v < 0) return true;
@@ -98,9 +105,17 @@ namespace bwi_guidance {
       if (l.in_use_robots[i] < r.in_use_robots[i]) return true;
       if (l.in_use_robots[i] > r.in_use_robots[i]) return false;
     }
+    for (unsigned int i = 0; i < l.acquired_locations.size(); ++i) {
+      if (l.acquired_locations[i] < r.acquired_locations[i]) return true;
+      if (l.acquired_locations[i] > r.acquired_locations[i]) return false;
+    }
+    for (unsigned int i = 0; i < l.relieved_locations.size(); ++i) {
+      if (l.relieved_locations[i] < r.relieved_locations[i]) return true;
+      if (l.relieved_locations[i] > r.relieved_locations[i]) return false;
+    }
 
     // Shouldn't ever be running with different robot sizes.
-    assert(l.robots.size() == r.robots.size());
+    //assert(l.robots.size() == r.robots.size());
     // if (l.robots.size() < r.robots.size()) return true;
     // if (l.robots.size() > r.robots.size()) return false;
 
@@ -108,10 +123,10 @@ namespace bwi_guidance {
     //       sizeof(RobotStateIROS14) * l.robots.size());
     // if (v < 0) return true;
     // if (v > 0) return false;
-    for (unsigned int i = 0; i < l.robots.size(); ++i) {
-      if (l.robots[i] < r.robots[i]) return true;
-      if (l.robots[i] > r.robots[i]) return false;
-    }
+    // for (unsigned int i = 0; i < l.robots.size(); ++i) {
+    //   if (l.robots[i] < r.robots[i]) return true;
+    //   if (l.robots[i] > r.robots[i]) return false;
+    // }
 
     return false;
   }
@@ -119,12 +134,15 @@ namespace bwi_guidance {
   bool operator==(const StateIROS14& l, const StateIROS14& r ) {
     return l.graph_id == r.graph_id &&
       l.direction == r.direction &&
+      l.acquired_locations == r.acquired_locations &&
+      l.relieved_locations == r.relieved_locations && 
       // memcmp(&(l.in_use_robots[0]), &(r.in_use_robots[0]), 
       //     sizeof(InUseRobotStateIROS14) * l.in_use_robots.size()) == 0 &&
       // memcmp(&(l.robots[0]), &(r.robots[0]), 
       //     sizeof(RobotStateIROS14) * l.robots.size()) == 0;
-      l.in_use_robots == r.in_use_robots &&
-      l.robots == r.robots;
+      l.in_use_robots == r.in_use_robots;
+    // &&
+    //   l.robots == r.robots;
     
     // bool retval = (l.graph_id == r.graph_id &&
     //     l.direction == r.direction &&

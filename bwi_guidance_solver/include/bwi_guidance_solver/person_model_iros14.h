@@ -25,8 +25,8 @@ namespace bwi_guidance {
 
       PersonModelIROS14(const bwi_mapper::Graph& graph, const
           nav_msgs::OccupancyGrid& map, size_t goal_idx, float frame_rate = 0.0f, int max_robots_in_use
-          = 1, int action_vertex_visibility_depth = 1, float visibility_range =
-          10.0f, bool allow_goal_visibility = false, float human_speed = 1.0,
+          = 1, int action_vertex_visibility_depth = 0, float visibility_range =
+          0.0f, bool allow_goal_visibility = false, float human_speed = 1.0,
           float robot_speed = 0.75);
 
       /* Functions inherited from PredictiveModel */

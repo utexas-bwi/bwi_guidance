@@ -218,10 +218,10 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       evaluation_model->getActionsAtState(current_state, actions);
       ActionIROS14 action;
       action = mcts->selectWorldAction(current_state);
-      // std::cout << "Select: " << std::endl;
-      // int choice;
-      // std::cin >> choice;
-      // action = actions[choice];
+      std::cout << "Select: " << std::endl;
+      int choice;
+      std::cin >> choice;
+      action = actions[choice];
       EVALUATE_OUTPUT("Selected action: " << action);
       float reward;
       StateIROS14 next_state;
@@ -245,7 +245,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
         }
       } else {
         // Prune old visits before searching
-        uct_estimator->pruneOldVisits(1);
+        //uct_estimator->pruneOldVisits(0);
 
         float total_time = 0.0f;
         BOOST_FOREACH(StateIROS14& state, *fv) {
