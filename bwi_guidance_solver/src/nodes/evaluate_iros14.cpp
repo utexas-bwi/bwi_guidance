@@ -46,7 +46,7 @@ float visibility_range_ = 0.0f; // Infinite visibility
 bool allow_goal_visibility_ = false;
 MCTS<StateIROS14, ActionIROS14>::Params mcts_params_;
 bool mcts_enabled_ = false;
-bool graphical_ = true;
+bool graphical_ = false;
 cv::Mat base_image_;
 
 /* Structures used to define a single method */
@@ -56,7 +56,7 @@ const std::string METHOD_TYPE_NAMES[3] = {
 };
 enum MethodType {
   HEURISTIC = 0,
-  MCTS_TYPE = 1
+  MCTS_TYPE = 2
 };
 
 struct MethodResult {
@@ -144,6 +144,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     // Until we get a working copy of the heuristic
     assert(params.type == MCTS_TYPE);
 
+    if (params.type == MCTS_TYPE) {
       if (!mcts_enabled_) {
         throw std::runtime_error(
             std::string("MCTS method present, but no global MCTS ") +
@@ -170,6 +171,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             uct_estimator_params));
       mcts.reset(new MCTS<StateIROS14, ActionIROS14>(uct_estimator,
             mcts_model_updator, mcts_state_mapping, mcts_params_));
+    }
 
     EVALUATE_OUTPUT("Evaluating method " << params);
     
@@ -251,7 +253,6 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
           out_img = base_image_.clone();
           evaluation_model->drawState(state, out_img);
           cv::imshow("out", out_img);
-          cv::waitKey(50);
           for (int i = 0; i < params.mcts_planning_time_multiplier; ++i) {
             total_time += 0.1f;
             unsigned int terminations;
@@ -317,6 +318,7 @@ int processOptions(int argc, char** argv) {
     ("data-directory", po::value<std::string>(&data_directory_), 
      "Data directory (defaults to runtime directory)") 
     ("allow-goal-visibility", "Allow goal visibility to affect human model")
+    ("graphical", "Use graphical interface for debugging purposes")
     ("seed_", po::value<int>(&seed_), "Random seed (process number on condor)")  
     ("num-instances", po::value<int>(&num_instances_), "Number of Instances") 
     ("visibility-range", po::value<float>(&visibility_range_), 
@@ -346,6 +348,9 @@ int processOptions(int argc, char** argv) {
 
   if (vm.count("allow-goal-visibility")) {
     allow_goal_visibility_ = true;
+  }
+  if (vm.count("graphical")) {
+    graphical_ = true;
   }
 
   /* Read in global MCTS parameters */
@@ -386,6 +391,10 @@ int main(int argc, char** argv) {
   int ret = processOptions(argc, argv);
   if (ret != 0) {
     return ret;
+  }
+
+  if (graphical_) {
+    cvStartWindowThread();
   }
 
   std::cout << "Using random seed: " << seed_ << std::endl;

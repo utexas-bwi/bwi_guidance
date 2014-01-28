@@ -60,6 +60,6 @@
     "type" : 2,
     "mcts_reward_bound" : 5000,
     "lambda" : 1.0
-  }, 
+  } 
   ]
 }
