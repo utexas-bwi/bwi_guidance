@@ -47,12 +47,9 @@ namespace bwi_guidance {
   /* States */
   struct RobotStateIROS14 {
     int graph_id; //~50
-
-    /* Ignored while being kept in a map, the extra precision is lost there.
-     * Don't use these members in operator<, == or > overloading */
     int destination; //~50
-    float precision; // value from -0.5 to 0.5
-    int from_graph_node;
+    float precision; // value from 0 to 1, < 0.5 => graph_id -> other_graph_node, > 0.5 => other_graph_node -> graph_id
+    int other_graph_node;
 
     friend class boost::serialization::access;
     template<class Archive>
