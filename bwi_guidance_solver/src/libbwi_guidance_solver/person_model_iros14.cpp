@@ -521,7 +521,6 @@ namespace bwi_guidance {
     current_state_.acquired_locations.clear();
     current_state_.relieved_locations.clear();
 
-    // TODO allow moving robots and people slowly for visualization
     if (auto_move_) {
       moveRobots(time_to_vertex);
     }
@@ -632,7 +631,7 @@ namespace bwi_guidance {
   void PersonModelIROS14::drawCurrentState(cv::Mat& image) {
     assert(initialized_);
 
-    if (current_state_.precision == 1.0f) {
+    if (current_state_.precision == 1.0f || auto_move_) {
       bwi_mapper::drawCircleOnGraph(image, graph_, current_state_.graph_id);
       bwi_mapper::drawArrowOnGraph(image, graph_, 
           std::make_pair(current_state_.graph_id,

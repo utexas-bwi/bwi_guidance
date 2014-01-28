@@ -64,7 +64,8 @@ namespace bwi_guidance {
   }
   
   bool operator==(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r) {
-    return (l.robot_id == r.robot_id) && (l.destination == r.destination) &&
+    return (l.robot_id == r.robot_id) && 
+      (l.destination == r.destination) &&
       (l.direction == r.direction) && 
       (l.reached_destination == r.reached_destination); 
   }
