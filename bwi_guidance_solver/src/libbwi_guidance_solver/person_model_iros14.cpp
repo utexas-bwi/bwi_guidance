@@ -26,6 +26,7 @@ namespace bwi_guidance {
 
     robot_speed_ /= map_.info.resolution;
     human_speed_ /= map_.info.resolution;
+    visibility_range /= map_.info.resolution;
 
     num_vertices_ = boost::num_vertices(graph_);
     computeAdjacentVertices(adjacent_vertices_map_, graph_);
@@ -435,7 +436,7 @@ namespace bwi_guidance {
           robot.precision = -robot.precision;
         }
       }
-      return -20.0;
+      return 0.0;//-20.0;
     }
 
     if (action.type == GUIDE_PERSON) {

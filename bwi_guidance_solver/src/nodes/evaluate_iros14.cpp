@@ -144,7 +144,6 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     // Until we get a working copy of the heuristic
     assert(params.type == MCTS_TYPE);
 
-    if (params.type == MCTS_TYPE) {
 
       if (!mcts_enabled_) {
         throw std::runtime_error(
@@ -172,7 +171,6 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             uct_estimator_params));
       mcts.reset(new MCTS<StateIROS14, ActionIROS14>(uct_estimator,
             mcts_model_updator, mcts_state_mapping, mcts_params_));
-    }
 
     EVALUATE_OUTPUT("Evaluating method " << params);
     
@@ -215,20 +213,13 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
       std::vector<ActionIROS14> actions;
       evaluation_model->getActionsAtState(current_state, actions);
-      std::cout << "Actions: ";
-      int count = 0;
-      BOOST_FOREACH(const ActionIROS14& a, actions) {
-        std::cout << count << ":" << a << std::endl;
-        ++count;
-      }
-
       ActionIROS14 action;
       action = mcts->selectWorldAction(current_state);
       // std::cout << "Select: " << std::endl;
       // int choice;
       // std::cin >> choice;
       // action = actions[choice];
-      EVALUATE_OUTPUT("   action: " << action);
+      EVALUATE_OUTPUT("Selected action: " << action);
       float reward;
       StateIROS14 next_state;
       bool terminal;
@@ -243,11 +234,15 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       current_state = next_state;
       EVALUATE_OUTPUT(" - ns " << current_state);
 
+      std::cout << "a" << std::endl;
+      uct_estimator->pruneOldVisits(1);
+      std::cout << "b" << std::endl;
+
       if (action.type != DO_NOTHING) {
         EVALUATE_OUTPUT(" - performing non-wait MCTS search for 1s");
         for (int i = 0; i < 10; ++i) {
           unsigned int terminations;
-          mcts->search(current_state, terminations);
+          //mcts->search(current_state, terminations);
         }
       } else {
         float total_time = 0.0f;
