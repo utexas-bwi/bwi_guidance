@@ -15,14 +15,15 @@
 
 namespace bwi_guidance {
 
-  PersonModelIROS14::PersonModelIROS14(const bwi_mapper::Graph& graph, const
-      nav_msgs::OccupancyGrid& map, size_t goal_idx, float frame_rate, int
-      max_robots_in_use, int action_vertex_visibility_depth, float
-      visibility_range, bool allow_goal_visibility, float human_speed, float
-      robot_speed) : graph_(graph),
-  map_(map), goal_idx_(goal_idx), frame_rate_(frame_rate), max_robots_in_use_(max_robots_in_use),
-  allow_goal_visibility_(allow_goal_visibility), human_speed_(human_speed),
-  robot_speed_(robot_speed), initialized_(false) {
+  PersonModelIROS14::PersonModelIROS14(const bwi_mapper::Graph& graph, 
+      const nav_msgs::OccupancyGrid& map, size_t goal_idx, float frame_rate,
+      int max_robots_in_use, int action_vertex_visibility_depth, 
+      int action_vertex_adjacency_depth, float visibility_range, 
+      bool allow_goal_visibility, float human_speed, float robot_speed) :
+    graph_(graph), map_(map), goal_idx_(goal_idx),
+    frame_rate_(frame_rate), max_robots_in_use_(max_robots_in_use),
+    allow_goal_visibility_(allow_goal_visibility), human_speed_(human_speed),
+    robot_speed_(robot_speed), initialized_(false) {
 
     robot_speed_ /= map_.info.resolution;
     human_speed_ /= map_.info.resolution;
@@ -33,7 +34,8 @@ namespace bwi_guidance {
     computeVisibleVertices(visible_vertices_map_, graph_, map_, visibility_range);
 
     // Compute Action Vertices
-    // Start with the visible vertices and expand with adjacent vertices until needed
+
+    // Start with the visible vertices and expand to depth
     action_vertices_map_ = visible_vertices_map_;
     for (int n = 0; n < action_vertex_visibility_depth; ++n) {
       for (int i = 0; i < num_vertices_; ++i) {
@@ -48,6 +50,31 @@ namespace bwi_guidance {
       }
     }
 
+    // Also add adjacent vertices based on depth
+    for (int idx = 0; idx < num_vertices_; ++idx) {
+      std::set<int> action_vertices(action_vertices_map_[idx].begin(),
+          action_vertices_map_[idx].end());
+      std::set<int> closed_set;
+      std::set<int> current_set;
+      current_set.insert(idx);
+      for (int n = 0; 
+          current_set.size() != 0 && n <= action_vertex_adjacency_depth; ++n) {
+        action_vertices.insert(current_set.begin(), current_set.end());
+        std::set<int> open_set;
+        BOOST_FOREACH(int c, current_set) {
+          BOOST_FOREACH(int a, adjacent_vertices_map_[c]) {
+            if (closed_set.find(a) == closed_set.end()) {
+              open_set.insert(a);
+            }
+          }
+        }
+        closed_set.insert(current_set.begin(), current_set.end());
+        current_set = open_set;
+      }
+      action_vertices_map_[idx] = std::vector<int>(action_vertices.begin(),
+          action_vertices.end());
+    }
+
     // std::cout << "Action Vertices Map:" << std::endl;
     // for (int i = 0; i < num_vertices_; ++i) {
     //   std::cout << " For vtx " << i << ": ";
@@ -56,6 +83,8 @@ namespace bwi_guidance {
     //   }
     //   std::cout << std::endl;
     // }
+
+    /* exit(0); */
 
     cacheNewGoalsByDistance();
     cacheShortestPaths();

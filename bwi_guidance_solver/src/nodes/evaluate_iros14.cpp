@@ -46,7 +46,7 @@ float visibility_range_ = 0.0f; // Infinite visibility
 bool allow_goal_visibility_ = false;
 MCTS<StateIROS14, ActionIROS14>::Params mcts_params_;
 bool mcts_enabled_ = false;
-bool graphical_ = false;
+bool graphical_ = true;
 cv::Mat base_image_;
 
 /* Structures used to define a single method */
@@ -189,7 +189,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     cv::Mat out_img = base_image_.clone();
     evaluation_model->drawState(current_state, out_img);
     cv::imshow("out", out_img);
-    cv::waitKey(100);
+    //cv::waitKey(100);
 
     method_result.mcts_terminations = 0;
     method_result.mcts_playouts = 0;
@@ -253,6 +253,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
           out_img = base_image_.clone();
           evaluation_model->drawState(state, out_img);
           cv::imshow("out", out_img);
+          //cv::waitKey(50);
           for (int i = 0; i < params.mcts_planning_time_multiplier; ++i) {
             total_time += 0.1f;
             unsigned int terminations;
@@ -394,6 +395,7 @@ int main(int argc, char** argv) {
   }
 
   if (graphical_) {
+    cv::namedWindow("out");
     cvStartWindowThread();
   }
 
