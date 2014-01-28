@@ -55,7 +55,7 @@ namespace bwi_guidance {
       /* Functions inherited from Model */
       virtual void setState(const StateQRR14 &state);
       virtual void takeAction(const ActionQRR14 &action, float &reward, 
-          StateQRR14 &state, bool &terminal);
+          StateQRR14 &state, bool &terminal, int &depth_count);
       virtual void getFirstAction(const StateQRR14 &state, ActionQRR14 &action);
       virtual bool getNextAction(const StateQRR14 &state, ActionQRR14 &action);
       virtual float getTransitionProbability(const StateQRR14& state, 

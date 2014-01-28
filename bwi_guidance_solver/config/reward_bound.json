@@ -8,43 +8,53 @@
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 20
+    "mcts_reward_bound" : 20,
+    "lambda" : 0.0
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 100
+    "mcts_reward_bound" : 100,
+    "lambda" : 0.0
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 1000
+    "mcts_reward_bound" : 1000,
+    "lambda" : 0.0
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 2000
+    "mcts_reward_bound" : 2000,
+    "lambda" : 0.0
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 5000
+    "mcts_reward_bound" : 5000,
+    "lambda" : 0.0
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 10000
+    "mcts_reward_bound" : 10000,
+    "lambda" : 0.0
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 20000
+    "mcts_reward_bound" : 20000,
+    "lambda" : 0.0
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 50000
+    "mcts_reward_bound" : 50000,
+    "lambda" : 0.0
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 100000
+    "mcts_reward_bound" : 100000,
+    "lambda" : 0.0
   }, 
   {
     "type" : 2,
-    "mcts_reward_bound" : 1000000
+    "mcts_reward_bound" : 1000000,
+    "lambda" : 0.0
   } 
   ]
 }

@@ -126,7 +126,7 @@ namespace bwi_guidance {
   }
 
   void PersonModelQRR14::takeAction(const ActionQRR14 &action, float &reward, 
-      StateQRR14 &state, bool &terminal) {
+      StateQRR14 &state, bool &terminal, int& depth_count) {
 
     if (!generator_) {
       throw std::runtime_error("Call initializeRNG() before takeAction()");
@@ -159,6 +159,7 @@ namespace bwi_guidance {
     reward = rewards[idx];
     state = current_state_;
     terminal = isTerminalState(current_state_);
+    depth_count = 1;
   }
 
   void PersonModelQRR14::getFirstAction(const StateQRR14 &state, 

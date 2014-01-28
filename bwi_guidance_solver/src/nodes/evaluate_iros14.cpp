@@ -144,7 +144,6 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     // Until we get a working copy of the heuristic
     assert(params.type == MCTS_TYPE);
 
-
       if (!mcts_enabled_) {
         throw std::runtime_error(
             std::string("MCTS method present, but no global MCTS ") +
@@ -218,10 +217,10 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       evaluation_model->getActionsAtState(current_state, actions);
       ActionIROS14 action;
       action = mcts->selectWorldAction(current_state);
-      std::cout << "Select: " << std::endl;
-      int choice;
-      std::cin >> choice;
-      action = actions[choice];
+      // std::cout << "Select: " << std::endl;
+      // int choice;
+      // std::cin >> choice;
+      // action = actions[choice];
       EVALUATE_OUTPUT("Selected action: " << action);
       float reward;
       StateIROS14 next_state;
@@ -245,7 +244,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
         }
       } else {
         // Prune old visits before searching
-        //uct_estimator->pruneOldVisits(0);
+        mcts->restart();
 
         float total_time = 0.0f;
         BOOST_FOREACH(StateIROS14& state, *fv) {
@@ -256,7 +255,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
           for (int i = 0; i < params.mcts_planning_time_multiplier; ++i) {
             total_time += 0.1f;
             unsigned int terminations;
-            mcts->search(state, terminations);
+            mcts->search(current_state, terminations);
           }
         }
         EVALUATE_OUTPUT(" - performing wait MCTS search for " << total_time << "s");
