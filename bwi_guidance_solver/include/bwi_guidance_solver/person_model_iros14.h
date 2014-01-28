@@ -24,7 +24,7 @@ namespace bwi_guidance {
     public:
 
       PersonModelIROS14(const bwi_mapper::Graph& graph, const
-          nav_msgs::OccupancyGrid& map, size_t goal_idx, bool auto_move = true, int max_robots_in_use
+          nav_msgs::OccupancyGrid& map, size_t goal_idx, float frame_rate = 0.0f, int max_robots_in_use
           = 1, int action_vertex_visibility_depth = 0, float visibility_range =
           0.0f, bool allow_goal_visibility = false, float human_speed = 1.0,
           float robot_speed = 0.75);
@@ -46,7 +46,7 @@ namespace bwi_guidance {
       void addRobots(StateIROS14& state, int n);
 
       /* Debugging only */
-      void drawCurrentState(cv::Mat& image);
+      void drawState(const StateIROS14& state, cv::Mat& image);
 
       /* Private functions that are public only for testing */
       bool isRobotDirectionAvailable(const StateIROS14& state, int& robot_dir);
@@ -54,6 +54,7 @@ namespace bwi_guidance {
       void printDistanceToDestination(int idx);
       void getActionsAtState(const StateIROS14 &state,
           std::vector<ActionIROS14>& actions);
+      void setFrameVector(boost::shared_ptr<std::vector<StateIROS14> >& frame_vector);
 
     private:
 
@@ -105,7 +106,8 @@ namespace bwi_guidance {
       bwi_mapper::Graph graph_;
       nav_msgs::OccupancyGrid map_;
 
-      bool auto_move_;
+      float frame_rate_;
+      boost::shared_ptr<std::vector<StateIROS14> >  frame_vector_;
       bool initialized_;
       unsigned int num_vertices_;
       int max_robots_in_use_;

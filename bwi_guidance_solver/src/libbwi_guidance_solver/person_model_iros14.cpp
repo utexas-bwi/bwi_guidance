@@ -16,11 +16,11 @@
 namespace bwi_guidance {
 
   PersonModelIROS14::PersonModelIROS14(const bwi_mapper::Graph& graph, const
-      nav_msgs::OccupancyGrid& map, size_t goal_idx, bool auto_move, int
+      nav_msgs::OccupancyGrid& map, size_t goal_idx, float frame_rate, int
       max_robots_in_use, int action_vertex_visibility_depth, float
       visibility_range, bool allow_goal_visibility, float human_speed, float
       robot_speed) : graph_(graph),
-  map_(map), goal_idx_(goal_idx), auto_move_(auto_move), max_robots_in_use_(max_robots_in_use),
+  map_(map), goal_idx_(goal_idx), frame_rate_(frame_rate), max_robots_in_use_(max_robots_in_use),
   allow_goal_visibility_(allow_goal_visibility), human_speed_(human_speed),
   robot_speed_(robot_speed), initialized_(false) {
 
@@ -271,7 +271,7 @@ namespace bwi_guidance {
   bool PersonModelIROS14::moveRobots(float time) {
     // Move the human
     bool ready_for_next_action = true;
-    if (!auto_move_) {
+    if (frame_rate_ > 0.0f) {
       float human_coverable_distance = time * human_speed_;
       float human_edge_distance = shortest_distances_[current_state_.from_graph_node][current_state_.graph_id];
       float added_precision = human_coverable_distance / human_edge_distance;
@@ -521,8 +521,14 @@ namespace bwi_guidance {
     current_state_.acquired_locations.clear();
     current_state_.relieved_locations.clear();
 
-    if (auto_move_) {
+    if (frame_rate_ == 0.0f) {
       moveRobots(time_to_vertex);
+    } else {
+      assert(frame_vector_);
+      frame_vector_->clear();
+      while (!moveRobots(1.0f/frame_rate_)) {
+        frame_vector_->push_back(current_state_);
+      }
     }
 
     // Compute reward
@@ -628,30 +634,31 @@ namespace bwi_guidance {
     pgen_ = pgen;
   }
 
-  void PersonModelIROS14::drawCurrentState(cv::Mat& image) {
+  void PersonModelIROS14::drawState(const StateIROS14& state, cv::Mat& image) {
     assert(initialized_);
 
-    if (current_state_.precision == 1.0f || auto_move_) {
-      bwi_mapper::drawCircleOnGraph(image, graph_, current_state_.graph_id);
+    if (state.precision == 1.0f || frame_rate_ == 0.0f) {
+      bwi_mapper::drawCircleOnGraph(image, graph_, state.graph_id);
       bwi_mapper::drawArrowOnGraph(image, graph_, 
-          std::make_pair(current_state_.graph_id,
-                         getAngleInRadians(current_state_.direction) + M_PI/2),
+          std::make_pair(state.graph_id,
+                         getAngleInRadians(state.direction) + M_PI/2),
           map_.info.width, map_.info.height);
     } else {
       cv::Point2f human_pos = 
-          (1 - current_state_.precision) * bwi_mapper::getLocationFromGraphId(current_state_.from_graph_node, graph_) + 
-          current_state_.precision * bwi_mapper::getLocationFromGraphId(current_state_.graph_id, graph_);
-      cv::circle(image, human_pos, 20, cv::Scalar(0,0,255), 2);
+          (1 - state.precision) * bwi_mapper::getLocationFromGraphId(state.from_graph_node, graph_) + 
+          state.precision * bwi_mapper::getLocationFromGraphId(state.graph_id, graph_);
+      cv::circle(image, human_pos, 15, cv::Scalar(0,0,255), 2, CV_AA);
     }
+    bwi_mapper::drawSquareOnGraph(image, graph_, goal_idx_, cv::Scalar(0,0,255));
 
-    for (int r = 0; r < current_state_.robots.size(); ++r) {
-      RobotStateIROS14& robot = current_state_.robots[r];
+    for (int r = 0; r < state.robots.size(); ++r) {
+      const RobotStateIROS14& robot = state.robots[r];
       cv::Scalar color((r * 12345) % 192,128, (r * 23456) % 192);
       bool robot_in_use = false;
       int destination = robot.destination;
-      for (int j = 0; j < current_state_.in_use_robots.size(); ++j) {
-        if (current_state_.in_use_robots[j].robot_id == r) {
-          destination = current_state_.in_use_robots[j].destination;
+      for (int j = 0; j < state.in_use_robots.size(); ++j) {
+        if (state.in_use_robots[j].robot_id == r) {
+          destination = state.in_use_robots[j].destination;
           robot_in_use = true;
           break;
         }
@@ -669,7 +676,7 @@ namespace bwi_guidance {
           (1 + robot.precision) * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_);
         cv::line(image,
             bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_),
-            robot_pos, color, 2);
+            robot_pos, color, 2, CV_AA);
         draw_first_link = true;
       } else {
         int next_node = robot.graph_id;
@@ -681,7 +688,7 @@ namespace bwi_guidance {
           (robot.precision) * bwi_mapper::getLocationFromGraphId(next_node, graph_);
         cv::line(image,
             bwi_mapper::getLocationFromGraphId(next_node, graph_),
-            robot_pos, color, 2);
+            robot_pos, color, 2, CV_AA);
         draw_first_link = false;
       }
       int current_node = robot.graph_id;
@@ -691,11 +698,11 @@ namespace bwi_guidance {
           cv::line(image,
               bwi_mapper::getLocationFromGraphId(current_node, graph_),
               bwi_mapper::getLocationFromGraphId(next_node, graph_),
-              color, 2);
+              color, 2, CV_AA);
         }
         current_node = next_node;
       }
-      cv::circle(image, robot_pos, 10, color, -1);
+      cv::circle(image, robot_pos, 10, color, -1, CV_AA);
       bwi_mapper::drawSquareOnGraph(image, graph_, destination, color);
     }
   }
@@ -705,5 +712,9 @@ namespace bwi_guidance {
     std::cout << "Distance of Robot " << idx << " to its destination: " <<
       getTrueDistanceTo(current_state_.robots[idx],
           current_state_.robots[idx].destination) << std::endl;
+  }
+
+  void PersonModelIROS14::setFrameVector(boost::shared_ptr<std::vector<StateIROS14> >& frame_vector){
+    frame_vector_ = frame_vector;
   }
 } /* bwi_guidance */

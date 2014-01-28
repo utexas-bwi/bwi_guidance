@@ -124,8 +124,10 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     PIGenPtr robot_goal_gen(new PIGen(mt, p));
     mcts_model->initializeRNG(idx_gen, generative_model_gen, robot_goal_gen);
 
+    boost::shared_ptr<std::vector<StateIROS14> > fv(new std::vector<StateIROS14>);
     boost::shared_ptr<PersonModelIROS14> evaluation_model(
-        new PersonModelIROS14(graph, map, goal_idx, true));
+        new PersonModelIROS14(graph, map, goal_idx, 10.0f));
+    evaluation_model->setFrameVector(fv);
     boost::mt19937 mt2(3 * (seed + 1));
     boost::uniform_int<int> i2(0, boost::num_vertices(graph) - 1);
     boost::uniform_real<float> u2(0.0f, 1.0f);
@@ -177,6 +179,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     StateIROS14 current_state; 
     current_state.graph_id = start_idx;
     current_state.direction = start_direction;
+    current_state.precision = 1.0f;
     evaluation_model->addRobots(current_state, MAX_ROBOTS);
     evaluation_model->setState(current_state);
 
@@ -184,6 +187,10 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     float instance_distance = 0;
 
     EVALUATE_OUTPUT(" - start " << current_state);
+    cv::Mat out_img = base_image_.clone();
+    evaluation_model->drawState(current_state, out_img);
+    cv::imshow("out", out_img);
+    cv::waitKey(100);
 
     method_result.mcts_terminations = 0;
     method_result.mcts_playouts = 0;
@@ -205,11 +212,6 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       ((float)distance_limit_) / map.info.resolution;
 
     while (instance_distance <= distance_limit_pxl) {
-
-      cv::Mat out_img = base_image_.clone();
-      evaluation_model->drawCurrentState(out_img);
-      cv::imshow("out", out_img);
-      cv::waitKey(-1);
 
       std::vector<ActionIROS14> actions;
       evaluation_model->getActionsAtState(current_state, actions);
@@ -241,10 +243,6 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       current_state = next_state;
       EVALUATE_OUTPUT(" - ns " << current_state);
 
-      if (terminal) {
-        break;
-      }
-
       if (action.type != DO_NOTHING) {
         EVALUATE_OUTPUT(" - performing non-wait MCTS search for 1s");
         for (int i = 0; i < 10; ++i) {
@@ -252,15 +250,26 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
           mcts->search(current_state, terminations);
         }
       } else {
-        float distance = instance_distance * map.info.resolution;
-        distance *= params.mcts_planning_time_multiplier;
-        distance *= 10.0f;
-        for (int i = 0; i < distance; ++i) {
-          unsigned int terminations;
-          mcts->search(current_state, terminations);
+        float total_time = 0.0f;
+        BOOST_FOREACH(StateIROS14& state, *fv) {
+          out_img = base_image_.clone();
+          evaluation_model->drawState(state, out_img);
+          cv::imshow("out", out_img);
+          cv::waitKey(50);
+          for (int i = 0; i < params.mcts_planning_time_multiplier; ++i) {
+            total_time += 0.1f;
+            unsigned int terminations;
+            mcts->search(state, terminations);
+          }
         }
-        EVALUATE_OUTPUT(" - performing wait MCTS search for " << distance / 10.0f << "s");
+        EVALUATE_OUTPUT(" - performing wait MCTS search for " << total_time << "s");
       }
+
+      if (terminal) {
+        break;
+      }
+
+      //cv::waitKey(-1);
     }
 
     method_result.reward = instance_reward;

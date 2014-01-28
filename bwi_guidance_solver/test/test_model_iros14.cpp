@@ -45,11 +45,11 @@ int main(int argc, const char *argv[]) {
   float reward;
   bool terminal = false;
   int depth_count;
-  StateIROS14 state;
+  StateIROS14 state = s;
   std::map<StateIROS14, int> test_map;
   while(!terminal && c != 27) {
     mapper.drawMap(image, map);
-    model.drawCurrentState(image);
+    model.drawState(state, image);
     cv::imshow("out", image);
     std::vector<ActionIROS14> actions;
     model.getActionsAtState(s, actions);
