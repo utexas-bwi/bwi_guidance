@@ -16,17 +16,6 @@
     "mcts_reward_bound" : 5000,
     "lambda" : 0.0,
     "reward_structure" : 2
-  },
-  {
-    "type" : 2,
-    "mcts_reward_bound" : 5000,
-    "lambda" : 0.0
-  },
-  {
-    "type" : 2,
-    "mcts_reward_bound" : 5000,
-    "lambda" : 0.0,
-    "reward_structure" : 2
   }
   ]
 }
