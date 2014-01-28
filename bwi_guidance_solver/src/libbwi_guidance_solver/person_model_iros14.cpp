@@ -436,7 +436,7 @@ namespace bwi_guidance {
           robot.precision = -robot.precision;
         }
       }
-      return 0.0;//-20.0;
+      return -10.0;//0.0;//-20.0;
     }
 
     if (action.type == GUIDE_PERSON) {
@@ -563,7 +563,7 @@ namespace bwi_guidance {
     state = current_state_;
     terminal = isTerminalState(current_state_);
 
-    depth_count = (action.type != DO_NOTHING) ? 0 : 1; 
+    depth_count = (action.type != DO_NOTHING) ? 0 : (int)(-reward); 
 
     // boost::posix_time::ptime mst2 = boost::posix_time::microsec_clock::local_time();
     // std::cout << "Time elapsed: " << (mst2 - mst1).total_microseconds() << 

@@ -200,11 +200,14 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       for (int i = 0; i < 10 * params.mcts_initial_planning_time; ++i) {
         unsigned int playouts, terminations;
         playouts = mcts->search(current_state, terminations);
-        method_result.mcts_playouts = playouts;
+        method_result.mcts_playouts += playouts;
         method_result.mcts_terminations += terminations;
       }
       EVALUATE_OUTPUT("    Done...");
     }
+
+    std::cout << "Found " << method_result.mcts_terminations << " terminations in " <<
+      method_result.mcts_playouts << " playouts." << std::endl;
 
     float distance_limit_pxl = 
       ((float)distance_limit_) / map.info.resolution;
@@ -234,10 +237,6 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       current_state = next_state;
       EVALUATE_OUTPUT(" - ns " << current_state);
 
-      std::cout << "a" << std::endl;
-      uct_estimator->pruneOldVisits(1);
-      std::cout << "b" << std::endl;
-
       if (action.type != DO_NOTHING) {
         EVALUATE_OUTPUT(" - performing non-wait MCTS search for 1s");
         for (int i = 0; i < 10; ++i) {
@@ -245,6 +244,9 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
           //mcts->search(current_state, terminations);
         }
       } else {
+        // Prune old visits before searching
+        uct_estimator->pruneOldVisits(1);
+
         float total_time = 0.0f;
         BOOST_FOREACH(StateIROS14& state, *fv) {
           out_img = base_image_.clone();
