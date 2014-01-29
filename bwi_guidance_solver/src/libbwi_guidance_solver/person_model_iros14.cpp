@@ -136,6 +136,7 @@ namespace bwi_guidance {
   float PersonModelIROS14::getTrueDistanceTo(RobotStateIROS14& robot, 
       int current_destination, int to_destination, bool change_robot_state) {
 
+    /* std::cout << "in here1: " << robot.graph_id << " " << robot.precision << " " << change_robot_state << std::endl; */
     // Optimized!!!
     float ret_distance;
     float current_edge_distance = 
@@ -147,12 +148,25 @@ namespace bwi_guidance {
       float distance_through_other_node = 
         (1.0f - robot.precision) * current_edge_distance
         + shortest_distances_[robot.other_graph_node][to_destination];
-      if (distance_through_current_node < distance_through_current_node) {
+      if (distance_through_current_node <= distance_through_other_node) {
         ret_distance = distance_through_current_node;
         // The robot should be flipped around
         if (change_robot_state) {
+          /* std::cout << "in here" << robot.precision << " " << robot.graph_id << " " << robot.other_graph_node << " " << to_destination << std::endl; */
           // The destination should have changed externally already
-          robot.precision = 1.0f - robot.precision;
+          if (robot.precision != 0.0f) {
+            robot.precision = 1.0f - robot.precision;
+          } else {
+            // The robot is exactly at robot.graph_id, find shortest path to
+            // destination
+            std::vector<size_t>& shortest_path = 
+              shortest_paths_[robot.graph_id][to_destination];
+            if (shortest_path.size() > 0) {
+              robot.other_graph_node = shortest_path[0];
+            }
+          }
+          /* std::cout << "in here" << robot.precision << " " << robot.graph_id << " " << robot.other_graph_node << " " << to_destination << std::endl; */
+
         }
       } else {
         ret_distance = distance_through_other_node;
@@ -165,13 +179,14 @@ namespace bwi_guidance {
       float distance_through_other_node = 
         robot.precision * current_edge_distance
         + shortest_distances_[robot.other_graph_node][to_destination];
-      if (distance_through_current_node < distance_through_current_node) {
+      if (distance_through_current_node <= distance_through_other_node) {
         ret_distance = distance_through_current_node;
         // Nothing needs to change for optimal solution
       } else {
         ret_distance = distance_through_other_node;
         // The robot should be flipped around
         if (change_robot_state) {
+          /* std::cout << "in here2" << std::endl; */
           // The destination should have changed externally already
           robot.precision = 1.0f - robot.precision;
         }
@@ -374,6 +389,7 @@ namespace bwi_guidance {
       // of that path we can cover
       float coverable_distance = time * robot_speed_;
       while (coverable_distance > 0.0f) {
+        /* std::cout << robot.graph_id << " " << robot.precision << " " << destination << " " << robot.other_graph_node << std::endl; */
         if (robot.precision == 0.0f && robot.graph_id == destination) {
           // The robot has reached its destination
           if (robot_in_use) {
@@ -384,7 +400,7 @@ namespace bwi_guidance {
             // Assign new goal and move towards that goal
             robot.destination = generateNewGoalFrom(ROBOT_HOME_BASE[i]);
             destination = robot.destination;
-            std::vector<size_t> shortest_path =
+            std::vector<size_t>& shortest_path =
               shortest_paths_[robot.graph_id][robot.destination];
             if (shortest_path.size() > 0) {
               // This means that robot.graph_id != new goal
@@ -396,6 +412,10 @@ namespace bwi_guidance {
         } else {
           float current_edge_distance = 
             shortest_distances_[robot.graph_id][robot.other_graph_node];
+          if (current_edge_distance == 0.0f) {
+            std::cout << robot.graph_id << " " << robot.precision << " " << destination << " " << robot.other_graph_node << std::endl;
+            exit(-1);
+          }
           float added_precision = coverable_distance / current_edge_distance;
           if (robot.precision < 0.5f) {
             // Moving away from robot.graph_id
@@ -410,11 +430,12 @@ namespace bwi_guidance {
           } else {
             // Moving to robot.graph_id
             if (robot.precision + added_precision >= 1.0f) {
+              /* std::cout << "in here" << std::endl; */
               // Move to next section of shortest path to goal
               coverable_distance -= (1.0f - robot.precision) * current_edge_distance;
               robot.precision = 0.0f;
-              std::vector<size_t> shortest_path =
-                shortest_paths_[robot.graph_id][robot.destination];
+              std::vector<size_t>& shortest_path =
+                shortest_paths_[robot.graph_id][destination];
               if (shortest_path.size() > 0) {
                 // This means that robot.graph_id != new goal
                 robot.other_graph_node = shortest_path[0];
@@ -436,6 +457,7 @@ namespace bwi_guidance {
 
   float PersonModelIROS14::takeActionAtCurrentState(
       const ActionIROS14& action) {
+    /* std::cout << current_state_ << action << std::endl; */
 
     if (action.type == RELEASE_ROBOT) {
       int mark_for_removal = -1;
@@ -464,6 +486,7 @@ namespace bwi_guidance {
     }
 
     if (action.type == ASSIGN_ROBOT) {
+      /* std::cout << current_state_ << std::endl; */
       assert(current_state_.in_use_robots.size() < max_robots_in_use_);
       float distance_to_destination = shortest_distances_[current_state_.graph_id][action.at_graph_id];
       float time_to_destination = distance_to_destination / human_speed_; 
@@ -480,6 +503,8 @@ namespace bwi_guidance {
 
       RobotStateIROS14& robot = current_state_.robots[r.robot_id];
       changeRobotDirectionIfNeeded(robot, robot.destination, action.at_graph_id);
+      
+      /* std::cout << current_state_ << std::endl; */
       // TODO return utility loss
       return -10.0;//0.0;//-20.0;
     }
@@ -508,6 +533,7 @@ namespace bwi_guidance {
           current_state_.graph_id, robot_dir, graph_);
       } else {
         std::cout << "oh no!" << std::endl;
+        exit(-1);
       }
     }
     
