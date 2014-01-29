@@ -729,23 +729,18 @@ namespace bwi_guidance {
   void PersonModelIROS14::drawState(const StateIROS14& state, cv::Mat& image) {
     assert(initialized_);
 
-    if (state.precision == 1.0f || frame_rate_ == 0.0f) {
-      bwi_mapper::drawCircleOnGraph(image, graph_, state.graph_id);
-      bwi_mapper::drawArrowOnGraph(image, graph_, 
-          std::make_pair(state.graph_id,
-                         getAngleInRadians(state.direction) + M_PI/2),
-          map_.info.width, map_.info.height);
-    } else {
-      cv::Point2f human_pos = 
-          (1 - state.precision) * bwi_mapper::getLocationFromGraphId(state.from_graph_node, graph_) + 
-          state.precision * bwi_mapper::getLocationFromGraphId(state.graph_id, graph_);
-      cv::circle(image, human_pos, 15, cv::Scalar(0,0,255), 2, CV_AA);
+    std::vector<std::pair<cv::Point2f, cv::Scalar> > draw_circles;
+    std::vector<std::vector<SquareToDraw> > draw_squares;
+    std::vector<std::vector<std::vector<LineToDraw> > > draw_lines;
+    draw_lines.resize(num_vertices_);
+    draw_squares.resize(num_vertices_);
+    for (int i = 0; i < num_vertices_; ++i) {
+      draw_lines[i].resize(num_vertices_);
     }
-    bwi_mapper::drawSquareOnGraph(image, graph_, goal_idx_, cv::Scalar(0,0,255));
 
     for (int r = 0; r < state.robots.size(); ++r) {
       const RobotStateIROS14& robot = state.robots[r];
-      cv::Scalar color((r * 12345) % 192,128, (r * 23456) % 192);
+      cv::Scalar color((r * 23456) % 192, (r * 12345) % 256, 0);
       bool robot_in_use = false;
       int destination = robot.destination;
       for (int j = 0; j < state.in_use_robots.size(); ++j) {
@@ -756,7 +751,7 @@ namespace bwi_guidance {
         }
       }
       if (robot_in_use) {
-        color = cv::Scalar(128, 0, 128);
+        color = cv::Scalar(255, 0, 0);
       }
       std::vector<size_t>* shortest_path = NULL;
       int shortest_path_start_id;
@@ -767,33 +762,119 @@ namespace bwi_guidance {
           (robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
         shortest_path = &(shortest_paths_[robot.other_graph_node][destination]);
         shortest_path_start_id = robot.other_graph_node;
-        cv::line(image,
-            bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_),
-            robot_pos, color, 2, CV_AA);
+        LineToDraw l;
+        l.priority = r;
+        l.precision = robot.precision;
+        l.color = color;
+        draw_lines[robot.graph_id][robot.other_graph_node].push_back(l); 
       } else {
         robot_pos = 
           robot.precision * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
           (1.0f - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
         shortest_path = &(shortest_paths_[robot.graph_id][destination]);
         shortest_path_start_id = robot.graph_id;
-        cv::line(image,
-            bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_),
-            robot_pos, color, 2, CV_AA);
+        LineToDraw l;
+        l.priority = r;
+        l.precision = robot.precision;
+        l.color = color;
+        draw_lines[robot.other_graph_node][robot.graph_id].push_back(l); 
       }
       if (shortest_path->size() != 0) {
         int current_node = shortest_path_start_id;
         for (int s = 0; s < shortest_path->size(); ++s) {
           int next_node = (*shortest_path)[s];
-          cv::line(image,
-              bwi_mapper::getLocationFromGraphId(current_node, graph_),
-              bwi_mapper::getLocationFromGraphId(next_node, graph_),
-              color, 2, CV_AA);
+          LineToDraw l;
+          l.priority = r;
+          l.precision = 0.0f;
+          l.color = color;
+          draw_lines[current_node][next_node].push_back(l); 
           current_node = next_node;
         }
       }
-      cv::circle(image, robot_pos, 10, color, -1, CV_AA);
-      bwi_mapper::drawSquareOnGraph(image, graph_, destination, color);
+      draw_circles.push_back(std::make_pair(robot_pos, color));
+      SquareToDraw s;
+      s.color = color;
+      draw_squares[destination].push_back(s);
     }
+
+    // Draw the person's destination
+    // SquareToDraw s;
+    // s.color = cv::Scalar(0,0,255);
+    // draw_squares[goal_idx_].push_back(s);
+
+    for (int i = 0; i < num_vertices_; ++i) {
+      for (int j = 0; j < num_vertices_; ++j) {
+        std::vector<LineToDraw>& ijlines = draw_lines[i][j];  
+        std::vector<LineToDraw>& jilines = draw_lines[j][i];  
+
+        int ijcounter = 0;
+        int jicounter = 0;
+        int thickness = 2 + 4 * (ijlines.size() + jilines.size() - 1);
+        while (ijcounter < ijlines.size() || jicounter < jilines.size()) {
+          LineToDraw* line = NULL;
+          int s, e;
+          if (ijcounter == ijlines.size()) {
+            s = j;
+            e = i;
+            line = &(jilines[jicounter++]);
+          } else if (jicounter == jilines.size()) {
+            s = i;
+            e = j;
+            line = &(ijlines[ijcounter++]);
+          } else if (ijlines[ijcounter].priority <= 
+              jilines[jicounter].priority) {
+            s = i;
+            e = j;
+            line = &(ijlines[ijcounter++]);
+          } else {
+            s = j;
+            e = i;
+            line = &(jilines[jicounter++]);
+          }
+          // Draw this line
+          cv::Point2f start_pos = 
+            (1.0f - line->precision) * bwi_mapper::getLocationFromGraphId(s, graph_) + 
+            line->precision * bwi_mapper::getLocationFromGraphId(e, graph_);
+          cv::line(image,
+              start_pos,
+              bwi_mapper::getLocationFromGraphId(e, graph_),
+              line->color, thickness, CV_AA);
+          thickness -= 4;
+        }
+      }
+    }
+
+    for (int i = 0; i < num_vertices_; ++i) {
+      int size = 18 + 8 * draw_squares[i].size();
+      BOOST_FOREACH(const SquareToDraw& square, draw_squares[i]) {
+        bwi_mapper::drawSquareOnGraph(image, graph_, i, square.color, 0, 0,
+            size);
+        size -= 8;
+      }
+    }
+
+    for (int i = 0; i < draw_circles.size(); ++i) {
+      cv::circle(image, draw_circles[i].first, 9, draw_circles[i].second, -1, CV_AA);
+    }
+
+    // Draw the person last
+    if (state.precision == 1.0f || frame_rate_ == 0.0f) {
+      cv::circle(image, 
+          bwi_mapper::getLocationFromGraphId(state.graph_id, graph_),
+          12, cv::Scalar(0,0,255), -1, CV_AA);
+      bwi_mapper::drawArrowOnGraph(image, graph_, 
+          std::make_pair(state.graph_id,
+                         getAngleInRadians(state.direction) + M_PI/2),
+          map_.info.width, map_.info.height);
+    } else {
+      cv::Point2f human_pos = 
+          (1 - state.precision) * bwi_mapper::getLocationFromGraphId(state.from_graph_node, graph_) + 
+          state.precision * bwi_mapper::getLocationFromGraphId(state.graph_id, graph_);
+      cv::circle(image, human_pos, 12, cv::Scalar(0,0,255), -1, CV_AA);
+    }
+    bwi_mapper::drawSquareOnGraph(image, graph_, goal_idx_, cv::Scalar(0,0,255),
+        0,0,18,-1);
+
   }
 
   void PersonModelIROS14::setFrameVector(boost::shared_ptr<std::vector<StateIROS14> >& frame_vector){

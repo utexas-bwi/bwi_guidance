@@ -7,6 +7,16 @@ namespace bwi_guidance {
 
   const unsigned NUM_DIRECTIONS = 16;
 
+  struct LineToDraw {
+    int priority;
+    float precision;
+    cv::Scalar color;
+  };
+
+  struct SquareToDraw {
+    cv::Scalar color;
+  };
+
   enum MDPConstants {
     NONE = -1,
     DIR_UNASSIGNED = -2
