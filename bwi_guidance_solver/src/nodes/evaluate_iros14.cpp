@@ -46,7 +46,8 @@ float visibility_range_ = 0.0f; // Infinite visibility
 bool allow_goal_visibility_ = false;
 MCTS<StateIROS14, ActionIROS14>::Params mcts_params_;
 bool mcts_enabled_ = false;
-bool graphical_ = true;
+bool graphical_ = false;
+bool start_colocated_ = false;
 cv::Mat base_image_;
 
 /* Structures used to define a single method */
@@ -181,6 +182,17 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     current_state.precision = 1.0f;
     evaluation_model->addRobots(current_state, MAX_ROBOTS);
     evaluation_model->setState(current_state);
+
+    if (start_colocated_) {
+      float reward;
+      int depth_count;
+      bool terminal;
+      StateIROS14 next_state;
+      evaluation_model->takeAction( 
+          ActionIROS14(ASSIGN_ROBOT, start_idx, DIR_UNASSIGNED), 
+          reward, next_state, terminal, depth_count);
+      current_state = next_state;
+    }
 
     float instance_reward = 0;
     float instance_distance = 0;
@@ -320,6 +332,7 @@ int processOptions(int argc, char** argv) {
      "Data directory (defaults to runtime directory)") 
     ("allow-goal-visibility", "Allow goal visibility to affect human model")
     ("graphical", "Use graphical interface for debugging purposes")
+    ("start-colocated", "Start state coincides with a robot home base")
     ("seed_", po::value<int>(&seed_), "Random seed (process number on condor)")  
     ("num-instances", po::value<int>(&num_instances_), "Number of Instances") 
     ("visibility-range", po::value<float>(&visibility_range_), 
@@ -352,6 +365,9 @@ int processOptions(int argc, char** argv) {
   }
   if (vm.count("graphical")) {
     graphical_ = true;
+  }
+  if (vm.count("start-colocated")) {
+    start_colocated_ = true;
   }
 
   /* Read in global MCTS parameters */
@@ -437,6 +453,10 @@ int main(int argc, char** argv) {
     UIGen direction_gen(mt, direction_dist);
     
     int start_idx = idx_gen();
+    if (start_colocated_) {
+      start_idx = start_idx % 10;
+      start_idx = ROBOT_HOME_BASE[start_idx];
+    }
     int goal_idx = idx_gen();
     while (goal_idx == start_idx) {
       goal_idx = idx_gen();
