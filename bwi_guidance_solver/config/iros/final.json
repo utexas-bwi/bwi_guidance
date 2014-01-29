@@ -1,6 +1,9 @@
 {
   "methods" : [ 
   {
+    "type" : 0
+  },
+  {
     "type" : 2,
     "mcts_reward_bound" : 500,
     "mcts_initial_planning_time" : 10.0,

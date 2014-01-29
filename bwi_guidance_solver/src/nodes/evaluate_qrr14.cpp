@@ -231,7 +231,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             allow_robot_current_idx_, pixel_visibility_range,
             allow_goal_visibility_)); 
     } else if (params.type == VI) {
-      estimator.reset( new PersonEstimatorQRR14);
+      estimator.reset(new PersonEstimatorQRR14);
       vi = getVIInstance(map, model, estimator, goal_idx, params);
     } else if (params.type == MCTS_TYPE) {
 

@@ -16,9 +16,9 @@ namespace boost {
 
 namespace bwi_guidance {
   
-  /* Actions */
+  /* Actions - need to be named differently from previous ActionTypes*/
   enum ActionTypeIROS14 {
-    DO_NOTHING = 0,
+    WAIT = 0,
     ASSIGN_ROBOT = 1,
     GUIDE_PERSON = 2,
     RELEASE_ROBOT = 3

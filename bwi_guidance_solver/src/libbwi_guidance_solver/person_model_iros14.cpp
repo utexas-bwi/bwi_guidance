@@ -107,7 +107,7 @@ namespace bwi_guidance {
         return; // Only choose a direction here
       }
     }
-    actions.push_back(ActionIROS14(DO_NOTHING, 0, 0));
+    actions.push_back(ActionIROS14(WAIT, 0, 0));
     std::vector<int> cant_assign_vertices = state.relieved_locations;
     for (int i = 0; i < state.in_use_robots.size(); ++i) {
       if (std::find(state.acquired_locations.begin(),
@@ -649,7 +649,7 @@ namespace bwi_guidance {
     state = current_state_;
     terminal = isTerminalState(current_state_);
 
-    depth_count = (action.type != DO_NOTHING) ? 0 : (int)(-reward); 
+    depth_count = (action.type != WAIT) ? 0 : (int)(-reward); 
 
     // boost::posix_time::ptime mst2 = boost::posix_time::microsec_clock::local_time();
     // std::cout << "Time elapsed: " << (mst2 - mst1).total_microseconds() << 
@@ -673,7 +673,7 @@ namespace bwi_guidance {
       return true;
     }
     return false;
-    // bool return_next = action.type == DO_NOTHING;
+    // bool return_next = action.type == WAIT;
     // std::vector<int> assigned_vertices(state.in_use_robots.size());
     // for (int i = 0; i < state.in_use_robots.size(); ++i) {
     //   ActionIROS14 next_action(RELEASE_ROBOT, 

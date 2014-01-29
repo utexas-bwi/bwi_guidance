@@ -4,6 +4,8 @@
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
+#include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <rl_pursuit/common/Util.h>
 #include <rl_pursuit/planning/MCTS.h>
@@ -13,6 +15,7 @@
 
 #include <opencv/highgui.h>
 
+#include <bwi_guidance_solver/heuristic_solver_iros14.h>
 #include <bwi_guidance_solver/person_model_iros14.h>
 #include <bwi_guidance_solver/utils.h>
 #include <bwi_mapper/map_loader.h>
@@ -43,7 +46,6 @@ int seed_ = 0;
 int num_instances_ = 1;
 float distance_limit_ = 300.f;
 float visibility_range_ = 0.0f; // Infinite visibility
-bool allow_goal_visibility_ = false;
 MCTS<StateIROS14, ActionIROS14>::Params mcts_params_;
 bool mcts_enabled_ = false;
 bool graphical_ = false;
@@ -57,7 +59,8 @@ const std::string METHOD_TYPE_NAMES[3] = {
 };
 enum MethodType {
   HEURISTIC = 0,
-  MCTS_TYPE = 2
+  MCTS_TYPE = 2,
+  STATIC_BASELINE = 3 // Assumes colocation with a robot at the start of an episode
 };
 
 struct MethodResult {
@@ -112,38 +115,10 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
     const Method::Params& params = methods[method];
 
-    // Initialize the model (and random number generators)
-    boost::shared_ptr<PersonModelIROS14> mcts_model(
-        new PersonModelIROS14(graph, map, goal_idx));
-
-    boost::mt19937 mt(2 * (seed + 1));
-    boost::uniform_int<int> i(0, boost::num_vertices(graph) - 1);
-    boost::uniform_real<float> u(0.0f, 1.0f);
-    boost::poisson_distribution<int> p(1);
-    URGenPtr generative_model_gen(new URGen(mt, u));
-    UIGenPtr idx_gen(new UIGen(mt, i));
-    PIGenPtr robot_goal_gen(new PIGen(mt, p));
-    mcts_model->initializeRNG(idx_gen, generative_model_gen, robot_goal_gen);
-
-    boost::shared_ptr<PersonModelIROS14> evaluation_model(
-        new PersonModelIROS14(graph, map, goal_idx, 10.0f));
-    boost::mt19937 mt2(3 * (seed + 1));
-    boost::uniform_int<int> i2(0, boost::num_vertices(graph) - 1);
-    boost::uniform_real<float> u2(0.0f, 1.0f);
-    boost::poisson_distribution<int> p2(1);
-    URGenPtr generative_model_gen2(new URGen(mt, u2));
-    UIGenPtr idx_gen2(new UIGen(mt, i2));
-    PIGenPtr robot_goal_gen2(new PIGen(mt, p2));
-    evaluation_model->initializeRNG(idx_gen2, generative_model_gen2, robot_goal_gen2);
-    boost::shared_ptr<std::vector<StateIROS14> > fv(new std::vector<StateIROS14>);
-    evaluation_model->setFrameVector(fv);
-
     MethodResult method_result;
 
+    boost::shared_ptr<HeuristicSolverIROS14> hs;
     boost::shared_ptr<MCTS<StateIROS14, ActionIROS14> > mcts;
-
-    // Until we get a working copy of the heuristic
-    assert(params.type == MCTS_TYPE);
 
     if (params.type == MCTS_TYPE) {
       if (!mcts_enabled_) {
@@ -152,12 +127,26 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             "parameter file provided. Please set the mcts-params flag.");
       }
 
+      // TODO interpret new MCTS parameters here
       UCTEstimator<StateIROS14, ActionIROS14>::Params uct_estimator_params;
       uct_estimator_params.gamma = params.gamma;
       uct_estimator_params.lambda = params.lambda;
       uct_estimator_params.rewardBound = params.mcts_reward_bound;
       uct_estimator_params.useImportanceSampling =
         params.mcts_importance_sampling;
+
+      // Initialize the model (and random number generators)
+      boost::shared_ptr<PersonModelIROS14> mcts_model(
+          new PersonModelIROS14(graph, map, goal_idx));
+
+      boost::mt19937 mt(2 * (seed + 1));
+      boost::uniform_int<int> i(0, boost::num_vertices(graph) - 1);
+      boost::uniform_real<float> u(0.0f, 1.0f);
+      boost::poisson_distribution<int> p(1);
+      URGenPtr generative_model_gen(new URGen(mt, u));
+      UIGenPtr idx_gen(new UIGen(mt, i));
+      PIGenPtr robot_goal_gen(new PIGen(mt, p));
+      mcts_model->initializeRNG(idx_gen, generative_model_gen, robot_goal_gen);
 
       // Create the RNG required for mcts rollouts
       boost::shared_ptr<RNG> mcts_rng(new RNG(3 * (seed + 1)));
@@ -172,9 +161,25 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             uct_estimator_params));
       mcts.reset(new MCTS<StateIROS14, ActionIROS14>(uct_estimator,
             mcts_model_updator, mcts_state_mapping, mcts_params_));
+    } else if (params.type == HEURISTIC) {
+      hs.reset(new HeuristicSolverIROS14(map, graph, goal_idx));
     }
 
     EVALUATE_OUTPUT("Evaluating method " << params);
+
+    // Construct the evaluation model
+    boost::shared_ptr<PersonModelIROS14> evaluation_model(
+        new PersonModelIROS14(graph, map, goal_idx, 10.0f));
+    boost::mt19937 mt2(3 * (seed + 1));
+    boost::uniform_int<int> i2(0, boost::num_vertices(graph) - 1);
+    boost::uniform_real<float> u2(0.0f, 1.0f);
+    boost::poisson_distribution<int> p2(1);
+    URGenPtr generative_model_gen2(new URGen(mt2, u2));
+    UIGenPtr idx_gen2(new UIGen(mt2, i2));
+    PIGenPtr robot_goal_gen2(new PIGen(mt2, p2));
+    evaluation_model->initializeRNG(idx_gen2, generative_model_gen2, robot_goal_gen2);
+    boost::shared_ptr<std::vector<StateIROS14> > fv(new std::vector<StateIROS14>);
+    evaluation_model->setFrameVector(fv);
     
     StateIROS14 current_state; 
     current_state.graph_id = start_idx;
@@ -192,6 +197,12 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
           ActionIROS14(ASSIGN_ROBOT, start_idx, DIR_UNASSIGNED), 
           reward, next_state, terminal, depth_count);
       current_state = next_state;
+    }
+
+    if (params.type == STATIC_BASELINE) {
+      // Compute the baseline here. You'll have to do some work to compute
+      // utility loss. 
+      continue; // Continue to the next method directly, no evaluation required
     }
 
     float instance_reward = 0;
@@ -231,7 +242,11 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       std::vector<ActionIROS14> actions;
       evaluation_model->getActionsAtState(current_state, actions);
       ActionIROS14 action;
-      action = mcts->selectWorldAction(current_state);
+      if (params.type == MCTS_TYPE) {
+        action = mcts->selectWorldAction(current_state);
+      } else if (params.type == HEURISTIC) {
+        action = hs->getBestAction(current_state, evaluation_model);
+      }
       // std::cout << "Select: " << std::endl;
       // int choice;
       // std::cin >> choice;
@@ -252,10 +267,12 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       EVALUATE_OUTPUT(" - Next state: " << current_state);
       EVALUATE_OUTPUT("     Received reward: " << reward);
 
-      if (action.type == DO_NOTHING) {
+      if (action.type == WAIT) {
         // Prune old visits before searching
         EVALUATE_OUTPUT(" - Cleared existing MCTS search tree");
-        mcts->restart();
+        if (params.type == MCTS_TYPE) {
+          mcts->restart();
+        }
 
         float total_time = 0.0f;
         BOOST_FOREACH(StateIROS14& state, *fv) {
@@ -265,10 +282,15 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             cv::imshow("out", out_img);
             //cv::waitKey(50);
           }
-          for (int i = 0; i < params.mcts_planning_time_multiplier; ++i) {
-            total_time += 0.1f;
-            unsigned int terminations;
-            mcts->search(current_state, terminations);
+          if (params.type == MCTS_TYPE) {
+            for (int i = 0; i < params.mcts_planning_time_multiplier; ++i) {
+              total_time += 0.1f;
+              unsigned int terminations;
+              mcts->search(current_state, terminations);
+            }
+          } else {
+            // Sleep this thread manually
+            boost::this_thread::sleep(boost::posix_time::milliseconds(100));
           }
         }
         EVALUATE_OUTPUT(" - Performed MCTS search for " << total_time << "s");
@@ -359,9 +381,6 @@ int processOptions(int argc, char** argv) {
     return -1; 
   } 
 
-  if (vm.count("allow-goal-visibility")) {
-    allow_goal_visibility_ = true;
-  }
   if (vm.count("graphical")) {
     graphical_ = true;
   }
@@ -420,7 +439,6 @@ int main(int argc, char** argv) {
   std::cout << "Graph File: " << graph_file_ << std::endl;
   std::cout << "Visibility Range: " << visibility_range_ << std::endl;
   std::cout << "Distance Limit: " << distance_limit_ << std::endl;
-  std::cout << "Allow Goal Visibiliy: " << allow_goal_visibility_ << std::endl;
 
   bwi_mapper::MapLoader mapper(map_file_);
   bwi_mapper::Graph graph;

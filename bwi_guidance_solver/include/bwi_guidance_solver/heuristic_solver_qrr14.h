@@ -21,7 +21,7 @@ class HeuristicSolver {
       return std::string("stub");
     }
 
-  private:
+  protected:
     nav_msgs::OccupancyGrid map_;
     bwi_mapper::Graph graph_;
     int goal_idx_;

@@ -3,7 +3,7 @@
 namespace bwi_guidance {
 
 
-  ActionIROS14::ActionIROS14() : type(DO_NOTHING), at_graph_id(0), 
+  ActionIROS14::ActionIROS14() : type(WAIT), at_graph_id(0), 
     guide_graph_id(0) {}
   ActionIROS14::ActionIROS14(ActionTypeIROS14 a, int dest, int dir) : type(a),
     at_graph_id(dest), guide_graph_id(dir) {}
@@ -21,7 +21,7 @@ namespace bwi_guidance {
   }
 
   const std::string ACTION_IROS14_NAMES[] = {
-    "DO_NOTHING",
+    "WAIT",
     "ASSIGN_ROBOT",
     "DIRECT_PERSON",
     "RELEASE_ROBOT"
@@ -29,7 +29,7 @@ namespace bwi_guidance {
   std::ostream& operator<<(std::ostream& stream, const ActionIROS14& a) {
 
     stream << "[" << ACTION_IROS14_NAMES[a.type];
-    if (a.type != DO_NOTHING)
+    if (a.type != WAIT)
       stream << " " << a.at_graph_id << "->" << a.guide_graph_id;
     stream << "]";
 
