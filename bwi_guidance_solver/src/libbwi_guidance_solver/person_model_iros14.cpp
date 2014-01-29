@@ -163,6 +163,8 @@ namespace bwi_guidance {
               shortest_paths_[robot.graph_id][to_destination];
             if (shortest_path.size() > 0) {
               robot.other_graph_node = shortest_path[0];
+            } else {
+              robot.other_graph_node = robot.graph_id;
             }
           }
           /* std::cout << "in here" << robot.precision << " " << robot.graph_id << " " << robot.other_graph_node << " " << to_destination << std::endl; */
