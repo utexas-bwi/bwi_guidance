@@ -19,7 +19,7 @@
     "type" : 2,
     "mcts_reward_bound" : 5000,
     "mcts_planning_time_multiplier" : 8.0
-  } 
+  }, 
   {
     "type" : 2,
     "mcts_reward_bound" : 5000,
