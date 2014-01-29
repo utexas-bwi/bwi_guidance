@@ -513,14 +513,27 @@ namespace bwi_guidance {
 
     if (action.type == GUIDE_PERSON) {
       int mark = -1;
+      int robot_id;
       for (int i = 0; i < current_state_.in_use_robots.size(); ++i) {
         if (action.at_graph_id == current_state_.in_use_robots[i].destination) {
+          robot_id = current_state_.in_use_robots[i].robot_id;
           mark = i;
           break;
         }
       }
       assert(mark != -1);
-      current_state_.in_use_robots[mark].direction = action.guide_graph_id;
+      //current_state_.in_use_robots[mark].direction = action.guide_graph_id;
+      float direction = bwi_mapper::getNodeAngle(
+          current_state_.graph_id, action.guide_graph_id, graph_);
+      current_state_.direction = getDiscretizedAngle(direction);
+      current_state_.in_use_robots.erase(
+          current_state_.in_use_robots.begin() + mark);
+      current_state_.relieved_locations.push_back(action.at_graph_id);
+
+      // Since we are changing destinations, we need to reset robot state
+      // to take optimal path to goal
+      RobotStateIROS14& robot = current_state_.robots[robot_id];
+      changeRobotDirectionIfNeeded(robot, action.at_graph_id, robot.destination);
       return 0.0;
     }
 
