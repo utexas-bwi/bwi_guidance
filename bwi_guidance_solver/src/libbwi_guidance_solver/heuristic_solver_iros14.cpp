@@ -8,7 +8,7 @@ using namespace bwi_guidance;
 
 HeuristicSolverIROS14::HeuristicSolverIROS14(const nav_msgs::OccupancyGrid&
     map, const bwi_mapper::Graph& graph, int goal_idx, bool improved, float
-    human_speed) : HeuristicSolver(map, graph, goal_idx, true, 0.0f, false),
+    human_speed) : HeuristicSolver(map, graph, goal_idx, true, 0.0f, true),
   improved_(improved), human_speed_(human_speed) {
     human_speed_ /= map.info.resolution;
   }
@@ -45,6 +45,8 @@ ActionIROS14 HeuristicSolverIROS14::getBestAction(
   boost::shared_ptr<std::vector<int> > blacklisted_vertices;
   if (improved_) {
     blacklisted_vertices.reset(new std::vector<int>);
+    blacklisted_vertices->insert(blacklisted_vertices->end(), 
+        state.relieved_locations.begin(), state.relieved_locations.end());
     BOOST_FOREACH(const int& vtx, visible_vertices_map_[mapped_state.graph_id]) {
       if (state.in_use_robots.size() != 0) {
         if (vtx == state.in_use_robots[0].destination) {
@@ -58,9 +60,11 @@ ActionIROS14 HeuristicSolverIROS14::getBestAction(
       evaluation_model->selectBestRobotForTask(vtx, time_to_destination,
           reach_in_time);
       if (!reach_in_time) {
+        std::cout << vtx << " ";
         blacklisted_vertices->push_back(vtx);
       }
     }
+    std::cout << std::endl;
   }
 
   // Get the best action 
@@ -69,6 +73,10 @@ ActionIROS14 HeuristicSolverIROS14::getBestAction(
   ActionIROS14 mapped_action;
   switch(action.type) {
     case DO_NOTHING:
+      if (state.in_use_robots.size() != 0) {
+        // The approach does not require a robot. Release acquired robot.
+        mapped_action = ActionIROS14(RELEASE_ROBOT, state.in_use_robots[0].destination, NONE);
+      }
       return mapped_action;
     case DIRECT_PERSON:
       mapped_action = ActionIROS14(GUIDE_PERSON, mapped_state.graph_id, action.graph_id);

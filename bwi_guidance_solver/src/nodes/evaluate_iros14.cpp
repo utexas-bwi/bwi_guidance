@@ -34,6 +34,8 @@ using namespace bwi_guidance;
 /* Constants */
 const std::string MODEL_FILE_SUFFIX = "model";
 const std::string DISTANCE_FILE_SUFFIX = "distance.txt";
+const std::string TIME_FILE_SUFFIX = "time.txt";
+const std::string UTILITY_FILE_SUFFIX = "utility.txt";
 const std::string REWARD_FILE_SUFFIX = "reward.txt";
 const std::string PLAYOUTS_FILE_SUFFIX = "playouts.txt";
 const std::string TERMINATIONS_FILE_SUFFIX = "terminations.txt";
@@ -68,6 +70,8 @@ struct MethodResult {
   unsigned int mcts_terminations;
   float reward;
   float distance;
+  float time;
+  float utility;
 };
 
 namespace Method {
@@ -75,7 +79,7 @@ namespace Method {
   _(int,type,type,MCTS_TYPE) \
   _(float,gamma,gamma,1.0) \
   _(float,lambda,lambda,0.0) \
-  _(bool,h_improved,h_improved,true) \
+  _(bool,h_improved,h_improved,false) \
   _(float,mcts_initial_planning_time,mcts_initial_planning_time,10.0) \
   _(float,mcts_planning_time_multiplier,mcts_planning_time_multiplier,1.0) \
   _(float,mcts_reward_bound,mcts_reward_bound,5000.0) \
@@ -84,7 +88,7 @@ namespace Method {
   _(float,visibility_range,visibility_range,0.0f) \
   _(float,human_speed,human_speed,1.0f) \
   _(float,robot_speed,robot_speed,0.75f) \
-  _(float,utility_multiplier,utility_multiplier,0.0f) \
+  _(float,utility_multiplier,utility_multiplier,1.0f) \
   _(bool,use_shaping_reward,use_shaping_reward,true) 
 
   Params_STRUCT(PARAMS)
@@ -102,11 +106,18 @@ struct InstanceResult {
 
 /* Helper Functions */
 
+float getOtherNormalizationValue(bwi_mapper::Graph& graph, 
+    nav_msgs::OccupancyGrid& map, int goal_idx, 
+    int start_idx, const Method::Params& params) {
+  float distance = map.info.resolution *
+    bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph);
+  float best_time = distance / params.human_speed;
+  return best_time;
+}
+
 float getDistanceNormalizationValue(bwi_mapper::Graph& graph, int goal_idx, 
     int start_idx) {
-  std::vector<size_t> temp_path;
-  return bwi_mapper::getShortestPathWithDistance(start_idx, goal_idx, temp_path,
-      graph);
+  return bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph);
 }
 
 /* Top level execution functions */
@@ -184,7 +195,11 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             params.visibility_range, false, params.human_speed,
             params.robot_speed, params.utility_multiplier, 
             params.use_shaping_reward));
-    boost::mt19937 mt2(3 * (seed + 1));
+    int eval_seed = 3 * (seed + 1);
+    if (graphical_) {
+      /* eval_seed = time(NULL); */
+    }
+    boost::mt19937 mt2(eval_seed);
     boost::uniform_int<int> i2(0, boost::num_vertices(graph) - 1);
     boost::uniform_real<float> u2(0.0f, 1.0f);
     boost::poisson_distribution<int> p2(1);
@@ -214,28 +229,34 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     }
 
     if (params.type == STATIC_BASELINE) {
+      float robot_speed = params.robot_speed / map.info.resolution;
       float time_to_goal = 
         bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph) /
-        params.robot_speed;
+        robot_speed;
       float time_to_original_destination = 
         bwi_mapper::getShortestPathDistance(start_idx,
-            current_state.robots[0].destination, graph) / params.robot_speed;
+            current_state.robots[0].destination, graph) / robot_speed;
       float time_from_goal_to_original_destination = 
         bwi_mapper::getShortestPathDistance(goal_idx, 
-            current_state.robots[0].destination, graph) / params.robot_speed;
-      float utility_loss = params.utility_multiplier *
+            current_state.robots[0].destination, graph) / robot_speed;
+      float utility_loss = 
         (time_to_goal + time_from_goal_to_original_destination - 
          time_to_original_destination);
 
-      method_result.reward = -time_to_goal - utility_loss;
-      method_result.distance = time_to_goal * params.robot_speed * map.info.resolution;
+      method_result.time = time_to_goal;
+      method_result.utility = -utility_loss;
+      method_result.reward = 
+        -time_to_goal - params.utility_multiplier * utility_loss;
+      method_result.distance = time_to_goal * params.robot_speed;
       result.results.push_back(method_result);
 
       continue; // Continue to the next method directly, no evaluation required
     }
 
-    float instance_reward = 0;
-    float instance_distance = 0;
+    float instance_reward = 0.0f;
+    float instance_distance = 0.0f;
+    float instance_time = 0.0f;
+    float instance_utility = 0.0f;
 
     EVALUATE_OUTPUT(" - Start " << current_state);
     if (graphical_) {
@@ -298,6 +319,8 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             current_state.graph_id, graph);
       instance_distance += transition_distance;
       instance_reward += reward;
+      instance_time += time_loss;
+      instance_utility -= utility_loss;
       current_state = next_state;
       EVALUATE_OUTPUT(" - Next state: " << current_state);
       EVALUATE_OUTPUT("     Reward: " << reward << 
@@ -328,8 +351,10 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
               mcts->search(current_state, terminations);
             }
           } else {
-            // Sleep this thread manually
-            boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+            if (graphical_) {
+              // Sleep this thread manually
+              boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+            }
           }
         }
         if (params.type == MCTS_TYPE) {
@@ -344,6 +369,8 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     }
 
     method_result.reward = instance_reward;
+    method_result.time = instance_time;
+    method_result.utility = instance_utility;
     method_result.distance = instance_distance * map.info.resolution;
     result.results.push_back(method_result);
   }
@@ -353,19 +380,24 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     getDistanceNormalizationValue(graph, goal_idx, start_idx) *
     map.info.resolution;
 
-  // TODO figure out a good way of normalizing the total reward
-  float normalization_reward = 1.0f;
-  
   for (int method = 0; method < methods.size(); ++method) {
+    float normalization_other = getOtherNormalizationValue(graph, map,
+        goal_idx, start_idx, methods[method]);
+    
     MethodResult& method_result = result.results[method];
     MethodResult normalized_result;
     normalized_result.mcts_playouts = method_result.mcts_playouts;
     normalized_result.mcts_terminations = method_result.mcts_terminations;
+    normalized_result.time = 
+      method_result.time / fabs(normalization_other);
+    normalized_result.utility = 
+      method_result.utility / fabs(normalization_other);
     normalized_result.reward = 
-      method_result.reward / fabs(normalization_reward);
+      method_result.reward / fabs(normalization_other);
     normalized_result.distance = 
       method_result.distance / normalization_distance;
     result.normalized_results.push_back(normalized_result);
+
   }
 
   return result;
@@ -494,6 +526,12 @@ int main(int argc, char** argv) {
   std::ofstream rfout((data_directory_ +  
         boost::lexical_cast<std::string>(seed_) + "_" +
         REWARD_FILE_SUFFIX).c_str());
+  std::ofstream timefout((data_directory_ +  
+        boost::lexical_cast<std::string>(seed_) + "_" +
+        TIME_FILE_SUFFIX).c_str());
+  std::ofstream ufout((data_directory_ +  
+        boost::lexical_cast<std::string>(seed_) + "_" +
+        UTILITY_FILE_SUFFIX).c_str());
   std::ofstream pfout((data_directory_ +  
         boost::lexical_cast<std::string>(seed_) + "_" +
         PLAYOUTS_FILE_SUFFIX).c_str());
@@ -530,11 +568,15 @@ int main(int argc, char** argv) {
     for (unsigned int m = 0; m < methods_.size(); ++m) {
       dfout << res.normalized_results[m].distance; 
       rfout << res.normalized_results[m].reward; 
+      timefout << res.normalized_results[m].time; 
+      ufout << res.normalized_results[m].utility; 
       pfout << res.results[m].mcts_playouts; 
       tfout << res.results[m].mcts_terminations; 
       if (m != methods_.size() - 1) {
         dfout << ",";
         rfout << ",";
+        timefout << ",";
+        ufout << ",";
         pfout << ",";
         tfout << ",";
       }
@@ -542,6 +584,8 @@ int main(int argc, char** argv) {
 
     dfout << std::endl;
     rfout << std::endl;
+    timefout << std::endl;
+    ufout << std::endl;
     pfout << std::endl;
     tfout << std::endl;
 
@@ -549,6 +593,8 @@ int main(int argc, char** argv) {
 
   dfout.close();
   rfout.close();
+  timefout.close();
+  ufout.close();
   pfout.close();
   tfout.close();
 
