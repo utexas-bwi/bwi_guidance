@@ -84,8 +84,8 @@ namespace Method {
   _(float,visibility_range,visibility_range,0.0f) \
   _(float,human_speed,human_speed,1.0f) \
   _(float,robot_speed,robot_speed,0.75f) \
-  _(float,utility_multiplier,utility_multiplier,1.0f) \
-  _(bool,use_shaping_reward,use_shaping_reward,false) 
+  _(float,utility_multiplier,utility_multiplier,0.0f) \
+  _(bool,use_shaping_reward,use_shaping_reward,true) 
 
   Params_STRUCT(PARAMS)
 #undef PARAMS
@@ -145,7 +145,8 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
           new PersonModelIROS14(graph, map, goal_idx, 0.0f, 
             params.max_robots_in_use, 0, params.action_vertex_adjacency_depth,
             params.visibility_range, false, params.human_speed,
-            params.robot_speed));
+            params.robot_speed, params.utility_multiplier,
+            params.use_shaping_reward));
 
       boost::mt19937 mt(2 * (seed + 1));
       boost::uniform_int<int> i(0, boost::num_vertices(graph) - 1);
@@ -307,8 +308,8 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
       if (action.type == WAIT) {
         // Prune old visits before searching
-        EVALUATE_OUTPUT(" - Cleared existing MCTS search tree");
         if (params.type == MCTS_TYPE) {
+          EVALUATE_OUTPUT(" - Cleared existing MCTS search tree");
           mcts->restart();
         }
 
@@ -331,7 +332,9 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             boost::this_thread::sleep(boost::posix_time::milliseconds(100));
           }
         }
-        EVALUATE_OUTPUT(" - Performed MCTS search for " << total_time << "s");
+        if (params.type == MCTS_TYPE) {
+          EVALUATE_OUTPUT(" - Performed MCTS search for " << total_time << "s");
+        }
       }
 
       if (terminal) {
