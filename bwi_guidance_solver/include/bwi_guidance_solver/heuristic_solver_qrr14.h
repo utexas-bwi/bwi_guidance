@@ -16,7 +16,9 @@ class HeuristicSolver {
     void computePolicy();
     void loadPolicy(const std::string& file);
     void savePolicy(const std::string& file);
-    bwi_guidance::ActionQRR14 getBestAction(const bwi_guidance::StateQRR14& state) const;
+    bwi_guidance::ActionQRR14 getBestAction(const bwi_guidance::StateQRR14& state,
+        boost::shared_ptr<std::vector<int> > blacklisted_vertices =
+        boost::shared_ptr<std::vector<int> >()) const;
     virtual std::string generateDescription(unsigned int indentation = 0) {
       return std::string("stub");
     }

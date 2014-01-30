@@ -19,11 +19,14 @@ namespace bwi_guidance {
       const nav_msgs::OccupancyGrid& map, size_t goal_idx, float frame_rate,
       int max_robots_in_use, int action_vertex_visibility_depth, 
       int action_vertex_adjacency_depth, float visibility_range, 
-      bool allow_goal_visibility, float human_speed, float robot_speed) :
+      bool allow_goal_visibility, float human_speed, float robot_speed,
+      float utility_multiplier, bool use_shaping_reward) :
     graph_(graph), map_(map), goal_idx_(goal_idx),
     frame_rate_(frame_rate), max_robots_in_use_(max_robots_in_use),
     allow_goal_visibility_(allow_goal_visibility), human_speed_(human_speed),
-    robot_speed_(robot_speed), initialized_(false) {
+    robot_speed_(robot_speed), utility_multiplier_(utility_multiplier),
+    use_shaping_reward_(use_shaping_reward), initialized_(false),
+    previous_action_utility_loss_(0.0f), previous_action_time_loss_(0.0f) {
 
     robot_speed_ /= map_.info.resolution;
     human_speed_ /= map_.info.resolution;
@@ -203,7 +206,7 @@ namespace bwi_guidance {
   }
 
   int PersonModelIROS14::selectBestRobotForTask(int destination, 
-      float time_to_destination) {
+      float time_to_destination, bool& reach_in_time) {
 
     std::vector<float> utility_loss_all(current_state_.robots.size(),
         std::numeric_limits<float>::max());
@@ -233,7 +236,6 @@ namespace bwi_guidance {
         float new_time = 
           std::max(new_distance_1 / robot_speed_, time_to_destination) + 
           new_distance_2 / robot_speed_;
-        // TODO - introduce utility multiplier here
         utility_loss_all[i] = new_time - original_time;
         if (new_distance_1 / robot_speed_ <= time_to_destination) {
           // The robot will reach there in time
@@ -245,9 +247,11 @@ namespace bwi_guidance {
     
     if (*(std::min_element(utility_loss_in_time.begin(), utility_loss_in_time.end())) != 
           std::numeric_limits<float>::max()) {
+      reach_in_time = true;
       return std::min_element(utility_loss_in_time.begin(), utility_loss_in_time.end()) - 
         utility_loss_in_time.begin();
     } else {
+      reach_in_time = false;
       return std::min_element(time.begin(), time.end()) - time.begin();
     }
 
@@ -484,6 +488,8 @@ namespace bwi_guidance {
       // to take optimal path to goal
       RobotStateIROS14& robot = current_state_.robots[robot_id];
       changeRobotDirectionIfNeeded(robot, action.at_graph_id, robot.destination);
+      previous_action_utility_loss_ = 0.0f;
+      previous_action_time_loss_ = 0.0f;
       return 0.0;
     }
 
@@ -493,8 +499,10 @@ namespace bwi_guidance {
       float distance_to_destination = shortest_distances_[current_state_.graph_id][action.at_graph_id];
       float time_to_destination = distance_to_destination / human_speed_; 
       InUseRobotStateIROS14 r;
+      bool reach_in_time;
       r.robot_id = 
-        selectBestRobotForTask(action.at_graph_id, time_to_destination);
+        selectBestRobotForTask(action.at_graph_id, time_to_destination, 
+            reach_in_time);
       r.destination = action.at_graph_id;
       r.direction = DIR_UNASSIGNED;
       r.reached_destination = 
@@ -507,8 +515,9 @@ namespace bwi_guidance {
       changeRobotDirectionIfNeeded(robot, robot.destination, action.at_graph_id);
       
       /* std::cout << current_state_ << std::endl; */
-      // TODO return utility loss
-      return -10.0;//0.0;//-20.0;
+      previous_action_utility_loss_ = 0.0f;
+      previous_action_time_loss_ = 0.0f;
+      return 0.0f;
     }
 
     if (action.type == GUIDE_PERSON) {
@@ -534,6 +543,8 @@ namespace bwi_guidance {
       // to take optimal path to goal
       RobotStateIROS14& robot = current_state_.robots[robot_id];
       changeRobotDirectionIfNeeded(robot, action.at_graph_id, robot.destination);
+      previous_action_utility_loss_ = 0.0f;
+      previous_action_time_loss_ = 0.0f;
       return 0.0;
     }
 
@@ -591,9 +602,18 @@ namespace bwi_guidance {
       [select(probabilities, ugen_)];
 
     // Now that we've decided which vertex the person is moving to, compute
-    // time/distance to that vertex and update all the robots
+    // time to that vertex and update all the robots
     float time_to_vertex = 
       shortest_distances_[current_state_.graph_id][next_node] / human_speed_;
+    previous_action_utility_loss_ = 0.0f;
+    std::vector<float> time_to_original_destination_before(10);
+    BOOST_FOREACH(const InUseRobotStateIROS14& robot, current_state_.in_use_robots) {
+      float distance_to_original_destination = 
+        getTrueDistanceTo(current_state_.robots[robot.robot_id], 0, 
+            current_state_.robots[robot.robot_id].destination);
+      time_to_original_destination_before[robot.robot_id] = 
+        distance_to_original_destination / robot_speed_;
+    }
 
     // Transition to next state
     float distance_closed = 
@@ -618,15 +638,32 @@ namespace bwi_guidance {
       }
     }
 
+    // After the robots have been moved, let's compute the time to destination
+    // again to compute the utility loss
+    previous_action_utility_loss_ = 0.0f;
+    BOOST_FOREACH(const InUseRobotStateIROS14& robot, 
+        current_state_.in_use_robots) {
+      float distance_to_original_destination = 
+        getTrueDistanceTo(current_state_.robots[robot.robot_id], 0, 
+            current_state_.robots[robot.robot_id].destination);
+      float time_to_original_destination = 
+        distance_to_original_destination / robot_speed_;
+      previous_action_utility_loss_ += 
+        std::max(0.0f, 
+            time_to_original_destination + time_to_vertex -
+            time_to_original_destination_before[robot.robot_id]);
+    }
+    previous_action_time_loss_ = time_to_vertex;
+
     // Compute reward
     float reward = -time_to_vertex;
-    reward += distance_closed / human_speed_;
 
-    // TODO how to incorporate utility? 
-    //   - At the time of release would be easy and correct, but then the 
-    //     robots won't get released
-    //   - At the time of acquire would only be estimated
-    //   - Any way to do this incrementally, but still get correct value (best)
+    if (use_shaping_reward_) {
+      reward += distance_closed / human_speed_;
+    }
+
+    reward -= utility_multiplier_ * previous_action_utility_loss_; 
+
     return reward;
   }
 
@@ -649,7 +686,7 @@ namespace bwi_guidance {
     state = current_state_;
     terminal = isTerminalState(current_state_);
 
-    depth_count = (action.type != WAIT) ? 0 : (int)(-reward); 
+    depth_count = (action.type != WAIT) ? 0 : lrint(previous_action_time_loss_); 
 
     // boost::posix_time::ptime mst2 = boost::posix_time::microsec_clock::local_time();
     // std::cout << "Time elapsed: " << (mst2 - mst1).total_microseconds() << 
@@ -725,6 +762,12 @@ namespace bwi_guidance {
     ugen_ = ugen;
     pgen_ = pgen;
   }
+
+  void PersonModelIROS14::getLossesInPreviousTransition(
+      float& time_loss, float& utility_loss) {
+    time_loss = previous_action_time_loss_;
+    utility_loss = previous_action_utility_loss_;
+  } 
 
   void PersonModelIROS14::drawState(const StateIROS14& state, cv::Mat& image) {
     assert(initialized_);

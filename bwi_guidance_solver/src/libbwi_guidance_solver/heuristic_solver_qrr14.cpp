@@ -1,4 +1,7 @@
 #include <fstream>
+
+#include <boost/foreach.hpp>
+
 #include <bwi_guidance_solver/heuristic_solver_qrr14.h>
 #include <bwi_mapper/map_utils.h>
 #include <bwi_mapper/point_utils.h>
@@ -34,7 +37,9 @@ HeuristicSolver::HeuristicSolver(const nav_msgs::OccupancyGrid& map, const
     fout.close();
   }
 
-ActionQRR14 HeuristicSolver::getBestAction(const bwi_guidance::StateQRR14& state) const {
+ActionQRR14 HeuristicSolver::getBestAction(
+    const bwi_guidance::StateQRR14& state,
+    boost::shared_ptr<std::vector<int> > blacklisted_vertices) const {
 
   if (state.robot_direction == DIR_UNASSIGNED) {
     // Find shortest path to goal. Point in direction of this path
@@ -129,6 +134,17 @@ ActionQRR14 HeuristicSolver::getBestAction(const bwi_guidance::StateQRR14& state
   if (!allow_robot_current_idx_) {
     // The first one is the current location
     states.erase(states.begin());
+  }
+
+  // Remove any blacklisted vertices
+  if (blacklisted_vertices) {
+    BOOST_FOREACH(int blacklisted_vtx, *blacklisted_vertices) {
+      std::vector<size_t>::iterator it = 
+        std::find(states.begin(), states.end(), blacklisted_vtx);
+      if (it != states.end()) {
+        states.erase(it);
+      }
+    }
   }
 
   // std::cout << "States under consideration for placing a robot: ";

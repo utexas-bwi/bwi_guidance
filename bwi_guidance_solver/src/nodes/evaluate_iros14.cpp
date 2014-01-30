@@ -75,10 +75,17 @@ namespace Method {
   _(int,type,type,MCTS_TYPE) \
   _(float,gamma,gamma,1.0) \
   _(float,lambda,lambda,0.0) \
+  _(bool,h_improved,h_improved,true) \
   _(float,mcts_initial_planning_time,mcts_initial_planning_time,10.0) \
   _(float,mcts_planning_time_multiplier,mcts_planning_time_multiplier,1.0) \
   _(float,mcts_reward_bound,mcts_reward_bound,5000.0) \
-  _(bool,mcts_importance_sampling,mcts_importance_sampling,false) 
+  _(int,action_vertex_adjacency_depth,action_vertex_adjacency_depth,2) \
+  _(int,max_robots_in_use,max_robots_in_use,1) \
+  _(float,visibility_range,visibility_range,0.0f) \
+  _(float,human_speed,human_speed,1.0f) \
+  _(float,robot_speed,robot_speed,0.75f) \
+  _(float,utility_multiplier,utility_multiplier,1.0f) \
+  _(bool,use_shaping_reward,use_shaping_reward,false) 
 
   Params_STRUCT(PARAMS)
 #undef PARAMS
@@ -127,17 +134,18 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             "parameter file provided. Please set the mcts-params flag.");
       }
 
-      // TODO interpret new MCTS parameters here
       UCTEstimator<StateIROS14, ActionIROS14>::Params uct_estimator_params;
       uct_estimator_params.gamma = params.gamma;
       uct_estimator_params.lambda = params.lambda;
       uct_estimator_params.rewardBound = params.mcts_reward_bound;
-      uct_estimator_params.useImportanceSampling =
-        params.mcts_importance_sampling;
+      uct_estimator_params.useImportanceSampling = false;
 
       // Initialize the model (and random number generators)
       boost::shared_ptr<PersonModelIROS14> mcts_model(
-          new PersonModelIROS14(graph, map, goal_idx));
+          new PersonModelIROS14(graph, map, goal_idx, 0.0f, 
+            params.max_robots_in_use, 0, params.action_vertex_adjacency_depth,
+            params.visibility_range, false, params.human_speed,
+            params.robot_speed));
 
       boost::mt19937 mt(2 * (seed + 1));
       boost::uniform_int<int> i(0, boost::num_vertices(graph) - 1);
@@ -162,14 +170,19 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       mcts.reset(new MCTS<StateIROS14, ActionIROS14>(uct_estimator,
             mcts_model_updator, mcts_state_mapping, mcts_params_));
     } else if (params.type == HEURISTIC) {
-      hs.reset(new HeuristicSolverIROS14(map, graph, goal_idx));
+      hs.reset(new HeuristicSolverIROS14(map, graph, goal_idx, 
+            params.h_improved, params.human_speed));
     }
 
     EVALUATE_OUTPUT("Evaluating method " << params);
 
     // Construct the evaluation model
     boost::shared_ptr<PersonModelIROS14> evaluation_model(
-        new PersonModelIROS14(graph, map, goal_idx, 10.0f));
+          new PersonModelIROS14(graph, map, goal_idx, 10.0f, 
+            params.max_robots_in_use, 0, params.action_vertex_adjacency_depth,
+            params.visibility_range, false, params.human_speed,
+            params.robot_speed, params.utility_multiplier, 
+            params.use_shaping_reward));
     boost::mt19937 mt2(3 * (seed + 1));
     boost::uniform_int<int> i2(0, boost::num_vertices(graph) - 1);
     boost::uniform_real<float> u2(0.0f, 1.0f);
@@ -200,8 +213,23 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     }
 
     if (params.type == STATIC_BASELINE) {
-      // Compute the baseline here. You'll have to do some work to compute
-      // utility loss. 
+      float time_to_goal = 
+        bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph) /
+        params.robot_speed;
+      float time_to_original_destination = 
+        bwi_mapper::getShortestPathDistance(start_idx,
+            current_state.robots[0].destination, graph) / params.robot_speed;
+      float time_from_goal_to_original_destination = 
+        bwi_mapper::getShortestPathDistance(goal_idx, 
+            current_state.robots[0].destination, graph) / params.robot_speed;
+      float utility_loss = params.utility_multiplier *
+        (time_to_goal + time_from_goal_to_original_destination - 
+         time_to_original_destination);
+
+      method_result.reward = -time_to_goal - utility_loss;
+      method_result.distance = time_to_goal * params.robot_speed * map.info.resolution;
+      result.results.push_back(method_result);
+
       continue; // Continue to the next method directly, no evaluation required
     }
 
@@ -214,6 +242,10 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       evaluation_model->drawState(current_state, out_img);
       cv::imshow("out", out_img);
       //cv::waitKey(100);
+      if (params.type == HEURISTIC) {
+        // Introduce a 10 second delay so that the observer can get oriented
+        boost::this_thread::sleep(boost::posix_time::milliseconds(10000));
+      }
     }
 
     method_result.mcts_terminations = 0;
@@ -256,8 +288,10 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       StateIROS14 next_state;
       bool terminal;
       int depth_count;
+      float time_loss, utility_loss;
       evaluation_model->takeAction(action, reward, next_state, terminal,
           depth_count);
+      evaluation_model->getLossesInPreviousTransition(time_loss, utility_loss);
       float transition_distance = 
         bwi_mapper::getEuclideanDistance(next_state.graph_id,
             current_state.graph_id, graph);
@@ -265,7 +299,11 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       instance_reward += reward;
       current_state = next_state;
       EVALUATE_OUTPUT(" - Next state: " << current_state);
-      EVALUATE_OUTPUT("     Received reward: " << reward);
+      EVALUATE_OUTPUT("     Reward: " << reward << 
+          ", Distance: " << transition_distance * map.info.resolution <<
+          ", Time Lost: " << time_loss <<
+          ", Utility Lost: " << utility_loss <<
+          ", Depth Count: " << depth_count);
 
       if (action.type == WAIT) {
         // Prune old visits before searching
@@ -300,7 +338,6 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
         break;
       }
 
-      //cv::waitKey(-1);
     }
 
     method_result.reward = instance_reward;

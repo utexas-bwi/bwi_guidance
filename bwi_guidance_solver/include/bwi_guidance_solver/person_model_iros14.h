@@ -29,7 +29,8 @@ namespace bwi_guidance {
           int action_vertex_visibility_depth = 0, 
           int action_vertex_adjacency_depth = 2, float visibility_range = 0.0f,
           bool allow_goal_visibility = false, float human_speed = 1.0,
-          float robot_speed = 0.75);
+          float robot_speed = 0.75, float utility_multiplier = 0.0f,
+          bool use_shaping_reward = true);
 
       /* Functions inherited from PredictiveModel */
       virtual ~PersonModelIROS14() {};
@@ -46,6 +47,9 @@ namespace bwi_guidance {
 
       void initializeRNG(UIGenPtr uigen, URGenPtr ugen, PIGenPtr pgen);
       void addRobots(StateIROS14& state, int n);
+      int selectBestRobotForTask(int destination, float time_to_destination,
+          bool& reach_in_time);
+      void getLossesInPreviousTransition(float& time_loss, float& utility_loss); 
 
       /* Debugging only */
       void drawState(const StateIROS14& state, cv::Mat& image);
@@ -83,7 +87,6 @@ namespace bwi_guidance {
           bool change_robot_state = false);
       void changeRobotDirectionIfNeeded(RobotStateIROS14& state, 
           int current_destination, int to_destination);
-      int selectBestRobotForTask(int destination, float time_to_destination);
       int generateNewGoalFrom(int idx);
 
       /* Action generation caching */
@@ -113,10 +116,15 @@ namespace bwi_guidance {
       nav_msgs::OccupancyGrid map_;
 
       float frame_rate_;
-      boost::shared_ptr<std::vector<StateIROS14> >  frame_vector_;
+      boost::shared_ptr<std::vector<StateIROS14> > frame_vector_;
       bool initialized_;
       unsigned int num_vertices_;
       int max_robots_in_use_;
+      float utility_multiplier_;
+      bool use_shaping_reward_;
+
+      float previous_action_time_loss_;
+      float previous_action_utility_loss_;
 
       size_t goal_idx_;
       bool allow_goal_visibility_;
