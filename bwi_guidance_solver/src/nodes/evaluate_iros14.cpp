@@ -305,7 +305,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       // int choice;
       // std::cin >> choice;
       // action = actions[choice];
-      EVALUATE_OUTPUT(" - UCT selects: " << action);
+      EVALUATE_OUTPUT(" - Method selects: " << action);
       float reward;
       StateIROS14 next_state;
       bool terminal;
