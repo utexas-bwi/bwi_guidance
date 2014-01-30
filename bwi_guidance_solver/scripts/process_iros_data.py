@@ -102,7 +102,7 @@ if sigs:
                 ha='center', va='bottom', fontproperties=font)
 
 plt.axhline(y=1.0, xmin=0, xmax=6, linewidth=1, color="black") 
-plt.axis([0, 5, 0, 9])
+#plt.axis([0, 5, 0, 9])
 
 fig = plt.gcf()
 fig.set_size_inches(6,4)

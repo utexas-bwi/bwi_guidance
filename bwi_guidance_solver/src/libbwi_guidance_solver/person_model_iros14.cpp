@@ -517,7 +517,7 @@ namespace bwi_guidance {
       /* std::cout << current_state_ << std::endl; */
       previous_action_utility_loss_ = 0.0f;
       previous_action_time_loss_ = 0.0f;
-      return -10.0f;
+      return 0.0f;
     }
 
     if (action.type == GUIDE_PERSON) {
