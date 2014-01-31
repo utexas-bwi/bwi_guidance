@@ -43,10 +43,10 @@ ActionIROS14 HeuristicSolverIROS14::getBestAction(
 
   // Figure out the vertices that cannot be reached in time
   boost::shared_ptr<std::vector<int> > blacklisted_vertices;
+  blacklisted_vertices.reset(new std::vector<int>);
+  blacklisted_vertices->insert(blacklisted_vertices->end(), 
+      state.relieved_locations.begin(), state.relieved_locations.end());
   if (improved_) {
-    blacklisted_vertices.reset(new std::vector<int>);
-    blacklisted_vertices->insert(blacklisted_vertices->end(), 
-        state.relieved_locations.begin(), state.relieved_locations.end());
     BOOST_FOREACH(const int& vtx, visible_vertices_map_[mapped_state.graph_id]) {
       if (state.in_use_robots.size() != 0) {
         if (vtx == state.in_use_robots[0].destination) {
