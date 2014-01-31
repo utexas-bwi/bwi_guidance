@@ -368,6 +368,14 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
     }
 
+    // Remove the shaping reward from the result tally if it was used.
+    if (params.use_shaping_reward) {
+      float distance = map.info.resolution *
+        bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph);
+      float time = distance / params.human_speed;
+      instance_reward -= time;
+    }
+
     method_result.reward = instance_reward;
     method_result.time = instance_time;
     method_result.utility = instance_utility;
