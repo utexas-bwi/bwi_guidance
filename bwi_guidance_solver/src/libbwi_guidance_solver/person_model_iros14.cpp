@@ -20,13 +20,16 @@ namespace bwi_guidance {
       int max_robots_in_use, int action_vertex_visibility_depth, 
       int action_vertex_adjacency_depth, float visibility_range, 
       bool allow_goal_visibility, float human_speed, float robot_speed,
-      float utility_multiplier, bool use_shaping_reward) :
+      float utility_multiplier, bool use_shaping_reward, 
+      bool discourage_bad_assignments) :
     graph_(graph), map_(map), goal_idx_(goal_idx),
     frame_rate_(frame_rate), max_robots_in_use_(max_robots_in_use),
     allow_goal_visibility_(allow_goal_visibility), human_speed_(human_speed),
     robot_speed_(robot_speed), utility_multiplier_(utility_multiplier),
-    use_shaping_reward_(use_shaping_reward), initialized_(false),
-    previous_action_utility_loss_(0.0f), previous_action_time_loss_(0.0f) {
+    use_shaping_reward_(use_shaping_reward),
+    discourage_bad_assignments_(discourage_bad_assignments),
+    initialized_(false), previous_action_utility_loss_(0.0f),
+    previous_action_time_loss_(0.0f) {
 
     robot_speed_ /= map_.info.resolution;
     human_speed_ /= map_.info.resolution;
@@ -104,8 +107,12 @@ namespace bwi_guidance {
     int dir;
     if (isRobotDirectionAvailable(state, dir)) {
       if (dir == DIR_UNASSIGNED) {
-        BOOST_FOREACH(int adj, adjacent_vertices_map_[state.graph_id]) {
-          actions.push_back(ActionIROS14(GUIDE_PERSON, state.graph_id, adj));
+        actions.resize(adjacent_vertices_map_[state.graph_id].size());
+        for (unsigned int i = 0; 
+            i < adjacent_vertices_map_[state.graph_id].size(); ++i) {
+          actions[i] = ActionIROS14(GUIDE_PERSON, state.graph_id, 
+              adjacent_vertices_map_[state.graph_id][i]);
+
         }
         return; // Only choose a direction here
       }
@@ -128,9 +135,7 @@ namespace bwi_guidance {
         if (std::find(cant_assign_vertices.begin(), 
                       cant_assign_vertices.end(), vtx) ==
             cant_assign_vertices.end()) {
-          /* BOOST_FOREACH(int adj, adjacent_vertices_map_[vtx]) { */
           actions.push_back(ActionIROS14(ASSIGN_ROBOT, vtx, DIR_UNASSIGNED));
-          /* } */
         }
       }
     }
@@ -517,6 +522,9 @@ namespace bwi_guidance {
       /* std::cout << current_state_ << std::endl; */
       previous_action_utility_loss_ = 0.0f;
       previous_action_time_loss_ = 0.0f;
+      if (discourage_bad_assignments_ && !reach_in_time) {
+        return -50.0f;
+      }
       return 0.0f;
     }
 
@@ -535,6 +543,7 @@ namespace bwi_guidance {
       float direction = bwi_mapper::getNodeAngle(
           current_state_.graph_id, action.guide_graph_id, graph_);
       current_state_.direction = getDiscretizedAngle(direction);
+      current_state_.robot_gave_direction = true;
       current_state_.in_use_robots.erase(
           current_state_.in_use_robots.begin() + mark);
       current_state_.relieved_locations.push_back(action.at_graph_id);
@@ -562,10 +571,15 @@ namespace bwi_guidance {
         exit(-1);
       }
     }
+
+    double sigma_sq = 0.1;
+    if (current_state_.robot_gave_direction) {
+      sigma_sq = 0.05;
+    }
     
     // Now assume that the person moves to one the adjacent locations
-    float weight_sum = 0;
-    std::vector<float> weights;
+    double weight_sum = 0;
+    std::vector<double> weights;
     BOOST_FOREACH(int adj, adjacent_vertices_map_[current_state_.graph_id]) {
 
       float next_state_direction = bwi_mapper::getNodeAngle(
@@ -574,7 +588,7 @@ namespace bwi_guidance {
           expected_dir);
 
       // Compute the probability of this state
-      float weight = exp(-pow(angle_difference, 2) / (2 * 0.1));
+      double weight = exp(-pow(angle_difference, 2) / (2 * sigma_sq));
       weights.push_back(weight);
       weight_sum += weight;
     }
@@ -585,8 +599,8 @@ namespace bwi_guidance {
     for (size_t probability_counter = 0; probability_counter < weights.size();
         ++probability_counter) {
       /* std::cout << weights[probability_counter] << " " << weight_sum << std::endl; */
-      float probability = 1.0 * (weights[probability_counter] / weight_sum) +
-        0.0 * (1.0f / weights.size());
+      double probability = 0.99 * (weights[probability_counter] / weight_sum) +
+        0.01 * (1.0f / weights.size());
       probability_sum += probability;
       if (probability_counter == weights.size() - 1) {
         // Account for floating point errors. No surprises!
@@ -622,6 +636,7 @@ namespace bwi_guidance {
 
     current_state_.direction = computeNextDirection(
         current_state_.direction, current_state_.graph_id, next_node, graph_);
+    current_state_.robot_gave_direction = false;
     current_state_.precision = 0.0f;
     current_state_.from_graph_node = current_state_.graph_id;
     current_state_.graph_id = next_node;

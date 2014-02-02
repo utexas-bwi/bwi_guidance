@@ -30,7 +30,7 @@ namespace bwi_guidance {
           int action_vertex_adjacency_depth = 2, float visibility_range = 0.0f,
           bool allow_goal_visibility = false, float human_speed = 1.0,
           float robot_speed = 0.75, float utility_multiplier = 0.0f,
-          bool use_shaping_reward = true);
+          bool use_shaping_reward = true, bool discourage_bad_assignments = false);
 
       /* Functions inherited from PredictiveModel */
       virtual ~PersonModelIROS14() {};
@@ -122,6 +122,7 @@ namespace bwi_guidance {
       int max_robots_in_use_;
       float utility_multiplier_;
       bool use_shaping_reward_;
+      bool discourage_bad_assignments_;
 
       float previous_action_time_loss_;
       float previous_action_utility_loss_;

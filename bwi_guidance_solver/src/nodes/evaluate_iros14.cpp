@@ -89,7 +89,8 @@ namespace Method {
   _(float,human_speed,human_speed,1.0f) \
   _(float,robot_speed,robot_speed,0.75f) \
   _(float,utility_multiplier,utility_multiplier,1.0f) \
-  _(bool,use_shaping_reward,use_shaping_reward,true) 
+  _(bool,use_shaping_reward,use_shaping_reward,true) \
+  _(bool,discourage_bad_assignments,discourage_bad_assignments,false) 
 
   Params_STRUCT(PARAMS)
 #undef PARAMS
@@ -157,7 +158,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             params.max_robots_in_use, 0, params.action_vertex_adjacency_depth,
             params.visibility_range, false, params.human_speed,
             params.robot_speed, params.utility_multiplier,
-            params.use_shaping_reward));
+            params.use_shaping_reward, params.discourage_bad_assignments));
 
       boost::mt19937 mt(2 * (seed + 1));
       boost::uniform_int<int> i(0, boost::num_vertices(graph) - 1);
@@ -194,7 +195,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             params.max_robots_in_use, 0, params.action_vertex_adjacency_depth,
             params.visibility_range, false, params.human_speed,
             params.robot_speed, params.utility_multiplier, 
-            params.use_shaping_reward));
+            false, false)); // Shouldn't use shaping reward or bad assignments
     int eval_seed = 3 * (seed + 1);
     if (graphical_) {
       /* eval_seed = time(NULL); */
@@ -214,6 +215,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     current_state.graph_id = start_idx;
     current_state.direction = start_direction;
     current_state.precision = 1.0f;
+    current_state.robot_gave_direction = false;
     evaluation_model->addRobots(current_state, MAX_ROBOTS);
     evaluation_model->setState(current_state);
 
@@ -369,12 +371,13 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     }
 
     // Remove the shaping reward from the result tally if it was used.
-    if (params.use_shaping_reward) {
-      float distance = map.info.resolution *
-        bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph);
-      float time = distance / params.human_speed;
-      instance_reward -= time;
-    }
+    // The evaluation model should not use this shaping reward in the first place
+    // if (params.use_shaping_reward) {
+    //   float distance = map.info.resolution *
+    //     bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph);
+    //   float time = distance / params.human_speed;
+    //   instance_reward -= time;
+    // }
 
     method_result.reward = instance_reward;
     method_result.time = instance_time;

@@ -87,6 +87,8 @@ namespace bwi_guidance {
     float precision;
     int from_graph_node;
 
+    bool robot_gave_direction;
+
     std::vector<RobotStateIROS14> robots; // ~10 * 50 * 50
     std::vector<InUseRobotStateIROS14> in_use_robots; // ~10 * 20 * 5
 
