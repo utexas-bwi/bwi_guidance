@@ -82,12 +82,12 @@ namespace Method {
   _(bool,h_improved,h_improved,false) \
   _(float,mcts_initial_planning_time,mcts_initial_planning_time,10.0) \
   _(float,mcts_planning_time_multiplier,mcts_planning_time_multiplier,1.0) \
-  _(float,mcts_reward_bound,mcts_reward_bound,5000.0) \
+  _(float,mcts_reward_bound,mcts_reward_bound,250.0) \
   _(int,action_vertex_adjacency_depth,action_vertex_adjacency_depth,2) \
   _(int,max_robots_in_use,max_robots_in_use,1) \
   _(float,visibility_range,visibility_range,0.0f) \
   _(float,human_speed,human_speed,1.0f) \
-  _(float,robot_speed,robot_speed,0.75f) \
+  _(float,robot_speed,robot_speed,0.5f) \
   _(float,utility_multiplier,utility_multiplier,1.0f) \
   _(bool,use_shaping_reward,use_shaping_reward,true) \
   _(bool,discourage_bad_assignments,discourage_bad_assignments,false) 
