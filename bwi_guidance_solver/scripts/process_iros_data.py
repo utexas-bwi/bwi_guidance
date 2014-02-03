@@ -19,7 +19,7 @@ methods = json.load(config_file)
 num_methods = len(methods['methods'])
 method_names = []
 for method in methods['methods']:
-    name = METHOD_NAMES[method['type']]
+    name = METHOD_NAMES[2]
     num_parameters = len(method) - 1 # type is not a parameter
     if len(method) > 1:
         name += "["

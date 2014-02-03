@@ -80,8 +80,8 @@ namespace Method {
   _(float,gamma,gamma,1.0) \
   _(float,lambda,lambda,0.0) \
   _(bool,h_improved,h_improved,false) \
-  _(float,mcts_initial_planning_time,mcts_initial_planning_time,10.0) \
-  _(float,mcts_planning_time_multiplier,mcts_planning_time_multiplier,1.0) \
+  _(float,mcts_initial_planning_time,mcts_initial_planning_time,80.0) \
+  _(float,mcts_planning_time_multiplier,mcts_planning_time_multiplier,8.0) \
   _(float,mcts_reward_bound,mcts_reward_bound,250.0) \
   _(int,action_vertex_adjacency_depth,action_vertex_adjacency_depth,2) \
   _(int,max_robots_in_use,max_robots_in_use,1) \
