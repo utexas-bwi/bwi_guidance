@@ -20,38 +20,23 @@ num_methods = len(methods['methods'])
 method_names = []
 for method in methods['methods']:
     name = METHOD_NAMES[method['type']]
-    # num_parameters = len(method) - 1 # type is not a parameter
-    # if len(method) > 1:
-    #     name += "["
-    #     parameter_count = 0
-    #     for key,value in method.iteritems():
-    #         param = None
-    #         if key == "gamma":
-    #             param = "g=" + str(value) # TODO get symbol for gamma, formatted float value
-    #         if key == "lambda":
-    #             param = "l=" + str(value) # TODO get symbol for gamma, formatted float value
-    #         elif key == "reward_structure" and value == 0:
-    #             param = "StandardR"
-    #         elif key == "reward_structure" and value == 1:
-    #             param = "IntrinsicR"
-    #         elif key == "reward_structure" and value == 2:
-    #             param = "ShapingR"
-    #         elif key == "success_reward":
-    #             param = "EndReward=" + str(value) # This parameter needs to be names
-    #         elif key == "mcts_reward_bound":
-    #             param = "RBound=" + str(value) # Might change if parameter changes
-    #         elif key == "mcts_initial_planning_time":
-    #             param = "InitialPlanningTime=" + str(value) + "s"
-    #         elif key == "mcts_importance_sampling" and value == True:
-    #             param = "IS"
-    #         
-    #         if param and parameter_count != 0:
-    #             name += ","
-    #         if param:
-    #             name += param
-    #             parameter_count += 1
+    parameter_count = 0
+    param_string = ''
+    if len(method) > 1:
+        param_string += "["
+        for key,value in method.iteritems():
+            param = None
+            if key == "lambda":
+                param = "$\lambda$=" + str(value)
+            if param and parameter_count != 0:
+                param_string += ","
+            if param:
+                param_string += param
+                parameter_count += 1
 
-    #     name += "]"
+        param_string += "]"
+    if parameter_count != 0:
+        name += param_string
     method_names.append(name)
 
 samples = []
@@ -70,29 +55,32 @@ with open(sys.argv[2], 'rb') as csvfile:
                 samples[i][j].append(float(line[i + num_methods*j]))
 
 fig, ax, rects, means= \
-        graph.draw_bar_chart(samples[:3], method_names[:3], 
+        graph.draw_bar_chart(samples[:1] + samples[-1:] + samples[1:3], 
+                             method_names[:1] + method_names[-1:] + method_names[1:3], 
                        ('1 Robot', '2 Robots', '3 Robots', '4 Robots', 
                         '5 Robots'),
-                       ylabel='Distance Traveled')
+                       ylabel='Normalized Time Taken',
+                       xlabel='maxRobots')
 
 sigs = []
 for robots in range(MAX_ROBOTS):
-    sig = graph.is_significant(samples[0][robots], samples[-1][robots])
+    sig = graph.is_significant(samples[2][robots], samples[1][robots])
     if sig:
         print "For " + str(robots + 1) + " robots, diff is significant" 
     else:
         print "For " + str(robots + 1) + " robots, diff is not significant"
     sigs.append(sig)
 
+print sigs
 #attach some text labels
 if sigs:
     for r in range(len(rects[0])):
-        height = max(rects[1][r].get_height(), rects[2][r].get_height())
+        height = max(rects[2][r].get_height(), rects[3][r].get_height())
         font = FontProperties()
         if sigs[r]:
             font.set_weight('bold')
-        ax.text(rects[1][r].get_x()+1.5*rects[1][r].get_width(), height + 0.5, 
-                '%.3f'%(means[2][r]/means[1][r]),
+        ax.text(rects[2][r].get_x()+1.5*rects[2][r].get_width(), height + 0.25, 
+                '%.3f'%(means[3][r]/means[2][r]),
                 ha='center', va='bottom', fontproperties=font)
 
 plt.axhline(y=1.0, xmin=0, xmax=6, linewidth=1, color="black") 

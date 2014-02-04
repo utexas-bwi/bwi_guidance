@@ -44,8 +44,10 @@ fig, ax, rects, means= \
         graph.draw_3d_bar_chart(samples[2:], method_names[2:], 
                                 range(1,6),
                                 ylabel='maxRobots',
-                       xlabel='c',
-                       zlabel='Distance Traveled')
+                       zlabel='Normalized Time Taken',
+                       xtickrotation=45)
+
+ax.view_init(15,-60)
 
 # fig, ax, rects, means= \
 #         graph.draw_line_graph(samples[2:], [r'$\lambda$=' + str(0.1 * i) for i in range(11)], 
@@ -80,7 +82,8 @@ fig, ax, rects, means= \
 # 
 fig = plt.gcf()
 fig.set_size_inches(6,5)
-plt.savefig('out.png',dpi=300)
+#plt.savefig('out.png',dpi=300)
+plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=300)
 
 plt.show()
 
