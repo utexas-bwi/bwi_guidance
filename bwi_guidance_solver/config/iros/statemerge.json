@@ -1,8 +1,7 @@
 {
   "methods" : [ 
   { 
-    "max_robots_in_use" : 1,
-    "mcts_initial_planning_time" : 10.0
+    "max_robots_in_use" : 1
   }
   ]
 }
