@@ -11,24 +11,7 @@
     "h_improved" : true
   },
   { 
-    "type" : 2,
-    "mcts_reward_bound" : 250,
-    "mcts_initial_planning_time" : 80.0,
-    "mcts_planning_time_multiplier" : 8.0,
-    "discourage_bad_assignments" : true
-  },
-  { 
-    "type" : 2,
-    "mcts_reward_bound" : 250,
-    "mcts_initial_planning_time" : 80.0,
-    "mcts_planning_time_multiplier" : 8.0
-  },
-  { 
-    "type" : 2,
-    "use_shaping_reward" : false,
-    "mcts_reward_bound" : 250,
-    "mcts_initial_planning_time" : 80.0,
-    "mcts_planning_time_multiplier" : 8.0
+    "type" : 2
   }
   ]
 }

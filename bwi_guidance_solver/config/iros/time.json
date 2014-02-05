@@ -1,0 +1,144 @@
+{
+  "methods" : [ 
+  {
+    "type" : 3,
+    "robotSpeed" : 0.1
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 0.0,
+    "robotSpeed" : 0.1
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 1.0,
+    "robotSpeed" : 0.1
+  },
+  {
+    "type" : 3,
+    "robotSpeed" : 0.2
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 0.0,
+    "robotSpeed" : 0.2
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 1.0,
+    "robotSpeed" : 0.2
+  },
+  {
+    "type" : 3,
+    "robotSpeed" : 0.3
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 0.0,
+    "robotSpeed" : 0.3
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 1.0,
+    "robotSpeed" : 0.3
+  },
+  {
+    "type" : 3,
+    "robotSpeed" : 0.4
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 0.0,
+    "robotSpeed" : 0.4
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 1.0,
+    "robotSpeed" : 0.4
+  },
+  {
+    "type" : 3,
+    "robotSpeed" : 0.5
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 0.0,
+    "robotSpeed" : 0.5
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 1.0,
+    "robotSpeed" : 0.5
+  },
+  {
+    "type" : 3,
+    "robotSpeed" : 0.6
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 0.0,
+    "robotSpeed" : 0.6
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 1.0,
+    "robotSpeed" : 0.6
+  },
+  {
+    "type" : 3,
+    "robotSpeed" : 0.7
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 0.0,
+    "robotSpeed" : 0.7
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 1.0,
+    "robotSpeed" : 0.7
+  },
+  {
+    "type" : 3,
+    "robotSpeed" : 0.8
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 0.0,
+    "robotSpeed" : 0.8
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 1.0,
+    "robotSpeed" : 0.8
+  },
+  {
+    "type" : 3,
+    "robotSpeed" : 0.9
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 0.0,
+    "robotSpeed" : 0.9
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 1.0,
+    "robotSpeed" : 0.9
+  },
+  {
+    "type" : 3,
+    "robotSpeed" : 1.0
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 0.0,
+    "robotSpeed" : 1.0
+  },
+  { 
+    "type" : 2,
+    "utility_multiplier" : 1.0,
+    "robotSpeed" : 1.0
+  }
+  ]
+}
