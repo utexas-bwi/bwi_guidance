@@ -8,7 +8,7 @@ from matplotlib.font_manager import FontProperties
 import pylab
 import sys
 
-num_methods = 2
+num_methods = 5
 MAX_ROBOTS = 1
 samples = []
 for i in range(num_methods):
@@ -17,51 +17,33 @@ for i in range(num_methods):
         samples[i].append([])
 
 first = True
-print 'Reading with statemerge from: ' + sys.argv[1]
+print 'Reading final file from: ' + sys.argv[1]
 print 'Reading without statemerge from: ' + sys.argv[2]
 with open(sys.argv[1], 'rb') as csvfile:
     content_reader = csv.reader(csvfile, delimiter=',')
     for line in content_reader:
-        for j in range(MAX_ROBOTS):
-            samples[0][j].append(float(line[num_methods*j]))
+        for i in range(num_methods-1):
+            for j in range(MAX_ROBOTS):
+                samples[i][j].append(-float(line[i+num_methods*j]))
+
 with open(sys.argv[2], 'rb') as csvfile:
     content_reader = csv.reader(csvfile, delimiter=',')
     for line in content_reader:
-        for j in range(MAX_ROBOTS):
-            samples[1][j].append(float(line[num_methods*j]))
+        samples[num_methods-1][0].append(-float(line[0]))
 
+samples2 = samples[1:3] + samples[:1] + samples[4:] + samples[3:4]
+yticklabels = [str(-x) for x in range(10)]
 fig, ax, rects, means= \
-        graph.draw_bar_chart(samples, ["UCT", "UCT-NSM"],
+        graph.draw_bar_chart(samples2, ["Heuristic", "HeuristicImproved", "SingleRobot", "UCT-NSM", "UCT"],
                              second_level_names=('',),
-                       ylabel='Normalized Reward')
-
-sigs = None
-if num_methods == 2:
-    sigs = []
-    for robots in range(MAX_ROBOTS):
-        sig = graph.is_significant(samples[0][robots], samples[1][robots])
-        if sig:
-            print "For " + str(robots + 1) + " robots, diff is significant" 
-        else:
-            print "For " + str(robots + 1) + " robots, diff is not significant"
-        sigs.append(sig)
-
-#attach some text labels
-if sigs:
-    for r in range(len(rects[0])):
-        height = max(rects[0][r].get_height(), rects[1][r].get_height())
-        font = FontProperties()
-        if sigs[r]:
-            font.set_weight('bold')
-        ax.text(rects[0][r].get_x()+rects[0][r].get_width(), -1.2*height, 
-                '%.3f'%(means[0][r]/means[1][r]),
-                ha='center', va='bottom', fontproperties=font)
+                             yticklabels=yticklabels,
+                       ylabel='Normalized Reward (Negated)')
 
 plt.axhline(y=0.0, xmin=0, xmax=2, linewidth=1, color="black") 
-plt.axis([-rects[0][r].get_width(), 3*rects[0][r].get_width(), -5, 2])
+# plt.axis([-rects[0][r].get_width(), 3*rects[0][r].get_width(), -5, 2])
 
 fig = plt.gcf()
-fig.set_size_inches(2.3,4)
+fig.set_size_inches(6,6)#2.3,4)
 plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=150)
 
 plt.show()
