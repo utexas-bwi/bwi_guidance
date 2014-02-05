@@ -9,7 +9,7 @@
   <arg name="mcts_params" 
     default="$(find bwi_guidance_solver)/config/iros/mcts_params.json" />
   <arg name="methods_file" 
-    default="$(find bwi_guidance_solver)/config/iros/shaping_reward.json" />
+    default="$(find bwi_guidance_solver)/config/iros/statemerge.json" />
 
   <node name="evaluate" pkg="bwi_guidance_solver" type="evaluate_iros14"  
     output="screen"  

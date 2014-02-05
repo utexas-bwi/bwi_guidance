@@ -37,45 +37,48 @@ namespace bwi_guidance {
   }
 
   bool operator<(const RobotStateIROS14& l, const RobotStateIROS14& r) {
-    return (l.graph_id < r.graph_id);
-    // ||
-    //   ((l.graph_id == r.graph_id) && (l.destination < r.destination)); 
+    return (l.graph_id < r.graph_id)
+      //;
+    ||
+      ((l.graph_id == r.graph_id) && (l.destination < r.destination)); 
   }
   
   bool operator==(const RobotStateIROS14& l, const RobotStateIROS14& r) {
-    return (l.graph_id == r.graph_id);
-    //&& (l.destination == r.destination); 
+    return (l.graph_id == r.graph_id)
+      //;
+    && (l.destination == r.destination); 
   }
 
   bool operator>(const RobotStateIROS14& l, const RobotStateIROS14& r) {
-    return (l.graph_id > r.graph_id);
-    // ||
-    //   ((l.graph_id == r.graph_id) && (l.destination > r.destination)); 
+    return (l.graph_id > r.graph_id)
+      //;
+    ||
+      ((l.graph_id == r.graph_id) && (l.destination > r.destination)); 
   }
 
   bool operator<(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r) {
-    return //(l.robot_id < r.robot_id) ||
-      (/*(l.robot_id == r.robot_id) && */(l.destination < r.destination)) ||
-      (/*(l.robot_id == r.robot_id) && */(l.destination == r.destination) &&
+    return (l.robot_id < r.robot_id) ||
+      ((l.robot_id == r.robot_id) && (l.destination < r.destination)) ||
+      ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
        (l.direction < r.direction)) ||
-      (/*(l.robot_id == r.robot_id) && */(l.destination == r.destination) &&
+      ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
        (l.direction == r.direction) && 
        (l.reached_destination < r.reached_destination));
   }
   
   bool operator==(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r) {
-    return //(l.robot_id == r.robot_id) && 
+    return (l.robot_id == r.robot_id) && 
       (l.destination == r.destination) &&
       (l.direction == r.direction) && 
       (l.reached_destination == r.reached_destination); 
   }
 
   bool operator>(const InUseRobotStateIROS14& l, const InUseRobotStateIROS14& r) {
-    return //(l.robot_id > r.robot_id) ||
-      (/*(l.robot_id == r.robot_id) && */(l.destination > r.destination)) ||
-      (/*(l.robot_id == r.robot_id) && */(l.destination == r.destination) &&
+    return (l.robot_id > r.robot_id) ||
+      ((l.robot_id == r.robot_id) && (l.destination > r.destination)) ||
+      ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
        (l.direction > r.direction)) ||
-      (/*(l.robot_id == r.robot_id) && */(l.destination == r.destination) &&
+      ((l.robot_id == r.robot_id) && (l.destination == r.destination) &&
        (l.direction == r.direction) && 
        (l.reached_destination > r.reached_destination));
   }
@@ -123,10 +126,10 @@ namespace bwi_guidance {
     //       sizeof(RobotStateIROS14) * l.robots.size());
     // if (v < 0) return true;
     // if (v > 0) return false;
-    // for (unsigned int i = 0; i < l.robots.size(); ++i) {
-    //   if (l.robots[i] < r.robots[i]) return true;
-    //   if (l.robots[i] > r.robots[i]) return false;
-    // }
+    for (unsigned int i = 0; i < l.robots.size(); ++i) {
+      if (l.robots[i] < r.robots[i]) return true;
+      if (l.robots[i] > r.robots[i]) return false;
+    }
 
     return false;
   }

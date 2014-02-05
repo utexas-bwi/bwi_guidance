@@ -9,7 +9,7 @@
 +Project = "AI_ROBOTICS"
 
 Executable = /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/condor/iros/condor_runner_iros14.sh
-Arguments = --start-colocated --seed $(Process) --data-directory /projects/agents1/piyushk/map3/ --methods-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/config/iros/statemerge.json --map-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance/maps/map3.yaml --graph-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance/maps/graph_map3.yaml 
+Arguments = --start-colocated --seed $(Process) --data-directory /projects/agents1/piyushk/map3/ --methods-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance_solver/config/iros/action.json --map-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance/maps/map3.yaml --graph-file /u/piyushk/catkin_ws/src/bwi_guidance/bwi_guidance/maps/graph_map3.yaml 
 Requirements = Arch == "X86_64" 
 
 Error = /projects/agents1/piyushk/logs/err.$(Process) 
