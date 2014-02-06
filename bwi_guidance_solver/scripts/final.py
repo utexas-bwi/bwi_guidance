@@ -37,13 +37,14 @@ fig, ax, rects, means= \
         graph.draw_bar_chart(samples2, ["Heuristic", "HeuristicImproved", "SingleRobot", "UCT-NSM", "UCT"],
                              second_level_names=('',),
                              yticklabels=yticklabels,
-                       ylabel='Normalized Reward (Negated)')
+                             xlabel='Different Approaches',
+                       ylabel='Normalized Reward (negated)')
 
 plt.axhline(y=0.0, xmin=0, xmax=2, linewidth=1, color="black") 
-# plt.axis([-rects[0][r].get_width(), 3*rects[0][r].get_width(), -5, 2])
+plt.axis([-rects[0][0].get_width(), (num_methods + 1)*rects[0][0].get_width(), 0, 9])
 
 fig = plt.gcf()
-fig.set_size_inches(6,6)#2.3,4)
+fig.set_size_inches(5.5,5.5)#2.3,4)
 plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=150)
 
 plt.show()

@@ -32,16 +32,16 @@ fig, ax, rects, means= \
         graph.draw_3d_bar_chart(samples, top_level_names=top_level_names,
                              second_level_names=second_level_names,
                                 third_level_names=third_level_names,
-                       xlabel='visRange(meters)', 
+                       xlabel='visRange (meters)', 
                        ylabel='adjDepth', 
-                       zlabel='Normalized Reward (Negated)', 
+                       zlabel='Normalized Reward (negated)', 
                                 flip_y=False)
 
 ax.view_init(15,-135)
 
 fig = plt.gcf()
-fig.set_size_inches(6,6)
-plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=300)
+fig.set_size_inches(5,5)
+plt.savefig('out.png',bbox_inches='tight',pad_inches=0.0,dpi=300)
 
 plt.show()
 

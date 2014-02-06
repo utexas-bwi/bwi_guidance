@@ -40,7 +40,7 @@ print count
 second_level_names = [str(0.1*x) for x in range(1,11)] 
 yticklabels = [str(-5*x) for x in range(6)] 
 fig, ax, rects, means= \
-        graph.draw_line_graph(samples, ["SingleRobot", "UCT[$U_m$=0]", "UCT[$U_m$=1]"],
+        graph.draw_line_graph(samples, ["SingleRobot", "UCT[$u_m$=0]", "UCT[$u_m$=1]"],
                               second_level_names=second_level_names,
                               yticklabels=yticklabels,
                               xlabel='robotSpeed(m/s)',
@@ -73,8 +73,8 @@ plt.axhline(y=0.0, xmin=0, xmax=2, linewidth=1, color="black")
 # plt.axis([-rects[0][r].get_width(), 3*rects[0][r].get_width(), -5, 2])
 # 
 fig = plt.gcf()
-fig.set_size_inches(5,5)
-plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=150)
+fig.set_size_inches(4,4)
+plt.savefig('out.png',bbox_inches='tight',pad_inches=0.0,dpi=300)
 
 plt.show()
 
