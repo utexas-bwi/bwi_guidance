@@ -10,10 +10,14 @@ using namespace bwi_guidance;
 
 int main(int argc, const char *argv[]) {
 
-  std::string map_file = ros::package::getPath("bwi_guidance") +
-    "/maps/map3.yaml";
-  std::string graph_file = ros::package::getPath("bwi_guidance") +
-    "/maps/graph_map3.yaml";
+  // std::string map_file = ros::package::getPath("bwi_guidance") +
+  //   "/maps/map3.yaml";
+  // std::string graph_file = ros::package::getPath("bwi_guidance") +
+  //   "/maps/graph_map3.yaml";
+  std::string map_file = ros::package::getPath("bwi_mapper") +
+    "/maps/graph2.yaml";
+  std::string graph_file = ros::package::getPath("bwi_mapper") +
+    "/graph.yaml";
 
   bwi_mapper::MapLoader mapper(map_file);
   bwi_mapper::Graph graph;
@@ -24,10 +28,6 @@ int main(int argc, const char *argv[]) {
   PersonModelIROS14 model(graph, map, 0);
   cv::Mat image;
 
-  StateIROS14 s;
-  s.graph_id = 5;
-  s.direction = 0;
-
   boost::mt19937 mt(0);
   boost::uniform_int<int> i(0, boost::num_vertices(graph) - 1);
   boost::uniform_real<float> u(0.0f, 1.0f);
@@ -37,7 +37,24 @@ int main(int argc, const char *argv[]) {
   PIGenPtr robot_goal_gen(new PIGen(mt, p));
   model.initializeRNG(idx_gen, generative_model_gen, robot_goal_gen);
 
-  model.addRobots(s, 10);
+  StateIROS14 s;
+  s.graph_id = 9;
+  s.precision = 0.0f;
+  // s.robots.resize(1);
+  // s.robots[0].graph_id = 9;
+  // s.robots[0].destination = 9;
+  // s.in_use_robots.resize(1);
+  // s.in_use_robots[0].robot_id = 9;
+  // s.in_use_robots[0].destination = 9;
+  // s.in_use_robots[0].direction = -2;
+
+  s.direction = 0;
+  s.robot_gave_direction = false;
+
+  s.direction = 1;
+  s.robot_gave_direction = true;
+
+  /* model.addRobots(s, 1); */
   model.setState(s);
 
   unsigned char c = 0;
@@ -58,17 +75,17 @@ int main(int argc, const char *argv[]) {
       std::cout << a << " ";
     }
     std::cout << std::endl;
-    if (count == 0) {
-      model.takeAction(ActionIROS14(ASSIGN_ROBOT, 3, DIR_UNASSIGNED), reward, state, terminal, depth_count);
-    } else if (count == 3) {
-      model.takeAction(ActionIROS14(GUIDE_PERSON, 3, 43), reward, state, terminal, depth_count);
-    } else if (count == 5) {
-      model.takeAction(ActionIROS14(RELEASE_ROBOT, 3, 0), reward, state, terminal, depth_count);
-    } else {
-      std::cout << "got to this point" << std::endl;
+    // if (count == 0) {
+    //   model.takeAction(ActionIROS14(ASSIGN_ROBOT, 3, DIR_UNASSIGNED), reward, state, terminal, depth_count);
+    // } else if (count == 3) {
+    //   model.takeAction(ActionIROS14(GUIDE_PERSON, 3, 43), reward, state, terminal, depth_count);
+    // } else if (count == 5) {
+    //   model.takeAction(ActionIROS14(RELEASE_ROBOT, 3, 0), reward, state, terminal, depth_count);
+    // } else {
+    //   std::cout << "got to this point" << std::endl;
       model.takeAction(ActionIROS14(), reward, state, terminal, depth_count);
-      std::cout << "but next action fails" << std::endl;
-    }
+    //   std::cout << "but next action fails" << std::endl;
+    // }
     c = cv::waitKey(-1);
     std::cout << "Reward: " << reward << std::endl;
     std::cout << "  Depth: " << depth_count << std::endl;
