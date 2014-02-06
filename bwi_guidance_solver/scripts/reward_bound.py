@@ -81,7 +81,7 @@ ax.view_init(15,-60)
 #plt.axis([0, 4, 0, 7])
 # 
 fig = plt.gcf()
-fig.set_size_inches(6,5)
+fig.set_size_inches(5.5,6)
 #plt.savefig('out.png',dpi=300)
 plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=300)
 

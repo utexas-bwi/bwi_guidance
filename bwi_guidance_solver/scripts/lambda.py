@@ -70,7 +70,7 @@ with open(sys.argv[2], 'rb') as csvfile:
                 samples[i][j].append(float(line[i + num_methods*j]))
 
 fig, ax, rects, means= \
-        graph.draw_3d_bar_chart(samples[2:], ['  ' + str(0.1 * i) for i in range(0, 11, 2)], 
+        graph.draw_3d_bar_chart(samples[2:], [str(0.1 * i) for i in range(0, 11, 2)], 
                                 range(1,6),
                                 ylabel='maxRobots',
                        xlabel=r'$\lambda$',
@@ -109,8 +109,8 @@ ax.view_init(15,-120)
 #plt.axis([0, 4, 0, 7])
 # 
 fig = plt.gcf()
-fig.set_size_inches(6,5)
-plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=300)
+fig.set_size_inches(6,6)
+plt.savefig('out.png',bbox_inches='tight',pad_inches=0.0,dpi=300)
 
 plt.show()
 

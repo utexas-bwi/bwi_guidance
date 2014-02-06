@@ -87,7 +87,7 @@ plt.axhline(y=1.0, xmin=0, xmax=6, linewidth=1, color="black")
 plt.axis([0, 5, 0, 6])
 
 fig = plt.gcf()
-fig.set_size_inches(6,4)
+fig.set_size_inches(5.5,4)
 plt.savefig('out.png',bbox_inches='tight',pad_inches=0.1,dpi=150)
 
 plt.show()
