@@ -797,13 +797,14 @@ namespace bwi_guidance {
     }
 
     for (int r = 0; r < state.robots.size(); ++r) {
-      const RobotStateIROS14& robot = state.robots[r];
+      RobotStateIROS14 robot = state.robots[r];
       cv::Scalar color((r * 23456) % 192, (r * 12345) % 256, 0);
       bool robot_in_use = false;
-      int destination = robot.destination;
+      std::set<int> destinations;
+      destinations.insert(robot.destination);
       for (int j = 0; j < state.in_use_robots.size(); ++j) {
         if (state.in_use_robots[j].robot_id == r) {
-          destination = state.in_use_robots[j].destination;
+          destinations.insert(state.in_use_robots[j].destination);
           robot_in_use = true;
           break;
         }
@@ -811,48 +812,56 @@ namespace bwi_guidance {
       if (robot_in_use) {
         color = cv::Scalar(255, 0, 0);
       }
-      std::vector<size_t>* shortest_path = NULL;
-      int shortest_path_start_id;
-      cv::Point2f robot_pos; 
-      if (robot.precision < 0.5f) {
-        robot_pos = 
-          (1.0f - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
-          (robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
-        shortest_path = &(shortest_paths_[robot.other_graph_node][destination]);
-        shortest_path_start_id = robot.other_graph_node;
-        LineToDraw l;
-        l.priority = r;
-        l.precision = robot.precision;
-        l.color = color;
-        draw_lines[robot.graph_id][robot.other_graph_node].push_back(l); 
-      } else {
-        robot_pos = 
-          robot.precision * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
-          (1.0f - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
-        shortest_path = &(shortest_paths_[robot.graph_id][destination]);
-        shortest_path_start_id = robot.graph_id;
-        LineToDraw l;
-        l.priority = r;
-        l.precision = robot.precision;
-        l.color = color;
-        draw_lines[robot.other_graph_node][robot.graph_id].push_back(l); 
-      }
-      if (shortest_path->size() != 0) {
-        int current_node = shortest_path_start_id;
-        for (int s = 0; s < shortest_path->size(); ++s) {
-          int next_node = (*shortest_path)[s];
+      bool use_dashed_line = false;
+      BOOST_FOREACH(int destination, destinations) {
+        changeRobotDirectionIfNeeded(robot, 0, destination);
+        std::vector<size_t>* shortest_path = NULL;
+        int shortest_path_start_id;
+        cv::Point2f robot_pos; 
+        if (robot.precision < 0.5f) {
+          robot_pos = 
+            (1.0f - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
+            (robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
+          shortest_path = &(shortest_paths_[robot.other_graph_node][destination]);
+          shortest_path_start_id = robot.other_graph_node;
           LineToDraw l;
           l.priority = r;
-          l.precision = 0.0f;
+          l.precision = robot.precision;
           l.color = color;
-          draw_lines[current_node][next_node].push_back(l); 
-          current_node = next_node;
+          l.dashed = use_dashed_line;
+          draw_lines[robot.graph_id][robot.other_graph_node].push_back(l); 
+        } else {
+          robot_pos = 
+            robot.precision * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
+            (1.0f - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
+          shortest_path = &(shortest_paths_[robot.graph_id][destination]);
+          shortest_path_start_id = robot.graph_id;
+          LineToDraw l;
+          l.priority = r;
+          l.precision = robot.precision;
+          l.color = color;
+          l.dashed = use_dashed_line;
+          draw_lines[robot.other_graph_node][robot.graph_id].push_back(l); 
         }
+        if (shortest_path->size() != 0) {
+          int current_node = shortest_path_start_id;
+          for (int s = 0; s < shortest_path->size(); ++s) {
+            int next_node = (*shortest_path)[s];
+            LineToDraw l;
+            l.priority = r;
+            l.precision = 0.0f;
+            l.color = color;
+            l.dashed = use_dashed_line;
+            draw_lines[current_node][next_node].push_back(l); 
+            current_node = next_node;
+          }
+        }
+        draw_circles.push_back(std::make_pair(robot_pos, color));
+        SquareToDraw s;
+        s.color = color;
+        draw_squares[destination].push_back(s);
+        use_dashed_line = true;
       }
-      draw_circles.push_back(std::make_pair(robot_pos, color));
-      SquareToDraw s;
-      s.color = color;
-      draw_squares[destination].push_back(s);
     }
 
     // Draw the person's destination
@@ -861,13 +870,16 @@ namespace bwi_guidance {
     // draw_squares[goal_idx_].push_back(s);
 
     for (int i = 0; i < num_vertices_; ++i) {
-      for (int j = 0; j < num_vertices_; ++j) {
+      for (int j = i+1; j < num_vertices_; ++j) {
         std::vector<LineToDraw>& ijlines = draw_lines[i][j];  
         std::vector<LineToDraw>& jilines = draw_lines[j][i];  
 
         int ijcounter = 0;
         int jicounter = 0;
         int thickness = 2 + 4 * (ijlines.size() + jilines.size() - 1);
+        // if (thickness != 2) {
+        //   std::cout << "ST: " << thickness << std::endl;
+        // }
         while (ijcounter < ijlines.size() || jicounter < jilines.size()) {
           LineToDraw* line = NULL;
           int s, e;
@@ -893,10 +905,17 @@ namespace bwi_guidance {
           cv::Point2f start_pos = 
             (1.0f - line->precision) * bwi_mapper::getLocationFromGraphId(s, graph_) + 
             line->precision * bwi_mapper::getLocationFromGraphId(e, graph_);
-          bwi_guidance::dashedLine(image,
-              bwi_mapper::getLocationFromGraphId(e, graph_),
-              start_pos,
-              line->color, 10, thickness, CV_AA);
+          if (line->dashed) {
+            bwi_guidance::dashedLine(image,
+                bwi_mapper::getLocationFromGraphId(e, graph_),
+                start_pos,
+                line->color, 10, thickness, CV_AA);
+          } else {
+            cv::line(image,
+                bwi_mapper::getLocationFromGraphId(e, graph_),
+                start_pos,
+                line->color, thickness, CV_AA);
+          }
           thickness -= 4;
         }
       }
