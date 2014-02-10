@@ -2,10 +2,6 @@
   "methods" : [ 
   { 
     "type" : 0,
-    "h_improved" : false
-  },
-  { 
-    "type" : 0,
     "h_improved" : true
   },
   { 

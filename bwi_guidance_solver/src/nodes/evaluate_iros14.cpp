@@ -52,6 +52,9 @@ MCTS<StateIROS14, ActionIROS14>::Params mcts_params_;
 bool mcts_enabled_ = false;
 bool graphical_ = false;
 bool start_colocated_ = false;
+bool save_images_ = false;
+
+/* Global Data */
 cv::Mat base_image_;
 
 /* Structures used to define a single method */
@@ -268,7 +271,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       //cv::waitKey(100);
       if (params.type == HEURISTIC) {
         // Introduce a 10 second delay so that the observer can get oriented
-        boost::this_thread::sleep(boost::posix_time::milliseconds(10000));
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
       }
     }
 
