@@ -874,9 +874,22 @@ namespace bwi_guidance {
         std::vector<LineToDraw>& ijlines = draw_lines[i][j];  
         std::vector<LineToDraw>& jilines = draw_lines[j][i];  
 
+        // For each line, store a standard vector of thickness based on priority
+        std::set<int> priorities;
+        BOOST_FOREACH(const LineToDraw& l, ijlines) {
+          priorities.insert(l.priority);
+        }
+        BOOST_FOREACH(const LineToDraw& l, jilines) {
+          priorities.insert(l.priority);
+        }
+        
+        std::map<int, int> thickness_map;
+        BOOST_FOREACH(int p, priorities) {
+          thickness_map[p] = 2 + 4 * (priorities.size() - 1);
+        }
+        
         int ijcounter = 0;
         int jicounter = 0;
-        int thickness = 2 + 4 * (ijlines.size() + jilines.size() - 1);
         // if (thickness != 2) {
         //   std::cout << "ST: " << thickness << std::endl;
         // }
@@ -909,14 +922,13 @@ namespace bwi_guidance {
             bwi_guidance::dashedLine(image,
                 bwi_mapper::getLocationFromGraphId(e, graph_),
                 start_pos,
-                line->color, 10, thickness, CV_AA);
+                line->color, 10, thickness_map[line->priority], CV_AA);
           } else {
             cv::line(image,
                 bwi_mapper::getLocationFromGraphId(e, graph_),
                 start_pos,
-                line->color, thickness, CV_AA);
+                line->color, thickness_map[line->priority], CV_AA);
           }
-          thickness -= 4;
         }
       }
     }
