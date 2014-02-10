@@ -54,4 +54,20 @@ namespace bwi_guidance {
     }
   }
 
+  void dashedLine(cv::Mat& image, cv::Point start, cv::Point goal,
+      cv::Scalar color, int dash_width, int thickness, int linetype) {
+    cv::LineIterator it(image, start, goal, 8);   
+    for (int i = 0; i < it.count; i+=2*dash_width) {
+      if (i >= it.count - 2*dash_width) {
+        cv::line(image, it.pos(), goal, color, thickness, linetype); 
+        break;
+      }
+      cv::Point p1 = it.pos(); 
+      for (int j = 0; j < dash_width; ++j) it++;
+      cv::Point p2 = it.pos(); 
+      for (int j = 0; j < dash_width; ++j) it++;
+      cv::line(image, p1, p2, color, thickness, linetype);
+    }
+  }
+
 } /* bwi_guidance */

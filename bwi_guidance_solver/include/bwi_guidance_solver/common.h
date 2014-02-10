@@ -8,6 +8,7 @@ namespace bwi_guidance {
   const unsigned NUM_DIRECTIONS = 16;
 
   struct LineToDraw {
+    bool dashed;
     int priority;
     float precision;
     cv::Scalar color;
@@ -38,6 +39,10 @@ namespace bwi_guidance {
       const bwi_mapper::Graph& graph,
       const nav_msgs::OccupancyGrid& map,
       float visibility_range);
+
+  void dashedLine(cv::Mat& image, cv::Point start, cv::Point goal,
+      cv::Scalar color=cv::Scalar(0,0,0), int dash_width = 10, 
+      int thickness=1, int linetype=4);
 };
 
 #endif /* end of include guard: BWI_GUIDANCE_SOLVER_COMMON_H */

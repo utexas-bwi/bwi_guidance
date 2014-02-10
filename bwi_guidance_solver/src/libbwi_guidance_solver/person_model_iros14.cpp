@@ -595,7 +595,7 @@ namespace bwi_guidance {
 
     float probability_sum = 0;
     std::vector<float> probabilities;
-    std::cout << "Transition probabilities: " << std::endl;
+    /* std::cout << "Transition probabilities: " << std::endl; */
     for (size_t probability_counter = 0; probability_counter < weights.size();
         ++probability_counter) {
       /* std::cout << weights[probability_counter] << " " << weight_sum << std::endl; */
@@ -607,9 +607,9 @@ namespace bwi_guidance {
         probability += 1.0f - probability_sum; 
       }
       probabilities.push_back(probability);
-      std::cout << "  to " << 
-        adjacent_vertices_map_[current_state_.graph_id][probability_counter] <<
-        ": " << probability << std::endl;
+      // std::cout << "  to " << 
+      //   adjacent_vertices_map_[current_state_.graph_id][probability_counter] <<
+      //   ": " << probability << std::endl;
     }
 
     int next_node = adjacent_vertices_map_[current_state_.graph_id]
@@ -893,10 +893,10 @@ namespace bwi_guidance {
           cv::Point2f start_pos = 
             (1.0f - line->precision) * bwi_mapper::getLocationFromGraphId(s, graph_) + 
             line->precision * bwi_mapper::getLocationFromGraphId(e, graph_);
-          cv::line(image,
-              start_pos,
+          bwi_guidance::dashedLine(image,
               bwi_mapper::getLocationFromGraphId(e, graph_),
-              line->color, thickness, CV_AA);
+              start_pos,
+              line->color, 10, thickness, CV_AA);
           thickness -= 4;
         }
       }
