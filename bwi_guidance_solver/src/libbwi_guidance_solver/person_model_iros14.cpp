@@ -800,11 +800,11 @@ namespace bwi_guidance {
       RobotStateIROS14 robot = state.robots[r];
       cv::Scalar color((r * 23456) % 192, (r * 12345) % 256, 0);
       bool robot_in_use = false;
-      std::set<int> destinations;
-      destinations.insert(robot.destination);
+      std::vector<int> destinations;
+      destinations.push_back(robot.destination);
       for (int j = 0; j < state.in_use_robots.size(); ++j) {
         if (state.in_use_robots[j].robot_id == r) {
-          destinations.insert(state.in_use_robots[j].destination);
+          destinations.insert(destinations.begin(), state.in_use_robots[j].destination);
           robot_in_use = true;
           break;
         }
