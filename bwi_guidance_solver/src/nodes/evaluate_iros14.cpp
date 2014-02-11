@@ -137,6 +137,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
     const Method::Params& params = methods[method];
 
+    int frame_coount = 0;
     MethodResult method_result;
 
     boost::shared_ptr<HeuristicSolverIROS14> hs;
@@ -268,6 +269,15 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       cv::Mat out_img = base_image_.clone();
       evaluation_model->drawState(current_state, out_img);
       cv::imshow("out", out_img);
+      if (save_images_) {
+        std::stringstream ss;
+        ss << data_directory_ << method << "_";
+        char prev = ss.fill('0');
+        unsigned width = ss.width(6);
+        ss << frame_count;
+        cv::imwrite(ss.str(), data_directory_ +  
+
+      }
       //cv::waitKey(100);
       if (params.type == HEURISTIC) {
         // Introduce a 10 second delay so that the observer can get oriented
@@ -440,6 +450,7 @@ int processOptions(int argc, char** argv) {
     ("allow-goal-visibility", "Allow goal visibility to affect human model")
     ("graphical", "Use graphical interface for debugging purposes")
     ("start-colocated", "Start state coincides with a robot home base")
+    ("save-images", "Save images for each method")
     ("seed_", po::value<int>(&seed_), "Random seed (process number on condor)")  
     ("num-instances", po::value<int>(&num_instances_), "Number of Instances") 
     ("visibility-range", po::value<float>(&visibility_range_), 
@@ -472,6 +483,9 @@ int processOptions(int argc, char** argv) {
   }
   if (vm.count("start-colocated")) {
     start_colocated_ = true;
+  }
+  if (vm.count("save-images")) {
+    save_images_ = true;
   }
 
   /* Read in global MCTS parameters */
