@@ -137,7 +137,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
     const Method::Params& params = methods[method];
 
-    int frame_coount = 0;
+    int frame_count = 0;
     MethodResult method_result;
 
     boost::shared_ptr<HeuristicSolverIROS14> hs;
@@ -235,16 +235,17 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     }
 
     if (params.type == STATIC_BASELINE) {
+      int robot_id = current_state.in_use_robots[0].robot_id;
       float robot_speed = params.robot_speed / map.info.resolution;
       float time_to_goal = 
         bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph) /
         robot_speed;
       float time_to_original_destination = 
         bwi_mapper::getShortestPathDistance(start_idx,
-            current_state.robots[0].destination, graph) / robot_speed;
+            current_state.robots[robot_id].destination, graph) / robot_speed;
       float time_from_goal_to_original_destination = 
         bwi_mapper::getShortestPathDistance(goal_idx, 
-            current_state.robots[0].destination, graph) / robot_speed;
+            current_state.robots[robot_id].destination, graph) / robot_speed;
       float utility_loss = 
         (time_to_goal + time_from_goal_to_original_destination - 
          time_to_original_destination);
@@ -255,6 +256,40 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
         -time_to_goal - params.utility_multiplier * utility_loss;
       method_result.distance = time_to_goal * params.robot_speed;
       result.results.push_back(method_result);
+
+      if (graphical_) {
+        evaluation_model->changeRobotDirectionIfNeeded(current_state.robots[robot_id], 0, goal_idx);
+        current_state.in_use_robots[0].destination = goal_idx;
+        current_state.in_use_robots[0].reached_destination = false;
+        while (!current_state.in_use_robots[0].reached_destination) {
+          cv::Mat out_img = base_image_.clone();
+          evaluation_model->drawState(current_state, out_img);
+          cv::imshow("out", out_img);
+          boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+          if (save_images_) {
+            std::stringstream ss;
+            ss << data_directory_ << "IMG" << method << "_";
+            char prev = ss.fill('0');
+            unsigned width = ss.width(6);
+            ss << frame_count;
+            ss.fill(prev);
+            ss.width(width);
+            ss << ".jpg";
+            cv::imwrite(ss.str(), out_img);
+            ++frame_count;
+          }
+          evaluation_model->moveRobots(current_state, 0.1);
+          current_state.precision = current_state.robots[robot_id].precision;
+          if (current_state.robots[robot_id].precision < 0.5) {
+            current_state.graph_id = current_state.robots[robot_id].other_graph_node;
+            current_state.from_graph_node = current_state.robots[robot_id].graph_id;
+          } else {
+            current_state.from_graph_node = current_state.robots[robot_id].other_graph_node;
+            current_state.graph_id = current_state.robots[robot_id].graph_id;
+          }
+
+        }
+      }
 
       continue; // Continue to the next method directly, no evaluation required
     }
@@ -271,12 +306,15 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       cv::imshow("out", out_img);
       if (save_images_) {
         std::stringstream ss;
-        ss << data_directory_ << method << "_";
+        ss << data_directory_ << "IMG" << method << "_";
         char prev = ss.fill('0');
         unsigned width = ss.width(6);
         ss << frame_count;
-        cv::imwrite(ss.str(), data_directory_ +  
-
+        ss.fill(prev);
+        ss.width(width);
+        ss << ".jpg";
+        cv::imwrite(ss.str(), out_img);
+        ++frame_count;
       }
       //cv::waitKey(100);
       if (params.type == HEURISTIC) {
@@ -306,6 +344,7 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
     float distance_limit_pxl = 
       ((float)distance_limit_) / map.info.resolution;
 
+    bool first = true;
     while (instance_distance <= distance_limit_pxl) {
 
       std::vector<ActionIROS14> actions;
@@ -313,9 +352,14 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       ActionIROS14 action;
       if (params.type == MCTS_TYPE) {
         action = mcts->selectWorldAction(current_state);
+        if (first) {
+          action = ActionIROS14(GUIDE_PERSON, start_idx, 20); 
+          first=false;
+        }
       } else if (params.type == HEURISTIC) {
         action = hs->getBestAction(current_state, evaluation_model);
       }
+      first = false;
       // std::cout << "Select: " << std::endl;
       // int choice;
       // std::cin >> choice;
@@ -357,6 +401,18 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             cv::Mat out_img = base_image_.clone();
             evaluation_model->drawState(state, out_img);
             cv::imshow("out", out_img);
+            if (save_images_) {
+              std::stringstream ss;
+              ss << data_directory_ << "IMG" << method << "_";
+              char prev = ss.fill('0');
+              unsigned width = ss.width(6);
+              ss << frame_count;
+              ss.fill(prev);
+              ss.width(width);
+              ss << ".jpg";
+              cv::imwrite(ss.str(), out_img);
+              ++frame_count;
+            }
             //cv::waitKey(50);
           }
           if (params.type == MCTS_TYPE) {

@@ -1,7 +1,7 @@
 <launch>
 
   <include file="$(find bwi_guidance)/launch/map3_gazebo.launch">
-    <arg name="gui" value="false" />
+    <arg name="gui" value="true" />
   </include>
 
   <!-- Launch the person with their very own map server -->
