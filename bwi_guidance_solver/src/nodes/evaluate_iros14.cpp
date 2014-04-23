@@ -270,12 +270,12 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
       evaluation_model->drawState(current_state, out_img);
       cv::imshow("out", out_img);
       if (save_images_) {
-        std::stringstream ss;
-        ss << data_directory_ << method << "_";
-        char prev = ss.fill('0');
-        unsigned width = ss.width(6);
-        ss << frame_count;
-        cv::imwrite(ss.str(), data_directory_ +  
+        // std::stringstream ss;
+        // ss << data_directory_ << method << "_";
+        // char prev = ss.fill('0');
+        // unsigned width = ss.width(6);
+        // ss << frame_count;
+        // cv::imwrite(ss.str(), data_directory_ +  
 
       }
       //cv::waitKey(100);

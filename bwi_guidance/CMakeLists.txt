@@ -41,6 +41,7 @@ add_library(bwi_guidance
 target_link_libraries(bwi_guidance 
   ${catkin_LIBRARIES}
   ${YAML_CPP_LIBRARIES})
+add_dependencies(bwi_guidance bwi_guidance_msgs_gencpp)
 
 ## Declare a cpp executable
 add_executable(create_experiment src/create_experiment.cpp)
