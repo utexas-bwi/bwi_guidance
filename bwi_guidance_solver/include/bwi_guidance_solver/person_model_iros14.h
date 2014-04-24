@@ -56,11 +56,13 @@ namespace bwi_guidance {
 
       /* Private functions that are public only for testing */
       bool isRobotDirectionAvailable(const StateIROS14& state, int& robot_dir);
-      bool moveRobots(float time);
+      bool moveRobots(StateIROS14& state, float time);
       void printDistanceToDestination(int idx);
       void getActionsAtState(const StateIROS14 &state,
           std::vector<ActionIROS14>& actions);
       void setFrameVector(boost::shared_ptr<std::vector<StateIROS14> >& frame_vector);
+      void changeRobotDirectionIfNeeded(RobotStateIROS14& state, 
+          int current_destination, int to_destination);
 
     private:
 
@@ -85,8 +87,6 @@ namespace bwi_guidance {
       float getTrueDistanceTo(RobotStateIROS14& state, 
           int current_destination, int to_destination, 
           bool change_robot_state = false);
-      void changeRobotDirectionIfNeeded(RobotStateIROS14& state, 
-          int current_destination, int to_destination);
       int generateNewGoalFrom(int idx);
 
       /* Action generation caching */
