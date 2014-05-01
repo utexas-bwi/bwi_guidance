@@ -23,6 +23,9 @@ var update_experiment_service; // services
 var update_server_service; // services
 var uid = '';
 
+var server_prefix = '/services/bwi_guidance_server_service';
+var experiment_prefix = '/services/bwi_guidance_experiment_service';
+
 function initializeROS() {
   /* Setup ROS */
   /* var host = 'localhost' */
@@ -30,23 +33,23 @@ function initializeROS() {
 
   /* Subscribed topics */
   server_status_subscriber = new ros.Topic({
-    name        : '/server/server_status',
+    name        : server_prefix + '/server/server_status',
     messageType : 'bwi_guidance_msgs/ExperimentServerStatus'
   });
 
   experiment_status_subscriber = new ros.Topic({
-    name        : '/experiment_controller/experiment_status',
+    name        : experiment_prefix + '/experiment_controller/experiment_status',
     messageType : 'bwi_guidance_msgs/ExperimentStatus'
   });
 
   /* Service Proxies */
   update_server_service = new ros.Service({
-      name        : '/server/update_server',
+      name        : server_prefix + '/server/update_server',
       serviceType : 'bwi_guidance_msgs/UpdateExperimentServer'
   });
 
   update_experiment_service = new ros.Service({
-      name        : '/experiment_controller/update_experiment',
+      name        : experiment_prefix + '/experiment_controller/update_experiment',
       serviceType : 'bwi_guidance_msgs/UpdateExperiment'
   });
 
