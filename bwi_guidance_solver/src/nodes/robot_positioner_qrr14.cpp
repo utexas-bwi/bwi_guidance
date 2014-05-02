@@ -79,8 +79,9 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
           bwi_mapper::getClosestIdOnGraph(goal_point, graph_);
 
         // Compute model file
-        std::string model_file = data_directory_
-          + boost::lexical_cast<std::string>(goal_idx) + "_model.txt";
+        std::string model_file = ""; //Saving/Loading Model files disabled
+        // std::string model_file = data_directory_
+        //   + boost::lexical_cast<std::string>(goal_idx) + "_model.txt";
         std::string vi_file = data_directory_
           + boost::lexical_cast<std::string>(goal_idx) + "_vi.txt";
 

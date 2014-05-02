@@ -192,7 +192,7 @@ class ExperimentServer:
 
     def reset_server(self):
         if self.experiment_server_locked:
-            self.stop_experiment()
+            self.stop_experiment(self.experiment_uid)
 
 if __name__ == '__main__':
     try:
