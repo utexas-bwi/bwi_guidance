@@ -140,11 +140,11 @@ class ExperimentController:
         self.use_heuristic = rospy.get_param("~use_heuristic")
 
         # See if an experiment server is running
-        rospy.loginfo("Waiting for service: /server/update_server")
+        rospy.loginfo("Waiting for service: server/update_server")
         try:
-            rospy.wait_for_service("/server/update_server", 5.0)
+            rospy.wait_for_service("server/update_server", 5.0)
             self.update_server = rospy.ServiceProxy(
-                    '/server/update_server', UpdateExperimentServer)
+                    'server/update_server', UpdateExperimentServer)
             self.server_available = True
             rospy.loginfo("Server AVAILABLE!")
         except rospy.exceptions.ROSException:
@@ -152,28 +152,28 @@ class ExperimentController:
             rospy.loginfo("Server NOT AVAILABLE!")
 
         # Get Gazebo services
-        rospy.loginfo("Waiting for service: /gazebo/set_model_state")
-        rospy.wait_for_service("/gazebo/set_model_state")
+        rospy.loginfo("Waiting for service: gazebo/set_model_state")
+        rospy.wait_for_service("gazebo/set_model_state")
         self.set_gazebo_model_state = \
-                rospy.ServiceProxy("/gazebo/set_model_state", SetModelState)
-        rospy.loginfo("Service acquired: /gazebo/set_model_state")
+                rospy.ServiceProxy("gazebo/set_model_state", SetModelState)
+        rospy.loginfo("Service acquired: gazebo/set_model_state")
 
-        rospy.loginfo("Waiting for service: /gazebo/get_model_state")
-        rospy.wait_for_service("/gazebo/get_model_state")
+        rospy.loginfo("Waiting for service: gazebo/get_model_state")
+        rospy.wait_for_service("gazebo/get_model_state")
         self.get_gazebo_model_state = \
-                rospy.ServiceProxy("/gazebo/get_model_state", GetModelState)
-        rospy.loginfo("Service acquired: /gazebo/get_model_state")
+                rospy.ServiceProxy("gazebo/get_model_state", GetModelState)
+        rospy.loginfo("Service acquired: gazebo/get_model_state")
 
-        rospy.loginfo("Waiting for service: /gazebo/pause_physics")
-        rospy.wait_for_service("/gazebo/pause_physics")
-        self.pause_gazebo = rospy.ServiceProxy("/gazebo/pause_physics", Empty)
-        rospy.loginfo("Service acquired: /gazebo/pause_physics")
+        rospy.loginfo("Waiting for service: gazebo/pause_physics")
+        rospy.wait_for_service("gazebo/pause_physics")
+        self.pause_gazebo = rospy.ServiceProxy("gazebo/pause_physics", Empty)
+        rospy.loginfo("Service acquired: gazebo/pause_physics")
 
-        rospy.loginfo("Waiting for service: /gazebo/unpause_physics")
-        rospy.wait_for_service("/gazebo/unpause_physics")
+        rospy.loginfo("Waiting for service: gazebo/unpause_physics")
+        rospy.wait_for_service("gazebo/unpause_physics")
         self.unpause_gazebo = \
-                rospy.ServiceProxy("/gazebo/unpause_physics", Empty)
-        rospy.loginfo("Service acquired: /gazebo/unpause_physics")
+                rospy.ServiceProxy("gazebo/unpause_physics", Empty)
+        rospy.loginfo("Service acquired: gazebo/unpause_physics")
 
         # Setup the experiment interface
         self.interface = ExperimentInterface(self)
@@ -206,7 +206,7 @@ class ExperimentController:
                 Odometry, self.odometry_callback)
 
         # Setup the robot positioner subscriber
-        self.robot_positioner_subscriber = rospy.Subscriber('/robot_positions',
+        self.robot_positioner_subscriber = rospy.Subscriber('robot_positions',
                 RobotInfoArray, self.robot_positioner_callback)
 
         # A couple of locks

@@ -23,8 +23,8 @@ var update_experiment_service; // services
 var update_server_service; // services
 var uid = '';
 
-var server_prefix = '/services/bwi_guidance_server_service';
-var experiment_prefix = '/services/bwi_guidance_experiment_service';
+/* var ros_ns_prefix = ''; */
+var ros_ns_prefix = '/services/bwi_guidance_server_service';
 
 function initializeROS() {
   /* Setup ROS */
@@ -33,23 +33,23 @@ function initializeROS() {
 
   /* Subscribed topics */
   server_status_subscriber = new ros.Topic({
-    name        : server_prefix + '/server/server_status',
+    name        : ros_ns_prefix + '/server/server_status',
     messageType : 'bwi_guidance_msgs/ExperimentServerStatus'
   });
 
   experiment_status_subscriber = new ros.Topic({
-    name        : experiment_prefix + '/experiment_controller/experiment_status',
+    name        : ros_ns_prefix + '/experiment_controller/experiment_status',
     messageType : 'bwi_guidance_msgs/ExperimentStatus'
   });
 
   /* Service Proxies */
   update_server_service = new ros.Service({
-      name        : server_prefix + '/server/update_server',
+      name        : ros_ns_prefix + '/server/update_server',
       serviceType : 'bwi_guidance_msgs/UpdateExperimentServer'
   });
 
   update_experiment_service = new ros.Service({
-      name        : experiment_prefix + '/experiment_controller/update_experiment',
+      name        : ros_ns_prefix + '/experiment_controller/update_experiment',
       serviceType : 'bwi_guidance_msgs/UpdateExperiment'
   });
 
@@ -193,7 +193,7 @@ function start() {
   var mjpeg = new MjpegCanvas({
     host : host,
       /* topic : '/l_forearm_cam/image_color', */
-      topic : '/person/camera/rgb/image_raw',
+      topic : ros_ns_prefix + '/person/camera/rgb/image_raw',
     canvasID : 'my-mjpeg',
       /* width : 800, */
       width : 320,
@@ -206,7 +206,7 @@ function start() {
   var cmd_vel_publisher = null; //pub
   ros.on('connection', function() {
     cmd_vel_publisher = new ros.Topic({
-      name        : '/person/cmd_vel',
+      name        : ros_ns_prefix + '/person/cmd_vel',
       messageType : 'geometry_msgs/Twist'
     });
   });
