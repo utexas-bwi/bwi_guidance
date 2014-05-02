@@ -165,8 +165,6 @@ class ExperimentServer:
         success = False
         if self.experiment_server_locked and uid == self.experiment_uid:
             rospy.loginfo("Server : Stop experiments for " + uid)
-            self.log.close()
-            self.log = None
             self.experiment_launcher.stop_experiment()
             self.experiment_server_locked = False
             self.experiment_uid = ''
