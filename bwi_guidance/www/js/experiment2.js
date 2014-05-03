@@ -23,8 +23,8 @@ var update_experiment_service; // services
 var update_server_service; // services
 var uid = '';
 
-/* var ros_ns_prefix = ''; */
-var ros_ns_prefix = '/services/bwi_guidance_server_service';
+var ros_ns_prefix = '';
+var concert = false;
 
 function initializeROS() {
   /* Setup ROS */
@@ -61,6 +61,13 @@ function initializeROS() {
 
 }
 
+function fixROSConstants(params) {
+  if (!(typeof params.concert === 'undefined')) {
+    ros_ns_prefix = '/services/bwi_guidance_server_service';
+    concert = true;
+  }
+}
+
 /* JS Stuff on the finish page */
 function finish() {
   var score_text = document.getElementById('score');
@@ -85,6 +92,8 @@ function instructions() {
   var continue_instructions = document.getElementById('continue_instructions');
   var continue_button = document.getElementById('continue_button');
 
+  params = parseParameters();
+  fixROSConstants(params);
   initializeROS();
 
   /* Enable/disable continue button based on the current experiment status.
@@ -180,7 +189,12 @@ function startNextExperiment (event) {
 
 function continueToExperiment() {
   startNextExperiment();
-  window.location.href = "experiment.html?uid=" + uid;
+  var loc = "experiment.html?uid=" + uid;
+  if (concert) {
+    loc = loc + "&concert=true";
+  }
+  
+  window.location.href = loc;
 }
 
 function start() {
@@ -194,6 +208,7 @@ function start() {
   var pause_button = document.getElementById('pause_button');
 
   params = parseParameters();
+  fixROSConstants(params);
   initializeROS();
 
   var mjpeg = new MjpegCanvas({
@@ -327,7 +342,11 @@ function start() {
         typeof params.uid === 'undefined' || 
         message.uid == "" ||
         params.uid != message.uid) {
-      window.location.href = "index.html";
+      var loc = "index.html";
+      if (concert) {
+        loc = loc + "?concert=true";
+      }
+      window.location.href = loc;
     } else {
       if (!continue_button.disabled || 
           (!pause_button.disabled && pause_button.innerHTML == "Unpause")) {

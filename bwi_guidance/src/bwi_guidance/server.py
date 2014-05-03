@@ -96,8 +96,9 @@ class RoslaunchExperimentLauncher:
         process = bwi_tools.start_roslaunch_process(
                 self.package, self.script,
                 args={'uid': uid, 'name': name, 'email': email, 
-                      'use_heuristic': use_heuristic_text},
-                log=self.log)
+                      'use_heuristic': use_heuristic_text})
+        # ,
+        #         log=self.log)
         self.processes.append(process)
 
     def stop_experiment(self):
