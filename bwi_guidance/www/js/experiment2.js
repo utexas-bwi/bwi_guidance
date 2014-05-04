@@ -14,8 +14,6 @@ function parseParameters() {
 }
 
 /* Global ROS parameters */
-var host = 'localhost'
-/* var host = 'robot-devil.csres.utexas.edu' */
 var ros;
 var experiment_status_subscriber; // subs
 var server_status_subscriber; // subs
@@ -23,6 +21,7 @@ var update_experiment_service; // services
 var update_server_service; // services
 var uid = '';
 
+var host = 'localhost';
 var ros_ns_prefix = '';
 var concert = false;
 
@@ -65,6 +64,9 @@ function fixROSConstants(params) {
   if (!(typeof params.concert === 'undefined')) {
     ros_ns_prefix = '/services/bwi_guidance_server_service';
     concert = true;
+  }
+  if (!(typeof params.host === 'undefined')) {
+    host = decodeURIComponent(params.host);
   }
 }
 
@@ -189,11 +191,10 @@ function startNextExperiment (event) {
 
 function continueToExperiment() {
   startNextExperiment();
-  var loc = "experiment.html?uid=" + uid;
+  var loc = "experiment.html?uid=" + uid + "&host=" + encodeURIComponent(host);
   if (concert) {
     loc = loc + "&concert=true";
   }
-  
   window.location.href = loc;
 }
 
@@ -342,9 +343,9 @@ function start() {
         typeof params.uid === 'undefined' || 
         message.uid == "" ||
         params.uid != message.uid) {
-      var loc = "index.html";
+      var loc = "index.html?host=" + encodeURIComponent(host);
       if (concert) {
-        loc = loc + "?concert=true";
+        loc = loc + "&concert=true";
       }
       window.location.href = loc;
     } else {

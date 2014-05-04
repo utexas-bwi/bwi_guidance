@@ -187,6 +187,8 @@ class ExperimentController:
         self.experiment_text = ''
         self.experiment_success = False
         self.experiment_ready = False
+        self.robot_positioner_ready = False
+        self.odometry_ready = False
         self.experiment_ready_timer_started = False
 
         # Initialize some default values for a single experiment
@@ -314,17 +316,19 @@ class ExperimentController:
         self.modify_instance_lock.release()
 
     def ready_the_experiment(self):
+        rospy.loginfo("Odometry and Robot Positioner are both ready. Starting the experiment!")
         self.experiment_ready = True
 
     def odometry_callback(self, odom):
 
         self.modify_instance_lock.acquire()
 
-        # Once first odometry message is received, ready the experiment in 20s
-        if not self.experiment_ready_timer_started:
+        # Once first robot position message is received, check if odometry is also ready and start the experiment
+        self.odometry_ready = True
+        if not self.experiment_ready_timer_started and self.robot_positioner_ready:
             self.experiment_ready_timer_started = True
             self.experiment_ready_timer = \
-                threading.Timer(90.0, self.ready_the_experiment)
+                threading.Timer(5.0, self.ready_the_experiment)
             self.experiment_ready_timer.start()
 
         if (not self.instance_in_progress):
@@ -357,6 +361,14 @@ class ExperimentController:
     def robot_positioner_callback(self, msg):
 
         self.modify_instance_lock.acquire()
+
+        # Once first robot position message is received, check if odometry is also ready and start the experiment
+        self.robot_positioner_ready = True
+        if not self.experiment_ready_timer_started and self.odometry_ready:
+            self.experiment_ready_timer_started = True
+            self.experiment_ready_timer = \
+                threading.Timer(5.0, self.ready_the_experiment)
+            self.experiment_ready_timer.start()
 
         if self.robot_positioning_enabled and not self.instance_in_progress:
             if msg.ready:
