@@ -7,11 +7,11 @@
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include <rl_pursuit/common/Util.h>
-#include <rl_pursuit/planning/MCTS.h>
-#include <rl_pursuit/planning/UCTEstimator.h>
-#include <rl_pursuit/planning/ModelUpdaterSingle.h>
-#include <rl_pursuit/planning/IdentityStateMapping.h>
+#include <bwi_rl/common/Util.h>
+#include <bwi_rl/planning/MCTS.h>
+#include <bwi_rl/planning/UCTEstimator.h>
+#include <bwi_rl/planning/ModelUpdaterSingle.h>
+#include <bwi_rl/planning/IdentityStateMapping.h>
 
 #include <opencv/highgui.h>
 

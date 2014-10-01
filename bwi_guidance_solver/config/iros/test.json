@@ -2,9 +2,7 @@
   "methods" : [ 
   { 
     "type" : 2,
-    "mcts_initial_planning_time" : 80.0,
-    "mcts_planning_time_multiplier" : 8.0,
-    "mcts_reward_bound" : 500
+    "mcts_reward_bound" : 10000
   }
   ]
 }

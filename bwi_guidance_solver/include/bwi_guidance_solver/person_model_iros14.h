@@ -2,7 +2,7 @@
 #define BWI_GUIDANCE_SOLVER_PERSON_MODEL_IROS14
 
 #include <nav_msgs/OccupancyGrid.h>
-#include <rl_pursuit/planning/Model.h>
+#include <bwi_rl/planning/Model.h>
 #include <stdint.h>
 
 #include <bwi_guidance_solver/structures_iros14.h>
@@ -36,11 +36,11 @@ namespace bwi_guidance {
       virtual ~PersonModelIROS14() {};
 
       /* Functions inherited from Model */
-      virtual void setState(const StateIROS14 &state);
-      virtual void takeAction(const ActionIROS14 &action, float &reward, 
-          StateIROS14 &state, bool &terminal, int &depth_count);
+      virtual void takeAction(const StateIROS14 &state, const ActionIROS14 &action, float &reward, 
+          StateIROS14 &next_state, bool &terminal, int &depth_count);
       virtual void getFirstAction(const StateIROS14 &state, ActionIROS14 &action);
       virtual bool getNextAction(const StateIROS14 &state, ActionIROS14 &action);
+      virtual void getAllActions(const StateIROS14 &state, std::vector<ActionIROS14>& actions);
       virtual std::string generateDescription(unsigned int indentation = 0) {
         return std::string("stub");
       }

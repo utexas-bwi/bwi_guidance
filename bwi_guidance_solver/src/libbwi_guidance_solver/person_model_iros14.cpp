@@ -754,6 +754,11 @@ namespace bwi_guidance {
     // return false;
   }
 
+  void PersonModelIROS14::getAllActions(const StateIROS14 &state,
+      std::vector<ActionIROS14>& actions) {
+    getActionsAtState(state, actions);
+  }
+
   void PersonModelIROS14::addRobots(StateIROS14& state, int n) {
     assert(uigen_);
     for (int r = 0; r < n; ++r) {

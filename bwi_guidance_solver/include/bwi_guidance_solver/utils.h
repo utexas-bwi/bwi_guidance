@@ -7,6 +7,8 @@
 #include <boost/random/variate_generator.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
+#include <bwi_rl/common/RNG.h>
+
 namespace bwi_guidance {
 
   typedef boost::variate_generator<boost::mt19937&, boost::uniform_real<float>
@@ -21,7 +23,7 @@ namespace bwi_guidance {
                                    boost::poisson_distribution<int> > PIGen;
   typedef boost::shared_ptr<PIGen> PIGenPtr;
 
-  inline int select(std::vector<float>& probabilities, URGenPtr rng) {
+  inline int select(const std::vector<float>& probabilities, URGenPtr rng) {
     float random_value = (*rng)();
     float prob_sum = probabilities[0];
     for (int i = 1; i < probabilities.size(); ++i) {
@@ -31,6 +33,15 @@ namespace bwi_guidance {
     return probabilities.size() - 1;
   }
   
+  inline int select(const std::vector<float>& probabilities, boost::shared_ptr<RNG> rng) {
+    float random_value = rng->randomFloat();
+    float prob_sum = probabilities[0];
+    for (int i = 1; i < probabilities.size(); ++i) {
+      if (random_value < prob_sum) return i - 1;
+      prob_sum += probabilities[i];
+    }
+    return probabilities.size() - 1;
+  }
 } /* bwi_guidance_solver */
 
 #endif /* end of include guard: BWI_GUIDANCE_SOLVER_UTILS_H */
