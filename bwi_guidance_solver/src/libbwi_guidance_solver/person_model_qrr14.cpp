@@ -121,45 +121,25 @@ namespace bwi_guidance {
     }
   }
 
-  void PersonModelQRR14::setState(const StateQRR14 &state) {
-    current_state_ = state;
-  }
+  void PersonModelQRR14::takeAction(const StateQRR14 &state, 
+      const ActionQRR14 &action, float &reward, StateQRR14 &next_state, 
+      bool &terminal, int& depth_count, boost::shared_ptr<RNG> rng) {
 
-  void PersonModelQRR14::takeAction(const ActionQRR14 &action, float &reward, 
-      StateQRR14 &state, bool &terminal, int& depth_count) {
-
-    if (!generator_) {
-      throw std::runtime_error("Call initializeRNG() before takeAction()");
-    }
-
-    if (isTerminalState(current_state_)) {
+    if (isTerminalState(state)) {
       throw std::runtime_error("Cannot call takeAction() on terminal state");
     }
 
     std::vector<StateQRR14> next_states;
     std::vector<float> probabilities;
     std::vector<float> rewards;
-    getTransitionDynamics(current_state_, action, 
-        next_states, rewards, probabilities);
+    getTransitionDynamics(state, action, next_states, rewards, probabilities); 
 
-    // Modify probability distribution to improve occurence of rare events
-    // if (use_importance_sampling_) {
-    //   float probability_sum = 0.0f;
-    //   for (unsigned int i = 0; i < probabilities.size(); ++i) {
-    //     probabilities[i] = 1.0f + 50.0f * probabilities[i];
-    //     probability_sum += probabilities[i];
-    //   }
-    //   for (unsigned int i = 0; i < probabilities.size(); ++i) {
-    //     probabilities[i] /= probability_sum;
-    //   }
-    // }
-
-    int idx = select(probabilities, generator_);
-    current_state_ = next_states[idx];
+    int idx = select(probabilities, rng);
+    next_state = next_states[idx];
     reward = rewards[idx];
-    state = current_state_;
-    terminal = isTerminalState(current_state_);
+    terminal = isTerminalState(next_state);
     depth_count = 1;
+
   }
 
   void PersonModelQRR14::getFirstAction(const StateQRR14 &state, 
@@ -179,6 +159,11 @@ namespace bwi_guidance {
     }
     return false;
   }
+
+  void PersonModelQRR14::getAllActions(const StateQRR14 &state,
+      std::vector<ActionQRR14>& actions) {
+    actions = getActionsAtState(state);
+  }
   
   float PersonModelQRR14::getTransitionProbability(const StateQRR14& state,
       const ActionQRR14& action, const StateQRR14& next_state) {
@@ -193,10 +178,6 @@ namespace bwi_guidance {
     return 0;
   }
   
-  void PersonModelQRR14::initializeRNG(URGenPtr generator) {
-    generator_ = generator;
-  }
-
   void PersonModelQRR14::updateRewardStructure(float success_reward, 
       RewardStructure reward_structure, bool use_importance_sampling) {
     success_reward_ = success_reward;
@@ -363,8 +344,10 @@ namespace bwi_guidance {
    
     // Get all adjacent ids the person can transition to
     // Algorithm 1 in paper
+    next_states.resize(adjacent_vertices_map_[state.graph_id].size());
+    unsigned int count = 0;
     BOOST_FOREACH(int next_node, adjacent_vertices_map_[state.graph_id]) {
-      StateQRR14 next_state;
+      StateQRR14 &next_state = next_states[count];
       if (state.visible_robot == NONE) {
         // If no robot was visible in previous state, no robot can be present
         next_state.robot_direction = NONE;
@@ -392,7 +375,7 @@ namespace bwi_guidance {
           state.graph_id, next_node, graph_);
       next_state.num_robots_left = state.num_robots_left;
       next_state.graph_id = next_node;
-      next_states.push_back(next_state);
+      ++count;
     }
   }
 

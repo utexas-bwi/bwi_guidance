@@ -66,6 +66,33 @@ namespace bwi_guidance {
   bool operator==(const StateQRR14& l, const StateQRR14& r);
   std::ostream& operator<<(std::ostream& stream, const StateQRR14& s);
 
+  struct StateQRR14CHMHash { 
+    static size_t hash(const StateQRR14& key) {
+      size_t seed = 0;
+      boost::hash_combine(seed, key.graph_id);
+      boost::hash_combine(seed, key.direction);
+      boost::hash_combine(seed, key.num_robots_left);
+      boost::hash_combine(seed, key.robot_direction);
+      boost::hash_combine(seed, key.visible_robot);
+      return seed;
+    }
+    static bool equal(const StateQRR14& key1, const StateQRR14& key2) {return key1==key2;}
+  }; 
+
+  struct StateQRR14COMHash { 
+    StateQRR14COMHash() {}
+    size_t operator()(const StateQRR14& key) const {
+      size_t seed = 0;
+      boost::hash_combine(seed, key.graph_id);
+      boost::hash_combine(seed, key.direction);
+      boost::hash_combine(seed, key.num_robots_left);
+      boost::hash_combine(seed, key.robot_direction);
+      boost::hash_combine(seed, key.visible_robot);
+      return seed;
+    }
+  }; 
+
+
 } /* bwi_guidance */
 
 #endif /* end of include guard: STRUCTURES_HDY3OBT2 */

@@ -2,8 +2,8 @@
 #define BWI_GUIDANCE_SOLVER_PERSON_MODEL_QRR14
 
 #include <nav_msgs/OccupancyGrid.h>
-#include <rl_pursuit/planning/Model.h>
-#include <rl_pursuit/planning/PredictiveModel.h>
+#include <bwi_rl/planning/Model.h>
+#include <bwi_rl/planning/PredictiveModel.h>
 #include <stdint.h>
 
 #include <bwi_guidance_solver/structures_qrr14.h>
@@ -53,15 +53,14 @@ namespace bwi_guidance {
       }
 
       /* Functions inherited from Model */
-      virtual void setState(const StateQRR14 &state);
-      virtual void takeAction(const ActionQRR14 &action, float &reward, 
-          StateQRR14 &state, bool &terminal, int &depth_count);
+      virtual void takeAction(const StateQRR14 &state, const ActionQRR14 &action, float &reward, 
+          StateQRR14 &next_state, bool &terminal, int &depth_count, boost::shared_ptr<RNG> rng);
       virtual void getFirstAction(const StateQRR14 &state, ActionQRR14 &action);
       virtual bool getNextAction(const StateQRR14 &state, ActionQRR14 &action);
+      virtual void getAllActions(const StateQRR14 &state, std::vector<ActionQRR14>& actions);
       virtual float getTransitionProbability(const StateQRR14& state, 
           const ActionQRR14& action, const StateQRR14& next_state);
 
-      void initializeRNG(URGenPtr generator);
       void updateRewardStructure(float success_reward, RewardStructure
           reward_structure, bool use_importance_sampling);
 
@@ -70,9 +69,6 @@ namespace bwi_guidance {
 
     private:
 
-      /* Current state for generative model */
-      StateQRR14 current_state_;
-      URGenPtr generator_;
       std::vector<float> intrinsic_reward_cache_;
       RewardStructure reward_structure_;
       float success_reward_;

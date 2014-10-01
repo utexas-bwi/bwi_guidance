@@ -8,8 +8,7 @@
 #include <bwi_rl/planning/ValueIteration.h>
 
 #include <bwi_rl/common/Util.h>
-#include <bwi_rl/planning/MCTS.h>
-#include <bwi_rl/planning/UCTEstimator.h>
+#include <bwi_rl/planning/MultiThreadedMCTS.h>
 #include <bwi_rl/planning/ModelUpdaterSingle.h>
 #include <bwi_rl/planning/IdentityStateMapping.h>
 
@@ -48,7 +47,7 @@ float distance_limit_ = 300.f;
 bool allow_robot_current_idx_ = false;
 float visibility_range_ = 0.0f; // Infinite visibility
 bool allow_goal_visibility_ = false;
-MCTS<StateQRR14, ActionQRR14>::Params mcts_params_;
+MultiThreadedMCTS<StateQRR14, StateQRR14COMHash, ActionQRR14>::Params mcts_params_;
 bool mcts_enabled_ = false;
 int precompute_vi_ = -1;
 
@@ -81,7 +80,7 @@ namespace Method {
   _(float,mcts_initial_planning_time,mcts_initial_planning_time,10.0) \
   _(float,mcts_planning_time_multiplier,mcts_planning_time_multiplier,1.0) \
   _(float,mcts_reward_bound,mcts_reward_bound,10000.0) \
-  _(bool,mcts_importance_sampling,mcts_importance_sampling,false) 
+  _(int,num_threads,num_threads,1) 
 
   Params_STRUCT(PARAMS)
 #undef PARAMS
@@ -219,12 +218,11 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
 
     boost::shared_ptr<HeuristicSolver> hs;
     boost::shared_ptr<ValueIteration<StateQRR14, ActionQRR14> > vi;
-    boost::shared_ptr<MCTS<StateQRR14, ActionQRR14> > mcts;
+    boost::shared_ptr<MultiThreadedMCTS<StateQRR14, StateQRR14COMHash, ActionQRR14> > mcts;
 
     const Method::Params& params = methods[method];
     model->updateRewardStructure(params.success_reward, 
-        (RewardStructure) params.reward_structure,
-        params.mcts_importance_sampling);
+        (RewardStructure) params.reward_structure, false);
 
     if (params.type == HEURISTIC) {
       hs.reset(new HeuristicSolver(map, graph, goal_idx,
@@ -241,12 +239,10 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             "parameter file provided. Please set the mcts-params flag.");
       }
 
-      UCTEstimator<StateQRR14, ActionQRR14>::Params uct_estimator_params;
-      uct_estimator_params.gamma = params.gamma;
-      uct_estimator_params.lambda = params.lambda;
-      uct_estimator_params.rewardBound = params.mcts_reward_bound;
-      uct_estimator_params.useImportanceSampling =
-        params.mcts_importance_sampling;
+      mcts_params_.gamma = params.gamma;
+      mcts_params_.lambda = params.lambda;
+      mcts_params_.rewardBound = params.mcts_reward_bound * 20;
+      mcts_params_.numThreads = params.num_threads;
 
       // Create the RNG required for mcts rollouts
       boost::shared_ptr<RNG> mcts_rng(new RNG(1 * (seed + 1)));
@@ -256,11 +252,8 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             new ModelUpdaterSingle<StateQRR14, ActionQRR14>(model));
       boost::shared_ptr<IdentityStateMapping<StateQRR14> > mcts_state_mapping(
           new IdentityStateMapping<StateQRR14>);
-      boost::shared_ptr<UCTEstimator<StateQRR14, ActionQRR14> > uct_estimator(
-          new UCTEstimator<StateQRR14, ActionQRR14>(mcts_rng,
-            uct_estimator_params));
-      mcts.reset(new MCTS<StateQRR14, ActionQRR14>(uct_estimator,
-            mcts_model_updator, mcts_state_mapping, mcts_rng, mcts_params_));
+      mcts.reset(new MultiThreadedMCTS<StateQRR14, StateQRR14COMHash, ActionQRR14>(mcts_model_updator,
+            mcts_state_mapping, mcts_rng, mcts_params_));
     }
 
     boost::mt19937 mt(2 * (seed + 1));
@@ -292,12 +285,10 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
         EVALUATE_OUTPUT(" - performing initial MCTS search for " +
             boost::lexical_cast<std::string>(
               params.mcts_initial_planning_time) + "s");
-        for (int i = 0; i < params.mcts_initial_planning_time; ++i) {
-          unsigned int playouts, terminations;
-          playouts = mcts->search(current_state, terminations);
-          method_result.mcts_playouts[starting_robots - 1] = playouts;
-          method_result.mcts_terminations[starting_robots - 1] += terminations;
-        }
+        unsigned int playouts, terminations;
+        playouts = mcts->search(current_state, terminations, params.mcts_initial_planning_time);
+        method_result.mcts_playouts[starting_robots - 1] = playouts;
+        method_result.mcts_terminations[starting_robots - 1] += terminations;
       }
 
       float distance_limit_pxl = 
@@ -362,10 +353,8 @@ InstanceResult testInstance(int seed, bwi_mapper::Graph& graph,
             distance += params.mcts_planning_time_multiplier;
             EVALUATE_OUTPUT(" - performing post-wait MCTS search for " <<
                 distance << "s");
-            for (int i = 0; i < distance; ++i) {
-              unsigned int terminations;
-              mcts->search(current_state, terminations);
-            }
+            unsigned int terminations;
+            mcts->search(current_state, terminations, distance);
           }
         }
 

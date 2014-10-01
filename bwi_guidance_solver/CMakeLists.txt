@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(bwi_guidance_solver)
 
 ## Find catkin and external packages
-find_package(catkin REQUIRED COMPONENTS bwi_guidance bwi_mapper rl_pursuit)
+find_package(catkin REQUIRED COMPONENTS bwi_guidance bwi_mapper bwi_rl)
 find_package(Boost REQUIRED COMPONENTS serialization program_options)
 
 ###################################
@@ -24,7 +24,8 @@ catkin_package(
 ###########
 
 #add_definitions(-DVI_DEBUG)
-#add_definitions(-DMCTS_DEBUG)
+## add_definitions(-DMCTS_DEBUG)
+add_definitions(-DMCTS_VALUE_DEBUG)
 add_definitions(-DUCT_DEBUG)
 add_definitions(-DEVALUATE_DEBUG)
 
@@ -37,10 +38,10 @@ include_directories(
 ## Declare a cpp library
 add_library(bwi_guidance_solver
   src/libbwi_guidance_solver/common.cpp
-  src/libbwi_guidance_solver/heuristic_solver_iros14.cpp
+  ## src/libbwi_guidance_solver/heuristic_solver_iros14.cpp
   src/libbwi_guidance_solver/heuristic_solver_qrr14.cpp
   src/libbwi_guidance_solver/person_estimator_qrr14.cpp
-  src/libbwi_guidance_solver/person_model_iros14.cpp
+  ## src/libbwi_guidance_solver/person_model_iros14.cpp
   src/libbwi_guidance_solver/person_model_qrr14.cpp
   src/libbwi_guidance_solver/structures_iros14.cpp
   src/libbwi_guidance_solver/structures_qrr14.cpp
@@ -50,59 +51,65 @@ target_link_libraries(bwi_guidance_solver
   ${Boost_LIBRARIES}
 )
 
-add_executable(test_vi 
-  test/test_vi.cpp
+## add_executable(test_vi 
+##   test/test_vi.cpp
+## )
+add_executable(test_mt_mcts 
+  test/test_mt_mcts.cpp
 )
-
-add_executable(test_mdp_qrr14 
-  test/test_mdp_qrr14.cpp
-)
-target_link_libraries(test_mdp_qrr14 
+target_link_libraries(test_mt_mcts 
   bwi_guidance_solver
 )
-add_executable(generate_exp2_robots_qrr14 
-  test/generate_exp2_robots_qrr14.cpp
-)
-target_link_libraries(generate_exp2_robots_qrr14
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-)
-add_executable(test_model_iros14 
-  test/test_model_iros14.cpp
-)
-target_link_libraries(test_model_iros14
-  bwi_guidance_solver
-  ${catkin_LIBRARIES}
-  ${Boost_LIBRARIES}
-)
 
+## add_executable(test_mdp_qrr14 
+##   test/test_mdp_qrr14.cpp
+## )
+## target_link_libraries(test_mdp_qrr14 
+##   bwi_guidance_solver
+## )
+## add_executable(generate_exp2_robots_qrr14 
+##   test/generate_exp2_robots_qrr14.cpp
+## )
+## target_link_libraries(generate_exp2_robots_qrr14
+##   ${catkin_LIBRARIES}
+##   ${Boost_LIBRARIES}
+## )
+## add_executable(test_model_iros14 
+##   test/test_model_iros14.cpp
+## )
+## target_link_libraries(test_model_iros14
+##   bwi_guidance_solver
+##   ${catkin_LIBRARIES}
+##   ${Boost_LIBRARIES}
+## )
+## 
 add_executable(evaluate_qrr14 
   src/nodes/evaluate_qrr14.cpp
 )
 target_link_libraries(evaluate_qrr14
   bwi_guidance_solver
 )
-add_executable(evaluate_iros14 
-  src/nodes/evaluate_iros14.cpp
-)
-target_link_libraries(evaluate_iros14
-  bwi_guidance_solver
-)
-add_executable(metric_map2_qrr14 
-  src/nodes/metric_map2_qrr14.cpp
-)
-target_link_libraries(metric_map2_qrr14 
-  bwi_guidance_solver
-)
-
-add_executable(robot_positioner_qrr14
-  src/nodes/robot_positioner_qrr14.cpp
-)
-target_link_libraries(robot_positioner_qrr14 
-  bwi_guidance_solver
-  ${catkin_LIBRARIES}
-)
-
+## add_executable(evaluate_iros14 
+##   src/nodes/evaluate_iros14.cpp
+## )
+## target_link_libraries(evaluate_iros14
+##   bwi_guidance_solver
+## )
+## add_executable(metric_map2_qrr14 
+##   src/nodes/metric_map2_qrr14.cpp
+## )
+## target_link_libraries(metric_map2_qrr14 
+##   bwi_guidance_solver
+## )
+## 
+## add_executable(robot_positioner_qrr14
+##   src/nodes/robot_positioner_qrr14.cpp
+## )
+## target_link_libraries(robot_positioner_qrr14 
+##   bwi_guidance_solver
+##   ${catkin_LIBRARIES}
+## )
+## 
 #############
 ## Install ##
 #############

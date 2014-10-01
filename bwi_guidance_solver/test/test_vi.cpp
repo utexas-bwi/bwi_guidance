@@ -1,8 +1,8 @@
 #include <iostream>
 #include <fstream>
 
-#include <rl_pursuit/planning/ValueIteration.h>
-#include <rl_pursuit/planning/PredictiveModel.h>
+#include <bwi_rl/planning/ValueIteration.h>
+#include <bwi_rl/planning/PredictiveModel.h>
 #include <boost/foreach.hpp>
 
 class TestModel : public PredictiveModel<int, int>{

@@ -4,16 +4,17 @@
   <arg name="seed" default="0" />
   <arg name="num_instances" default="1" />
 
-  <arg name="map_file" default="$(find bwi_guidance)/maps/map3.yaml" />
-  <arg name="graph_file" default="$(find bwi_guidance)/maps/graph_map3.yaml" />
+  <arg name="map_file" default="$(find bwi_guidance)/maps/graph.yaml" />
+  <arg name="graph_file" default="$(find bwi_guidance)/maps/graph_graph.yaml" />
   <arg name="mcts_params" 
     default="$(find bwi_guidance_solver)/config/iros/mcts_params.json" />
   <arg name="methods_file" 
     default="$(find bwi_guidance_solver)/config/iros/test.json" />
 
-  <node name="evaluate" pkg="bwi_guidance_solver" type="evaluate_iros14"  
+  <!--launch-prefix="valgrind tool=callgrind " -->
+  <node
+    name="evaluate" pkg="bwi_guidance_solver" type="test_mt_mcts"  
     output="screen"  
-    launch-prefix="gdb -ex run --args"
     args="--map-file $(arg map_file) --graph-file $(arg graph_file)
     --save-images --start-colocated
     --data-directory $(arg data_dir) --graphical --seed $(arg seed)
