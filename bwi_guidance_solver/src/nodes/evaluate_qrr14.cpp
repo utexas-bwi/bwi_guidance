@@ -7,7 +7,7 @@
 
 #include <bwi_rl/planning/ValueIteration.h>
 
-#include <bwi_rl/common/Util.h>
+#include <bwi_tools/common/Util.h>
 #include <bwi_rl/planning/MCTS.h>
 #include <bwi_rl/planning/UCTEstimator.h>
 #include <bwi_rl/planning/ModelUpdaterSingle.h>
@@ -95,20 +95,6 @@ struct InstanceResult {
   std::vector<MethodResult> results;
   std::vector<MethodResult> normalized_results;
 };
-
-/* Helper Functions */
-
-// std::ostream& operator<< (std::ostream& stream, const InstanceResult& ir) {
-//   for (int i = 0; i < MAX_ROBOTS; ++i) {
-//     for (int j = 0; j < num_methods; ++j) {
-//       stream << ir.avg_distance[j][i] / ir.true_vi_value[MAX_ROBOTS - 1];
-//       if (i != MAX_ROBOTS - 1 || j != num_methods -1) {
-//         stream << ",";
-//       }
-//     }
-//   }
-//   return stream;
-// }
 
 std::string getIndexedModelFile(int goal_idx) {
   return data_directory_ +

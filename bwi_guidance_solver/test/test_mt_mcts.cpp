@@ -7,7 +7,7 @@
 
 #include <bwi_rl/planning/ValueIteration.h>
 
-#include <bwi_rl/common/Util.h>
+#include <bwi_tools/common/Util.h>
 #include <bwi_rl/planning/MultiThreadedMCTS.h>
 #include <bwi_rl/planning/ModelUpdaterSingle.h>
 #include <bwi_rl/planning/IdentityStateMapping.h>

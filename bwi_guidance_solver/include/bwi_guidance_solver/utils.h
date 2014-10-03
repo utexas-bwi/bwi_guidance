@@ -7,7 +7,7 @@
 #include <boost/random/variate_generator.hpp>
 #include <boost/random/mersenne_twister.hpp>
 
-#include <bwi_rl/common/RNG.h>
+#include <bwi_tools/common/RNG.h>
 
 namespace bwi_guidance {
 
