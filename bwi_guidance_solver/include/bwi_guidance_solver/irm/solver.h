@@ -1,6 +1,7 @@
 #ifndef BWI_GUIDANCE_SOLVER_IRM_SOLVER_H
 #define BWI_GUIDANCE_SOLVER_IRM_SOLVER_H
 
+#include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <nav_msgs/OccupancyGrid.h>
 #include <string>
@@ -35,17 +36,41 @@ namespace bwi_guidance_solver {
           general_params_.fromJson(params);
           map_ = map;
           graph_ = graph;
-          base_directory_ = base_directory_;
+
+          // Compute the base directory
+          std::ostringstream parametrized_dir_ss;
+          parametrized_dir_ss << std::fixed << std::setprecision(2);
+          parametrized_dir_ss << base_directory << "/ros" << general_params_.reward_on_success << 
+            "-rs" << general_params_.reward_structure;
+          base_directory_ = parametrized_dir_ss.str();
+
           return this->initializeSolverSpecific(params);
         }
 
-        virtual bool initializeSolverSpecific(Json::Value &params) = 0;
-        virtual void reset(int seed, int goal_idx) = 0;
+        inline void reset(const boost::shared_ptr<PersonModel> &model, int seed, int goal_idx) {
+          seed_ = seed;
+          model_ = model;
+          goal_idx_ = goal_idx;
+          this->resetSolverSpecific();
+        }
+
+        virtual std::map<std::string, std::string> getParamsAsMap() { 
+          std::map<std::string, std::string> stringMap = this->getParamsAsMapSolverSpecific();
+          std::map<std::string, std::string> general_params_map = general_params_.asMap();
+          stringMap.insert(general_params_map.begin(), general_params_map.end());
+          return stringMap;
+        }
+
         virtual Action getBestAction(const State &state) = 0;
 
+        virtual bool initializeSolverSpecific(Json::Value &params) {}
+        virtual bool resetSolverSpecific() {}
         virtual void precomputeAndSavePolicy(int problem_identifier) {}
         virtual void performEpisodeStartComputation() {}
         virtual void performPostActionComputation(float distance = 0.0) {}
+        virtual std::map<std::string, std::string> getParamsAsMapSolverSpecific() { 
+          return std::map<std::string, std::string>();
+        }
 
         inline bool shouldAddRewardOnSuccess() { return general_params_.reward_on_success; }
         inline RewardStructure getRewardStructure() { 
@@ -56,6 +81,12 @@ namespace bwi_guidance_solver {
 
         Solver();
 
+        /* Some test instance/precomputation specific pieces of information */
+        int seed_;
+        int goal_idx_;
+        boost::shared_ptr<PersonModel> model_;
+
+        /* Some general pieces of information required by the solver */
         std::string base_directory_;
         nav_msgs::OccupancyGrid map_;
         bwi_mapper::Graph graph_;

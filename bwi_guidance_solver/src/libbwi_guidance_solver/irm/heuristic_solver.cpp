@@ -19,10 +19,6 @@ namespace bwi_guidance_solver {
       return true;
     }
 
-    void HeuristicSolver::reset(int seed, int goal_idx) {
-      goal_idx_ = goal_idx;
-    }
-
     Action HeuristicSolver::getBestAction(const State& state) {
       return getBestActionWithBlacklistedVertices(state);
     }

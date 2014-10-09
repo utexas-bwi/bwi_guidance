@@ -7,6 +7,11 @@ namespace bwi_guidance_solver {
 
   namespace irm {
 
+    struct InstanceResult {
+      std::vector<MethodResult> results;
+      std::vector<MethodResult> normalized_results;
+    };
+
     bool Domain::initialize(Json::Value &experiment, const std::string &base_directory) {
 
       // Read any domain-level parameters.
@@ -26,6 +31,21 @@ namespace bwi_guidance_solver {
         return false;
       }
 
+      // Compute the base directory
+      std::ostringstream parametrized_dir_ss;
+      parametrized_dir_ss << std::fixed << std::setprecision(2);
+      parametrized_dir_ss << base_directory << "/irm" << 
+        "-dl" << params_.distance_limit << 
+        "-arci" << params_.allow_robot_current_idx <<
+        "-vr" << params_.visibility_range <<
+        "-agv" << params_.allow_goal_visibility;
+      base_directory_ = parametrized_dir_ss.str();
+      if (!boost::filesystem::create_directory(base_directory_))
+      {
+        ROS_FATAL_STREAM("Could not create the following domain directory: " << base_directory_);
+        return false;
+      }
+
       // Load all the solvers we'll be testing 
       Json::Value solvers = experiment["solvers"];
       pluginlib::ClassLoader<Solver> class_loader("bwi_guidance_solver",
@@ -34,7 +54,10 @@ namespace bwi_guidance_solver {
         for (unsigned solver_idx = 0; solver_idx < solvers.size(); ++solver_idx) {
           std::string solver_name = solvers[solver_idx]["name"].asString();
           boost::shared_ptr<Solver> solver = class_loader.createInstance(solver_name);
-          solver->initialize(solvers[solver_idx]["params"], map_, graph_, base_directory + "/irm");
+          if (!(solver->initialize(solvers[solver_idx]["params"], map_, graph_, base_directory_))) {
+            ROS_FATAL("Could not initialize solver.");
+            return false;
+          }
           solvers_.push_back(solver);
         }
       } catch(pluginlib::PluginlibException& ex) {
@@ -54,7 +77,18 @@ namespace bwi_guidance_solver {
 
     void Domain::testInstance(int seed) {
 
-      // TODO Use seed to generate start_idx, start_direction and goal_idx.
+      boost::mt19937 mt(seed_ + i);
+      boost::uniform_int<int> idx_dist(0, boost::num_vertices(graph) - 1);
+      UIGen idx_gen(mt, idx_dist);
+      boost::uniform_int<int> direction_dist(0, 15);
+      UIGen direction_gen(mt, direction_dist);
+
+      int start_idx = idx_gen();
+      int goal_idx = idx_gen();
+      while (goal_idx == start_idx) {
+        goal_idx = idx_gen();
+      }
+      int start_direction = direction_gen();
       
       float pixel_visibility_range = params_.visibility_range / map_.info.resolution;
 

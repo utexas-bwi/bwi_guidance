@@ -38,6 +38,7 @@ namespace bwi_guidance_solver {
       private:
 
         Params params_;
+        std::string base_directory_;
         std::vector<boost::shared_ptr<Solver> > solvers_;
 
         nav_msgs::OccupancyGrid map_;

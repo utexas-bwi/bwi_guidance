@@ -13,7 +13,6 @@ namespace bwi_guidance_solver {
       public:
 
         virtual bool initializeSolverSpecific(Json::Value &params);
-        virtual void reset(int seed, int goal_idx);
         virtual Action getBestAction(const State& state);
 
         Action getBestActionWithBlacklistedVertices(const State& state,
@@ -21,8 +20,6 @@ namespace bwi_guidance_solver {
             boost::shared_ptr<std::vector<int> >()) const;
 
       protected:
-
-        int goal_idx_;
 
         std::map<int, std::vector<int> > visible_vertices_map_;
     };
