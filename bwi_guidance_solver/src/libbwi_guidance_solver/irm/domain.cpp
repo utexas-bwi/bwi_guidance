@@ -5,7 +5,7 @@
 
 namespace bwi_guidance_solver {
 
-  namespace IRM {
+  namespace irm {
 
     bool Domain::initialize(Json::Value &experiment, const std::string &base_directory) {
 
@@ -29,7 +29,7 @@ namespace bwi_guidance_solver {
       // Load all the solvers we'll be testing 
       Json::Value solvers = experiment["solvers"];
       pluginlib::ClassLoader<Solver> class_loader("bwi_guidance_solver",
-          "bwi_guidance_solver::IRM::Solver");
+          "bwi_guidance_solver::irm::Solver");
       try {
         for (unsigned solver_idx = 0; solver_idx < solvers.size(); ++solver_idx) {
           std::string solver_name = solvers[solver_idx]["name"].asString();
@@ -39,7 +39,7 @@ namespace bwi_guidance_solver {
         }
       } catch(pluginlib::PluginlibException& ex) {
         // Print an error should any solver fail to load.
-        ROS_FATAL("Unable to load an IRM Solver. Error: %s", ex.what());
+        ROS_FATAL("Unable to load an irm Solver. Error: %s", ex.what());
         return false;
       }
 
@@ -63,7 +63,7 @@ namespace bwi_guidance_solver {
 
       // We can create the model right now as loading the model is not dependent on the method parameters. We just need
       // to make sure we reinitialize the rng and update the reward structure for every method as necessary
-      boost::shared_ptr<PersonModelQRR14> model(new PersonModelQRR14(graph_, map_, goal_idx, empty_model_file,
+      boost::shared_ptr<PersonModel> model(new PersonModel(graph_, map_, goal_idx, empty_model_file,
             params_.allow_robot_current_idx_, params_.pixel_visibility_range, params_.allow_goal_visibility));
 
       BOOST_FOREACH(boost::shared_ptr<Solver>& solver, solvers_) {
@@ -71,8 +71,8 @@ namespace bwi_guidance_solver {
     // MethodResult method_result;
 
     // boost::shared_ptr<HeuristicSolver> hs;
-    // boost::shared_ptr<ValueIteration<StateQRR14, ActionQRR14> > vi;
-    // boost::shared_ptr<MCTS<StateQRR14, ActionQRR14> > mcts;
+    // boost::shared_ptr<ValueIteration<State, Action> > vi;
+    // boost::shared_ptr<MCTS<State, Action> > mcts;
         model->updateRewardStructure(solver_->success_reward, solver_->reward_structure);
 
         solver->reset(seed, goal_idx);
@@ -82,8 +82,8 @@ namespace bwi_guidance_solver {
     //         allow_robot_current_idx_, pixel_visibility_range,
     //         allow_goal_visibility_)); 
     // } else if (params.type == VI) {
-    //   //boost::shared_ptr<PersonEstimatorQRR14> estimator;
-    //   estimator.reset(new PersonEstimatorQRR14);
+    //   //boost::shared_ptr<PersonEstimator> estimator;
+    //   estimator.reset(new PersonEstimator);
     //   vi = getVIInstance(map, model, estimator, goal_idx, params);
     // } else if (params.type == MCTS_TYPE) {
 
@@ -93,7 +93,7 @@ namespace bwi_guidance_solver {
     //         "parameter file provided. Please set the mcts-params flag.");
     //   }
 
-    //   UCTEstimator<StateQRR14, ActionQRR14>::Params uct_estimator_params;
+    //   UCTEstimator<State, Action>::Params uct_estimator_params;
     //   uct_estimator_params.gamma = params.gamma;
     //   uct_estimator_params.lambda = params.lambda;
     //   uct_estimator_params.rewardBound = params.mcts_reward_bound;
@@ -103,15 +103,15 @@ namespace bwi_guidance_solver {
     //   // Create the RNG required for mcts rollouts
     //   boost::shared_ptr<RNG> mcts_rng(new RNG(1 * (seed + 1)));
 
-    //   boost::shared_ptr<ModelUpdaterSingle<StateQRR14, ActionQRR14> >
+    //   boost::shared_ptr<ModelUpdaterSingle<State, Action> >
     //     mcts_model_updator(
-    //         new ModelUpdaterSingle<StateQRR14, ActionQRR14>(model));
-    //   boost::shared_ptr<IdentityStateMapping<StateQRR14> > mcts_state_mapping(
-    //       new IdentityStateMapping<StateQRR14>);
-    //   boost::shared_ptr<UCTEstimator<StateQRR14, ActionQRR14> > uct_estimator(
-    //       new UCTEstimator<StateQRR14, ActionQRR14>(mcts_rng,
+    //         new ModelUpdaterSingle<State, Action>(model));
+    //   boost::shared_ptr<IdentityStateMapping<State> > mcts_state_mapping(
+    //       new IdentityStateMapping<State>);
+    //   boost::shared_ptr<UCTEstimator<State, Action> > uct_estimator(
+    //       new UCTEstimator<State, Action>(mcts_rng,
     //         uct_estimator_params));
-    //   mcts.reset(new MCTS<StateQRR14, ActionQRR14>(uct_estimator,
+    //   mcts.reset(new MCTS<State, Action>(uct_estimator,
     //         mcts_model_updator, mcts_state_mapping, mcts_rng, mcts_params_));
     // }
 
@@ -125,7 +125,7 @@ namespace bwi_guidance_solver {
           EVALUATE_OUTPUT("Evaluating method " << params << " with " << 
               starting_robots << " robots.");
 
-          StateQRR14 current_state; 
+          State current_state; 
           current_state.graph_id = start_idx;
           current_state.direction = start_direction;
           current_state.num_robots_left = starting_robots;
@@ -157,14 +157,14 @@ namespace bwi_guidance_solver {
 
           while (current_state.graph_id != goal_idx && instance_distance <= distance_limit_pxl) {
 
-            std::vector<StateQRR14> next_states;
+            std::vector<State> next_states;
             std::vector<float> probabilities;
             std::vector<float> rewards;
 
             // Deterministic system transitions
             while (true) {
 
-              ActionQRR14 action = solver->getBestAction(current_state);
+              Action action = solver->getBestAction(current_state);
               EVALUATE_OUTPUT("   action: " << action);
 
               model->getTransitionDynamics(current_state, action, next_states, rewards, probabilities);
@@ -188,7 +188,7 @@ namespace bwi_guidance_solver {
 
             // Select next state choice based on probabilities
             int choice = select(probabilities, transition_rng);
-            StateQRR14 old_state = current_state;
+            State old_state = current_state;
             current_state = next_states[choice];
             float transition_distance = 
               bwi_mapper::getEuclideanDistance(old_state.graph_id, current_state.graph_id, graph);
@@ -235,6 +235,6 @@ namespace bwi_guidance_solver {
 }
     }
 
-  } /* IRM - InstantaneousRobotMotion */
+  } /* irm - InstantaneousRobotMotion */
 
 } /* bwi_guidance_solver */

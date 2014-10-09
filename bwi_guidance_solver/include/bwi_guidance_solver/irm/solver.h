@@ -2,15 +2,18 @@
 #define BWI_GUIDANCE_SOLVER_IRM_SOLVER_H
 
 #include <boost/shared_ptr.hpp>
+#include <nav_msgs/OccupancyGrid.h>
+#include <string>
 #include <vector>
 
+#include <bwi_guidance_solver/irm/domain.h>
+#include <bwi_guidance_solver/irm/person_model.h>
+#include <bwi_mapper/graph.h>
 #include <bwi_tools/common/Params.h>
 
 namespace bwi_guidance_solver {
 
-  namespace IRM {
-
-    struct Domain::Params;
+  namespace irm {
 
     class Solver {
 
@@ -18,18 +21,22 @@ namespace bwi_guidance_solver {
 
 #define PARAMS(_) \
           _(bool,reward_on_success,reward_on_success,false) \
-          _(int,reward_structure,reward_structure,sadfsdafa) \
+          _(int,reward_structure,reward_structure,STANDARD_REWARD)
+
           Params_STRUCT(PARAMS)
 #undef PARAMS
 
-        inline bool initialize(Domain::Params &domain_params, Json::Value &params, const nav_msg::OccupancyGrid &map, const bwi_mapper::Graph &graph, 
-            const std::string &base_directory) {
+        inline bool initialize(Domain::Params &domain_params, 
+                               Json::Value &params, 
+                               const nav_msgs::OccupancyGrid &map,
+                               const bwi_mapper::Graph &graph, 
+                               const std::string &base_directory) {
           domain_params_ = domain_params;
           general_params_.fromJson(params);
           map_ = map;
           graph_ = graph;
           base_directory_ = base_directory_;
-          this->initializeSolverSpecific(params);
+          return this->initializeSolverSpecific(params);
         }
 
         virtual bool initializeSolverSpecific(Json::Value &params) = 0;
@@ -53,14 +60,12 @@ namespace bwi_guidance_solver {
         nav_msgs::OccupancyGrid map_;
         bwi_mapper::Graph graph_;
 
-      private:
-
         Domain::Params domain_params_;
         Params general_params_;
 
     };
 
-  } /* IRM - InstantaneousRobotMotion */
+  } /* irm - InstantaneousRobotMotion */
 
 } /* bwi_guidance_solver */
 

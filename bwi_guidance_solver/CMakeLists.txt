@@ -39,80 +39,17 @@ include_directories(
 add_library(bwi_guidance_solver
   src/libbwi_guidance_solver/common.cpp
   ## src/libbwi_guidance_solver/heuristic_solver_iros14.cpp
-  src/libbwi_guidance_solver/heuristic_solver_qrr14.cpp
-  src/libbwi_guidance_solver/person_estimator_qrr14.cpp
+  src/libbwi_guidance_solver/irm/heuristic_solver.cpp
+  src/libbwi_guidance_solver/irm/person_estimator.cpp
   ## src/libbwi_guidance_solver/person_model_iros14.cpp
-  src/libbwi_guidance_solver/person_model_qrr14.cpp
-  src/libbwi_guidance_solver/structures_iros14.cpp
-  src/libbwi_guidance_solver/structures_qrr14.cpp
+  src/libbwi_guidance_solver/irm/person_model.cpp
+  ## src/libbwi_guidance_solver/structures_iros14.cpp
+  src/libbwi_guidance_solver/irm/structures.cpp
 )
 target_link_libraries(bwi_guidance_solver 
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
-
-## add_executable(test_vi 
-##   test/test_vi.cpp
-## )
-add_executable(test_mt_mcts 
-  test/test_mt_mcts.cpp
-)
-target_link_libraries(test_mt_mcts 
-  bwi_guidance_solver
-)
-
-## add_executable(test_mdp_qrr14 
-##   test/test_mdp_qrr14.cpp
-## )
-## target_link_libraries(test_mdp_qrr14 
-##   bwi_guidance_solver
-## )
-## add_executable(generate_exp2_robots_qrr14 
-##   test/generate_exp2_robots_qrr14.cpp
-## )
-## target_link_libraries(generate_exp2_robots_qrr14
-##   ${catkin_LIBRARIES}
-##   ${Boost_LIBRARIES}
-## )
-## add_executable(test_model_iros14 
-##   test/test_model_iros14.cpp
-## )
-## target_link_libraries(test_model_iros14
-##   bwi_guidance_solver
-##   ${catkin_LIBRARIES}
-##   ${Boost_LIBRARIES}
-## )
-## 
-add_executable(evaluate_qrr14 
-  src/nodes/evaluate_qrr14.cpp
-)
-target_link_libraries(evaluate_qrr14
-  bwi_guidance_solver
-)
-## add_executable(evaluate_iros14 
-##   src/nodes/evaluate_iros14.cpp
-## )
-## target_link_libraries(evaluate_iros14
-##   bwi_guidance_solver
-## )
-## add_executable(metric_map2_qrr14 
-##   src/nodes/metric_map2_qrr14.cpp
-## )
-## target_link_libraries(metric_map2_qrr14 
-##   bwi_guidance_solver
-## )
-## 
-## add_executable(robot_positioner_qrr14
-##   src/nodes/robot_positioner_qrr14.cpp
-## )
-## target_link_libraries(robot_positioner_qrr14 
-##   bwi_guidance_solver
-##   ${catkin_LIBRARIES}
-## )
-## 
-#############
-## Install ##
-#############
 
 ## Mark executables and/or libraries for installation
 install(TARGETS 

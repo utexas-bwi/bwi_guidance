@@ -6,19 +6,17 @@
 
 namespace bwi_guidance_solver {
 
-  namespace IRM {
+  namespace irm {
 
-    class HeuristicSolver : Solver {
+    class HeuristicSolver : public Solver {
 
       public:
 
-        ~HeuristicSolver();
-
-        virtual void initializeSolverSpecific(Json::Value &params);
+        virtual bool initializeSolverSpecific(Json::Value &params);
         virtual void reset(int seed, int goal_idx);
         virtual Action getBestAction(const State& state);
 
-        Action getBestAction(const State& state,
+        Action getBestActionWithBlacklistedVertices(const State& state,
             boost::shared_ptr<std::vector<int> > blacklisted_vertices =
             boost::shared_ptr<std::vector<int> >()) const;
 
@@ -29,7 +27,7 @@ namespace bwi_guidance_solver {
         std::map<int, std::vector<int> > visible_vertices_map_;
     };
 
-  } /* IRM - InstantaneousRobotMotion */
+  } /* irm - InstantaneousRobotMotion */
 
 } /* bwi_guidance_solver */
 

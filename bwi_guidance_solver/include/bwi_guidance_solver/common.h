@@ -3,7 +3,7 @@
 
 #include <bwi_mapper/graph.h>
 
-namespace bwi_guidance {
+namespace bwi_guidance_solver {
 
   const unsigned NUM_DIRECTIONS = 16;
 

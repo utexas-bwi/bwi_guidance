@@ -2,14 +2,19 @@
 #define BWI_GUIDANCE_SOLVER_IRM_DOMAIN_H
 
 #include <boost/shared_ptr.hpp>
+#include <nav_msgs/OccupancyGrid.h>
+#include <string>
 #include <vector>
 
-#include <bwi_tools/common/Params.h>
+#include <bwi_mapper/graph.h>
 #include <bwi_rl/planning/domain.h>
+#include <bwi_tools/common/Params.h>
 
 namespace bwi_guidance_solver {
 
-  namespace IRM {
+  namespace irm {
+
+    class Solver;
 
     class Domain : public bwi_rl::Domain {
 
@@ -21,7 +26,8 @@ namespace bwi_guidance_solver {
           _(float,visibility_range,visibility_range,0.0f) \
           _(bool,allow_goal_visibility,allow_goal_visibility,false) \
           _(std::string,map_file,map_file,"") \
-          _(std::string,graph_file,graph_file,"") \
+          _(std::string,graph_file,graph_file,"")
+
           Params_STRUCT(PARAMS)
 #undef PARAMS
 
@@ -38,7 +44,7 @@ namespace bwi_guidance_solver {
         bwi_mapper::Graph graph_;
     };
 
-  } /* IRM - InstantaneousRobotMotion */
+  } /* irm - InstantaneousRobotMotion */
 
 } /* bwi_guidance_solver */
 

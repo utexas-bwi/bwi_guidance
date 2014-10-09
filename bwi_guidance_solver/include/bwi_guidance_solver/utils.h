@@ -9,7 +9,7 @@
 
 #include <bwi_tools/common/RNG.h>
 
-namespace bwi_guidance {
+namespace bwi_guidance_solver {
 
   typedef boost::variate_generator<boost::mt19937&, boost::uniform_real<float>
     > URGen;

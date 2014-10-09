@@ -1,7 +1,7 @@
 #include <bwi_guidance_solver/common.h>
 #include <bwi_mapper/graph.h>
 
-namespace bwi_guidance {
+namespace bwi_guidance_solver {
   
   int computeNextDirection(int dir, int graph_id, 
       int next_graph_id, const bwi_mapper::Graph& graph) {
