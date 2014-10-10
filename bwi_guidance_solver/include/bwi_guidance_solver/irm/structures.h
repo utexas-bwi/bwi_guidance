@@ -68,21 +68,8 @@ namespace bwi_guidance_solver {
     bool operator==(const State& l, const State& r);
     std::ostream& operator<<(std::ostream& stream, const State& s);
 
-    struct StateCHMHash { 
-      static size_t hash(const State& key) {
-        size_t seed = 0;
-        boost::hash_combine(seed, key.graph_id);
-        boost::hash_combine(seed, key.direction);
-        boost::hash_combine(seed, key.num_robots_left);
-        boost::hash_combine(seed, key.robot_direction);
-        boost::hash_combine(seed, key.visible_robot);
-        return seed;
-      }
-      static bool equal(const State& key1, const State& key2) {return key1==key2;}
-    }; 
-
-    struct StateCOMHash { 
-      StateCOMHash() {}
+    struct StateHash { 
+      StateHash() {}
       size_t operator()(const State& key) const {
         size_t seed = 0;
         boost::hash_combine(seed, key.graph_id);

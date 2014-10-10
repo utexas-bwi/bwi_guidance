@@ -40,12 +40,14 @@ namespace bwi_guidance_solver {
         "-vr" << params_.visibility_range <<
         "-agv" << params_.allow_goal_visibility;
       base_directory_ = parametrized_dir_ss.str();
-      if (!boost::filesystem::create_directory(base_directory_))
+      if (!boost::filesystem::is_directory(base_directory_) &&
+          !boost::filesystem::create_directory(base_directory_))
       {
         ROS_FATAL_STREAM("Could not create the following domain directory: " << base_directory_);
         return false;
       }
-      if (!boost::filesystem::create_directory(base_directory_ + "/results"))
+      if (!boost::filesystem::is_directory(base_directory_ + "/results") && 
+          !boost::filesystem::create_directory(base_directory_ + "/results"))
       {
         ROS_FATAL_STREAM("Could not create the following results directory: " << base_directory_ + "/results");
         return false;
@@ -115,36 +117,6 @@ namespace bwi_guidance_solver {
         record["goal_idx"] = boost::lexical_cast<std::string>(goal_idx);
         record["start_direction"] = boost::lexical_cast<std::string>(start_direction);
 
-    // } else if (params.type == MCTS_TYPE) {
-
-    //   if (!mcts_enabled_) {
-    //     throw std::runtime_error(
-    //         std::string("MCTS method present, but no global MCTS ") +
-    //         "parameter file provided. Please set the mcts-params flag.");
-    //   }
-
-    //   UCTEstimator<State, Action>::Params uct_estimator_params;
-    //   uct_estimator_params.gamma = params.gamma;
-    //   uct_estimator_params.lambda = params.lambda;
-    //   uct_estimator_params.rewardBound = params.mcts_reward_bound;
-    //   uct_estimator_params.useImportanceSampling =
-    //     params.mcts_importance_sampling;
-
-    //   // Create the RNG required for mcts rollouts
-    //   boost::shared_ptr<RNG> mcts_rng(new RNG(1 * (seed + 1)));
-
-    //   boost::shared_ptr<ModelUpdaterSingle<State, Action> >
-    //     mcts_model_updator(
-    //         new ModelUpdaterSingle<State, Action>(model));
-    //   boost::shared_ptr<IdentityStateMapping<State> > mcts_state_mapping(
-    //       new IdentityStateMapping<State>);
-    //   boost::shared_ptr<UCTEstimator<State, Action> > uct_estimator(
-    //       new UCTEstimator<State, Action>(mcts_rng,
-    //         uct_estimator_params));
-    //   mcts.reset(new MCTS<State, Action>(uct_estimator,
-    //         mcts_model_updator, mcts_state_mapping, mcts_rng, mcts_params_));
-    // }
-
         boost::mt19937 mt(2 * (seed + 1));
         boost::uniform_real<float> u(0.0f, 1.0f);
         URGenPtr transition_rng(new URGen(mt, u));
@@ -166,21 +138,7 @@ namespace bwi_guidance_solver {
 
           /* EVALUATE_OUTPUT(" - start " << current_state); */
 
-          solver->performEpisodeStartComputation();
-      // method_result.mcts_terminations[starting_robots - 1] = 0;
-      // method_result.mcts_playouts[starting_robots - 1] = 0;
-      // if (params.type == MCTS_TYPE) {
-      //   mcts->restart();
-      //   EVALUATE_OUTPUT(" - performing initial MCTS search for " +
-      //       boost::lexical_cast<std::string>(
-      //         params.mcts_initial_planning_time) + "s");
-      //   for (int i = 0; i < params.mcts_initial_planning_time; ++i) {
-      //     unsigned int playouts, terminations;
-      //     playouts = mcts->search(current_state, terminations);
-      //     method_result.mcts_playouts[starting_robots - 1] = playouts;
-      //     method_result.mcts_terminations[starting_robots - 1] += terminations;
-      //   }
-      // }
+          solver->performEpisodeStartComputation(current_state);
 
           float distance_limit_pxl = ((float)params_.distance_limit) / map_.info.resolution;
 
@@ -203,15 +161,10 @@ namespace bwi_guidance_solver {
                 break;
               }
 
-              // The human does not move for this action, and a single next state
-              // is present
+              // The human does not move for this action, and a single next state is present.
               current_state = next_states[0];
-              solver->performPostActionComputation();
-              // if (params.type == MCTS_TYPE) {
-              //   EVALUATE_OUTPUT(" - performing post-action MCTS search for 1s");
-              //   unsigned int terminations;
-              //   mcts->search(current_state, terminations);
-              // }
+              // TODO we should do the computation with the original state and selected action.
+              solver->performPostActionComputation(current_state);
               /* EVALUATE_OUTPUT(" - auto " << current_state); */
             }
 
@@ -228,22 +181,8 @@ namespace bwi_guidance_solver {
             if (!model->isTerminalState(current_state))
             {
               float distance = transition_distance * map_.info.resolution;
-              solver->performPostActionComputation(distance);
-              
-              // &&
-              //   (current_state.num_robots_left != 0 ||
-              //    current_state.visible_robot != NONE)) {
-              // if (params.type == MCTS_TYPE) {
-              //   // Assumes 1m/s velocity for converting distance to time
-              //   int distance = transition_distance * map_.info.resolution;
-              //   distance += params.mcts_planning_time_multiplier;
-              //   EVALUATE_OUTPUT(" - performing post-wait MCTS search for " <<
-              //       distance << "s");
-              //   for (int i = 0; i < distance; ++i) {
-              //     unsigned int terminations;
-              //     mcts->search(current_state, terminations);
-              //   }
-              // }
+              // TODO we should do the computation with the original state and selected action.
+              solver->performPostActionComputation(current_state, distance);
             }
 
             /* EVALUATE_OUTPUT(" - manual " << current_state); */

@@ -44,7 +44,8 @@ namespace bwi_guidance_solver {
           parametrized_dir_ss << base_directory << "/ros" << general_params_.reward_on_success << 
             "-rs" << general_params_.reward_structure;
           base_directory_ = parametrized_dir_ss.str();
-          if (!boost::filesystem::create_directory(base_directory_))
+          if (!boost::filesystem::is_directory(base_directory_) &&
+              !boost::filesystem::create_directory(base_directory_))
           {
             return false;
           }
@@ -69,10 +70,10 @@ namespace bwi_guidance_solver {
         virtual Action getBestAction(const State &state) = 0;
 
         virtual bool initializeSolverSpecific(Json::Value &params) {}
-        virtual bool resetSolverSpecific() {}
+        virtual void resetSolverSpecific() {}
         virtual void precomputeAndSavePolicy(int problem_identifier) {}
-        virtual void performEpisodeStartComputation() {}
-        virtual void performPostActionComputation(float distance = 0.0) {}
+        virtual void performEpisodeStartComputation(const State &state) {}
+        virtual void performPostActionComputation(const State &state, float distance = 0.0) {}
         virtual std::map<std::string, std::string> getParamsAsMapSolverSpecific() { 
           return std::map<std::string, std::string>();
         }

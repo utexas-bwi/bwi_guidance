@@ -9,10 +9,15 @@ namespace bwi_guidance_solver {
       vi_params_.fromJson(params);
       vi_params_.max_value = 0.0f;
       vi_params_.min_value = -10000.0f;
+      if (!boost::filesystem::is_directory(base_directory_ + "/vi") &&
+          !boost::filesystem::create_directory(base_directory_ + "/vi"))
+      {
+        return false;
+      }
       return true;
     }
 
-    void VISolver::reset() {
+    void VISolver::resetSolverSpecific() {
       estimator_.reset(new PersonEstimator);
 
       vi_.reset(new ValueIteration<State, Action>(model_, estimator_, vi_params_));
@@ -34,8 +39,24 @@ namespace bwi_guidance_solver {
       vi_ifs.close();
     }
 
-    Action VISolver :: getBestAction(const State &state) {
+    Action VISolver::getBestAction(const State &state) {
       return vi_->getBestAction(state);
+    }
+
+    void VISolver::precomputeAndSavePolicy(int problem_identifier) {
+      float pixel_visibility_range = domain_params_.visibility_range / map_.info.resolution;
+      std::string empty_model_file;
+      model_.reset(new PersonModel(graph_, map_, problem_identifier, empty_model_file,
+            domain_params_.allow_robot_current_idx, pixel_visibility_range, domain_params_.allow_goal_visibility));
+      goal_idx_ = problem_identifier;
+      seed_ = problem_identifier;
+
+      // Generating the VI instances will automatically compute the policy if it has not been computed.
+      this->resetSolverSpecific();
+    }
+
+    std::map<std::string, std::string> VISolver::getParamsAsMapSolverSpecific() {
+      return vi_params_.asMap();
     }
 
   }
