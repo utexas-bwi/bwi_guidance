@@ -1,16 +1,16 @@
-#include <bwi_guidance_solver/instantanuous/domain.h>
-#include <bwi_guidance_solver/instantanuous/solver.h>
-
+#include <boost/filesystem.hpp>
+#include <boost/foreach.hpp>
+#include <boost/lexical_cast.hpp>
 #include <pluginlib/class_loader.h>
+
+#include <bwi_mapper/map_loader.h>
+#include <bwi_guidance_solver/irm/domain.h>
+#include <bwi_guidance_solver/irm/solver.h>
+#include <bwi_tools/record_writer.h>
 
 namespace bwi_guidance_solver {
 
   namespace irm {
-
-    struct InstanceResult {
-      std::vector<MethodResult> results;
-      std::vector<MethodResult> normalized_results;
-    };
 
     bool Domain::initialize(Json::Value &experiment, const std::string &base_directory) {
 
@@ -21,9 +21,9 @@ namespace bwi_guidance_solver {
       if (boost::filesystem::is_regular_file(params_.map_file) &&
           boost::filesystem::is_regular_file(params_.graph_file)) {
         // Read map and graph
-        bwi_mapper::MapLoader mapper(map_file_);
+        bwi_mapper::MapLoader mapper(params_.map_file);
         mapper.getMap(map_);
-        bwi_mapper::readGraphFromFile(graph_file_, map.info, graph);
+        bwi_mapper::readGraphFromFile(params_.graph_file, map_.info, graph_);
       } else {
         // Print an error should the map file or graph file not exist.
         ROS_FATAL_STREAM("Either the map file (" << params_.map_file << ") or the graph file (" << 
@@ -45,16 +45,20 @@ namespace bwi_guidance_solver {
         ROS_FATAL_STREAM("Could not create the following domain directory: " << base_directory_);
         return false;
       }
+      if (!boost::filesystem::create_directory(base_directory_ + "/results"))
+      {
+        ROS_FATAL_STREAM("Could not create the following results directory: " << base_directory_ + "/results");
+        return false;
+      }
 
       // Load all the solvers we'll be testing 
       Json::Value solvers = experiment["solvers"];
-      pluginlib::ClassLoader<Solver> class_loader("bwi_guidance_solver",
-          "bwi_guidance_solver::irm::Solver");
+      pluginlib::ClassLoader<Solver> class_loader("bwi_guidance_solver", "bwi_guidance_solver::irm::Solver");
       try {
         for (unsigned solver_idx = 0; solver_idx < solvers.size(); ++solver_idx) {
           std::string solver_name = solvers[solver_idx]["name"].asString();
           boost::shared_ptr<Solver> solver = class_loader.createInstance(solver_name);
-          if (!(solver->initialize(solvers[solver_idx]["params"], map_, graph_, base_directory_))) {
+          if (!(solver->initialize(params_, solvers[solver_idx]["params"], map_, graph_, base_directory_))) {
             ROS_FATAL("Could not initialize solver.");
             return false;
           }
@@ -77,8 +81,8 @@ namespace bwi_guidance_solver {
 
     void Domain::testInstance(int seed) {
 
-      boost::mt19937 mt(seed_ + i);
-      boost::uniform_int<int> idx_dist(0, boost::num_vertices(graph) - 1);
+      boost::mt19937 mt(seed);
+      boost::uniform_int<int> idx_dist(0, boost::num_vertices(graph_) - 1);
       UIGen idx_gen(mt, idx_dist);
       boost::uniform_int<int> direction_dist(0, 15);
       UIGen direction_gen(mt, direction_dist);
@@ -92,33 +96,25 @@ namespace bwi_guidance_solver {
       
       float pixel_visibility_range = params_.visibility_range / map_.info.resolution;
 
-      std::string empty_model_file; // Do not load or save models to file
-      float pixel_visibility_range = visibility_range_ / map.info.resolution;
-
       // We can create the model right now as loading the model is not dependent on the method parameters. We just need
       // to make sure we reinitialize the rng and update the reward structure for every method as necessary
+      std::string empty_model_file; // Do not load or save models to file
       boost::shared_ptr<PersonModel> model(new PersonModel(graph_, map_, goal_idx, empty_model_file,
-            params_.allow_robot_current_idx_, params_.pixel_visibility_range, params_.allow_goal_visibility));
+            params_.allow_robot_current_idx, pixel_visibility_range, params_.allow_goal_visibility));
 
+      std::vector<std::map<std::string, std::string> > records;
       BOOST_FOREACH(boost::shared_ptr<Solver>& solver, solvers_) {
 
-    // MethodResult method_result;
+        // Update the reward structure based on the reward required for this particular solver.
+        model->updateRewardStructure(solver->shouldAddRewardOnSuccess(), solver->getRewardStructure());
 
-    // boost::shared_ptr<HeuristicSolver> hs;
-    // boost::shared_ptr<ValueIteration<State, Action> > vi;
-    // boost::shared_ptr<MCTS<State, Action> > mcts;
-        model->updateRewardStructure(solver_->success_reward, solver_->reward_structure);
+        solver->reset(model, seed, goal_idx);
+        std::map<std::string, std::string> record = solver->getParamsAsMap();
 
-        solver->reset(seed, goal_idx);
+        record["start_idx"] = boost::lexical_cast<std::string>(start_idx);
+        record["goal_idx"] = boost::lexical_cast<std::string>(goal_idx);
+        record["start_direction"] = boost::lexical_cast<std::string>(start_direction);
 
-    // if (params.type == HEURISTIC) {
-    //   hs.reset(new HeuristicSolver(map, graph, goal_idx,
-    //         allow_robot_current_idx_, pixel_visibility_range,
-    //         allow_goal_visibility_)); 
-    // } else if (params.type == VI) {
-    //   //boost::shared_ptr<PersonEstimator> estimator;
-    //   estimator.reset(new PersonEstimator);
-    //   vi = getVIInstance(map, model, estimator, goal_idx, params);
     // } else if (params.type == MCTS_TYPE) {
 
     //   if (!mcts_enabled_) {
@@ -153,11 +149,10 @@ namespace bwi_guidance_solver {
         boost::uniform_real<float> u(0.0f, 1.0f);
         URGenPtr transition_rng(new URGen(mt, u));
 
-        for (int starting_robots = 1; starting_robots <= MAX_ROBOTS;
-            ++starting_robots) {
+        for (int starting_robots = 1; starting_robots <= DEFAULT_MAX_ROBOTS; ++starting_robots) {
 
-          EVALUATE_OUTPUT("Evaluating method " << params << " with " << 
-              starting_robots << " robots.");
+          // TODO print a message here.
+          /* EVALUATE_OUTPUT("Evaluating method " << params << " with " << starting_robots << " robots."); */
 
           State current_state; 
           current_state.graph_id = start_idx;
@@ -169,7 +164,7 @@ namespace bwi_guidance_solver {
           float reward = 0;
           float instance_distance = 0;
 
-          EVALUATE_OUTPUT(" - start " << current_state);
+          /* EVALUATE_OUTPUT(" - start " << current_state); */
 
           solver->performEpisodeStartComputation();
       // method_result.mcts_terminations[starting_robots - 1] = 0;
@@ -187,7 +182,7 @@ namespace bwi_guidance_solver {
       //   }
       // }
 
-          float distance_limit_pxl = ((float)distance_limit_) / map.info.resolution;
+          float distance_limit_pxl = ((float)params_.distance_limit) / map_.info.resolution;
 
           while (current_state.graph_id != goal_idx && instance_distance <= distance_limit_pxl) {
 
@@ -199,7 +194,7 @@ namespace bwi_guidance_solver {
             while (true) {
 
               Action action = solver->getBestAction(current_state);
-              EVALUATE_OUTPUT("   action: " << action);
+              /* EVALUATE_OUTPUT("   action: " << action); */
 
               model->getTransitionDynamics(current_state, action, next_states, rewards, probabilities);
 
@@ -217,7 +212,7 @@ namespace bwi_guidance_solver {
               //   unsigned int terminations;
               //   mcts->search(current_state, terminations);
               // }
-              EVALUATE_OUTPUT(" - auto " << current_state);
+              /* EVALUATE_OUTPUT(" - auto " << current_state); */
             }
 
             // Select next state choice based on probabilities
@@ -225,22 +220,22 @@ namespace bwi_guidance_solver {
             State old_state = current_state;
             current_state = next_states[choice];
             float transition_distance = 
-              bwi_mapper::getEuclideanDistance(old_state.graph_id, current_state.graph_id, graph);
+              bwi_mapper::getEuclideanDistance(old_state.graph_id, current_state.graph_id, graph_);
             instance_distance += transition_distance;
 
             // Perform an MCTS search after next state is decided (not perfect)
             // Only perform search if system is left with any future action choice
             if (!model->isTerminalState(current_state))
             {
-              distance = transition_distance * map_.info.resolution;
-              solver->performPostActionComputation(distance)
+              float distance = transition_distance * map_.info.resolution;
+              solver->performPostActionComputation(distance);
               
               // &&
               //   (current_state.num_robots_left != 0 ||
               //    current_state.visible_robot != NONE)) {
               // if (params.type == MCTS_TYPE) {
               //   // Assumes 1m/s velocity for converting distance to time
-              //   int distance = transition_distance * map.info.resolution;
+              //   int distance = transition_distance * map_.info.resolution;
               //   distance += params.mcts_planning_time_multiplier;
               //   EVALUATE_OUTPUT(" - performing post-wait MCTS search for " <<
               //       distance << "s");
@@ -251,24 +246,28 @@ namespace bwi_guidance_solver {
               // }
             }
 
-            EVALUATE_OUTPUT(" - manual " << current_state);
+            /* EVALUATE_OUTPUT(" - manual " << current_state); */
             reward += rewards[choice];
           }
-          method_result.reward[starting_robots - 1] = reward;
-          method_result.distance[starting_robots - 1] = instance_distance * map.info.resolution;
+          record["starting_robots"] = boost::lexical_cast<std::string>(starting_robots);
+          record["reward"] = boost::lexical_cast<std::string>(reward);
+          record["distance"] = boost::lexical_cast<std::string>(instance_distance * map_.info.resolution);
+
+          // Produce normalized distance results as well.
+          std::vector<size_t> temp_path;
+          float normalization_distance = 
+            bwi_mapper::getShortestPathWithDistance(start_idx, goal_idx, temp_path, graph_);
+          record["normalized_distance"] = boost::lexical_cast<std::string>(instance_distance / normalization_distance);
+
+          records.push_back(record);
         }
-        result.results.push_back(method_result);
-  }
+      }
 
-  // Produce normalized results - distance is easy
-  float normalization_distance = getDistanceNormalizationValue(graph, goal_idx, start_idx) * map.info.resolution;
+      bwi_tools::writeRecordsAsCSV(base_directory_ + "/results/part." + boost::lexical_cast<std::string>(seed),
+                                   records);
 
-  // TODO add normalized distance to the results. 
-
-  return result;
-}
     }
-
+    
   } /* irm - InstantaneousRobotMotion */
 
 } /* bwi_guidance_solver */

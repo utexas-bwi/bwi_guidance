@@ -10,6 +10,8 @@
 #include <bwi_guidance_solver/utils.h>
 #include <bwi_mapper/graph.h>
 
+#define DEFAULT_MAX_ROBOTS 5
+
 namespace boost {
   namespace serialization {
     class access;
@@ -34,9 +36,8 @@ namespace bwi_guidance_solver {
             const nav_msgs::OccupancyGrid& map, size_t goal_idx, 
             const std::string& file = "", bool allow_robot_current_idx = false,
             float visibility_range = 0.0f, bool allow_goal_visibility = false,
-            unsigned int max_robots = 5, float success_reward = 0.0f,
-            RewardStructure reward_structure = STANDARD_REWARD,
-            bool use_importance_sampling = false);
+            unsigned int max_robots = DEFAULT_MAX_ROBOTS, float success_reward = 0.0f,
+            RewardStructure reward_structure = STANDARD_REWARD);
 
         /* Functions inherited from PredictiveModel */
         virtual bool isTerminalState(const State& state) const;
@@ -62,8 +63,7 @@ namespace bwi_guidance_solver {
         virtual float getTransitionProbability(const State& state, 
             const Action& action, const State& next_state);
 
-        void updateRewardStructure(float success_reward, RewardStructure
-            reward_structure, bool use_importance_sampling);
+        void updateRewardStructure(float success_reward, RewardStructure reward_structure);
 
         void getNextStates(const State& state, const Action& action, 
             std::vector<State>& next_states);
@@ -73,7 +73,6 @@ namespace bwi_guidance_solver {
         std::vector<float> intrinsic_reward_cache_;
         RewardStructure reward_structure_;
         float success_reward_;
-        bool use_importance_sampling_;
 
         /* State space cache */
         std::map<int, std::vector<int> > adjacent_vertices_map_;

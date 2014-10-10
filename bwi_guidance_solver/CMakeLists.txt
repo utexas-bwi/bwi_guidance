@@ -46,6 +46,7 @@ add_library(bwi_guidance_solver
   ## src/libbwi_guidance_solver/structures_iros14.cpp
   src/libbwi_guidance_solver/irm/structures.cpp
   src/libbwi_guidance_solver/irm/vi_solver.cpp
+  src/libbwi_guidance_solver/irm/domain.cpp
 )
 target_link_libraries(bwi_guidance_solver 
   ${catkin_LIBRARIES}

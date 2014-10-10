@@ -24,21 +24,18 @@ namespace bwi_guidance_solver {
                              bool allow_goal_visibility, 
                              unsigned int max_robots, 
                              float success_reward, 
-                             RewardStructure reward_structure, 
-                             bool use_importance_sampling) : 
+                             RewardStructure reward_structure) :
     graph_(graph),
     map_(map), goal_idx_(goal_idx),
     allow_robot_current_idx_(allow_robot_current_idx),
     visibility_range_(visibility_range),
     allow_goal_visibility_(allow_goal_visibility), max_robots_(max_robots),
-    success_reward_(success_reward), reward_structure_(reward_structure),
-    use_importance_sampling_(use_importance_sampling) {
+    success_reward_(success_reward), reward_structure_(reward_structure) {
 
       // Initialize intrinsic reward cache
       for (size_t i = 0; i < boost::num_vertices(graph_); ++i) {
         std::vector<size_t> temp_path;
-        intrinsic_reward_cache_.push_back(bwi_mapper::getShortestPathWithDistance(
-                                                                                  i, goal_idx_, temp_path, graph_));
+        intrinsic_reward_cache_.push_back(bwi_mapper::getShortestPathWithDistance(i, goal_idx_, temp_path, graph_));
       }
 
       if (!file.empty()) {
@@ -187,11 +184,9 @@ namespace bwi_guidance_solver {
       return 0;
     }
 
-    void PersonModel::updateRewardStructure(float success_reward, 
-                                                 RewardStructure reward_structure, bool use_importance_sampling) {
+    void PersonModel::updateRewardStructure(float success_reward, RewardStructure reward_structure) {
       success_reward_ = success_reward;
       reward_structure_ = reward_structure;
-      use_importance_sampling_ = use_importance_sampling;
     }
 
     void PersonModel::initializeStateSpace() {

@@ -1,6 +1,7 @@
 #ifndef BWI_GUIDANCE_SOLVER_IRM_SOLVER_H
 #define BWI_GUIDANCE_SOLVER_IRM_SOLVER_H
 
+#include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/shared_ptr.hpp>
 #include <nav_msgs/OccupancyGrid.h>
@@ -37,12 +38,16 @@ namespace bwi_guidance_solver {
           map_ = map;
           graph_ = graph;
 
-          // Compute the base directory
+          // Compute the base directory and create it.
           std::ostringstream parametrized_dir_ss;
           parametrized_dir_ss << std::fixed << std::setprecision(2);
           parametrized_dir_ss << base_directory << "/ros" << general_params_.reward_on_success << 
             "-rs" << general_params_.reward_structure;
           base_directory_ = parametrized_dir_ss.str();
+          if (!boost::filesystem::create_directory(base_directory_))
+          {
+            return false;
+          }
 
           return this->initializeSolverSpecific(params);
         }
