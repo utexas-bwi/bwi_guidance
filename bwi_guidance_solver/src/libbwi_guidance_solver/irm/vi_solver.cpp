@@ -1,4 +1,6 @@
 #include <fstream>
+#include <pluginlib/class_list_macros.h>
+
 #include <bwi_guidance_solver/irm/vi_solver.h>
 
 namespace bwi_guidance_solver {
@@ -63,3 +65,4 @@ namespace bwi_guidance_solver {
 
 }
 
+PLUGINLIB_EXPORT_CLASS(bwi_guidance_solver::irm::VISolver, bwi_guidance_solver::irm::Solver)

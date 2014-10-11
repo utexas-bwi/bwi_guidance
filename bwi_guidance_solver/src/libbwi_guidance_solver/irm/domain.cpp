@@ -1,6 +1,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+
+#include <pluginlib/class_list_macros.h>
 #include <pluginlib/class_loader.h>
 
 #include <bwi_mapper/map_loader.h>
@@ -210,3 +212,5 @@ namespace bwi_guidance_solver {
   } /* irm - InstantaneousRobotMotion */
 
 } /* bwi_guidance_solver */
+
+PLUGINLIB_EXPORT_CLASS(bwi_guidance_solver::irm::Domain, bwi_rl::Domain)

@@ -38,12 +38,9 @@ include_directories(
 ## Declare a cpp library
 add_library(bwi_guidance_solver
   src/libbwi_guidance_solver/common.cpp
-  ## src/libbwi_guidance_solver/heuristic_solver_iros14.cpp
   src/libbwi_guidance_solver/irm/heuristic_solver.cpp
   src/libbwi_guidance_solver/irm/person_estimator.cpp
-  ## src/libbwi_guidance_solver/person_model_iros14.cpp
   src/libbwi_guidance_solver/irm/person_model.cpp
-  ## src/libbwi_guidance_solver/structures_iros14.cpp
   src/libbwi_guidance_solver/irm/structures.cpp
   src/libbwi_guidance_solver/irm/vi_solver.cpp
   src/libbwi_guidance_solver/irm/mcts_solver.cpp

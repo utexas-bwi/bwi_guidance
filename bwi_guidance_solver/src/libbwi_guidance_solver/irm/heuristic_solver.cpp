@@ -1,4 +1,5 @@
 #include <boost/foreach.hpp>
+#include <pluginlib/class_list_macros.h>
 
 #include <bwi_guidance_solver/irm/heuristic_solver.h>
 #include <bwi_mapper/map_utils.h>
@@ -162,3 +163,5 @@ namespace bwi_guidance_solver {
   } /* irm - InstantaneousRobotMotion */
 
 } /* bwi_guidance_solver */
+
+PLUGINLIB_EXPORT_CLASS(bwi_guidance_solver::irm::HeuristicSolver, bwi_guidance_solver::irm::Solver)

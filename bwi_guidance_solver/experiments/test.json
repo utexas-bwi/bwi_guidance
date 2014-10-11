@@ -1,0 +1,5 @@
+{
+  "domain": "bwi_guidance_solver::irm::Domain",
+  "params": {},
+  "solvers": {}
+}

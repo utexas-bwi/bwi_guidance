@@ -1,4 +1,5 @@
 #include <fstream>
+#include <pluginlib/class_list_macros.h>
 
 #include <bwi_guidance_solver/irm/mcts_solver.h>
 #include <bwi_rl/planning/IdentityStateMapping.h>
@@ -61,3 +62,4 @@ namespace bwi_guidance_solver {
 
 }
 
+PLUGINLIB_EXPORT_CLASS(bwi_guidance_solver::irm::MCTSSolver, bwi_guidance_solver::irm::Solver)
