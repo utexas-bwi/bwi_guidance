@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(bwi_guidance_solver)
 
 ## Find catkin and external packages
-find_package(catkin REQUIRED COMPONENTS bwi_guidance bwi_mapper bwi_rl)
+find_package(catkin REQUIRED COMPONENTS bwi_guidance bwi_mapper bwi_rl pluginlib)
 find_package(Boost REQUIRED COMPONENTS serialization program_options)
 
 ###################################
@@ -17,6 +17,8 @@ catkin_package(
   CATKIN_DEPENDS 
     bwi_guidance 
     bwi_mapper
+    bwi_rl
+    pluginlib
 )
 
 ###########
@@ -38,6 +40,7 @@ include_directories(
 ## Declare a cpp library
 add_library(bwi_guidance_solver
   src/libbwi_guidance_solver/common.cpp
+  src/libbwi_guidance_solver/irm/solver.cpp
   src/libbwi_guidance_solver/irm/heuristic_solver.cpp
   src/libbwi_guidance_solver/irm/person_estimator.cpp
   src/libbwi_guidance_solver/irm/person_model.cpp

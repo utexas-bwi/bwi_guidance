@@ -28,55 +28,24 @@ namespace bwi_guidance_solver {
           Params_STRUCT(PARAMS)
 #undef PARAMS
 
-        inline bool initialize(Domain::Params &domain_params, 
-                               Json::Value &params, 
-                               const nav_msgs::OccupancyGrid &map,
-                               const bwi_mapper::Graph &graph, 
-                               const std::string &base_directory) {
-          domain_params_ = domain_params;
-          general_params_.fromJson(params);
-          map_ = map;
-          graph_ = graph;
+        bool initialize(Domain::Params &domain_params, 
+            Json::Value &params, 
+            const nav_msgs::OccupancyGrid &map,
+            const bwi_mapper::Graph &graph, 
+            const std::string &base_directory);
 
-          // Compute the base directory and create it.
-          std::ostringstream parametrized_dir_ss;
-          parametrized_dir_ss << std::fixed << std::setprecision(2);
-          parametrized_dir_ss << base_directory << "/ros" << general_params_.reward_on_success << 
-            "-rs" << general_params_.reward_structure;
-          base_directory_ = parametrized_dir_ss.str();
-          if (!boost::filesystem::is_directory(base_directory_) &&
-              !boost::filesystem::create_directory(base_directory_))
-          {
-            return false;
-          }
+        void reset(const boost::shared_ptr<PersonModel> &model, int seed, int goal_idx);
 
-          return this->initializeSolverSpecific(params);
-        }
-
-        inline void reset(const boost::shared_ptr<PersonModel> &model, int seed, int goal_idx) {
-          seed_ = seed;
-          model_ = model;
-          goal_idx_ = goal_idx;
-          this->resetSolverSpecific();
-        }
-
-        virtual std::map<std::string, std::string> getParamsAsMap() { 
-          std::map<std::string, std::string> stringMap = this->getParamsAsMapSolverSpecific();
-          std::map<std::string, std::string> general_params_map = general_params_.asMap();
-          stringMap.insert(general_params_map.begin(), general_params_map.end());
-          return stringMap;
-        }
+        std::map<std::string, std::string> getParamsAsMap();
 
         virtual Action getBestAction(const State &state) = 0;
 
-        virtual bool initializeSolverSpecific(Json::Value &params) {}
-        virtual void resetSolverSpecific() {}
-        virtual void precomputeAndSavePolicy(int problem_identifier) {}
-        virtual void performEpisodeStartComputation(const State &state) {}
-        virtual void performPostActionComputation(const State &state, float distance = 0.0) {}
-        virtual std::map<std::string, std::string> getParamsAsMapSolverSpecific() { 
-          return std::map<std::string, std::string>();
-        }
+        virtual bool initializeSolverSpecific(Json::Value &params);
+        virtual void resetSolverSpecific();
+        virtual void precomputeAndSavePolicy(int problem_identifier);
+        virtual void performEpisodeStartComputation(const State &state);
+        virtual void performPostActionComputation(const State &state, float distance = 0.0);
+        virtual std::map<std::string, std::string> getParamsAsMapSolverSpecific();
 
         inline bool shouldAddRewardOnSuccess() { return general_params_.reward_on_success; }
         inline RewardStructure getRewardStructure() { 
@@ -84,8 +53,6 @@ namespace bwi_guidance_solver {
         }
 
       protected:
-
-        Solver();
 
         /* Some test instance/precomputation specific pieces of information */
         int seed_;

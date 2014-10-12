@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include <pluginlib/class_loader.h>
+
 #include <bwi_mapper/graph.h>
 #include <bwi_rl/planning/domain.h>
 #include <bwi_tools/common/Params.h>
@@ -31,6 +33,8 @@ namespace bwi_guidance_solver {
           Params_STRUCT(PARAMS)
 #undef PARAMS
 
+        ~Domain();
+
         virtual bool initialize(Json::Value &experiment, const std::string &base_directory);
         virtual void precomputeAndSavePolicy(int problem_identifier);
         virtual void testInstance(int seed);
@@ -39,7 +43,9 @@ namespace bwi_guidance_solver {
 
         Params params_;
         std::string base_directory_;
+
         std::vector<boost::shared_ptr<Solver> > solvers_;
+        boost::shared_ptr<pluginlib::ClassLoader<Solver> > class_loader_;
 
         nav_msgs::OccupancyGrid map_;
         bwi_mapper::Graph graph_;

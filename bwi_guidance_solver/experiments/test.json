@@ -1,5 +1,11 @@
 {
   "domain": "bwi_guidance_solver::irm::Domain",
-  "params": {},
-  "solvers": {}
+  "params": {
+    "map_file": "package://bwi_guidance/maps/map3.yaml",
+    "graph_file": "package://bwi_guidance/maps/graph_map3.yaml"
+  },
+  "solvers": [{
+    "name": "bwi_guidance_solver::irm::HeuristicSolver"
+  }]
+  }
 }

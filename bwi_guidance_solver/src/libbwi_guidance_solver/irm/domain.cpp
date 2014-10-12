@@ -3,21 +3,31 @@
 #include <boost/lexical_cast.hpp>
 
 #include <pluginlib/class_list_macros.h>
-#include <pluginlib/class_loader.h>
 
 #include <bwi_mapper/map_loader.h>
 #include <bwi_guidance_solver/irm/domain.h>
 #include <bwi_guidance_solver/irm/solver.h>
 #include <bwi_tools/record_writer.h>
+#include <bwi_tools/resource_resolver.h>
 
 namespace bwi_guidance_solver {
 
   namespace irm {
 
+    Domain::~Domain() {
+      // Deallocate every solver before exiting.
+      BOOST_FOREACH(boost::shared_ptr<Solver>& solver, solvers_) {
+        solver.reset();
+      }
+    }
+
     bool Domain::initialize(Json::Value &experiment, const std::string &base_directory) {
 
       // Read any domain-level parameters.
       params_.fromJson(experiment["params"]);
+
+      params_.map_file = bwi_tools::resolveRosResource(params_.map_file);
+      params_.graph_file = bwi_tools::resolveRosResource(params_.graph_file);
 
       // Read the map and graph file.
       if (boost::filesystem::is_regular_file(params_.map_file) &&
@@ -57,11 +67,11 @@ namespace bwi_guidance_solver {
 
       // Load all the solvers we'll be testing 
       Json::Value solvers = experiment["solvers"];
-      pluginlib::ClassLoader<Solver> class_loader("bwi_guidance_solver", "bwi_guidance_solver::irm::Solver");
+      class_loader_.reset(new pluginlib::ClassLoader<Solver>("bwi_guidance_solver", "bwi_guidance_solver::irm::Solver"));
       try {
         for (unsigned solver_idx = 0; solver_idx < solvers.size(); ++solver_idx) {
           std::string solver_name = solvers[solver_idx]["name"].asString();
-          boost::shared_ptr<Solver> solver = class_loader.createInstance(solver_name);
+          boost::shared_ptr<Solver> solver = class_loader_->createInstance(solver_name);
           if (!(solver->initialize(params_, solvers[solver_idx]["params"], map_, graph_, base_directory_))) {
             ROS_FATAL("Could not initialize solver.");
             return false;
