@@ -48,6 +48,9 @@ add_library(bwi_guidance_solver
   src/libbwi_guidance_solver/irm/vi_solver.cpp
   src/libbwi_guidance_solver/irm/mcts_solver.cpp
   src/libbwi_guidance_solver/irm/domain.cpp
+  src/libbwi_guidance_solver/mrn/heuristic_solver.cpp
+  src/libbwi_guidance_solver/mrn/person_model.cpp
+  src/libbwi_guidance_solver/mrn/structures.cpp
 )
 target_link_libraries(bwi_guidance_solver 
   ${catkin_LIBRARIES}
