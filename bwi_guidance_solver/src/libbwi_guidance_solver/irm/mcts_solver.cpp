@@ -37,6 +37,10 @@ namespace bwi_guidance_solver {
       search(state, time);
     }
 
+    std::string MCTSSolver::getSolverName() {
+      return std::string("UCT");
+    }
+
     void MCTSSolver::performPostActionComputation(const State &state, float distance) {
       // NOTE This assumes the human is moving at a speed of 1m/s.
       float time = distance * mcts_solver_params_.planning_time_multiplier;
@@ -46,6 +50,7 @@ namespace bwi_guidance_solver {
     void MCTSSolver::search(const State &state, float time) {
       // Only perform the search if the search time is greater than 0, and there is something to search over.
       if ((time > 0.0f) && (state.num_robots_left != 0 || state.visible_robot != NONE)) {
+        std::cout << "Searching for " << time << " seconds." << std::endl;
         unsigned int unused_rollout_termination_count;
         mcts_->search(state, unused_rollout_termination_count, time);
       }

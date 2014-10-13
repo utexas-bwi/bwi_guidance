@@ -10,6 +10,12 @@
 #include <bwi_tools/record_writer.h>
 #include <bwi_tools/resource_resolver.h>
 
+#ifdef EVALUATE_DEBUG
+  #define EVALUATE_OUTPUT(x) std::cout << x << std::endl;
+#else
+  #define EVALUATE_OUTPUT(x)
+#endif
+
 namespace bwi_guidance_solver {
 
   namespace irm {
@@ -107,6 +113,8 @@ namespace bwi_guidance_solver {
         goal_idx = idx_gen();
       }
       int start_direction = direction_gen();
+
+      std::cout << "Testing instance with start_idx: " << start_idx << ", goal_idx: " << goal_idx << std::endl;
       
       float pixel_visibility_range = params_.visibility_range / map_.info.resolution;
 
@@ -125,6 +133,7 @@ namespace bwi_guidance_solver {
         solver->reset(model, seed, goal_idx);
         std::map<std::string, std::string> record = solver->getParamsAsMap();
 
+        record["name"] = solver->getSolverName();
         record["start_idx"] = boost::lexical_cast<std::string>(start_idx);
         record["goal_idx"] = boost::lexical_cast<std::string>(goal_idx);
         record["start_direction"] = boost::lexical_cast<std::string>(start_direction);
@@ -135,8 +144,7 @@ namespace bwi_guidance_solver {
 
         for (int starting_robots = 1; starting_robots <= DEFAULT_MAX_ROBOTS; ++starting_robots) {
 
-          // TODO print a message here.
-          /* EVALUATE_OUTPUT("Evaluating method " << params << " with " << starting_robots << " robots."); */
+          EVALUATE_OUTPUT("Evaluating solver " << solver->getSolverName() << " with " << starting_robots << " robots.");
 
           State current_state; 
           current_state.graph_id = start_idx;
@@ -148,7 +156,7 @@ namespace bwi_guidance_solver {
           float reward = 0;
           float instance_distance = 0;
 
-          /* EVALUATE_OUTPUT(" - start " << current_state); */
+          EVALUATE_OUTPUT(" - start " << current_state);
 
           solver->performEpisodeStartComputation(current_state);
 
@@ -164,7 +172,7 @@ namespace bwi_guidance_solver {
             while (true) {
 
               Action action = solver->getBestAction(current_state);
-              /* EVALUATE_OUTPUT("   action: " << action); */
+              EVALUATE_OUTPUT("   action: " << action);
 
               model->getTransitionDynamics(current_state, action, next_states, rewards, probabilities);
 
@@ -177,7 +185,7 @@ namespace bwi_guidance_solver {
               current_state = next_states[0];
               // TODO we should do the computation with the original state and selected action.
               solver->performPostActionComputation(current_state);
-              /* EVALUATE_OUTPUT(" - auto " << current_state); */
+              EVALUATE_OUTPUT(" - auto " << current_state);
             }
 
             // Select next state choice based on probabilities
@@ -197,7 +205,7 @@ namespace bwi_guidance_solver {
               solver->performPostActionComputation(current_state, distance);
             }
 
-            /* EVALUATE_OUTPUT(" - manual " << current_state); */
+            EVALUATE_OUTPUT(" - manual " << current_state);
             reward += rewards[choice];
           }
           record["starting_robots"] = boost::lexical_cast<std::string>(starting_robots);

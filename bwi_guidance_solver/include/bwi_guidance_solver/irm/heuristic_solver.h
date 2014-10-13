@@ -14,6 +14,7 @@ namespace bwi_guidance_solver {
 
         virtual bool initializeSolverSpecific(Json::Value &params);
         virtual Action getBestAction(const State& state);
+        virtual std::string getSolverName();
 
         Action getBestActionWithBlacklistedVertices(const State& state,
             boost::shared_ptr<std::vector<int> > blacklisted_vertices =

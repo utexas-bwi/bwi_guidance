@@ -39,6 +39,7 @@ namespace bwi_guidance_solver {
         std::map<std::string, std::string> getParamsAsMap();
 
         virtual Action getBestAction(const State &state) = 0;
+        virtual std::string getSolverName() = 0;
 
         virtual bool initializeSolverSpecific(Json::Value &params);
         virtual void resetSolverSpecific();

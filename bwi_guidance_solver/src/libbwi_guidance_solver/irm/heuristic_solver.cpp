@@ -24,6 +24,10 @@ namespace bwi_guidance_solver {
       return getBestActionWithBlacklistedVertices(state);
     }
 
+    std::string HeuristicSolver::getSolverName() {
+      return std::string("Heuristic");
+    }
+
     Action HeuristicSolver::getBestActionWithBlacklistedVertices(
         const State& state,
         boost::shared_ptr<std::vector<int> > blacklisted_vertices) const {

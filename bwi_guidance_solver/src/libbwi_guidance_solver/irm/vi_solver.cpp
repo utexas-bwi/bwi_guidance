@@ -33,16 +33,23 @@ namespace bwi_guidance_solver {
 
       std::ifstream vi_ifs(vi_policy_file.c_str());
       if (vi_ifs.good()) {
+        std::cout << "VI policy file found: " << vi_policy_file << std::endl;
         vi_->loadPolicy(vi_policy_file);
       } else {
+        std::cout << "VI policy file not found. Computing policy... " << std::flush;
         vi_->computePolicy();
         vi_->savePolicy(vi_policy_file);
+        std::cout << "DONE!" << std::endl;
       }
       vi_ifs.close();
     }
 
     Action VISolver::getBestAction(const State &state) {
       return vi_->getBestAction(state);
+    }
+
+    std::string VISolver::getSolverName() {
+      return std::string("VI");
     }
 
     void VISolver::precomputeAndSavePolicy(int problem_identifier) {

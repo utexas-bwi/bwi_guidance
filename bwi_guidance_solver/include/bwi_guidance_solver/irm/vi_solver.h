@@ -13,9 +13,11 @@ namespace bwi_guidance_solver {
 
       public:
 
+        virtual Action getBestAction(const State &state);
+        virtual std::string getSolverName();
+
         virtual bool initializeSolverSpecific(Json::Value &params);
         virtual void resetSolverSpecific();
-        virtual Action getBestAction(const State &state);
         virtual void precomputeAndSavePolicy(int problem_identifier);
         virtual std::map<std::string, std::string> getParamsAsMapSolverSpecific();
 
