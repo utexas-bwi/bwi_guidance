@@ -19,8 +19,8 @@ namespace bwi_guidance_solver {
         void computePolicy();
         void loadPolicy(const std::string& file);
         void savePolicy(const std::string& file);
-        Action getBestAction(const bwi_guidance::State& state, const
-                             boost::shared_ptr<bwi_guidance::PersonModel>& evaluation_model);
+        Action getBestAction(const State& state, const
+                             boost::shared_ptr<PersonModel>& evaluation_model);
         virtual std::string generateDescription(unsigned int indentation = 0) {
           return std::string("stub");
         }

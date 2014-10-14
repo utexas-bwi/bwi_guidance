@@ -101,18 +101,15 @@ namespace bwi_guidance_solver {
 
     void Domain::testInstance(int seed) {
 
-      boost::mt19937 mt(seed);
-      boost::uniform_int<int> idx_dist(0, boost::num_vertices(graph_) - 1);
-      UIGen idx_gen(mt, idx_dist);
-      boost::uniform_int<int> direction_dist(0, 15);
-      UIGen direction_gen(mt, direction_dist);
-
-      int start_idx = idx_gen();
-      int goal_idx = idx_gen();
+      RNG rng(seed);
+      int num_vertices = boost::num_vertices(graph_);
+      int start_idx = rng.randomInt(num_vertices - 1);
+      int goal_idx = rng.randomInt(num_vertices - 1);
       while (goal_idx == start_idx) {
-        goal_idx = idx_gen();
+        goal_idx = rng.randomInt(num_vertices - 1);
       }
-      int start_direction = direction_gen();
+      // TODO How this is not a #define somewhere? I couldn't locate it. Needs more searching.
+      int start_direction = rng.randomInt(15);
 
       std::cout << "Testing instance with start_idx: " << start_idx << ", goal_idx: " << goal_idx << std::endl;
       
@@ -138,9 +135,7 @@ namespace bwi_guidance_solver {
         record["goal_idx"] = boost::lexical_cast<std::string>(goal_idx);
         record["start_direction"] = boost::lexical_cast<std::string>(start_direction);
 
-        boost::mt19937 mt(2 * (seed + 1));
-        boost::uniform_real<float> u(0.0f, 1.0f);
-        URGenPtr transition_rng(new URGen(mt, u));
+        RNG transition_rng(2 * (seed + 1));
 
         for (int starting_robots = 1; starting_robots <= DEFAULT_MAX_ROBOTS; ++starting_robots) {
 
@@ -189,7 +184,7 @@ namespace bwi_guidance_solver {
             }
 
             // Select next state choice based on probabilities
-            int choice = select(probabilities, transition_rng);
+            int choice = transition_rng.select(probabilities);
             State old_state = current_state;
             current_state = next_states[choice];
             float transition_distance = 

@@ -6,7 +6,6 @@
 #include <stdint.h>
 
 #include <bwi_guidance_solver/mrn/structures.h>
-#include <bwi_guidance_solver/utils.h>
 #include <bwi_mapper/graph.h>
 
 namespace boost {
@@ -40,7 +39,7 @@ namespace bwi_guidance_solver {
 
         /* Functions inherited from Model */
         virtual void takeAction(const State &state, const Action &action, float &reward, 
-                                State &next_state, bool &terminal, int &depth_count);
+                                State &next_state, bool &terminal, int &depth_count, boost::shared_ptr<RNG> rng);
         virtual void getFirstAction(const State &state, Action &action);
         virtual bool getNextAction(const State &state, Action &action);
         virtual void getAllActions(const State &state, std::vector<Action>& actions);
@@ -48,9 +47,22 @@ namespace bwi_guidance_solver {
           return std::string("stub");
         }
 
-        void initializeRNG(UIGenPtr uigen, URGenPtr ugen, PIGenPtr pgen);
-        void addRobots(State& state, int n);
-        int selectBestRobotForTask(int destination, float time_to_destination,
+        /* Some model specific functions, useful while evaluating. */
+        void takeAction(const State &state, 
+                        const Action &action, 
+                        float &reward, 
+                        State &next_state, 
+                        bool &terminal, 
+                        int &depth_count,
+                        boost::shared_ptr<RNG> &rng,
+                        float &time_loss,
+                        float &utility_loss,
+                        boost::shared_ptr<std::vector<State> > &frame_vector);
+
+        void addRobots(State& state, int n, boost::shared_ptr<RNG> &rng);
+        int selectBestRobotForTask(const State& state,
+                                   int destination, 
+                                   float time_to_destination,
                                    bool& reach_in_time);
 
         /* Debugging only */
@@ -58,7 +70,7 @@ namespace bwi_guidance_solver {
 
         /* Private functions that are public only for testing */
         bool isRobotDirectionAvailable(const State& state, int& robot_dir);
-        bool moveRobots(State& state, float time);
+        bool moveRobots(State& state, float time, boost::shared_ptr<RNG> &rng);
         void printDistanceToDestination(int idx);
         void getActionsAtState(const State &state,
                                std::vector<Action>& actions);
@@ -68,12 +80,6 @@ namespace bwi_guidance_solver {
 
       private:
 
-        /* Mapped state for generative model */
-        State current_state_;
-        UIGenPtr uigen_;
-        URGenPtr ugen_;
-        PIGenPtr pgen_;
-
         /* State space cache */
         std::map<int, std::vector<int> > adjacent_vertices_map_;
         std::map<int, std::vector<int> > visible_vertices_map_;
@@ -82,14 +88,11 @@ namespace bwi_guidance_solver {
         /* Actions */
         bool isTerminalState(const State& state) const;
 
-        /* Next states and transitions */
-        float takeActionAtCurrentState(const Action &a);
-
         /* Helper Functions */
         float getTrueDistanceTo(RobotState& state, 
                                 int current_destination, int to_destination, 
                                 bool change_robot_state = false);
-        int generateNewGoalFrom(int idx);
+        int generateNewGoalFrom(int idx, boost::shared_ptr<RNG> &rng);
 
         /* Action generation caching */
         State get_action_state_;

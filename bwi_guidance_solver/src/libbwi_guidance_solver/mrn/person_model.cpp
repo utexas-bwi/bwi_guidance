@@ -29,8 +29,7 @@ namespace bwi_guidance_solver {
       allow_goal_visibility_(allow_goal_visibility), human_speed_(human_speed),
       robot_speed_(robot_speed), utility_multiplier_(utility_multiplier),
       use_shaping_reward_(use_shaping_reward),
-      discourage_bad_assignments_(discourage_bad_assignments), previous_action_utility_loss_(0.0f),
-      previous_action_time_loss_(0.0f) {
+      discourage_bad_assignments_(discourage_bad_assignments) {
 
         robot_speed_ /= map_.info.resolution;
         human_speed_ /= map_.info.resolution;
@@ -211,34 +210,33 @@ namespace bwi_guidance_solver {
       getTrueDistanceTo(state, current_destination, to_destination, true);
     }
 
-    int PersonModel::selectBestRobotForTask(int destination, 
+    int PersonModel::selectBestRobotForTask(const State& state, int destination, 
                                             float time_to_destination, bool& reach_in_time) {
 
-      std::vector<float> utility_loss_all(current_state_.robots.size(),
-                                          std::numeric_limits<float>::max());
-      std::vector<float> utility_loss_in_time(current_state_.robots.size(),
-                                              std::numeric_limits<float>::max());
-      std::vector<float> time(current_state_.robots.size(),
-                              std::numeric_limits<float>::max());
+      std::vector<float> utility_loss_all(state.robots.size(), std::numeric_limits<float>::max());
+      std::vector<float> utility_loss_in_time(state.robots.size(), std::numeric_limits<float>::max());
+      std::vector<float> time(state.robots.size(), std::numeric_limits<float>::max());
 
-      for (int i = 0; i < current_state_.robots.size(); ++i) {
+      for (int i = 0; i < state.robots.size(); ++i) {
         bool robot_in_use = false;
-        for (int j = 0; j < current_state_.in_use_robots.size(); ++j) {
-          if (current_state_.in_use_robots[j].robot_id == i) {
+        for (int j = 0; j < state.in_use_robots.size(); ++j) {
+          if (state.in_use_robots[j].robot_id == i) {
             robot_in_use = true;
             break;
           }
         }
         if (!robot_in_use) {
-          float orig_distance = getTrueDistanceTo(current_state_.robots[i],
-                                                  current_state_.robots[i].destination, 
-                                                  current_state_.robots[i].destination);
+          // We don't need to change the state, but we need to provide a mutable state to getTrueDistanceTo. Hence the
+          // mutable copy. Probably bad design!.
+          State mutable_state = state;
+          float orig_distance = getTrueDistanceTo(mutable_state.robots[i],
+                                                  state.robots[i].destination, 
+                                                  state.robots[i].destination);
           float original_time = orig_distance / robot_speed_;
-          float new_distance_1 = getTrueDistanceTo(current_state_.robots[i],
-                                                   current_state_.robots[i].destination,
+          float new_distance_1 = getTrueDistanceTo(mutable_state.robots[i],
+                                                   state.robots[i].destination,
                                                    destination);
-          float new_distance_2 = 
-            shortest_distances_[destination][current_state_.robots[i].destination];
+          float new_distance_2 = shortest_distances_[destination][state.robots[i].destination];
           float new_time = 
             std::max(new_distance_1 / robot_speed_, time_to_destination) + 
             new_distance_2 / robot_speed_;
@@ -349,21 +347,20 @@ namespace bwi_guidance_solver {
       }
     }
 
-    int PersonModel::generateNewGoalFrom(int idx) {
+    int PersonModel::generateNewGoalFrom(int idx, boost::shared_ptr<RNG> &rng) {
       // Optimized!!!
-      assert(pgen_ && uigen_ && goals_by_distance_.size() == num_vertices_);
+      assert(goals_by_distance_.size() == num_vertices_);
       while(true) {
-        int graph_distance = (*pgen_)();
+        int graph_distance = rng->poissonInt(1);
         if (graph_distance >= goals_by_distance_[idx].size()) {
           continue;
         }
-        std::vector<int>& possible_goals = 
-          goals_by_distance_[idx][graph_distance];
-        return *(possible_goals.begin() + ((*uigen_)() % possible_goals.size()));
+        std::vector<int>& possible_goals = goals_by_distance_[idx][graph_distance];
+        return *(possible_goals.begin() + rng->randomInt(possible_goals.size()));
       }
     }
 
-    bool PersonModel::moveRobots(State& state, float time) {
+    bool PersonModel::moveRobots(State& state, float time, boost::shared_ptr<RNG> &rng) {
       // Move the human
       bool ready_for_next_action = true;
       if (frame_rate_ > 0.0f) {
@@ -410,7 +407,7 @@ namespace bwi_guidance_solver {
               *robot_reached = true;
             } else {
               // Assign new goal and move towards that goal
-              robot.destination = generateNewGoalFrom(ROBOT_HOME_BASE[i]);
+              robot.destination = generateNewGoalFrom(ROBOT_HOME_BASE[i], rng);
               destination = robot.destination;
               std::vector<size_t>& shortest_path =
                 shortest_paths_[robot.graph_id][robot.destination];
@@ -466,238 +463,227 @@ namespace bwi_guidance_solver {
       return ready_for_next_action;
     }
 
-    float PersonModel::takeActionAtCurrentState(
-                                                const Action& action) {
-      /* std::cout << current_state_ << action << std::endl; */
+    void PersonModel::takeAction(const State &state, 
+                                 const Action &action, 
+                                 float &reward, 
+                                 State &next_state, 
+                                 bool &terminal, 
+                                 int &depth_count,
+                                 boost::shared_ptr<RNG> &rng,
+                                 float &time_loss,
+                                 float &utility_loss,
+                                 boost::shared_ptr<std::vector<State> > &frame_vector) {
+      next_state = state;
+      reward = 0.0f;
 
       if (action.type == RELEASE_ROBOT) {
         int mark_for_removal = -1;
         int robot_id;
-        for (int i = 0; i < current_state_.in_use_robots.size(); ++i) {
-          if (action.at_graph_id == current_state_.in_use_robots[i].destination) {
-            robot_id = current_state_.in_use_robots[i].robot_id;
+        for (int i = 0; i < next_state.in_use_robots.size(); ++i) {
+          if (action.at_graph_id == next_state.in_use_robots[i].destination) {
+            robot_id = next_state.in_use_robots[i].robot_id;
             mark_for_removal = i;
             break;
           }
         }
-        // if (mark_for_removal == -1) {
-        //   std::cout << "State: " << current_state_ << std::endl;
-        //   std::cout << "Action: " << action << std::endl;
-        // }
         assert(mark_for_removal != -1);
-        current_state_.in_use_robots.erase(
-                                           current_state_.in_use_robots.begin() + mark_for_removal);
-        current_state_.relieved_locations.push_back(action.at_graph_id);
+        next_state.in_use_robots.erase(next_state.in_use_robots.begin() + mark_for_removal);
+        next_state.relieved_locations.push_back(action.at_graph_id);
 
         // Since we are changing destinations, we need to reset robot state
         // to take optimal path to goal
-        RobotState& robot = current_state_.robots[robot_id];
+        RobotState& robot = next_state.robots[robot_id];
         changeRobotDirectionIfNeeded(robot, action.at_graph_id, robot.destination);
-        previous_action_utility_loss_ = 0.0f;
-        previous_action_time_loss_ = 0.0f;
-        return 0.0;
-      }
-
-      if (action.type == ASSIGN_ROBOT) {
-        /* std::cout << current_state_ << std::endl; */
-        assert(current_state_.in_use_robots.size() < max_robots_in_use_);
-        float distance_to_destination = shortest_distances_[current_state_.graph_id][action.at_graph_id];
+        utility_loss = 0.0f;
+        time_loss = 0.0f;
+        reward = 0.0f;
+      } else if (action.type == ASSIGN_ROBOT) {
+        /* std::cout << next_state << std::endl; */
+        assert(next_state.in_use_robots.size() < max_robots_in_use_);
+        float distance_to_destination = shortest_distances_[next_state.graph_id][action.at_graph_id];
         float time_to_destination = distance_to_destination / human_speed_; 
         InUseRobotState r;
         bool reach_in_time;
-        r.robot_id = 
-          selectBestRobotForTask(action.at_graph_id, time_to_destination, 
-                                 reach_in_time);
+        r.robot_id = selectBestRobotForTask(next_state, action.at_graph_id, time_to_destination, reach_in_time);
         r.destination = action.at_graph_id;
         r.direction = DIR_UNASSIGNED;
         r.reached_destination = 
-          current_state_.robots[r.robot_id].graph_id == r.destination &&
-          current_state_.robots[r.robot_id].precision == 0.0f;
-        current_state_.in_use_robots.push_back(r);
-        current_state_.acquired_locations.push_back(action.at_graph_id);
+          next_state.robots[r.robot_id].graph_id == r.destination &&
+          next_state.robots[r.robot_id].precision == 0.0f;
+        next_state.in_use_robots.push_back(r);
+        next_state.acquired_locations.push_back(action.at_graph_id);
 
-        RobotState& robot = current_state_.robots[r.robot_id];
+        RobotState& robot = next_state.robots[r.robot_id];
         changeRobotDirectionIfNeeded(robot, robot.destination, action.at_graph_id);
 
-        /* std::cout << current_state_ << std::endl; */
-        previous_action_utility_loss_ = 0.0f;
-        previous_action_time_loss_ = 0.0f;
+        /* std::cout << next_state << std::endl; */
+        utility_loss = 0.0f;
+        time_loss = 0.0f;
         if (discourage_bad_assignments_ && !reach_in_time) {
-          return -50.0f;
+          reward = -50.0f;
+        } else {
+          reward = 0.0f;
         }
-        return 0.0f;
-      }
-
-      if (action.type == GUIDE_PERSON) {
+      } else if (action.type == GUIDE_PERSON) {
         int mark = -1;
         int robot_id;
-        for (int i = 0; i < current_state_.in_use_robots.size(); ++i) {
-          if (action.at_graph_id == current_state_.in_use_robots[i].destination) {
-            robot_id = current_state_.in_use_robots[i].robot_id;
+        for (int i = 0; i < next_state.in_use_robots.size(); ++i) {
+          if (action.at_graph_id == next_state.in_use_robots[i].destination) {
+            robot_id = next_state.in_use_robots[i].robot_id;
             mark = i;
             break;
           }
         }
         assert(mark != -1);
-        //current_state_.in_use_robots[mark].direction = action.guide_graph_id;
+        //next_state.in_use_robots[mark].direction = action.guide_graph_id;
         float direction = bwi_mapper::getNodeAngle(
-                                                   current_state_.graph_id, action.guide_graph_id, graph_);
-        current_state_.direction = getDiscretizedAngle(direction);
-        current_state_.robot_gave_direction = true;
-        current_state_.in_use_robots.erase(
-                                           current_state_.in_use_robots.begin() + mark);
-        current_state_.relieved_locations.push_back(action.at_graph_id);
+                                                   next_state.graph_id, action.guide_graph_id, graph_);
+        next_state.direction = getDiscretizedAngle(direction);
+        next_state.robot_gave_direction = true;
+        next_state.in_use_robots.erase(
+                                           next_state.in_use_robots.begin() + mark);
+        next_state.relieved_locations.push_back(action.at_graph_id);
 
         // Since we are changing destinations, we need to reset robot state
         // to take optimal path to goal
-        RobotState& robot = current_state_.robots[robot_id];
+        RobotState& robot = next_state.robots[robot_id];
         changeRobotDirectionIfNeeded(robot, action.at_graph_id, robot.destination);
-        previous_action_utility_loss_ = 0.0f;
-        previous_action_time_loss_ = 0.0f;
-        return 0.0;
-      }
+        utility_loss = 0.0f;
+        time_loss = 0.0f;
+        reward = 0.0f;
+      } else /* action.type == WAIT */ {
+        // alright, need to wait for the human to take an action - let's first
+        // figure out what action he takes
+        float expected_dir = getAngleInRadians(next_state.direction);
+        int robot_dir = 0;
+        if (isRobotDirectionAvailable(next_state, robot_dir)) {
+          //assert(robot_dir != DIR_UNASSIGNED);
+          if (robot_dir != DIR_UNASSIGNED) {
+            expected_dir = bwi_mapper::getNodeAngle(
+                                                    next_state.graph_id, robot_dir, graph_);
+          } else {
+            std::cout << "oh no!" << std::endl;
+            exit(-1);
+          }
+        }
 
-      // alright, need to wait for the human to take an action - let's first
-      // figure out what action he takes
-      float expected_dir = getAngleInRadians(current_state_.direction);
-      int robot_dir = 0;
-      if (isRobotDirectionAvailable(current_state_, robot_dir)) {
-        //assert(robot_dir != DIR_UNASSIGNED);
-        if (robot_dir != DIR_UNASSIGNED) {
-          expected_dir = bwi_mapper::getNodeAngle(
-                                                  current_state_.graph_id, robot_dir, graph_);
+        double sigma_sq = 0.1;
+        if (next_state.robot_gave_direction) {
+          sigma_sq = 0.05;
+        }
+
+        // Now assume that the person moves to one the adjacent locations
+        double weight_sum = 0;
+        std::vector<double> weights;
+        BOOST_FOREACH(int adj, adjacent_vertices_map_[next_state.graph_id]) {
+
+          float next_state_direction = bwi_mapper::getNodeAngle(
+                                                                next_state.graph_id, adj, graph_);
+          float angle_difference = getAbsoluteAngleDifference(next_state_direction, 
+                                                              expected_dir);
+
+          // Compute the probability of this state
+          double weight = exp(-pow(angle_difference, 2) / (2 * sigma_sq));
+          weights.push_back(weight);
+          weight_sum += weight;
+        }
+
+        float probability_sum = 0;
+        std::vector<float> probabilities;
+        /* std::cout << "Transition probabilities: " << std::endl; */
+        for (size_t probability_counter = 0; probability_counter < weights.size();
+             ++probability_counter) {
+          /* std::cout << weights[probability_counter] << " " << weight_sum << std::endl; */
+          double probability = 0.99 * (weights[probability_counter] / weight_sum) +
+            0.01 * (1.0f / weights.size());
+          probability_sum += probability;
+          if (probability_counter == weights.size() - 1) {
+            // Account for floating point errors. No surprises!
+            probability += 1.0f - probability_sum; 
+          }
+          probabilities.push_back(probability);
+          // std::cout << "  to " << 
+          //   adjacent_vertices_map_[next_state.graph_id][probability_counter] <<
+          //   ": " << probability << std::endl;
+        }
+
+        int next_node = adjacent_vertices_map_[next_state.graph_id] [rng->select(probabilities)];
+
+        // Now that we've decided which vertex the person is moving to, compute
+        // time to that vertex and update all the robots
+        float time_to_vertex = 
+          shortest_distances_[next_state.graph_id][next_node] / human_speed_;
+        utility_loss = 0.0f;
+        std::vector<float> time_to_original_destination_before(10);
+        BOOST_FOREACH(const InUseRobotState& robot, next_state.in_use_robots) {
+          float distance_to_original_destination = 
+            getTrueDistanceTo(next_state.robots[robot.robot_id], 0, 
+                              next_state.robots[robot.robot_id].destination);
+          time_to_original_destination_before[robot.robot_id] = 
+            distance_to_original_destination / robot_speed_;
+        }
+
+        // Transition to next state
+        float distance_closed = 
+          shortest_distances_[next_state.graph_id][goal_idx_] -
+          shortest_distances_[next_node][goal_idx_];
+
+        next_state.direction = computeNextDirection(next_state.direction, next_state.graph_id, next_node, graph_);
+        next_state.robot_gave_direction = false;
+        next_state.precision = 0.0f;
+        next_state.from_graph_node = next_state.graph_id;
+        next_state.graph_id = next_node;
+        next_state.acquired_locations.clear();
+        next_state.relieved_locations.clear();
+
+        if (frame_rate_ == 0.0f) {
+          moveRobots(next_state, time_to_vertex, rng);
         } else {
-          std::cout << "oh no!" << std::endl;
-          exit(-1);
+          assert(frame_vector);
+          frame_vector->clear();
+          while (!moveRobots(next_state, 1.0f / frame_rate_, rng)) {
+            frame_vector->push_back(next_state);
+          }
         }
-      }
 
-      double sigma_sq = 0.1;
-      if (current_state_.robot_gave_direction) {
-        sigma_sq = 0.05;
-      }
-
-      // Now assume that the person moves to one the adjacent locations
-      double weight_sum = 0;
-      std::vector<double> weights;
-      BOOST_FOREACH(int adj, adjacent_vertices_map_[current_state_.graph_id]) {
-
-        float next_state_direction = bwi_mapper::getNodeAngle(
-                                                              current_state_.graph_id, adj, graph_);
-        float angle_difference = getAbsoluteAngleDifference(next_state_direction, 
-                                                            expected_dir);
-
-        // Compute the probability of this state
-        double weight = exp(-pow(angle_difference, 2) / (2 * sigma_sq));
-        weights.push_back(weight);
-        weight_sum += weight;
-      }
-
-      float probability_sum = 0;
-      std::vector<float> probabilities;
-      /* std::cout << "Transition probabilities: " << std::endl; */
-      for (size_t probability_counter = 0; probability_counter < weights.size();
-           ++probability_counter) {
-        /* std::cout << weights[probability_counter] << " " << weight_sum << std::endl; */
-        double probability = 0.99 * (weights[probability_counter] / weight_sum) +
-          0.01 * (1.0f / weights.size());
-        probability_sum += probability;
-        if (probability_counter == weights.size() - 1) {
-          // Account for floating point errors. No surprises!
-          probability += 1.0f - probability_sum; 
+        // After the robots have been moved, let's compute the time to destination
+        // again to compute the utility loss
+        utility_loss = 0.0f;
+        BOOST_FOREACH(const InUseRobotState& robot, 
+                      next_state.in_use_robots) {
+          float distance_to_original_destination = 
+            getTrueDistanceTo(next_state.robots[robot.robot_id], 0, 
+                              next_state.robots[robot.robot_id].destination);
+          float time_to_original_destination = 
+            distance_to_original_destination / robot_speed_;
+          utility_loss += 
+            std::max(0.0f, 
+                     time_to_original_destination + time_to_vertex -
+                     time_to_original_destination_before[robot.robot_id]);
         }
-        probabilities.push_back(probability);
-        // std::cout << "  to " << 
-        //   adjacent_vertices_map_[current_state_.graph_id][probability_counter] <<
-        //   ": " << probability << std::endl;
-      }
+        time_loss = time_to_vertex;
 
-      int next_node = adjacent_vertices_map_[current_state_.graph_id]
-        [select(probabilities, ugen_)];
+        // Compute reward
+        float reward = -time_to_vertex;
 
-      // Now that we've decided which vertex the person is moving to, compute
-      // time to that vertex and update all the robots
-      float time_to_vertex = 
-        shortest_distances_[current_state_.graph_id][next_node] / human_speed_;
-      previous_action_utility_loss_ = 0.0f;
-      std::vector<float> time_to_original_destination_before(10);
-      BOOST_FOREACH(const InUseRobotState& robot, current_state_.in_use_robots) {
-        float distance_to_original_destination = 
-          getTrueDistanceTo(current_state_.robots[robot.robot_id], 0, 
-                            current_state_.robots[robot.robot_id].destination);
-        time_to_original_destination_before[robot.robot_id] = 
-          distance_to_original_destination / robot_speed_;
-      }
-
-      // Transition to next state
-      float distance_closed = 
-        shortest_distances_[current_state_.graph_id][goal_idx_] -
-        shortest_distances_[next_node][goal_idx_];
-
-      current_state_.direction = computeNextDirection(
-                                                      current_state_.direction, current_state_.graph_id, next_node, graph_);
-      current_state_.robot_gave_direction = false;
-      current_state_.precision = 0.0f;
-      current_state_.from_graph_node = current_state_.graph_id;
-      current_state_.graph_id = next_node;
-      current_state_.acquired_locations.clear();
-      current_state_.relieved_locations.clear();
-
-      if (frame_rate_ == 0.0f) {
-        moveRobots(current_state_, time_to_vertex);
-      } else {
-        assert(frame_vector_);
-        frame_vector_->clear();
-        while (!moveRobots(current_state_, 1.0f/frame_rate_)) {
-          frame_vector_->push_back(current_state_);
+        if (use_shaping_reward_) {
+          reward += distance_closed / human_speed_;
         }
+
+        reward -= utility_multiplier_ * utility_loss; 
       }
-
-      // After the robots have been moved, let's compute the time to destination
-      // again to compute the utility loss
-      previous_action_utility_loss_ = 0.0f;
-      BOOST_FOREACH(const InUseRobotState& robot, 
-                    current_state_.in_use_robots) {
-        float distance_to_original_destination = 
-          getTrueDistanceTo(current_state_.robots[robot.robot_id], 0, 
-                            current_state_.robots[robot.robot_id].destination);
-        float time_to_original_destination = 
-          distance_to_original_destination / robot_speed_;
-        previous_action_utility_loss_ += 
-          std::max(0.0f, 
-                   time_to_original_destination + time_to_vertex -
-                   time_to_original_destination_before[robot.robot_id]);
-      }
-      previous_action_time_loss_ = time_to_vertex;
-
-      // Compute reward
-      float reward = -time_to_vertex;
-
-      if (use_shaping_reward_) {
-        reward += distance_closed / human_speed_;
-      }
-
-      reward -= utility_multiplier_ * previous_action_utility_loss_; 
-
-      return reward;
+      
+      terminal = isTerminalState(next_state);
+      depth_count = (action.type != WAIT) ? 0 : lrint(time_loss); 
     }
 
     void PersonModel::takeAction(const State &state, const Action &action, float &reward, 
-                                 State &next_state, bool &terminal, int &depth_count) {
+                                 State &next_state, bool &terminal, int &depth_count, boost::shared_ptr<RNG> rng) {
 
-      //boost::posix_time::ptime mst1 = boost::posix_time::microsec_clock::local_time();
-
-      assert(ugen_);
-      assert(!isTerminalState(current_state_));
-
-      reward = takeActionAtCurrentState(state, action, next_state);
-      terminal = isTerminalState(next_state);
-
-      depth_count = (action.type != WAIT) ? 0 : lrint(previous_action_time_loss_); 
-
-      // boost::posix_time::ptime mst2 = boost::posix_time::microsec_clock::local_time();
-      // std::cout << "Time elapsed: " << (mst2 - mst1).total_microseconds() << 
-      //   std::endl;
+      float unused_utility_loss, unused_time_loss;
+      boost::shared_ptr<std::vector<State> > unused_frame_vector;
+      takeAction(state, action, reward, next_state, terminal, depth_count, rng,
+                 unused_time_loss, unused_utility_loss, unused_frame_vector);
     }
 
     void PersonModel::getFirstAction(const State &state, 
@@ -752,12 +738,12 @@ namespace bwi_guidance_solver {
       getActionsAtState(state, actions);
     }
 
-    void PersonModel::addRobots(State& state, int n) {
+    void PersonModel::addRobots(State& state, int n, boost::shared_ptr<RNG> &rng) {
       assert(uigen_);
       for (int r = 0; r < n; ++r) {
         RobotState robot;
         robot.graph_id = ROBOT_HOME_BASE[r];
-        robot.destination = generateNewGoalFrom(robot.graph_id); 
+        robot.destination = generateNewGoalFrom(robot.graph_id, rng); 
         robot.precision = 0.0f;
         if (shortest_paths_[robot.graph_id][robot.destination].size() != 0) {
           robot.other_graph_node = shortest_paths_[robot.graph_id][robot.destination][0];
@@ -767,19 +753,6 @@ namespace bwi_guidance_solver {
         state.robots.push_back(robot);
       }
     }
-
-    void PersonModel::initializeRNG(UIGenPtr uigen, URGenPtr ugen, 
-                                    PIGenPtr pgen) {
-      uigen_ = uigen;
-      ugen_ = ugen;
-      pgen_ = pgen;
-    }
-
-    void PersonModel::getLossesInPreviousTransition(
-                                                    float& time_loss, float& utility_loss) {
-      time_loss = previous_action_time_loss_;
-      utility_loss = previous_action_utility_loss_;
-    } 
 
     void PersonModel::drawState(const State& state, cv::Mat& image) {
 
@@ -933,10 +906,8 @@ namespace bwi_guidance_solver {
               (1.0f - line->precision) * bwi_mapper::getLocationFromGraphId(s, graph_) + 
               line->precision * bwi_mapper::getLocationFromGraphId(e, graph_);
             if (line->dashed) {
-              bwi_guidance::dashedLine(image,
-                                       bwi_mapper::getLocationFromGraphId(e, graph_),
-                                       start_pos,
-                                       line->color, 10, thickness_map[line->priority], CV_AA);
+              dashedLine(image, bwi_mapper::getLocationFromGraphId(e, graph_), start_pos, line->color, 10,
+                         thickness_map[line->priority], CV_AA);
             } else {
               cv::line(image,
                        bwi_mapper::getLocationFromGraphId(e, graph_),
@@ -963,10 +934,6 @@ namespace bwi_guidance_solver {
       bwi_mapper::drawSquareOnGraph(image, graph_, goal_idx_, cv::Scalar(0,0,255),
                                     0,0,18,-1);
 
-    }
-
-    void PersonModel::setFrameVector(boost::shared_ptr<std::vector<State> >& frame_vector){
-      frame_vector_ = frame_vector;
     }
 
   } /* mrn */

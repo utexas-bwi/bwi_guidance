@@ -7,7 +7,6 @@
 #include <stdint.h>
 
 #include <bwi_guidance_solver/irm/structures.h>
-#include <bwi_guidance_solver/utils.h>
 #include <bwi_mapper/graph.h>
 
 #define DEFAULT_MAX_ROBOTS 5

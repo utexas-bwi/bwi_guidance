@@ -127,9 +127,8 @@ namespace bwi_guidance_solver {
       }
     }
 
-    void PersonModel::takeAction(const State &state, 
-                                      const Action &action, float &reward, State &next_state, 
-                                      bool &terminal, int& depth_count, boost::shared_ptr<RNG> rng) {
+    void PersonModel::takeAction(const State &state, const Action &action, float &reward, State &next_state, 
+                                 bool &terminal, int& depth_count, boost::shared_ptr<RNG> rng) {
 
       if (isTerminalState(state)) {
         throw std::runtime_error("Cannot call takeAction() on terminal state");
@@ -140,7 +139,7 @@ namespace bwi_guidance_solver {
       std::vector<float> rewards;
       getTransitionDynamics(state, action, next_states, rewards, probabilities); 
 
-      int idx = select(probabilities, rng);
+      int idx = rng->select(probabilities);
       next_state = next_states[idx];
       reward = rewards[idx];
       terminal = isTerminalState(next_state);
