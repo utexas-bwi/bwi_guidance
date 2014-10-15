@@ -115,9 +115,13 @@ namespace bwi_guidance_solver {
 
       // We can create the model right now as loading the model is not dependent on the method parameters. We just need
       // to make sure we reinitialize the rng and update the reward structure for every method as necessary
-      std::string empty_model_file; // Do not load or save models to file
-      boost::shared_ptr<PersonModel> model(new PersonModel(graph_, map_, goal_idx, empty_model_file,
-            params_.allow_robot_current_idx, pixel_visibility_range, params_.allow_goal_visibility));
+      // TODO figure out some parameters here.
+      boost::shared_ptr<PersonModel> model(new PersonModel(graph_, 
+                                                           map_, 
+                                                           goal_idx, 
+                                                           params_.allow_robot_current_idx, 
+                                                           pixel_visibility_range, 
+                                                           params_.allow_goal_visibility));
 
       std::vector<std::map<std::string, std::string> > records;
       BOOST_FOREACH(boost::shared_ptr<Solver>& solver, solvers_) {
