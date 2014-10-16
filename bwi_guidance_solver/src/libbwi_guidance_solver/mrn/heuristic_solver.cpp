@@ -1,6 +1,7 @@
 #include <fstream>
 
 #include <boost/foreach.hpp>
+#include <pluginlib/class_list_macros.h>
 
 #include <bwi_guidance_solver/mrn/heuristic_solver.h>
 
@@ -87,4 +88,4 @@ namespace bwi_guidance_solver {
 
 } /* bwi_guidance_solver */
 
-
+PLUGINLIB_EXPORT_CLASS(bwi_guidance_solver::mrn::HeuristicSolver, bwi_guidance_solver::mrn::Solver)

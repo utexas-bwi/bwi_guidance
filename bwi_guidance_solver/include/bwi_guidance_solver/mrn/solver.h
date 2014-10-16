@@ -47,7 +47,7 @@ namespace bwi_guidance_solver {
         virtual void resetSolverSpecific();
         virtual void precomputeAndSavePolicy(int problem_identifier);
         virtual void performEpisodeStartComputation(const State &state);
-        virtual void performPostActionComputation(const State &state, float distance = 0.0);
+        virtual void performPostActionComputation(const State &state, float time = 0.0);
         virtual std::map<std::string, std::string> getParamsAsMapSolverSpecific();
 
         inline int getMaxRobotsInUse() { return general_params_.max_robots_in_use; }

@@ -53,6 +53,8 @@ add_library(bwi_guidance_solver
   src/libbwi_guidance_solver/mrn/structures.cpp
   src/libbwi_guidance_solver/mrn/domain.cpp
   src/libbwi_guidance_solver/mrn/solver.cpp
+  src/libbwi_guidance_solver/mrn/mcts_solver.cpp
+  src/libbwi_guidance_solver/mrn/abstract_mapping.cpp
 )
 target_link_libraries(bwi_guidance_solver 
   ${catkin_LIBRARIES}
