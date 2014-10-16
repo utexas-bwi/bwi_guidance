@@ -64,6 +64,15 @@ namespace bwi_guidance_solver {
     bool operator==(const RobotState& l, const RobotState& r);
     bool operator>(const RobotState& l, const RobotState& r); 
 
+    inline size_t hash_value(const bwi_guidance_solver::mrn::RobotState &rs) {
+      size_t seed = 0;
+      boost::hash_combine(seed, rs.graph_id);
+      boost::hash_combine(seed, rs.destination);
+      boost::hash_combine(seed, rs.precision);
+      boost::hash_combine(seed, rs.other_graph_node);
+      return seed;
+    }
+
     struct InUseRobotState {
       int robot_id; //~10
       int destination; //~20
@@ -80,6 +89,15 @@ namespace bwi_guidance_solver {
     bool operator<(const InUseRobotState& l, const InUseRobotState& r); 
     bool operator==(const InUseRobotState& l, const InUseRobotState& r);
     bool operator>(const InUseRobotState& l, const InUseRobotState& r); 
+
+    inline size_t hash_value(const bwi_guidance_solver::mrn::InUseRobotState &iurs) {
+      size_t seed = 0;
+      boost::hash_combine(seed, iurs.robot_id);
+      boost::hash_combine(seed, iurs.destination);
+      boost::hash_combine(seed, iurs.direction);
+      boost::hash_combine(seed, iurs.reached_destination);
+      return seed;
+    }
 
     struct State {
       int graph_id; // ~50
@@ -107,6 +125,22 @@ namespace bwi_guidance_solver {
           ar & BOOST_SERIALIZATION_NVP(in_use_robots);
         }
     };
+
+    struct StateHash { 
+      StateHash() {}
+      size_t operator()(const State& key) const {
+        size_t seed = 0;
+        boost::hash_combine(seed, key.graph_id);
+        boost::hash_combine(seed, key.direction);
+        boost::hash_combine(seed, key.precision);
+        boost::hash_combine(seed, key.from_graph_node);
+        boost::hash_combine(seed, key.robot_gave_direction);
+        boost::hash_range(seed, key.robots.begin(), key.robots.end());
+        boost::hash_range(seed, key.in_use_robots.begin(), key.in_use_robots.end());
+        boost::hash_range(seed, key.acquired_locations.begin(), key.acquired_locations.end());
+        return seed;
+      }
+    }; 
 
     bool operator<(const State& l, const State& r); 
     bool operator==(const State& l, const State& r);
