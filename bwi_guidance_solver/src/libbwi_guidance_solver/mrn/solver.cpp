@@ -34,6 +34,21 @@ namespace bwi_guidance_solver {
     void Solver::reset(int seed, int goal_idx) {
       seed_ = seed;
       goal_idx_ = goal_idx;
+
+      model_.reset(new PersonModel(graph_, 
+                                   map_, 
+                                   goal_idx_, 
+                                   domain_params_.frame_rate,
+                                   general_params_.max_robots_in_use,
+                                   general_params_.action_vertex_visiblity_depth,
+                                   general_params_.action_vertex_adjacency_depth,
+                                   general_params_.visibility_range,
+                                   domain_params_.human_speed,
+                                   domain_params_.robot_speed,
+                                   domain_params_.utility_multiplier,
+                                   domain_params_.use_shaping_reward,
+                                   domain_params_.discourage_bad_assignments));
+
       this->resetSolverSpecific();
     }
 

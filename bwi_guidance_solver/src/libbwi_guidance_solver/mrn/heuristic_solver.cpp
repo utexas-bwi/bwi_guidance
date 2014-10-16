@@ -8,23 +8,15 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
 
-    HeuristicSolver::HeuristicSolver(const nav_msgs::OccupancyGrid& map, const bwi_mapper::Graph& graph, int goal_idx,
-                                     bool improved, float human_speed) : 
-                                     improved_(improved), human_speed_(human_speed) {
-      human_speed_ /= map.info.resolution;
+    bool HeuristicSolver::initializeSolverSpecific(Json::Value &params) {
+      irm::HeuristicSolver::initializeSolverSpecific(params);
     }
 
-    HeuristicSolver::~HeuristicSolver() {}
-
-    void HeuristicSolver::computePolicy() {}
-    void HeuristicSolver::loadPolicy(const std::string& file) {}
-    void HeuristicSolver::savePolicy(const std::string& file) {
-      std::ofstream fout(file.c_str());
-      fout.close();
+    std::string HeuristicSolver::getSolverName() {
+      return std::string("Heuristic");
     }
 
-    Action HeuristicSolver::getBestAction(const State& state, 
-                                          const boost::shared_ptr<PersonModel>& evaluation_model) {
+    Action HeuristicSolver::getBestAction(const State& state) {
 
       // Map the current state into that of the QRR Heuristic Solver, and 
       // use that solver out of the box. Then map the action to the new domain
@@ -33,9 +25,7 @@ namespace bwi_guidance_solver {
       irm::State mapped_state;
       mapped_state.graph_id = state.graph_id;
       mapped_state.direction = state.direction;
-      bool cur_robot_available = 
-        evaluation_model->isRobotDirectionAvailable(state,
-                                                    mapped_state.robot_direction);
+      bool cur_robot_available = Solver::model_->isRobotDirectionAvailable(state, mapped_state.robot_direction);
       mapped_state.robot_direction = (cur_robot_available) ? mapped_state.robot_direction : NONE;
       mapped_state.num_robots_left = 5;
       mapped_state.visible_robot = NONE;
@@ -45,7 +35,7 @@ namespace bwi_guidance_solver {
       blacklisted_vertices.reset(new std::vector<int>);
       blacklisted_vertices->insert(blacklisted_vertices->end(), 
                                    state.relieved_locations.begin(), state.relieved_locations.end());
-      if (improved_) {
+      if (params_.improved) {
         BOOST_FOREACH(const int& vtx, visible_vertices_map_[mapped_state.graph_id]) {
           if (state.in_use_robots.size() != 0) {
             if (vtx == state.in_use_robots[0].destination) {
@@ -54,9 +44,9 @@ namespace bwi_guidance_solver {
           }
           bool reach_in_time;
           float time_to_destination = 
-            bwi_mapper::getShortestPathDistance(state.graph_id, vtx, graph_) /
-            human_speed_;
-          evaluation_model->selectBestRobotForTask(state, vtx, time_to_destination, reach_in_time);
+            bwi_mapper::getShortestPathDistance(state.graph_id, vtx, Solver::graph_) /
+            mrn::Solver::domain_params_.human_speed;
+          Solver::model_->selectBestRobotForTask(state, vtx, time_to_destination, reach_in_time);
           if (!reach_in_time) {
             std::cout << vtx << " ";
             blacklisted_vertices->push_back(vtx);

@@ -261,8 +261,7 @@ namespace bwi_guidance_solver {
 
     }
 
-    bool PersonModel::isRobotDirectionAvailable(const State& state,
-                                                int& robot_dir) {
+    bool PersonModel::isRobotDirectionAvailable(const State& state, int& robot_dir) {
       // Figure out if there is a robot at the current position
       for (int i = 0; i < state.in_use_robots.size(); ++i) {
         int destination = state.in_use_robots[i].destination;

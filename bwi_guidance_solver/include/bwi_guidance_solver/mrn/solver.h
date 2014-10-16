@@ -9,7 +9,7 @@
 #include <vector>
 
 #include <bwi_guidance_solver/mrn/domain.h>
-#include <bwi_guidance_solver/mrn/structures.h>
+#include <bwi_guidance_solver/mrn/person_model.h>
 #include <bwi_mapper/graph.h>
 #include <bwi_tools/common/Params.h>
 
@@ -58,6 +58,7 @@ namespace bwi_guidance_solver {
       protected:
 
         /* Some test instance/precomputation specific pieces of information */
+        boost::shared_ptr<PersonModel> model_;
         int seed_;
         int goal_idx_;
 
