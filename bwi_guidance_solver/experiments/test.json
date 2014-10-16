@@ -1,4 +1,4 @@
-{
+"domains": [{
   "domain": "bwi_guidance_solver::irm::Domain",
   "params": {
     "map_file": "package://bwi_guidance/maps/map3.yaml",
@@ -16,4 +16,4 @@
     }
   ]
   }
-}
+}]
