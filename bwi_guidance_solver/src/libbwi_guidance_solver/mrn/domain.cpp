@@ -6,7 +6,9 @@
 
 #include <bwi_mapper/map_loader.h>
 #include <bwi_guidance_solver/mrn/domain.h>
+#include <bwi_guidance_solver/mrn/person_model.h>
 #include <bwi_guidance_solver/mrn/solver.h>
+#include <bwi_guidance_solver/mrn/structures.h>
 #include <bwi_tools/record_writer.h>
 #include <bwi_tools/resource_resolver.h>
 
@@ -54,7 +56,11 @@ namespace bwi_guidance_solver {
       parametrized_dir_ss << std::fixed << std::setprecision(2);
       parametrized_dir_ss << base_directory << "/mrn" << 
         "-dl" << params_.distance_limit << 
-        "-vr" << params_.visibility_range;
+        "-hs" << params_.human_speed <<
+        "-rs" << params_.robot_speed <<
+        "-um" << params_.utility_multiplier <<
+        "-usr" << params_.use_shaping_reward <<
+        "-dba" << params_.discourage_bad_assignments;
       base_directory_ = parametrized_dir_ss.str();
       if (!boost::filesystem::is_directory(base_directory_) &&
           !boost::filesystem::create_directory(base_directory_))
@@ -111,25 +117,38 @@ namespace bwi_guidance_solver {
 
       std::cout << "Testing instance with start_idx: " << start_idx << ", goal_idx: " << goal_idx << std::endl;
       
-      float pixel_visibility_range = params_.visibility_range / map_.info.resolution;
-
       // We can create the model right now as loading the model is not dependent on the method parameters. We just need
       // to make sure we reinitialize the rng and update the reward structure for every method as necessary
-      // TODO figure out some parameters here.
-      boost::shared_ptr<PersonModel> model(new PersonModel(graph_, 
-                                                           map_, 
-                                                           goal_idx, 
-                                                           params_.allow_robot_current_idx, 
-                                                           pixel_visibility_range, 
-                                                           params_.allow_goal_visibility));
+      int max_robots_in_use = 0;
+      int action_vertex_visiblity_depth = 0;
+      int action_vertex_adjacency_depth = 0;
+      float visibility_range = 0.0f;
+      BOOST_FOREACH(boost::shared_ptr<Solver>& solver, solvers_) {
+        max_robots_in_use = std::max(max_robots_in_use, solver->getMaxRobotsInUse());
+        action_vertex_visiblity_depth = 
+          std::max(action_vertex_visiblity_depth, solver->getActionVertexVisibilityDepth());
+        action_vertex_adjacency_depth = 
+          std::max(action_vertex_adjacency_depth, solver->getActionVertexAdjacencyDepth());
+        visibility_range = std::max(visibility_range, solver->getVisibilityRange());
+      }
+      boost::shared_ptr<PersonModel> evaluation_model(new PersonModel(graph_, 
+                                                                      map_, 
+                                                                      goal_idx, 
+                                                                      params_.frame_rate,
+                                                                      max_robots_in_use,
+                                                                      action_vertex_visiblity_depth,
+                                                                      action_vertex_adjacency_depth,
+                                                                      visibility_range,
+                                                                      params_.human_speed,
+                                                                      params_.robot_speed,
+                                                                      params_.utility_multiplier,
+                                                                      params_.use_shaping_reward,
+                                                                      params_.discourage_bad_assignments));
 
       std::vector<std::map<std::string, std::string> > records;
       BOOST_FOREACH(boost::shared_ptr<Solver>& solver, solvers_) {
 
-        // Update the reward structure based on the reward required for this particular solver.
-        model->updateRewardStructure(solver->shouldAddRewardOnSuccess(), solver->getRewardStructure());
-
-        solver->reset(model, seed, goal_idx);
+        solver->reset(seed, goal_idx);
         std::map<std::string, std::string> record = solver->getParamsAsMap();
 
         record["name"] = solver->getSolverName();
@@ -137,7 +156,7 @@ namespace bwi_guidance_solver {
         record["goal_idx"] = boost::lexical_cast<std::string>(goal_idx);
         record["start_direction"] = boost::lexical_cast<std::string>(start_direction);
 
-        RNG evaulation_rng(2 * (seed + 1));
+        boost::shared_ptr<RNG> evaluation_rng(new RNG(2 * (seed + 1)));
 
         for (int starting_robots = 1; starting_robots <= DEFAULT_MAX_ROBOTS; ++starting_robots) {
 
@@ -148,21 +167,21 @@ namespace bwi_guidance_solver {
           current_state.direction = start_direction;
           current_state.precision = 1.0f;
           current_state.robot_gave_direction = false;
-          model->addRobots(current_state, params_.max_robots);
+          evaluation_model->addRobots(current_state, params_.max_robots, evaluation_rng);
 
           if (params_.start_colocated) {
             // If the robot starts colocated as the human, then assign that robot to help the human.
             float unused_reward;
             int unused_depth_count;
             bool unused_terminal;
-            StateIROS14 next_state;
+            State next_state;
             evaluation_model->takeAction(current_state, Action(ASSIGN_ROBOT, start_idx, DIR_UNASSIGNED), 
                                          unused_reward, next_state, unused_terminal, unused_depth_count, 
-                                         evaulation_rng);
+                                         evaluation_rng);
             current_state = next_state;
           }
 
-          float reward = 0.0f;
+          float instance_reward = 0.0f;
           float instance_distance = 0.0f;
           float instance_time = 0.0f;
           float instance_utility = 0.0f;
@@ -172,62 +191,55 @@ namespace bwi_guidance_solver {
           solver->performEpisodeStartComputation(current_state);
 
           float distance_limit_pxl = ((float)params_.distance_limit) / map_.info.resolution;
+          bool terminal = false;
 
-          while (current_state.graph_id != goal_idx && instance_distance <= distance_limit_pxl) {
+          while (!terminal && instance_distance <= distance_limit_pxl) {
 
-            std::vector<State> next_states;
-            std::vector<float> probabilities;
-            std::vector<float> rewards;
+            Action action = solver->getBestAction(current_state);;
+            EVALUATE_OUTPUT("   action: " << action);
 
-            // Deterministic system transitions
-            while (true) {
-
-              Action action = solver->getBestAction(current_state);
-              EVALUATE_OUTPUT("   action: " << action);
-
-              model->getTransitionDynamics(current_state, action, next_states, rewards, probabilities);
-
-              if (action.type == DO_NOTHING) {
-                // Manual transition
-                break;
-              }
-
-              // The human does not move for this action, and a single next state is present.
-              current_state = next_states[0];
-              // TODO we should do the computation with the original state and selected action.
-              solver->performPostActionComputation(current_state);
-              EVALUATE_OUTPUT(" - auto " << current_state);
-            }
-
-            // Select next state choice based on probabilities
-            int choice = evaulation_rng.select(probabilities);
-            State old_state = current_state;
-            current_state = next_states[choice];
+            float transition_reward;
+            State next_state;
+            int depth_count;
+            float time_loss, utility_loss;
+            // TODO use this frame vector if debugging is enabled.
+            boost::shared_ptr<std::vector<State> > frame_vector(new std::vector<State>);
+            evaluation_model->takeAction(current_state, action, transition_reward, next_state, terminal, depth_count,
+                                         evaluation_rng, time_loss, utility_loss, frame_vector);
             float transition_distance = 
-              bwi_mapper::getEuclideanDistance(old_state.graph_id, current_state.graph_id, graph_);
+              bwi_mapper::getEuclideanDistance(next_state.graph_id, current_state.graph_id, graph_);
+
             instance_distance += transition_distance;
+            instance_reward += transition_reward;
+            instance_time += time_loss;
+            instance_utility -= utility_loss;
+
+            current_state = next_state;
 
             // Perform an MCTS search after next state is decided (not perfect)
             // Only perform search if system is left with any future action choice
-            if (!model->isTerminalState(current_state))
-            {
-              float distance = transition_distance * map_.info.resolution;
+            if (!terminal) {
+              float time = (transition_distance * map_.info.resolution) / params_.human_speed;
               // TODO we should do the computation with the original state and selected action.
-              solver->performPostActionComputation(current_state, distance);
+              solver->performPostActionComputation(current_state, time);
             }
 
-            EVALUATE_OUTPUT(" - manual " << current_state);
-            reward += rewards[choice];
           }
           record["starting_robots"] = boost::lexical_cast<std::string>(starting_robots);
-          record["reward"] = boost::lexical_cast<std::string>(reward);
+          record["reward"] = boost::lexical_cast<std::string>(instance_reward);
           record["distance"] = boost::lexical_cast<std::string>(instance_distance * map_.info.resolution);
+          record["time"] = boost::lexical_cast<std::string>(instance_time);
+          record["utility"] = boost::lexical_cast<std::string>(instance_time);
 
           // Produce normalized distance results as well.
           std::vector<size_t> temp_path;
           float normalization_distance = 
             bwi_mapper::getShortestPathWithDistance(start_idx, goal_idx, temp_path, graph_);
+          float normalization_time = normalization_distance / params_.human_speed;
           record["normalized_distance"] = boost::lexical_cast<std::string>(instance_distance / normalization_distance);
+          record["normalized_reward"] = boost::lexical_cast<std::string>(instance_distance / normalization_time);
+          record["normalized_time"] = boost::lexical_cast<std::string>(instance_distance / normalization_time);
+          record["normalized_utility"] = boost::lexical_cast<std::string>(instance_distance / normalization_time);
 
           records.push_back(record);
         }

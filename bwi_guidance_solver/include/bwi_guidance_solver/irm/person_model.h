@@ -9,8 +9,6 @@
 #include <bwi_guidance_solver/irm/structures.h>
 #include <bwi_mapper/graph.h>
 
-#define DEFAULT_MAX_ROBOTS 5
-
 namespace boost {
   namespace serialization {
     class access;
@@ -20,6 +18,8 @@ namespace boost {
 namespace bwi_guidance_solver {
 
   namespace irm {
+
+    const unsigned int DEFAULT_MAX_ROBOTS = 5;
   
     enum RewardStructure {
       STANDARD_REWARD = 0,

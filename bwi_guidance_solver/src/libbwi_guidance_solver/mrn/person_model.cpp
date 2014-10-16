@@ -21,12 +21,12 @@ namespace bwi_guidance_solver {
                              const nav_msgs::OccupancyGrid& map, size_t goal_idx, float frame_rate,
                              int max_robots_in_use, int action_vertex_visibility_depth, 
                              int action_vertex_adjacency_depth, float visibility_range, 
-                             bool allow_goal_visibility, float human_speed, float robot_speed,
+                             float human_speed, float robot_speed,
                              float utility_multiplier, bool use_shaping_reward, 
                              bool discourage_bad_assignments) :
       graph_(graph), map_(map), goal_idx_(goal_idx),
       frame_rate_(frame_rate), max_robots_in_use_(max_robots_in_use),
-      allow_goal_visibility_(allow_goal_visibility), human_speed_(human_speed),
+      human_speed_(human_speed),
       robot_speed_(robot_speed), utility_multiplier_(utility_multiplier),
       use_shaping_reward_(use_shaping_reward),
       discourage_bad_assignments_(discourage_bad_assignments) {

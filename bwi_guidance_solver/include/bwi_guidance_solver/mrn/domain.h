@@ -23,12 +23,16 @@ namespace bwi_guidance_solver {
       public:
 
 #define PARAMS(_) \
-          _(bool,debug,debug,false) \
-          _(bool,save_images,save_images,false) \
+          _(float,frame_rate,frame_rate,0.0f) \
+          _(bool,save_video,save_video,false) \
           _(bool,start_colocated,start_colocated,true) \
           _(int,max_robots,max_robots,10) \
           _(float,distance_limit,distance_limit,300.0f) \
-          _(float,visibility_range,visibility_range,0.0f) \
+          _(float,human_speed,human_speed,1.0f) \
+          _(float,robot_speed,robot_speed,0.5f) \
+          _(float,utility_multiplier,utility_multiplier,1.0f) \
+          _(bool,use_shaping_reward,use_shaping_reward,true) \
+          _(bool,discourage_bad_assignments,discourage_bad_assignments,false) \
           _(std::string,map_file,map_file,"") \
           _(std::string,graph_file,graph_file,"")
 

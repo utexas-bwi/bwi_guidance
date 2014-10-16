@@ -1,0 +1,78 @@
+#ifndef BWI_GUIDANCE_SOLVER_MRN_SOLVER_H
+#define BWI_GUIDANCE_SOLVER_MRN_SOLVER_H
+
+#include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/shared_ptr.hpp>
+#include <nav_msgs/OccupancyGrid.h>
+#include <string>
+#include <vector>
+
+#include <bwi_guidance_solver/mrn/domain.h>
+#include <bwi_guidance_solver/mrn/structures.h>
+#include <bwi_mapper/graph.h>
+#include <bwi_tools/common/Params.h>
+
+namespace bwi_guidance_solver {
+
+  namespace mrn {
+
+    class Solver {
+
+      public:
+
+#define PARAMS(_) \
+          _(int,max_robots_in_use,max_robots_in_use,1) \
+          _(int,action_vertex_visiblity_depth,action_vertex_visiblity_depth,0) \
+          _(int,action_vertex_adjacency_depth,action_vertex_adjacency_depth,1) \
+          _(float,visibility_range,visibility_range,20.0f) 
+
+          Params_STRUCT(PARAMS)
+#undef PARAMS
+
+        bool initialize(Domain::Params &domain_params, 
+                        Json::Value &params, 
+                        const nav_msgs::OccupancyGrid &map,
+                        const bwi_mapper::Graph &graph, 
+                        const std::string &base_directory);
+
+        void reset(int seed, int goal_idx);
+
+        std::map<std::string, std::string> getParamsAsMap();
+
+        virtual Action getBestAction(const State &state) = 0;
+        virtual std::string getSolverName() = 0;
+
+        virtual bool initializeSolverSpecific(Json::Value &params);
+        virtual void resetSolverSpecific();
+        virtual void precomputeAndSavePolicy(int problem_identifier);
+        virtual void performEpisodeStartComputation(const State &state);
+        virtual void performPostActionComputation(const State &state, float distance = 0.0);
+        virtual std::map<std::string, std::string> getParamsAsMapSolverSpecific();
+
+        inline int getMaxRobotsInUse() { return general_params_.max_robots_in_use; }
+        inline int getActionVertexVisibilityDepth() { return general_params_.action_vertex_visiblity_depth; }
+        inline int getActionVertexAdjacencyDepth() { return general_params_.action_vertex_adjacency_depth; }
+        inline float getVisibilityRange() { return general_params_.visibility_range; }
+
+      protected:
+
+        /* Some test instance/precomputation specific pieces of information */
+        int seed_;
+        int goal_idx_;
+
+        /* Some general pieces of information required by the solver */
+        std::string base_directory_;
+        nav_msgs::OccupancyGrid map_;
+        bwi_mapper::Graph graph_;
+
+        Domain::Params domain_params_;
+        Params general_params_;
+
+    };
+
+  } /* irm - InstantaneousRobotMotion */
+
+} /* bwi_guidance_solver */
+
+#endif /* end of include guard: BWI_GUIDANCE_SOLVER_MRN_SOLVER_H */

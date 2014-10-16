@@ -18,6 +18,8 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
     
+    const unsigned int DEFAULT_MAX_ROBOTS = 10;
+
     // TODO: This should be specified with the map.
     const int ROBOT_HOME_BASE[] = {27, 25, 23, 37, 36, 45, 13, 42, 43, 8};
 
@@ -30,7 +32,7 @@ namespace bwi_guidance_solver {
                     float frame_rate = 0.0f, int max_robots_in_use = 1, 
                     int action_vertex_visibility_depth = 0, 
                     int action_vertex_adjacency_depth = 2, float visibility_range = 0.0f,
-                    bool allow_goal_visibility = false, float human_speed = 1.0,
+                    float human_speed = 1.0,
                     float robot_speed = 0.75, float utility_multiplier = 0.0f,
                     bool use_shaping_reward = true, bool discourage_bad_assignments = false);
 
