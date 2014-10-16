@@ -212,6 +212,8 @@ namespace bwi_guidance_solver {
           float normalization_distance = 
             bwi_mapper::getShortestPathWithDistance(start_idx, goal_idx, temp_path, graph_);
           record["normalized_distance"] = boost::lexical_cast<std::string>(instance_distance / normalization_distance);
+          // Use the same normalization parameter as distance as typically reward = -distance.
+          record["normalized_reward"] = boost::lexical_cast<std::string>(reward / normalization_distance);
 
           records.push_back(record);
         }
