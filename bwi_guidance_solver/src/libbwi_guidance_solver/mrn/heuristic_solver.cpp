@@ -36,8 +36,8 @@ namespace bwi_guidance_solver {
       irm::State mapped_state;
       mapped_state.graph_id = state.graph_id;
       mapped_state.direction = state.direction;
-      bool cur_robot_available = Solver::model_->isRobotDirectionAvailable(state, mapped_state.robot_direction);
-      mapped_state.robot_direction = (cur_robot_available) ? mapped_state.robot_direction : NONE;
+      bool cur_robot_available = Solver::model_->isAssignedRobotColocated(state);
+      mapped_state.robot_direction = (cur_robot_available) ? DIR_UNASSIGNED : NONE;
       mapped_state.num_robots_left = 5;
       mapped_state.visible_robot = NONE;
 

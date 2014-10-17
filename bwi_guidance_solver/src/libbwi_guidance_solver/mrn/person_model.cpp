@@ -104,18 +104,15 @@ namespace bwi_guidance_solver {
     void PersonModel::getActionsAtState(const State& state, 
                                         std::vector<Action>& actions) {
       actions.clear();
-      int dir;
-      if (isRobotDirectionAvailable(state, dir)) {
-        if (dir == DIR_UNASSIGNED) {
-          actions.resize(2 * adjacent_vertices_map_[state.graph_id].size());
-          for (unsigned int i = 0; 
-               i < adjacent_vertices_map_[state.graph_id].size(); ++i) {
-            actions[2 * i] = Action(GUIDE_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
-            actions[(2 * i) + 1] = Action(LEAD_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
+      if (isAssignedRobotColocated(state)) {
+        actions.resize(2 * adjacent_vertices_map_[state.graph_id].size());
+        for (unsigned int i = 0; 
+             i < adjacent_vertices_map_[state.graph_id].size(); ++i) {
+          actions[2 * i] = Action(GUIDE_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
+          actions[(2 * i) + 1] = Action(LEAD_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
 
-          }
-          return; // Only choose a direction here
         }
+        return; // Only choose a direction here
       }
       actions.push_back(Action(WAIT, 0, 0));
       std::vector<int> cant_assign_vertices = state.relieved_locations;
@@ -142,53 +139,45 @@ namespace bwi_guidance_solver {
     }
 
     float PersonModel::getTrueDistanceTo(RobotState& robot, 
-                                         int current_destination, int to_destination, bool change_robot_state) {
+                                         int current_destination, 
+                                         int to_destination, bool change_robot_state) {
 
-      /* std::cout << "in here1: " << robot.graph_id << " " << robot.precision << " " << change_robot_state << std::endl; */
       // Optimized!!!
       float ret_distance;
-      float current_edge_distance = 
-        shortest_distances_[robot.graph_id][robot.other_graph_node];
+      float current_edge_distance = shortest_distances_[robot.graph_id][robot.other_graph_node];
       if (robot.precision < 0.5f) {
+        // We are going from graph_id to other_graph_node.
         float distance_through_current_node = 
-          robot.precision * current_edge_distance
-          + shortest_distances_[robot.graph_id][to_destination];
+          robot.precision * current_edge_distance + shortest_distances_[robot.graph_id][to_destination];
         float distance_through_other_node = 
           (1.0f - robot.precision) * current_edge_distance
           + shortest_distances_[robot.other_graph_node][to_destination];
-        if (distance_through_current_node <= distance_through_other_node) {
+        if (distance_through_current_node < distance_through_other_node) {
           ret_distance = distance_through_current_node;
-          // The robot should be flipped around
+          // We need to backtrack and the robot needs to be flipped around.
           if (change_robot_state) {
-            /* std::cout << "in here" << robot.precision << " " << robot.graph_id << " " << robot.other_graph_node << " " << to_destination << std::endl; */
-            // The destination should have changed externally already
             if (robot.precision != 0.0f) {
               robot.precision = 1.0f - robot.precision;
             } else {
-              // The robot is exactly at robot.graph_id, find shortest path to
-              // destination
-              std::vector<size_t>& shortest_path = 
-                shortest_paths_[robot.graph_id][to_destination];
+              // The robot is exactly at robot.graph_id, find shortest path to destination
+              std::vector<size_t>& shortest_path = shortest_paths_[robot.graph_id][to_destination];
               if (shortest_path.size() > 0) {
                 robot.other_graph_node = shortest_path[0];
-              } else {
+              } else /* The robot is at the destination */ {
                 robot.other_graph_node = robot.graph_id;
               }
             }
-            /* std::cout << "in here" << robot.precision << " " << robot.graph_id << " " << robot.other_graph_node << " " << to_destination << std::endl; */
-
           }
         } else {
           ret_distance = distance_through_other_node;
-          // Nothing needs to change for optimal solution
+          // Since the optimal path goes through the other node, we have to approach it. Change nothing.
         }
       } else {
+        // We are going from other_graph_node to graph_id.
         float distance_through_current_node = 
-          (1.0f - robot.precision) * current_edge_distance
-          + shortest_distances_[robot.graph_id][to_destination];
+          (1.0f - robot.precision) * current_edge_distance + shortest_distances_[robot.graph_id][to_destination];
         float distance_through_other_node = 
-          robot.precision * current_edge_distance
-          + shortest_distances_[robot.other_graph_node][to_destination];
+          robot.precision * current_edge_distance + shortest_distances_[robot.other_graph_node][to_destination];
         if (distance_through_current_node <= distance_through_other_node) {
           ret_distance = distance_through_current_node;
           // Nothing needs to change for optimal solution
@@ -196,7 +185,6 @@ namespace bwi_guidance_solver {
           ret_distance = distance_through_other_node;
           // The robot should be flipped around
           if (change_robot_state) {
-            /* std::cout << "in here2" << std::endl; */
             // The destination should have changed externally already
             robot.precision = 1.0f - robot.precision;
           }
@@ -204,6 +192,7 @@ namespace bwi_guidance_solver {
       }
       return ret_distance;
     }
+
     void PersonModel::changeRobotDirectionIfNeeded(RobotState& state, 
                                                    int current_destination, int to_destination) {
       // This will flip the robot around based on the optimal path
@@ -261,20 +250,17 @@ namespace bwi_guidance_solver {
 
     }
 
-    bool PersonModel::isRobotDirectionAvailable(const State& state, int& robot_dir) {
+    bool PersonModel::isAssignedRobotColocated(const State& state) {
       // Figure out if there is a robot at the current position
       for (int i = 0; i < state.in_use_robots.size(); ++i) {
         int destination = state.in_use_robots[i].destination;
-        int direction = state.in_use_robots[i].direction;
         int robot_graph_id = state.robots[state.in_use_robots[i].robot_id].graph_id;
         bool reached_destination = state.in_use_robots[i].reached_destination;
-        if (destination != state.graph_id ||
-            robot_graph_id != state.graph_id ||
-            !reached_destination)
-          continue;
-        robot_dir = direction;
-        //bwi_mapper::getNodeAngle(current_robot_id, direction, graph_);
-        return true;
+        if (destination == state.graph_id &&
+            robot_graph_id != state.graph_id &&
+            reached_destination) {
+          return true;
+        }
       }
       return false;
     }
@@ -293,14 +279,14 @@ namespace bwi_guidance_solver {
             shortest_distances_[idx][j] = 0;
             shortest_paths_[idx][j].clear();
           } else {
-            shortest_distances_[idx][j] = bwi_mapper::getShortestPathWithDistance(
-                                                                                  idx, j, shortest_paths_[idx][j], graph_);
+
+            shortest_distances_[idx][j] = 
+              bwi_mapper::getShortestPathWithDistance(idx, j, shortest_paths_[idx][j], graph_);
 
             // Post-process the shortest path - add goal, remove start and reverse
-            shortest_paths_[idx][j].insert(shortest_paths_[idx][j].begin(), j);
-            shortest_paths_[idx][j].pop_back();
-            std::reverse(shortest_paths_[idx][j].begin(), 
-                         shortest_paths_[idx][j].end());
+            shortest_paths_[idx][j].insert(shortest_paths_[idx][j].begin(), j); // Add j
+            shortest_paths_[idx][j].pop_back(); // Remove idx
+            std::reverse(shortest_paths_[idx][j].begin(), shortest_paths_[idx][j].end());
           }
 
           // std::cout << "  To " << j << "(" << shortest_distances_[idx][j] << 
@@ -504,7 +490,6 @@ namespace bwi_guidance_solver {
         bool reach_in_time;
         r.robot_id = selectBestRobotForTask(next_state, action.at_graph_id, time_to_destination, reach_in_time);
         r.destination = action.at_graph_id;
-        r.direction = DIR_UNASSIGNED;
         r.reached_destination = 
           next_state.robots[r.robot_id].graph_id == r.destination &&
           next_state.robots[r.robot_id].precision == 0.0f;
@@ -556,18 +541,6 @@ namespace bwi_guidance_solver {
         if (action.type == WAIT) {
 
           float expected_dir = getAngleInRadians(next_state.direction);
-          int robot_dir = 0;
-          if (isRobotDirectionAvailable(next_state, robot_dir)) {
-            //assert(robot_dir != DIR_UNASSIGNED);
-            if (robot_dir != DIR_UNASSIGNED) {
-              expected_dir = bwi_mapper::getNodeAngle(
-                                                      next_state.graph_id, robot_dir, graph_);
-            } else {
-              std::cout << "oh no!" << std::endl;
-              throw std::runtime_error("WAIT called with assigned robot & DIR_UNASSIGNED. WAIT should not be a valid action at this state.");
-            }
-          }
-
           double sigma_sq = 0.1;
           if (next_state.robot_gave_direction) {
             sigma_sq = 0.05;
@@ -578,10 +551,8 @@ namespace bwi_guidance_solver {
           std::vector<double> weights;
           BOOST_FOREACH(int adj, adjacent_vertices_map_[next_state.graph_id]) {
 
-            float next_state_direction = bwi_mapper::getNodeAngle(
-                                                                  next_state.graph_id, adj, graph_);
-            float angle_difference = getAbsoluteAngleDifference(next_state_direction, 
-                                                                expected_dir);
+            float next_state_direction = bwi_mapper::getNodeAngle(next_state.graph_id, adj, graph_);
+            float angle_difference = getAbsoluteAngleDifference(next_state_direction, expected_dir);
 
             // Compute the probability of this state
             double weight = exp(-pow(angle_difference, 2) / (2 * sigma_sq));

@@ -71,7 +71,7 @@ namespace bwi_guidance_solver {
         void drawState(const State& state, cv::Mat& image);
 
         /* Private functions that are public only for testing */
-        bool isRobotDirectionAvailable(const State& state, int& robot_dir);
+        bool isAssignedRobotColocated(const State& state);
         bool moveRobots(State& state, float time, boost::shared_ptr<RNG> &rng, float human_speed);
         void printDistanceToDestination(int idx);
         void getActionsAtState(const State &state,
