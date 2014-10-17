@@ -2,4 +2,7 @@
   <class type="bwi_guidance_solver::irm::Domain" base_class_type="bwi_rl::Domain">
     <description>Multi-Robot guidance domain with instanteneous robot motion.</description>
   </class>
+  <class type="bwi_guidance_solver::mrn::Domain" base_class_type="bwi_rl::Domain">
+    <description>Multi-Robot guidance domain with planning using a 2d abstraction of robot motion.</description>
+  </class>
 </library>

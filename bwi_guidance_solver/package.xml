@@ -30,6 +30,7 @@
   <export>
     <bwi_rl plugin="${prefix}/plugins/domain_plugins.xml" />
     <bwi_guidance_solver plugin="${prefix}/plugins/irm_plugins.xml" />
+    <bwi_guidance_solver plugin="${prefix}/plugins/mrn_plugins.xml" />
   </export>
 
 </package>

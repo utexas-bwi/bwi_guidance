@@ -20,8 +20,6 @@ namespace bwi_guidance_solver {
             boost::shared_ptr<std::vector<int> > blacklisted_vertices =
             boost::shared_ptr<std::vector<int> >()) const;
 
-      protected:
-
         std::map<int, std::vector<int> > visible_vertices_map_;
     };
 

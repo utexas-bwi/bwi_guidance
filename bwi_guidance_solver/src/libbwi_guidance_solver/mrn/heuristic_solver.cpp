@@ -10,7 +10,17 @@ namespace bwi_guidance_solver {
   namespace mrn {
 
     bool HeuristicSolver::initializeSolverSpecific(Json::Value &params) {
-      irm::HeuristicSolver::initializeSolverSpecific(params);
+      // Since the heuristic solver reuses the IRM heuristic solver, we need to call the initialize function
+      // for that solver here.
+      irm::Domain::Params irm_domain_params; // Get a copy of the default parameters.
+      return irm_hs_.initialize(irm_domain_params, params, map_, graph_, base_directory_);
+    }
+
+    void HeuristicSolver::resetSolverSpecific() {
+      // Since the heuristic solver reuses the IRM heuristic solver, we need to call the reset function
+      // for that solver here. Since we don't really need to supply a model, simply provide an empty boost shared ptr.
+      boost::shared_ptr<irm::PersonModel> uninitialized_irm_model;
+      irm_hs_.reset(uninitialized_irm_model, seed_, goal_idx_);
     }
 
     std::string HeuristicSolver::getSolverName() {
@@ -37,7 +47,7 @@ namespace bwi_guidance_solver {
       blacklisted_vertices->insert(blacklisted_vertices->end(), 
                                    state.relieved_locations.begin(), state.relieved_locations.end());
       if (params_.improved) {
-        BOOST_FOREACH(const int& vtx, visible_vertices_map_[mapped_state.graph_id]) {
+        BOOST_FOREACH(const int& vtx, irm_hs_.visible_vertices_map_[mapped_state.graph_id]) {
           if (state.in_use_robots.size() != 0) {
             if (vtx == state.in_use_robots[0].destination) {
               continue;
@@ -45,8 +55,7 @@ namespace bwi_guidance_solver {
           }
           bool reach_in_time;
           float time_to_destination = 
-            bwi_mapper::getShortestPathDistance(state.graph_id, vtx, Solver::graph_) /
-            mrn::Solver::domain_params_.human_speed;
+            bwi_mapper::getShortestPathDistance(state.graph_id, vtx, Solver::graph_) / domain_params_.human_speed;
           Solver::model_->selectBestRobotForTask(state, vtx, time_to_destination, reach_in_time);
           if (!reach_in_time) {
             std::cout << vtx << " ";
@@ -57,7 +66,7 @@ namespace bwi_guidance_solver {
       }
 
       // Get the best action 
-      irm::Action action = HeuristicSolver::getBestActionWithBlacklistedVertices(mapped_state, blacklisted_vertices);
+      irm::Action action = irm_hs_.getBestActionWithBlacklistedVertices(mapped_state, blacklisted_vertices);
       Action mapped_action;
       switch(action.type) {
         case irm::DO_NOTHING:

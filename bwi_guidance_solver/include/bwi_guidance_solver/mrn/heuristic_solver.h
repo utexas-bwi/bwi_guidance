@@ -9,7 +9,7 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
 
-    class HeuristicSolver : public irm::HeuristicSolver, public Solver {
+    class HeuristicSolver : public Solver {
 
       public:
 
@@ -21,11 +21,13 @@ namespace bwi_guidance_solver {
 
 
         virtual bool initializeSolverSpecific(Json::Value &params);
+        virtual void resetSolverSpecific();
         virtual Action getBestAction(const State& state);
         virtual std::string getSolverName();
 
       private:
 
+        irm::HeuristicSolver irm_hs_;
         Params params_;
 
     };
