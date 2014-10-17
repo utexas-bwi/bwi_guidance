@@ -72,7 +72,7 @@ namespace bwi_guidance_solver {
 
         /* Private functions that are public only for testing */
         bool isRobotDirectionAvailable(const State& state, int& robot_dir);
-        bool moveRobots(State& state, float time, boost::shared_ptr<RNG> &rng);
+        bool moveRobots(State& state, float time, boost::shared_ptr<RNG> &rng, float human_speed);
         void printDistanceToDestination(int idx);
         void getActionsAtState(const State &state,
                                std::vector<Action>& actions);

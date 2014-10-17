@@ -107,11 +107,13 @@ namespace bwi_guidance_solver {
       int dir;
       if (isRobotDirectionAvailable(state, dir)) {
         if (dir == DIR_UNASSIGNED) {
-          actions.resize(adjacent_vertices_map_[state.graph_id].size());
+          actions.resize(2 * adjacent_vertices_map_[state.graph_id].size());
           for (unsigned int i = 0; 
                i < adjacent_vertices_map_[state.graph_id].size(); ++i) {
             actions[i] = Action(GUIDE_PERSON, state.graph_id, 
                                 adjacent_vertices_map_[state.graph_id][i]);
+            actions[i + 1] = Action(LEAD_PERSON, state.graph_id, 
+                                    adjacent_vertices_map_[state.graph_id][i]);
 
           }
           return; // Only choose a direction here
@@ -359,18 +361,18 @@ namespace bwi_guidance_solver {
       }
     }
 
-    bool PersonModel::moveRobots(State& state, float time, boost::shared_ptr<RNG> &rng) {
+    bool PersonModel::moveRobots(State& state, float time, boost::shared_ptr<RNG> &rng, float human_speed) {
       // Move the human
       bool ready_for_next_action = true;
       if (frame_rate_ > 0.0f) {
-        float human_coverable_distance = time * human_speed_;
+        float human_coverable_distance = time * human_speed;
         float human_edge_distance = shortest_distances_[state.from_graph_node][state.graph_id];
         float added_precision = human_coverable_distance / human_edge_distance;
         state.precision += added_precision;
         if (state.precision < 1.0f) {
           ready_for_next_action = false;
         } else {
-          time -= (state.precision - 1.0f) * human_edge_distance / human_speed_;
+          time -= (state.precision - 1.0f) * human_edge_distance / human_speed;
           state.precision = 1.0f;
         }
       }
@@ -420,9 +422,9 @@ namespace bwi_guidance_solver {
           } else {
             float current_edge_distance = 
               shortest_distances_[robot.graph_id][robot.other_graph_node];
-            if (current_edge_distance == 0.0f) {
-              std::cout << robot.graph_id << " " << robot.precision << " " << destination << " " << robot.other_graph_node << std::endl;
-            }
+            // if (current_edge_distance == 0.0f) {
+            //   std::cout << robot.graph_id << " " << robot.precision << " " << destination << " " << robot.other_graph_node << std::endl;
+            // }
             float added_precision = coverable_distance / current_edge_distance;
             if (robot.precision < 0.5f) {
               // Moving away from robot.graph_id
@@ -535,12 +537,10 @@ namespace bwi_guidance_solver {
         }
         assert(mark != -1);
         //next_state.in_use_robots[mark].direction = action.guide_graph_id;
-        float direction = bwi_mapper::getNodeAngle(
-                                                   next_state.graph_id, action.guide_graph_id, graph_);
+        float direction = bwi_mapper::getNodeAngle(next_state.graph_id, action.guide_graph_id, graph_);
         next_state.direction = getDiscretizedAngle(direction);
         next_state.robot_gave_direction = true;
-        next_state.in_use_robots.erase(
-                                           next_state.in_use_robots.begin() + mark);
+        next_state.in_use_robots.erase(next_state.in_use_robots.begin() + mark);
         next_state.relieved_locations.push_back(action.at_graph_id);
 
         // Since we are changing destinations, we need to reset robot state
@@ -550,69 +550,100 @@ namespace bwi_guidance_solver {
         utility_loss = 0.0f;
         time_loss = 0.0f;
         reward = 0.0f;
-      } else /* action.type == WAIT */ {
+      } else /* (action.type == LEAD_PERSON) || (action.type == WAIT) */ {
+
         // alright, need to wait for the human to take an action - let's first
         // figure out what action he takes
-        float expected_dir = getAngleInRadians(next_state.direction);
-        int robot_dir = 0;
-        if (isRobotDirectionAvailable(next_state, robot_dir)) {
-          //assert(robot_dir != DIR_UNASSIGNED);
-          if (robot_dir != DIR_UNASSIGNED) {
-            expected_dir = bwi_mapper::getNodeAngle(
-                                                    next_state.graph_id, robot_dir, graph_);
-          } else {
-            std::cout << "oh no!" << std::endl;
-            throw std::runtime_error("WAIT called with assigned robot & DIR_UNASSIGNED. WAIT should not be a valid action at this state.");
+        int next_node;
+        float human_speed;
+        if (action.type == WAIT) {
+
+          float expected_dir = getAngleInRadians(next_state.direction);
+          int robot_dir = 0;
+          if (isRobotDirectionAvailable(next_state, robot_dir)) {
+            //assert(robot_dir != DIR_UNASSIGNED);
+            if (robot_dir != DIR_UNASSIGNED) {
+              expected_dir = bwi_mapper::getNodeAngle(
+                                                      next_state.graph_id, robot_dir, graph_);
+            } else {
+              std::cout << "oh no!" << std::endl;
+              throw std::runtime_error("WAIT called with assigned robot & DIR_UNASSIGNED. WAIT should not be a valid action at this state.");
+            }
           }
-        }
 
-        double sigma_sq = 0.1;
-        if (next_state.robot_gave_direction) {
-          sigma_sq = 0.05;
-        }
-
-        // Now assume that the person moves to one the adjacent locations
-        double weight_sum = 0;
-        std::vector<double> weights;
-        BOOST_FOREACH(int adj, adjacent_vertices_map_[next_state.graph_id]) {
-
-          float next_state_direction = bwi_mapper::getNodeAngle(
-                                                                next_state.graph_id, adj, graph_);
-          float angle_difference = getAbsoluteAngleDifference(next_state_direction, 
-                                                              expected_dir);
-
-          // Compute the probability of this state
-          double weight = exp(-pow(angle_difference, 2) / (2 * sigma_sq));
-          weights.push_back(weight);
-          weight_sum += weight;
-        }
-
-        float probability_sum = 0;
-        std::vector<float> probabilities;
-        /* std::cout << "Transition probabilities: " << std::endl; */
-        for (size_t probability_counter = 0; probability_counter < weights.size();
-             ++probability_counter) {
-          /* std::cout << weights[probability_counter] << " " << weight_sum << std::endl; */
-          double probability = 0.99 * (weights[probability_counter] / weight_sum) +
-            0.01 * (1.0f / weights.size());
-          probability_sum += probability;
-          if (probability_counter == weights.size() - 1) {
-            // Account for floating point errors. No surprises!
-            probability += 1.0f - probability_sum; 
+          double sigma_sq = 0.1;
+          if (next_state.robot_gave_direction) {
+            sigma_sq = 0.05;
           }
-          probabilities.push_back(probability);
-          // std::cout << "  to " << 
-          //   adjacent_vertices_map_[next_state.graph_id][probability_counter] <<
-          //   ": " << probability << std::endl;
+
+          // Now assume that the person moves to one the adjacent locations
+          double weight_sum = 0;
+          std::vector<double> weights;
+          BOOST_FOREACH(int adj, adjacent_vertices_map_[next_state.graph_id]) {
+
+            float next_state_direction = bwi_mapper::getNodeAngle(
+                                                                  next_state.graph_id, adj, graph_);
+            float angle_difference = getAbsoluteAngleDifference(next_state_direction, 
+                                                                expected_dir);
+
+            // Compute the probability of this state
+            double weight = exp(-pow(angle_difference, 2) / (2 * sigma_sq));
+            weights.push_back(weight);
+            weight_sum += weight;
+          }
+
+          float probability_sum = 0;
+          std::vector<float> probabilities;
+          /* std::cout << "Transition probabilities: " << std::endl; */
+          for (size_t probability_counter = 0; probability_counter < weights.size();
+               ++probability_counter) {
+            /* std::cout << weights[probability_counter] << " " << weight_sum << std::endl; */
+            double probability = 0.99 * (weights[probability_counter] / weight_sum) +
+              0.01 * (1.0f / weights.size());
+            probability_sum += probability;
+            if (probability_counter == weights.size() - 1) {
+              // Account for floating point errors. No surprises!
+              probability += 1.0f - probability_sum; 
+            }
+            probabilities.push_back(probability);
+            // std::cout << "  to " << 
+            //   adjacent_vertices_map_[next_state.graph_id][probability_counter] <<
+            //   ": " << probability << std::endl;
+          }
+
+          next_node = adjacent_vertices_map_[next_state.graph_id][rng->select(probabilities)];
+          human_speed = human_speed_;
+
+          // Now that we've decided which vertex the person is moving to, compute
+          // time to that vertex and update all the robots
+        } else {
+          next_node = action.guide_graph_id;
+          human_speed = robot_speed_;
+
+          // Also update the locate of the robot in use.
+          int mark = -1;
+          int robot_id;
+          int in_use_robot_id;
+          for (int i = 0; i < next_state.in_use_robots.size(); ++i) {
+            if (action.at_graph_id == next_state.in_use_robots[i].destination) {
+              robot_id = next_state.in_use_robots[i].robot_id;
+              in_use_robot_id = i;
+              mark = i;
+              break;
+            }
+          }
+          assert(mark != -1);
+
+          // Now that we've found the robot, move the robot also.
+          RobotState& robot = next_state.robots[robot_id];
+          robot.other_graph_node = action.guide_graph_id;
+          InUseRobotState& in_use_robot = next_state.in_use_robots[in_use_robot_id];
+          in_use_robot.destination = action.guide_graph_id;
+
         }
 
-        int next_node = adjacent_vertices_map_[next_state.graph_id] [rng->select(probabilities)];
+        float time_to_vertex = shortest_distances_[next_state.graph_id][next_node] / human_speed;
 
-        // Now that we've decided which vertex the person is moving to, compute
-        // time to that vertex and update all the robots
-        float time_to_vertex = 
-          shortest_distances_[next_state.graph_id][next_node] / human_speed_;
-        utility_loss = 0.0f;
         std::vector<float> time_to_original_destination_before(10);
         BOOST_FOREACH(const InUseRobotState& robot, next_state.in_use_robots) {
           float distance_to_original_destination = 
@@ -636,10 +667,10 @@ namespace bwi_guidance_solver {
         next_state.relieved_locations.clear();
 
         if (frame_rate_ == 0.0f) {
-          moveRobots(next_state, time_to_vertex, rng);
+          moveRobots(next_state, time_to_vertex, rng, human_speed);
         } else {
           frame_vector.clear();
-          while (!moveRobots(next_state, 1.0f / frame_rate_, rng)) {
+          while (!moveRobots(next_state, 1.0f / frame_rate_, rng, human_speed)) {
             frame_vector.push_back(next_state);
           }
         }

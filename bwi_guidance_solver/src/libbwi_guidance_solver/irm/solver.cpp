@@ -43,7 +43,7 @@ namespace bwi_guidance_solver {
       return stringMap;
     }
 
-    bool Solver::initializeSolverSpecific(Json::Value &params) {}
+    bool Solver::initializeSolverSpecific(Json::Value &params) { return true; }
     void Solver::resetSolverSpecific() {}
     void Solver::precomputeAndSavePolicy(int problem_identifier) {}
     void Solver::performEpisodeStartComputation(const State &state) {}

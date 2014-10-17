@@ -23,7 +23,8 @@ namespace bwi_guidance_solver {
       WAIT = 0,
       ASSIGN_ROBOT = 1,
       GUIDE_PERSON = 2,
-      RELEASE_ROBOT = 3
+      RELEASE_ROBOT = 3,
+      LEAD_PERSON = 4
     };
 
     struct Action {
@@ -31,7 +32,7 @@ namespace bwi_guidance_solver {
       Action(ActionType a, int dest, int dir);
       ActionType type;
       int at_graph_id; // with ASSIGN_ROBOT, identifies the destination
-      int guide_graph_id; // with ASSIGN_ROBOT, identifies the direction the robot should point in
+      int guide_graph_id; // with GUIDE_PERSON or LEAD_PERSON, identifies the direction the robot should guide/lead to.
 
       friend class boost::serialization::access;
       template<class Archive>

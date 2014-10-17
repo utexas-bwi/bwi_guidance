@@ -21,7 +21,8 @@ namespace bwi_guidance_solver {
       "WAIT",
       "ASSIGN_ROBOT",
       "DIRECT_PERSON",
-      "RELEASE_ROBOT"
+      "RELEASE_ROBOT",
+      "LEAD_PERSON"
     };
     std::ostream& operator<<(std::ostream& stream, const Action& a) {
       stream << "[" << ACTION__NAMES[a.type];

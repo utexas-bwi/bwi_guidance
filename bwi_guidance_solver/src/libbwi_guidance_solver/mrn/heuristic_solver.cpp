@@ -58,11 +58,9 @@ namespace bwi_guidance_solver {
             bwi_mapper::getShortestPathDistance(state.graph_id, vtx, Solver::graph_) / domain_params_.human_speed;
           Solver::model_->selectBestRobotForTask(state, vtx, time_to_destination, reach_in_time);
           if (!reach_in_time) {
-            std::cout << vtx << " ";
             blacklisted_vertices->push_back(vtx);
           }
         }
-        std::cout << std::endl;
       }
 
       // Get the best action 

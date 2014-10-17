@@ -205,7 +205,7 @@ namespace bwi_guidance_solver {
         while (!terminal && instance_distance <= distance_limit_pxl) {
 
           Action action = solver->getBestAction(current_state);;
-          EVALUATE_OUTPUT("   action: " << action);
+          EVALUATE_OUTPUT("  action: " << action);
 
           float transition_reward;
           State next_state;
@@ -226,24 +226,28 @@ namespace bwi_guidance_solver {
 
           // Perform an MCTS search after next state is decided (not perfect)
           // Only perform search if system is left with any future action choice
-            float time = (transition_distance * map_.info.resolution) / params_.human_speed;
-            // TODO we should do the computation with the original state and selected action.
-            if (params_.frame_rate != 0.0f) {
-              for (int time_step = 0; time_step < frame_vector.size(); ++time_step) {
-                cv::Mat out_img = base_image_.clone();
-                if (!terminal) {
-                  solver->performPostActionComputation(current_state, 1.0f / params_.frame_rate);
-                } else {
-                  boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
-                }
-                evaluation_model->drawState(frame_vector[time_step], out_img);
-                cv::imshow("out", out_img);
-              }
-            } else {
+          float time = (transition_distance * map_.info.resolution) / params_.human_speed;
+          if (!terminal) {
+            EVALUATE_OUTPUT("  Performing post-action computation for " << time << " seconds.");
+          }
+
+          // TODO we should do the computation with the original state and selected action.
+          if (params_.frame_rate != 0.0f) {
+            for (int time_step = 0; time_step < frame_vector.size(); ++time_step) {
+              cv::Mat out_img = base_image_.clone();
               if (!terminal) {
-                solver->performPostActionComputation(current_state, time);
+                solver->performPostActionComputation(current_state, 1.0f / params_.frame_rate);
+              } else {
+                boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
               }
+              evaluation_model->drawState(frame_vector[time_step], out_img);
+              cv::imshow("out", out_img);
             }
+          } else {
+            if (!terminal) {
+              solver->performPostActionComputation(current_state, time);
+            }
+          }
 
           record["reward"] = boost::lexical_cast<std::string>(instance_reward);
           record["distance"] = boost::lexical_cast<std::string>(instance_distance * map_.info.resolution);

@@ -196,6 +196,7 @@ namespace bwi_guidance_solver {
             if (!model->isTerminalState(current_state))
             {
               float distance = transition_distance * map_.info.resolution;
+              EVALUATE_OUTPUT("  Performing post-action computation for " << distance << " seconds.");
               // TODO we should do the computation with the original state and selected action.
               solver->performPostActionComputation(current_state, distance);
             }
