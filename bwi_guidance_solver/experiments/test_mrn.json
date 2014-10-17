@@ -17,7 +17,7 @@
         {
           "name": "bwi_guidance_solver::mrn::MCTSSolver",
           "params": {
-            "numThreads": 8
+            "maxDepth": 150
           }
         }
       ]

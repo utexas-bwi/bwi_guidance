@@ -110,10 +110,8 @@ namespace bwi_guidance_solver {
           actions.resize(2 * adjacent_vertices_map_[state.graph_id].size());
           for (unsigned int i = 0; 
                i < adjacent_vertices_map_[state.graph_id].size(); ++i) {
-            actions[i] = Action(GUIDE_PERSON, state.graph_id, 
-                                adjacent_vertices_map_[state.graph_id][i]);
-            actions[i + 1] = Action(LEAD_PERSON, state.graph_id, 
-                                    adjacent_vertices_map_[state.graph_id][i]);
+            actions[2 * i] = Action(GUIDE_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
+            actions[(2 * i) + 1] = Action(LEAD_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
 
           }
           return; // Only choose a direction here
@@ -410,8 +408,7 @@ namespace bwi_guidance_solver {
               // Assign new goal and move towards that goal
               robot.destination = generateNewGoalFrom(ROBOT_HOME_BASE[i], rng);
               destination = robot.destination;
-              std::vector<size_t>& shortest_path =
-                shortest_paths_[robot.graph_id][robot.destination];
+              std::vector<size_t>& shortest_path = shortest_paths_[robot.graph_id][robot.destination];
               if (shortest_path.size() > 0) {
                 // This means that robot.graph_id != new goal
                 robot.other_graph_node = shortest_path[0];
