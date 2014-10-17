@@ -738,7 +738,6 @@ namespace bwi_guidance_solver {
     }
 
     void PersonModel::addRobots(State& state, int n, boost::shared_ptr<RNG> &rng) {
-      assert(uigen_);
       for (int r = 0; r < n; ++r) {
         RobotState robot;
         robot.graph_id = ROBOT_HOME_BASE[r];
