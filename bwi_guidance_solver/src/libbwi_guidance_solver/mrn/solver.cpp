@@ -38,7 +38,7 @@ namespace bwi_guidance_solver {
       model_.reset(new PersonModel(graph_, 
                                    map_, 
                                    goal_idx_, 
-                                   domain_params_.frame_rate,
+                                   0, /* frame_rate is for visualization only. should not be required by a solver */
                                    general_params_.max_robots_in_use,
                                    general_params_.action_vertex_visiblity_depth,
                                    general_params_.action_vertex_adjacency_depth,
