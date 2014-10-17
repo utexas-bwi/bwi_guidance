@@ -105,11 +105,11 @@ namespace bwi_guidance_solver {
                                         std::vector<Action>& actions) {
       actions.clear();
       if (isAssignedRobotColocated(state)) {
-        actions.resize(2 * adjacent_vertices_map_[state.graph_id].size());
+        actions.resize(adjacent_vertices_map_[state.graph_id].size());
         for (unsigned int i = 0; 
              i < adjacent_vertices_map_[state.graph_id].size(); ++i) {
-          actions[2 * i] = Action(GUIDE_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
-          actions[(2 * i) + 1] = Action(LEAD_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
+          actions[i] = Action(GUIDE_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
+          /* actions[(2 * i) + 1] = Action(LEAD_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]); */
 
         }
         return; // Only choose a direction here
@@ -253,12 +253,9 @@ namespace bwi_guidance_solver {
     bool PersonModel::isAssignedRobotColocated(const State& state) {
       // Figure out if there is a robot at the current position
       for (int i = 0; i < state.in_use_robots.size(); ++i) {
-        int destination = state.in_use_robots[i].destination;
         int robot_graph_id = state.robots[state.in_use_robots[i].robot_id].graph_id;
         bool reached_destination = state.in_use_robots[i].reached_destination;
-        if (destination == state.graph_id &&
-            robot_graph_id != state.graph_id &&
-            reached_destination) {
+        if ((robot_graph_id == state.graph_id) && reached_destination) {
           return true;
         }
       }
@@ -403,8 +400,7 @@ namespace bwi_guidance_solver {
               }
             }
           } else {
-            float current_edge_distance = 
-              shortest_distances_[robot.graph_id][robot.other_graph_node];
+            float current_edge_distance = shortest_distances_[robot.graph_id][robot.other_graph_node];
             // if (current_edge_distance == 0.0f) {
             //   std::cout << robot.graph_id << " " << robot.precision << " " << destination << " " << robot.other_graph_node << std::endl;
             // }
@@ -426,8 +422,7 @@ namespace bwi_guidance_solver {
                 // Move to next section of shortest path to goal
                 coverable_distance -= (1.0f - robot.precision) * current_edge_distance;
                 robot.precision = 0.0f;
-                std::vector<size_t>& shortest_path =
-                  shortest_paths_[robot.graph_id][destination];
+                std::vector<size_t>& shortest_path = shortest_paths_[robot.graph_id][destination];
                 if (shortest_path.size() > 0) {
                   // This means that robot.graph_id != new goal
                   robot.other_graph_node = shortest_path[0];
