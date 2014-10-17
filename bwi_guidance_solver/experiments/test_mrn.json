@@ -11,15 +11,15 @@
         // {
         //   "name": "bwi_guidance_solver::mrn::HeuristicSolver"
         // },
-        {
-          "name": "bwi_guidance_solver::mrn::SingleRobotSolver"
-        }
         // {
-        //   "name": "bwi_guidance_solver::mrn::MCTSSolver",
-        //   "params": {
-        //     "numThreads": 8
-        //   }
-        // }
+        //   "name": "bwi_guidance_solver::mrn::SingleRobotSolver"
+        // },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "numThreads": 8
+          }
+        }
       ]
     }
   ]
