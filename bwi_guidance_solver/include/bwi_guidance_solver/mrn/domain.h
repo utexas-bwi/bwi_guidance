@@ -55,6 +55,7 @@ namespace bwi_guidance_solver {
 
         nav_msgs::OccupancyGrid map_;
         bwi_mapper::Graph graph_;
+        cv::Mat base_image_;
     };
 
   } /* mrn - Multi Robot with Navigation */

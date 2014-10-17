@@ -93,6 +93,20 @@ namespace bwi_guidance_solver {
       }
     }
 
+    void HeuristicSolver::performEpisodeStartComputation(const State &state) {
+      if (domain_params_.frame_rate != 0.0f) {
+        // MCTS waits for 10 seconds here, but let's wait only for 1 second for now.
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f));
+      }
+    }
+
+    void HeuristicSolver::performPostActionComputation(const State &state, float time) {
+      if (domain_params_.frame_rate != 0.0f) {
+        // MCTS waits for 10 seconds here, but let's wait only for 1 second for now.
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f * time));
+      }
+    }
+
   } /* mrn */
 
 } /* bwi_guidance_solver */

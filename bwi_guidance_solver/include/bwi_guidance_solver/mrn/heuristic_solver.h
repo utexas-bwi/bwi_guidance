@@ -24,6 +24,8 @@ namespace bwi_guidance_solver {
         virtual void resetSolverSpecific();
         virtual Action getBestAction(const State& state);
         virtual std::string getSolverName();
+        virtual void performEpisodeStartComputation(const State &state);
+        virtual void performPostActionComputation(const State &state, float time = 0.0);
 
       private:
 

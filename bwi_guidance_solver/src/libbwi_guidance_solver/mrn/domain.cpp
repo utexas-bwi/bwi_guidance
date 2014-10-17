@@ -1,6 +1,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lexical_cast.hpp>
+#include <opencv/highgui.h>
 
 #include <pluginlib/class_list_macros.h>
 
@@ -43,6 +44,7 @@ namespace bwi_guidance_solver {
         // Read map and graph
         bwi_mapper::MapLoader mapper(params_.map_file);
         mapper.getMap(map_);
+        mapper.drawMap(base_image_);
         bwi_mapper::readGraphFromFile(params_.graph_file, map_.info, graph_);
       } else {
         // Print an error should the map file or graph file not exist.
@@ -92,6 +94,11 @@ namespace bwi_guidance_solver {
         // Print an error should any solver fail to load.
         ROS_FATAL("Unable to load a mrn Solver. Error: %s", ex.what());
         return false;
+      }
+
+      if (params_.frame_rate != 0.0f) {
+        cv::namedWindow("out");
+        cvStartWindowThread();
       }
 
       return true;
@@ -184,6 +191,11 @@ namespace bwi_guidance_solver {
         float instance_utility = 0.0f;
 
         EVALUATE_OUTPUT(" - start " << current_state);
+        if (params_.frame_rate != 0.0f) {
+          cv::Mat out_img = base_image_.clone();
+          evaluation_model->drawState(current_state, out_img);
+          cv::imshow("out", out_img);
+        }
 
         solver->performEpisodeStartComputation(current_state);
 
@@ -199,8 +211,7 @@ namespace bwi_guidance_solver {
           State next_state;
           int depth_count;
           float time_loss, utility_loss;
-          // TODO use this frame vector if debugging is enabled.
-          boost::shared_ptr<std::vector<State> > frame_vector(new std::vector<State>);
+          std::vector<State> frame_vector;
           evaluation_model->takeAction(current_state, action, transition_reward, next_state, terminal, depth_count,
                                        evaluation_rng, time_loss, utility_loss, frame_vector);
           float transition_distance = 
@@ -215,11 +226,24 @@ namespace bwi_guidance_solver {
 
           // Perform an MCTS search after next state is decided (not perfect)
           // Only perform search if system is left with any future action choice
-          if (!terminal) {
             float time = (transition_distance * map_.info.resolution) / params_.human_speed;
             // TODO we should do the computation with the original state and selected action.
-            solver->performPostActionComputation(current_state, time);
-          }
+            if (params_.frame_rate != 0.0f) {
+              for (int time_step = 0; time_step < frame_vector.size(); ++time_step) {
+                cv::Mat out_img = base_image_.clone();
+                if (!terminal) {
+                  solver->performPostActionComputation(current_state, 1.0f / params_.frame_rate);
+                } else {
+                  boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
+                }
+                evaluation_model->drawState(frame_vector[time_step], out_img);
+                cv::imshow("out", out_img);
+              }
+            } else {
+              if (!terminal) {
+                solver->performPostActionComputation(current_state, time);
+              }
+            }
 
           record["reward"] = boost::lexical_cast<std::string>(instance_reward);
           record["distance"] = boost::lexical_cast<std::string>(instance_distance * map_.info.resolution);

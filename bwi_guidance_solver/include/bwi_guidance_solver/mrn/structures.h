@@ -132,10 +132,10 @@ namespace bwi_guidance_solver {
         size_t seed = 0;
         boost::hash_combine(seed, key.graph_id);
         boost::hash_combine(seed, key.direction);
-        boost::hash_combine(seed, key.precision);
-        boost::hash_combine(seed, key.from_graph_node);
+        /* boost::hash_combine(seed, key.precision); */
+        /* boost::hash_combine(seed, key.from_graph_node); */
         boost::hash_combine(seed, key.robot_gave_direction);
-        boost::hash_range(seed, key.robots.begin(), key.robots.end());
+        /* boost::hash_range(seed, key.robots.begin(), key.robots.end()); */
         boost::hash_range(seed, key.in_use_robots.begin(), key.in_use_robots.end());
         boost::hash_range(seed, key.acquired_locations.begin(), key.acquired_locations.end());
         return seed;

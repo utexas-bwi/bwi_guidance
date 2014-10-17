@@ -11,7 +11,10 @@
           "name": "bwi_guidance_solver::mrn::HeuristicSolver"
         },
         {
-          "name": "bwi_guidance_solver::mrn::MCTSSolver"
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "numThreads": 8
+          }
         }
       ]
     }

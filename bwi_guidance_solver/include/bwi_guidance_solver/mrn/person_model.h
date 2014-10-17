@@ -59,7 +59,7 @@ namespace bwi_guidance_solver {
                         boost::shared_ptr<RNG> &rng,
                         float &time_loss,
                         float &utility_loss,
-                        boost::shared_ptr<std::vector<State> > &frame_vector);
+                        std::vector<State> &frame_vector);
 
         void addRobots(State& state, int n, boost::shared_ptr<RNG> &rng);
         int selectBestRobotForTask(const State& state,

@@ -355,7 +355,7 @@ namespace bwi_guidance_solver {
           continue;
         }
         std::vector<int>& possible_goals = goals_by_distance_[idx][graph_distance];
-        return *(possible_goals.begin() + rng->randomInt(possible_goals.size()));
+        return *(possible_goals.begin() + rng->randomInt(possible_goals.size() - 1));
       }
     }
 
@@ -471,7 +471,7 @@ namespace bwi_guidance_solver {
                                  boost::shared_ptr<RNG> &rng,
                                  float &time_loss,
                                  float &utility_loss,
-                                 boost::shared_ptr<std::vector<State> > &frame_vector) {
+                                 std::vector<State> &frame_vector) {
       next_state = state;
       reward = 0.0f;
 
@@ -638,10 +638,9 @@ namespace bwi_guidance_solver {
         if (frame_rate_ == 0.0f) {
           moveRobots(next_state, time_to_vertex, rng);
         } else {
-          assert(frame_vector);
-          frame_vector->clear();
+          frame_vector.clear();
           while (!moveRobots(next_state, 1.0f / frame_rate_, rng)) {
-            frame_vector->push_back(next_state);
+            frame_vector.push_back(next_state);
           }
         }
 
@@ -663,7 +662,7 @@ namespace bwi_guidance_solver {
         time_loss = time_to_vertex;
 
         // Compute reward
-        float reward = -time_to_vertex;
+        reward = -time_to_vertex;
 
         if (use_shaping_reward_) {
           reward += distance_closed / human_speed_;
@@ -680,7 +679,7 @@ namespace bwi_guidance_solver {
                                  State &next_state, bool &terminal, int &depth_count, boost::shared_ptr<RNG> rng) {
 
       float unused_utility_loss, unused_time_loss;
-      boost::shared_ptr<std::vector<State> > unused_frame_vector;
+      std::vector<State> unused_frame_vector;
       takeAction(state, action, reward, next_state, terminal, depth_count, rng,
                  unused_time_loss, unused_utility_loss, unused_frame_vector);
     }
