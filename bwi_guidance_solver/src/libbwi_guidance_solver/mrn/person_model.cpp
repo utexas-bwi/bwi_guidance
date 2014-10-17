@@ -562,7 +562,7 @@ namespace bwi_guidance_solver {
                                                     next_state.graph_id, robot_dir, graph_);
           } else {
             std::cout << "oh no!" << std::endl;
-            exit(-1);
+            throw std::runtime_error("WAIT called with assigned robot & DIR_UNASSIGNED. WAIT should not be a valid action at this state.");
           }
         }
 

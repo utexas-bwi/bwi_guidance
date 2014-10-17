@@ -148,6 +148,7 @@ namespace bwi_guidance_solver {
       std::vector<std::map<std::string, std::string> > records;
       BOOST_FOREACH(boost::shared_ptr<Solver>& solver, solvers_) {
 
+        EVALUATE_OUTPUT("Evaluating solver " << solver->getSolverName());
         solver->reset(seed, goal_idx);
         std::map<std::string, std::string> record = solver->getParamsAsMap();
 
@@ -158,74 +159,68 @@ namespace bwi_guidance_solver {
 
         boost::shared_ptr<RNG> evaluation_rng(new RNG(2 * (seed + 1)));
 
-        for (int starting_robots = 1; starting_robots <= DEFAULT_MAX_ROBOTS; ++starting_robots) {
+        State current_state; 
+        current_state.graph_id = start_idx;
+        current_state.direction = start_direction;
+        current_state.precision = 1.0f;
+        current_state.robot_gave_direction = false;
+        evaluation_model->addRobots(current_state, params_.max_robots, evaluation_rng);
 
-          EVALUATE_OUTPUT("Evaluating solver " << solver->getSolverName() << " with " << starting_robots << " robots.");
+        if (params_.start_colocated) {
+          // If the robot starts colocated as the human, then assign that robot to help the human.
+          float unused_reward;
+          int unused_depth_count;
+          bool unused_terminal;
+          State next_state;
+          evaluation_model->takeAction(current_state, Action(ASSIGN_ROBOT, start_idx, DIR_UNASSIGNED), 
+                                       unused_reward, next_state, unused_terminal, unused_depth_count, 
+                                       evaluation_rng);
+          current_state = next_state;
+        }
 
-          State current_state; 
-          current_state.graph_id = start_idx;
-          current_state.direction = start_direction;
-          current_state.precision = 1.0f;
-          current_state.robot_gave_direction = false;
-          evaluation_model->addRobots(current_state, params_.max_robots, evaluation_rng);
+        float instance_reward = 0.0f;
+        float instance_distance = 0.0f;
+        float instance_time = 0.0f;
+        float instance_utility = 0.0f;
 
-          if (params_.start_colocated) {
-            // If the robot starts colocated as the human, then assign that robot to help the human.
-            float unused_reward;
-            int unused_depth_count;
-            bool unused_terminal;
-            State next_state;
-            evaluation_model->takeAction(current_state, Action(ASSIGN_ROBOT, start_idx, DIR_UNASSIGNED), 
-                                         unused_reward, next_state, unused_terminal, unused_depth_count, 
-                                         evaluation_rng);
-            current_state = next_state;
+        EVALUATE_OUTPUT(" - start " << current_state);
+
+        solver->performEpisodeStartComputation(current_state);
+
+        float distance_limit_pxl = ((float)params_.distance_limit) / map_.info.resolution;
+        bool terminal = false;
+
+        while (!terminal && instance_distance <= distance_limit_pxl) {
+
+          Action action = solver->getBestAction(current_state);;
+          EVALUATE_OUTPUT("   action: " << action);
+
+          float transition_reward;
+          State next_state;
+          int depth_count;
+          float time_loss, utility_loss;
+          // TODO use this frame vector if debugging is enabled.
+          boost::shared_ptr<std::vector<State> > frame_vector(new std::vector<State>);
+          evaluation_model->takeAction(current_state, action, transition_reward, next_state, terminal, depth_count,
+                                       evaluation_rng, time_loss, utility_loss, frame_vector);
+          float transition_distance = 
+            bwi_mapper::getEuclideanDistance(next_state.graph_id, current_state.graph_id, graph_);
+
+          instance_distance += transition_distance;
+          instance_reward += transition_reward;
+          instance_time += time_loss;
+          instance_utility -= utility_loss;
+
+          current_state = next_state;
+
+          // Perform an MCTS search after next state is decided (not perfect)
+          // Only perform search if system is left with any future action choice
+          if (!terminal) {
+            float time = (transition_distance * map_.info.resolution) / params_.human_speed;
+            // TODO we should do the computation with the original state and selected action.
+            solver->performPostActionComputation(current_state, time);
           }
 
-          float instance_reward = 0.0f;
-          float instance_distance = 0.0f;
-          float instance_time = 0.0f;
-          float instance_utility = 0.0f;
-
-          EVALUATE_OUTPUT(" - start " << current_state);
-
-          solver->performEpisodeStartComputation(current_state);
-
-          float distance_limit_pxl = ((float)params_.distance_limit) / map_.info.resolution;
-          bool terminal = false;
-
-          while (!terminal && instance_distance <= distance_limit_pxl) {
-
-            Action action = solver->getBestAction(current_state);;
-            EVALUATE_OUTPUT("   action: " << action);
-
-            float transition_reward;
-            State next_state;
-            int depth_count;
-            float time_loss, utility_loss;
-            // TODO use this frame vector if debugging is enabled.
-            boost::shared_ptr<std::vector<State> > frame_vector(new std::vector<State>);
-            evaluation_model->takeAction(current_state, action, transition_reward, next_state, terminal, depth_count,
-                                         evaluation_rng, time_loss, utility_loss, frame_vector);
-            float transition_distance = 
-              bwi_mapper::getEuclideanDistance(next_state.graph_id, current_state.graph_id, graph_);
-
-            instance_distance += transition_distance;
-            instance_reward += transition_reward;
-            instance_time += time_loss;
-            instance_utility -= utility_loss;
-
-            current_state = next_state;
-
-            // Perform an MCTS search after next state is decided (not perfect)
-            // Only perform search if system is left with any future action choice
-            if (!terminal) {
-              float time = (transition_distance * map_.info.resolution) / params_.human_speed;
-              // TODO we should do the computation with the original state and selected action.
-              solver->performPostActionComputation(current_state, time);
-            }
-
-          }
-          record["starting_robots"] = boost::lexical_cast<std::string>(starting_robots);
           record["reward"] = boost::lexical_cast<std::string>(instance_reward);
           record["distance"] = boost::lexical_cast<std::string>(instance_distance * map_.info.resolution);
           record["time"] = boost::lexical_cast<std::string>(instance_time);

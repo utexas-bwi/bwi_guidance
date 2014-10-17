@@ -8,9 +8,6 @@ namespace bwi_guidance_solver {
       state.precision = 0.0f;
       state.from_graph_node = 0;
       state.robots.clear();
-      for (unsigned int i = 0; i < state.in_use_robots.size(); ++i) {
-        state.in_use_robots[i].robot_id = 0;
-      }
     }
 
   } /* mrn */
