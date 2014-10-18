@@ -8,18 +8,20 @@
         "frame_rate": 10.0
       },
       "solvers": [
-        // {
-        //   "name": "bwi_guidance_solver::mrn::HeuristicSolver"
-        // },
+        {
+          "name": "bwi_guidance_solver::mrn::HeuristicSolver"
+        }
         // {
         //   "name": "bwi_guidance_solver::mrn::SingleRobotSolver"
         // }
-        {
-          "name": "bwi_guidance_solver::mrn::MCTSSolver",
-          "params": {
-            "maxDepth": 150
-          }
-        }
+        // {
+        //   "name": "bwi_guidance_solver::mrn::MCTSSolver",
+        //   "params": {
+        //     "maxDepth": 150,
+        //     "unknownBootstrapValue": -1000.0,
+        //     "numThreads": 8
+        //   }
+        // }
       ]
     }
   ]

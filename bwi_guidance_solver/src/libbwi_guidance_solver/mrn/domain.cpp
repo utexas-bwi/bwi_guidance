@@ -122,7 +122,8 @@ namespace bwi_guidance_solver {
       // TODO How this is not a #define somewhere? I couldn't locate it. Needs more searching.
       int start_direction = rng.randomInt(15);
 
-      std::cout << "Testing instance with start_idx: " << start_idx << ", goal_idx: " << goal_idx << std::endl;
+      float shortest_distance = bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph_) * map_.info.resolution;
+      std::cout << "Testing instance with start_idx: " << start_idx << ", goal_idx: " << goal_idx << " and shortest distance " << shortest_distance << std::endl;
       
       // We can create the model right now as loading the model is not dependent on the method parameters. We just need
       // to make sure we reinitialize the rng and update the reward structure for every method as necessary
@@ -258,9 +259,8 @@ namespace bwi_guidance_solver {
           record["utility"] = boost::lexical_cast<std::string>(instance_time);
 
           // Produce normalized distance results as well.
-          std::vector<size_t> temp_path;
           float normalization_distance = 
-            bwi_mapper::getShortestPathWithDistance(start_idx, goal_idx, temp_path, graph_);
+            bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph_);
           float normalization_time = normalization_distance / params_.human_speed;
           record["normalized_distance"] = boost::lexical_cast<std::string>(instance_distance / normalization_distance);
           record["normalized_reward"] = boost::lexical_cast<std::string>(instance_distance / normalization_time);

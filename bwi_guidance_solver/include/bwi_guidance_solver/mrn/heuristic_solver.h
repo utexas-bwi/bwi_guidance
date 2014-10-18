@@ -19,7 +19,6 @@ namespace bwi_guidance_solver {
           Params_STRUCT(PARAMS)
 #undef PARAMS
 
-
         virtual bool initializeSolverSpecific(Json::Value &params);
         virtual void resetSolverSpecific();
         virtual Action getBestAction(const State& state);

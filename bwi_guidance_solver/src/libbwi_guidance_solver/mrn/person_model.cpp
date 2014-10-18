@@ -252,9 +252,8 @@ namespace bwi_guidance_solver {
     bool PersonModel::isAssignedRobotColocated(const State& state) {
       // Figure out if there is a robot at the current position
       for (int i = 0; i < state.in_use_robots.size(); ++i) {
-        int robot_graph_id = state.robots[state.in_use_robots[i].robot_id].graph_id;
-        bool reached_destination = state.in_use_robots[i].reached_destination;
-        if ((robot_graph_id == state.graph_id) && reached_destination) {
+        if ((state.in_use_robots[i].destination == state.graph_id) && 
+            (state.in_use_robots[i].reached_destination)) {
           return true;
         }
       }
