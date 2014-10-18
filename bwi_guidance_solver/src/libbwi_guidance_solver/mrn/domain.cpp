@@ -191,6 +191,7 @@ namespace bwi_guidance_solver {
         float instance_utility = 0.0f;
 
         EVALUATE_OUTPUT(" - start " << current_state);
+
         if (params_.frame_rate != 0.0f) {
           cv::Mat out_img = base_image_.clone();
           evaluation_model->drawState(current_state, out_img);
@@ -205,7 +206,7 @@ namespace bwi_guidance_solver {
         while (!terminal && instance_distance <= distance_limit_pxl) {
 
           Action action = solver->getBestAction(current_state);;
-          EVALUATE_OUTPUT("  action: " << action);
+          EVALUATE_OUTPUT("   action: " << action);
 
           float transition_reward;
           State next_state;
@@ -248,6 +249,8 @@ namespace bwi_guidance_solver {
               solver->performPostActionComputation(current_state, time);
             }
           }
+
+          EVALUATE_OUTPUT(" - transition " << current_state);
 
           record["reward"] = boost::lexical_cast<std::string>(instance_reward);
           record["distance"] = boost::lexical_cast<std::string>(instance_distance * map_.info.resolution);

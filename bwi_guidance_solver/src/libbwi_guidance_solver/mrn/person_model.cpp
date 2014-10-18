@@ -105,12 +105,11 @@ namespace bwi_guidance_solver {
                                         std::vector<Action>& actions) {
       actions.clear();
       if (isAssignedRobotColocated(state)) {
-        actions.resize(adjacent_vertices_map_[state.graph_id].size());
+        actions.resize(2 * adjacent_vertices_map_[state.graph_id].size());
         for (unsigned int i = 0; 
              i < adjacent_vertices_map_[state.graph_id].size(); ++i) {
-          actions[i] = Action(GUIDE_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
-          /* actions[(2 * i) + 1] = Action(LEAD_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]); */
-
+          actions[2 * i] = Action(GUIDE_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
+          actions[(2 * i) + 1] = Action(LEAD_PERSON, state.graph_id, adjacent_vertices_map_[state.graph_id][i]);
         }
         return; // Only choose a direction here
       }
@@ -600,9 +599,10 @@ namespace bwi_guidance_solver {
           // Now that we've found the robot, move the robot also.
           RobotState& robot = next_state.robots[robot_id];
           robot.other_graph_node = action.guide_graph_id;
+          robot.precision = 0.0f;
+
           InUseRobotState& in_use_robot = next_state.in_use_robots[in_use_robot_id];
           in_use_robot.destination = action.guide_graph_id;
-
         }
 
         float time_to_vertex = shortest_distances_[next_state.graph_id][next_node] / human_speed;
@@ -666,7 +666,7 @@ namespace bwi_guidance_solver {
       }
       
       terminal = isTerminalState(next_state);
-      depth_count = (action.type != WAIT) ? 0 : lrint(time_loss); 
+      depth_count = (action.type != WAIT && action.type != LEAD_PERSON) ? 0 : lrint(time_loss); 
     }
 
     void PersonModel::takeAction(const State &state, const Action &action, float &reward, 
