@@ -3,9 +3,11 @@
 
 #include <bwi_guidance_solver/mrn/mcts_solver.h>
 #include <bwi_guidance_solver/mrn/abstract_mapping.h>
+#include <bwi_guidance_solver/mrn/single_robot_solver.h>
 
 #include <bwi_rl/planning/IdentityStateMapping.h>
 #include <bwi_rl/planning/ModelUpdaterSingle.h>
+#include <bwi_rl/planning/RandomPolicy.h>
 
 namespace bwi_guidance_solver {
 
@@ -20,7 +22,6 @@ namespace bwi_guidance_solver {
     void MCTSSolver::resetSolverSpecific() {
       // Create the RNG required for mcts rollouts
       boost::shared_ptr<RNG> mcts_rng(new RNG(1 * (seed_ + 1)));
-
       boost::shared_ptr<ModelUpdaterSingle<State, Action> >
         mcts_model_updator(new ModelUpdaterSingle<State, Action>(model_));
       boost::shared_ptr<StateMapping<State> > mcts_state_mapping;
@@ -30,7 +31,24 @@ namespace bwi_guidance_solver {
         mcts_state_mapping.reset(new IdentityStateMapping<State>);
       }
       
-      mcts_.reset(new MultiThreadedMCTS<State, StateHash, Action>(mcts_model_updator, 
+      // boost::shared_ptr<DefaultPolicy<State, Action> > default_policy;
+      // default_policy.reset(new RandomPolicy<State, Action>);
+      // mcts_.reset(new MultiThreadedMCTS<State, StateHash, Action>(default_policy,
+      //                                                             mcts_model_updator, 
+      //                                                             mcts_state_mapping, 
+      //                                                             mcts_rng,
+      //                                                             mcts_params_));
+
+      boost::shared_ptr<SingleRobotSolver> default_policy;
+      default_policy.reset(new SingleRobotSolver);
+
+      // TODO fill this from the current solver values.
+      Json::Value empty_json; // Force the single robot solver to use default parameters.
+      default_policy->initialize(domain_params_, empty_json, map_, graph_, base_directory_);
+      default_policy->reset(seed_, goal_idx_);
+
+      mcts_.reset(new MultiThreadedMCTS<State, StateHash, Action>(default_policy,
+                                                                  mcts_model_updator, 
                                                                   mcts_state_mapping, 
                                                                   mcts_rng,
                                                                   mcts_params_));

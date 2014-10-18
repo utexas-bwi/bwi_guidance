@@ -3,30 +3,34 @@
 
 #include <bwi_guidance_solver/mrn/solver.h>
 #include <bwi_guidance_solver/mrn/structures.h>
+#include <bwi_rl/planning/DefaultPolicy.h>
 
 namespace bwi_guidance_solver {
 
   namespace mrn {
 
-    class SingleRobotSolver : public Solver {
+    class SingleRobotSolver : public Solver, public DefaultPolicy<State, Action> {
 
       public:
 
-#define PARAMS(_) \
-          _(bool,improved,improved,true)
-
-          Params_STRUCT(PARAMS)
-#undef PARAMS
-
-
+        /* Inherited from bwi_guidance_solver::mrn::Solver */
         virtual Action getBestAction(const State& state);
+
+        /* Inherited from DefaultPolicy - This function needs to be const qualified, as it is called
+         * from multi-threaded code. At the very least, it should never use rng_, which has threading
+         * issues. */
+        virtual int getBestAction(const State& state, 
+                                  const std::vector<Action> &actions, 
+                                  const boost::shared_ptr<RNG> &rng);
+
         virtual std::string getSolverName();
+        virtual void resetSolverSpecific();
         virtual void performEpisodeStartComputation(const State &state);
         virtual void performPostActionComputation(const State &state, float time = 0.0);
 
       private:
 
-        Params params_;
+        boost::shared_ptr<RNG> rng_;
 
     };
 

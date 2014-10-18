@@ -13,7 +13,7 @@
         // },
         // {
         //   "name": "bwi_guidance_solver::mrn::SingleRobotSolver"
-        // },
+        // }
         {
           "name": "bwi_guidance_solver::mrn::MCTSSolver",
           "params": {

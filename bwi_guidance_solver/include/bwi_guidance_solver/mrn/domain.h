@@ -31,7 +31,7 @@ namespace bwi_guidance_solver {
           _(float,human_speed,human_speed,1.0f) \
           _(float,robot_speed,robot_speed,0.5f) \
           _(float,utility_multiplier,utility_multiplier,1.0f) \
-          _(bool,use_shaping_reward,use_shaping_reward,true) \
+          _(bool,use_shaping_reward,use_shaping_reward,false) \
           _(bool,discourage_bad_assignments,discourage_bad_assignments,false) \
           _(std::string,map_file,map_file,"") \
           _(std::string,graph_file,graph_file,"")

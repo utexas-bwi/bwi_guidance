@@ -4,6 +4,7 @@
 #include <bwi_guidance_solver/irm/mcts_solver.h>
 #include <bwi_rl/planning/IdentityStateMapping.h>
 #include <bwi_rl/planning/ModelUpdaterSingle.h>
+#include <bwi_rl/planning/RandomPolicy.h>
 
 namespace bwi_guidance_solver {
 
@@ -18,11 +19,12 @@ namespace bwi_guidance_solver {
     void MCTSSolver::resetSolverSpecific() {
       // Create the RNG required for mcts rollouts
       boost::shared_ptr<RNG> mcts_rng(new RNG(1 * (seed_ + 1)));
-
       boost::shared_ptr<ModelUpdaterSingle<State, Action> >
         mcts_model_updator(new ModelUpdaterSingle<State, Action>(model_));
       boost::shared_ptr<IdentityStateMapping<State> > mcts_state_mapping(new IdentityStateMapping<State>);
-      mcts_.reset(new MultiThreadedMCTS<State, StateHash, Action>(mcts_model_updator, 
+      boost::shared_ptr<RandomPolicy<State, Action> > random_default_policy(new RandomPolicy<State, Action>);
+      mcts_.reset(new MultiThreadedMCTS<State, StateHash, Action>(random_default_policy,
+                                                                  mcts_model_updator, 
                                                                   mcts_state_mapping, 
                                                                   mcts_rng,
                                                                   mcts_params_));

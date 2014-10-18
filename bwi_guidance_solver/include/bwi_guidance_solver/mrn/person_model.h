@@ -80,6 +80,10 @@ namespace bwi_guidance_solver {
         void changeRobotDirectionIfNeeded(RobotState& state, 
                                           int current_destination, int to_destination);
 
+        // TODO - don't make this public. or perhaps make it const and intialize in the constructor using a
+        // static function.
+        std::vector<std::vector<std::vector<size_t> > > shortest_paths_;
+
       private:
 
         /* State space cache */
@@ -106,7 +110,6 @@ namespace bwi_guidance_solver {
         std::vector<std::vector<std::vector<int> > > goals_by_distance_;
 
         /* Path Caching */
-        std::vector<std::vector<std::vector<size_t> > > shortest_paths_;
         std::vector<std::vector<float> > shortest_distances_;
         void cacheShortestPaths();
 
