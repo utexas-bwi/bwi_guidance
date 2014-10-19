@@ -251,23 +251,24 @@ namespace bwi_guidance_solver {
           }
 
           EVALUATE_OUTPUT(" - transition " << current_state);
-
-          record["reward"] = boost::lexical_cast<std::string>(instance_reward);
-          record["distance"] = boost::lexical_cast<std::string>(instance_distance * map_.info.resolution);
-          record["time"] = boost::lexical_cast<std::string>(instance_time);
-          record["utility"] = boost::lexical_cast<std::string>(instance_time);
-
-          // Produce normalized distance results as well.
-          float normalization_distance = 
-            bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph_);
-          float normalization_time = normalization_distance / params_.human_speed;
-          record["normalized_distance"] = boost::lexical_cast<std::string>(instance_distance / normalization_distance);
-          record["normalized_reward"] = boost::lexical_cast<std::string>(instance_distance / normalization_time);
-          record["normalized_time"] = boost::lexical_cast<std::string>(instance_distance / normalization_time);
-          record["normalized_utility"] = boost::lexical_cast<std::string>(instance_distance / normalization_time);
-
-          records.push_back(record);
         }
+
+        record["reward"] = boost::lexical_cast<std::string>(instance_reward);
+        record["distance"] = boost::lexical_cast<std::string>(instance_distance * map_.info.resolution);
+        record["time"] = boost::lexical_cast<std::string>(instance_time);
+        record["utility"] = boost::lexical_cast<std::string>(instance_utility);
+
+        // Produce normalized distance results as well.
+        float normalization_distance = 
+          bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph_);
+        float normalization_time = map_.info.resolution * normalization_distance / params_.human_speed;
+        record["normalized_distance"] = boost::lexical_cast<std::string>(instance_distance / normalization_distance);
+        record["normalized_reward"] = boost::lexical_cast<std::string>(instance_reward / normalization_time);
+        record["normalized_time"] = boost::lexical_cast<std::string>(instance_time / normalization_time);
+        record["normalized_utility"] = boost::lexical_cast<std::string>(instance_utility / normalization_time);
+
+        records.push_back(record);
+        
       }
 
       bwi_tools::writeRecordsAsCSV(base_directory_ + "/results/part." + boost::lexical_cast<std::string>(seed),

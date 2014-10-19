@@ -10,7 +10,7 @@ namespace bwi_guidance_solver {
   namespace mrn {
 
     std::string SingleRobotSolver::getSolverName() {
-      return std::string("Heuristic");
+      return std::string("SingleRobot");
     }
 
     void SingleRobotSolver::resetSolverSpecific() {
