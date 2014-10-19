@@ -57,7 +57,7 @@ namespace bwi_guidance_solver {
       std::ostringstream parametrized_dir_ss;
       parametrized_dir_ss << std::fixed << std::setprecision(2);
       parametrized_dir_ss << base_directory << "/mrn" << 
-        "-dl" << params_.distance_limit << 
+        "-tl" << params_.time_limit << 
         "-hs" << params_.human_speed <<
         "-rs" << params_.robot_speed <<
         "-um" << params_.utility_multiplier <<
@@ -201,10 +201,9 @@ namespace bwi_guidance_solver {
 
         solver->performEpisodeStartComputation(current_state);
 
-        float distance_limit_pxl = ((float)params_.distance_limit) / map_.info.resolution;
         bool terminal = false;
 
-        while (!terminal && instance_distance <= distance_limit_pxl) {
+        while (!terminal && instance_time <= params_.time_limit) {
 
           Action action = solver->getBestAction(current_state);;
           EVALUATE_OUTPUT("   action: " << action);
@@ -228,7 +227,7 @@ namespace bwi_guidance_solver {
 
           // Perform an MCTS search after next state is decided (not perfect)
           // Only perform search if system is left with any future action choice
-          float time = (transition_distance * map_.info.resolution) / params_.human_speed;
+          float time = time_loss;
           if (!terminal) {
             EVALUATE_OUTPUT("  Performing post-action computation for " << time << " seconds.");
           }
