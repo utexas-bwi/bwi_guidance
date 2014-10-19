@@ -55,7 +55,8 @@ namespace bwi_guidance_solver {
           }
           bool reach_in_time;
           float time_to_destination = 
-            bwi_mapper::getShortestPathDistance(state.graph_id, vtx, Solver::graph_) / domain_params_.human_speed;
+            bwi_mapper::getShortestPathDistance(state.graph_id, vtx, Solver::graph_) / 
+            (domain_params_.human_speed / map_.info.resolution);
           Solver::model_->selectBestRobotForTask(state, vtx, time_to_destination, reach_in_time);
           if (!reach_in_time) {
             blacklisted_vertices->push_back(vtx);

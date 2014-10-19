@@ -1,3 +1,4 @@
+#include <boost/foreach.hpp>
 #include <bwi_guidance_solver/mrn/abstract_mapping.h>
 
 namespace bwi_guidance_solver {
@@ -7,7 +8,10 @@ namespace bwi_guidance_solver {
     void AbstractMapping::map(State &state) {
       state.precision = 0.0f;
       state.from_graph_node = 0;
-      state.robots.clear();
+      BOOST_FOREACH(RobotState &r, state.robots) {
+        r.precision = 0.0f;
+        r.other_graph_node = 0;
+      }
     }
 
   } /* mrn */

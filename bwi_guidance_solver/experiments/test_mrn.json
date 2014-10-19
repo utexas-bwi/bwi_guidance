@@ -4,24 +4,22 @@
       "domain": "bwi_guidance_solver::mrn::Domain",
       "params": {
         "map_file": "package://bwi_guidance/maps/map3.yaml",
-        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
-        "frame_rate": 10.0
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml"
       },
       "solvers": [
         {
           "name": "bwi_guidance_solver::mrn::HeuristicSolver"
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver"
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "unknownBootstrapValue": -1000.0
+          }
         }
-        // {
-        //   "name": "bwi_guidance_solver::mrn::SingleRobotSolver"
-        // }
-        // {
-        //   "name": "bwi_guidance_solver::mrn::MCTSSolver",
-        //   "params": {
-        //     "maxDepth": 150,
-        //     "unknownBootstrapValue": -1000.0,
-        //     "numThreads": 8
-        //   }
-        // }
       ]
     }
   ]

@@ -85,11 +85,11 @@ namespace bwi_guidance_solver {
         std::vector<std::vector<std::vector<size_t> > > shortest_paths_;
         std::vector<std::vector<float> > shortest_distances_;
         std::map<int, std::vector<int> > adjacent_vertices_map_;
+        std::map<int, std::vector<int> > visible_vertices_map_;
 
       private:
 
         /* State space cache */
-        std::map<int, std::vector<int> > visible_vertices_map_;
         std::map<int, std::vector<int> > action_vertices_map_;
 
         /* Actions */
