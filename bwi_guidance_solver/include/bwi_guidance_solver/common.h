@@ -43,6 +43,13 @@ namespace bwi_guidance_solver {
   void dashedLine(cv::Mat& image, cv::Point start, cv::Point goal,
       cv::Scalar color=cv::Scalar(0,0,0), int dash_width = 10, 
       int thickness=1, int linetype=4);
+
+  void drawPersonOnImage(cv::Mat &image, const cv::Point2f &loc);
+  void drawRobotOnImage(cv::Mat &image, const cv::Point2f &loc, const cv::Scalar &color);
+  void drawCheckeredFlagOnImage(cv::Mat &image, const cv::Point2f &loc);
+  void drawScreenWithDirectedArrowOnImage(cv::Mat &image, const cv::Point2f &robot_loc, float orientation);
+  void drawScreenWithFollowMeText(cv::Mat &image, const cv::Point2f &robot_loc);
+
 };
 
 #endif /* end of include guard: BWI_GUIDANCE_SOLVER_COMMON_H */

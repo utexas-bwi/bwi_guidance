@@ -196,6 +196,7 @@ namespace bwi_guidance_solver {
         if (params_.frame_rate != 0.0f) {
           cv::Mat out_img = base_image_.clone();
           evaluation_model->drawState(current_state, out_img);
+          // TODO replace call with something that produces the video as well.
           cv::imshow("out", out_img);
         }
 
@@ -234,15 +235,31 @@ namespace bwi_guidance_solver {
 
           // TODO we should do the computation with the original state and selected action.
           if (params_.frame_rate != 0.0f) {
-            for (int time_step = 0; time_step < frame_vector.size(); ++time_step) {
+            if (action.type != GUIDE_PERSON) {
+              for (int time_step = 0; time_step < frame_vector.size(); ++time_step) {
+                cv::Mat out_img = base_image_.clone();
+                if (!terminal) {
+                  solver->performPostActionComputation(current_state, 1.0f / params_.frame_rate);
+                } else {
+                  boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
+                }
+                evaluation_model->drawState(frame_vector[time_step], out_img);
+                // For the first half second, draw the action as well.
+                if (time_step < params_.frame_rate / 2) {
+                  evaluation_model->drawAction(frame_vector[time_step], action, out_img);
+                }
+                // TODO replace call with something that produces the video as well.
+                cv::imshow("out", out_img);
+              }
+            } else {
               cv::Mat out_img = base_image_.clone();
-              if (!terminal) {
-                solver->performPostActionComputation(current_state, 1.0f / params_.frame_rate);
-              } else {
+              evaluation_model->drawState(current_state, out_img);
+              evaluation_model->drawAction(current_state, action, out_img);
+              for (int time_step = 0; time_step < params_.frame_rate / 2; ++time_step) {
+                // TODO replace call with something that produces the video as well.
+                cv::imshow("out", out_img);
                 boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
               }
-              evaluation_model->drawState(frame_vector[time_step], out_img);
-              cv::imshow("out", out_img);
             }
           } else {
             if (!terminal) {

@@ -94,7 +94,6 @@ namespace bwi_guidance_solver {
 
         cacheNewGoalsByDistance();
         cacheShortestPaths();
-
       }
 
     bool PersonModel::isTerminalState(const State& state) const {
@@ -746,22 +745,6 @@ namespace bwi_guidance_solver {
 
     void PersonModel::drawState(const State& state, cv::Mat& image) {
 
-      // Draw the person last
-      if (state.precision == 1.0f || frame_rate_ == 0.0f) {
-        cv::circle(image, 
-                   bwi_mapper::getLocationFromGraphId(state.graph_id, graph_),
-                   12, cv::Scalar(0,0,255), -1, CV_AA);
-        bwi_mapper::drawArrowOnGraph(image, graph_, 
-                                     std::make_pair(state.graph_id,
-                                                    getAngleInRadians(state.direction) + M_PI/2),
-                                     map_.info.width, map_.info.height);
-      } else {
-        cv::Point2f human_pos = 
-          (1 - state.precision) * bwi_mapper::getLocationFromGraphId(state.from_graph_node, graph_) + 
-          state.precision * bwi_mapper::getLocationFromGraphId(state.graph_id, graph_);
-        cv::circle(image, human_pos, 15, cv::Scalar(0,0,255), -1, CV_AA);
-      }
-
       std::vector<std::pair<cv::Point2f, cv::Scalar> > draw_circles;
       std::vector<std::vector<SquareToDraw> > draw_squares;
       std::vector<std::vector<std::vector<LineToDraw> > > draw_lines;
@@ -773,7 +756,7 @@ namespace bwi_guidance_solver {
 
       for (int r = 0; r < state.robots.size(); ++r) {
         RobotState robot = state.robots[r];
-        cv::Scalar color(0, (r * 12345) % 256, 0);
+        cv::Scalar color(0, 128 + (r * 12345) % 128, 128 + (r * 23457) % 128);
         bool robot_in_use = false;
         std::vector<int> destinations;
         destinations.push_back(robot.destination);
@@ -918,11 +901,39 @@ namespace bwi_guidance_solver {
       }
 
       for (int i = 0; i < draw_circles.size(); ++i) {
-        cv::circle(image, draw_circles[i].first, 9, draw_circles[i].second, -1, CV_AA);
+        drawRobotOnImage(image, draw_circles[i].first + cv::Point2f(5, 5), draw_circles[i].second); 
       }
 
-      bwi_mapper::drawSquareOnGraph(image, graph_, goal_idx_, cv::Scalar(0,0,255),
-                                    0,0,18,-1);
+      cv::Point2f goal_loc = bwi_mapper::getLocationFromGraphId(goal_idx_, graph_);
+      drawCheckeredFlagOnImage(image, goal_loc);
+
+      cv::Point2f human_pos = 
+        (1 - state.precision) * bwi_mapper::getLocationFromGraphId(state.from_graph_node, graph_) + 
+        state.precision * bwi_mapper::getLocationFromGraphId(state.graph_id, graph_);
+      // Offset for person
+      human_pos.x -= 5;
+      human_pos.y -= 5;
+      drawPersonOnImage(image, human_pos);
+
+    }
+
+    void PersonModel::drawAction(const State& state, const Action& action, cv::Mat& image) {
+
+      cv::Point2f colocated_robot_pos = 
+        (1 - state.precision) * bwi_mapper::getLocationFromGraphId(state.from_graph_node, graph_) + 
+        state.precision * bwi_mapper::getLocationFromGraphId(state.graph_id, graph_);
+      colocated_robot_pos += cv::Point2f(5, 5); // Add the offset for the robot's location.
+
+      if (action.type == GUIDE_PERSON) {
+        int from_graph_id = state.from_graph_node;
+        if (state.precision == 1.0f) {
+          from_graph_id = state.graph_id;
+        }
+        float orientation = bwi_mapper::getNodeAngle(from_graph_id, action.guide_graph_id, graph_);
+        drawScreenWithDirectedArrowOnImage(image, colocated_robot_pos, orientation);
+      } else if (action.type == LEAD_PERSON) {
+        drawScreenWithFollowMeText(image, colocated_robot_pos);
+      }
 
     }
 

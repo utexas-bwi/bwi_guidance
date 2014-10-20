@@ -69,6 +69,7 @@ namespace bwi_guidance_solver {
 
         /* Debugging only */
         void drawState(const State& state, cv::Mat& image);
+        void drawAction(const State& state, const Action& action, cv::Mat& image);
 
         /* Private functions that are public only for testing */
         bool isAssignedRobotColocated(const State& state);

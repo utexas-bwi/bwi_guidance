@@ -4,7 +4,8 @@
       "domain": "bwi_guidance_solver::mrn::Domain",
       "params": {
         "map_file": "package://bwi_guidance/maps/map3.yaml",
-        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml"
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "frame_rate": 10.0
       },
       "solvers": [
         {
