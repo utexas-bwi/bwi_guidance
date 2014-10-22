@@ -759,27 +759,41 @@ namespace bwi_guidance_solver {
         cv::Scalar color(0, 128 + (r * 12345) % 128, 128 + (r * 23457) % 128);
         bool robot_in_use = false;
         std::vector<int> destinations;
-        destinations.push_back(robot.destination);
+        // The destination can be -1 for visualization purposes only.
+        if (robot.destination != -1)
+        {
+          destinations.push_back(robot.destination);
+        }
+        bool use_dashed_line = false;
         for (int j = 0; j < state.in_use_robots.size(); ++j) {
           if (state.in_use_robots[j].robot_id == r) {
-            destinations.insert(destinations.begin(), state.in_use_robots[j].destination);
             robot_in_use = true;
+            if (state.in_use_robots[j].destination != -1 && !(state.in_use_robots[j].reached_destination)) {
+              destinations.insert(destinations.begin(), state.in_use_robots[j].destination);
+            } else {
+              use_dashed_line = true;
+            }
             break;
           }
         }
         if (robot_in_use) {
           color = cv::Scalar(255, 0, 0);
         }
-        bool use_dashed_line = false;
+        cv::Point2f robot_pos; 
+        if (robot.precision < 0.5f) {
+          robot_pos = 
+            (1.0f - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
+            (robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
+        } else {
+          robot_pos = 
+            robot.precision * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
+            (1.0f - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
+        }
         BOOST_FOREACH(int destination, destinations) {
           changeRobotDirectionIfNeeded(robot, 0, destination);
           std::vector<size_t>* shortest_path = NULL;
           int shortest_path_start_id;
-          cv::Point2f robot_pos; 
           if (robot.precision < 0.5f) {
-            robot_pos = 
-              (1.0f - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
-              (robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
             shortest_path = &(shortest_paths_[robot.other_graph_node][destination]);
             shortest_path_start_id = robot.other_graph_node;
             LineToDraw l;
@@ -789,9 +803,6 @@ namespace bwi_guidance_solver {
             l.dashed = use_dashed_line;
             draw_lines[robot.graph_id][robot.other_graph_node].push_back(l); 
           } else {
-            robot_pos = 
-              robot.precision * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
-              (1.0f - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
             shortest_path = &(shortest_paths_[robot.graph_id][destination]);
             shortest_path_start_id = robot.graph_id;
             LineToDraw l;
@@ -814,12 +825,12 @@ namespace bwi_guidance_solver {
               current_node = next_node;
             }
           }
-          draw_circles.push_back(std::make_pair(robot_pos, color));
           SquareToDraw s;
           s.color = color;
           draw_squares[destination].push_back(s);
           use_dashed_line = true;
         }
+        draw_circles.push_back(std::make_pair(robot_pos, color));
       }
 
       // Draw the person's destination
@@ -910,6 +921,7 @@ namespace bwi_guidance_solver {
       cv::Point2f human_pos = 
         (1 - state.precision) * bwi_mapper::getLocationFromGraphId(state.from_graph_node, graph_) + 
         state.precision * bwi_mapper::getLocationFromGraphId(state.graph_id, graph_);
+
       // Offset for person
       human_pos.x -= 5;
       human_pos.y -= 5;
