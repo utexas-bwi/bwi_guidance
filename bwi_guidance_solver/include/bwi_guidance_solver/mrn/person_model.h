@@ -21,7 +21,7 @@ namespace bwi_guidance_solver {
     const unsigned int DEFAULT_MAX_ROBOTS = 10;
 
     // TODO: This should be specified with the map.
-    const int ROBOT_HOME_BASE[] = {27, 25, 23, 37, 36, 45, 13, 42, 43, 8};
+    const int ROBOT_HOME_BASE[] = {8,9,27, 25, 23, 37, 36, 45, 13, 42, 43, 8};
 
     class PersonModel : public Model<State, Action> {
 

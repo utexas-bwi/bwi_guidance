@@ -911,20 +911,20 @@ namespace bwi_guidance_solver {
         }
       }
 
-      for (int i = 0; i < draw_circles.size(); ++i) {
-        drawRobotOnImage(image, draw_circles[i].first + cv::Point2f(5, 5), draw_circles[i].second); 
-      }
-
       cv::Point2f goal_loc = bwi_mapper::getLocationFromGraphId(goal_idx_, graph_);
       drawCheckeredFlagOnImage(image, goal_loc);
+
+      for (int i = 0; i < draw_circles.size(); ++i) {
+        drawRobotOnImage(image, draw_circles[i].first + cv::Point2f(6, 6), draw_circles[i].second); 
+      }
 
       cv::Point2f human_pos = 
         (1 - state.precision) * bwi_mapper::getLocationFromGraphId(state.from_graph_node, graph_) + 
         state.precision * bwi_mapper::getLocationFromGraphId(state.graph_id, graph_);
 
       // Offset for person
-      human_pos.x -= 5;
-      human_pos.y -= 5;
+      human_pos.x -= 6;
+      human_pos.y -= 0;
       drawPersonOnImage(image, human_pos);
 
     }
@@ -934,7 +934,7 @@ namespace bwi_guidance_solver {
       cv::Point2f colocated_robot_pos = 
         (1 - state.precision) * bwi_mapper::getLocationFromGraphId(state.from_graph_node, graph_) + 
         state.precision * bwi_mapper::getLocationFromGraphId(state.graph_id, graph_);
-      colocated_robot_pos += cv::Point2f(5, 5); // Add the offset for the robot's location.
+      colocated_robot_pos += cv::Point2f(6, 6); // Add the offset for the robot's location.
 
       if (action.type == GUIDE_PERSON) {
         int from_graph_id = state.from_graph_node;
