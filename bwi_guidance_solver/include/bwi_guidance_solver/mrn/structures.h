@@ -22,24 +22,25 @@ namespace bwi_guidance_solver {
     enum ActionType {
       WAIT = 0,
       ASSIGN_ROBOT = 1,
-      GUIDE_PERSON = 2,
+      DIRECT_PERSON = 2,
       RELEASE_ROBOT = 3,
       LEAD_PERSON = 4
     };
 
     struct Action {
       Action();
-      Action(ActionType a, int dest, int dir);
+      Action(ActionType a, int robot_id = 0, int node = 0);
       ActionType type;
-      int at_graph_id; // with ASSIGN_ROBOT, identifies the destination
-      int guide_graph_id; // with GUIDE_PERSON or LEAD_PERSON, identifies the direction the robot should guide/lead to.
+
+      int robot_id; // with ASSIGN_ROBOT, identifies the robot
+      int node; // with DIRECT_PERSON or LEAD_PERSON, identifies the direction the robot should guide/lead to.
 
       friend class boost::serialization::access;
       template<class Archive>
         void serialize(Archive &ar, const unsigned int version) {
           ar & type;
-          ar & at_graph_id;
-          ar & guide_graph_id;
+          ar & robot_id;
+          ar & node;
         }
     };
 
@@ -49,79 +50,63 @@ namespace bwi_guidance_solver {
 
     /* States */
     struct RobotState {
-      int graph_id; //~50
-      int destination; //~50
-      float precision; // value from 0 to 1, < 0.5 => graph_id -> other_graph_node, > 0.5 => other_graph_node -> graph_id
-      int other_graph_node;
+
+      int loc_u;
+      int loc_v;
+      float loc_p;
+
+      int tau_d;
+      int tau_t;
+      int tau_u;
+
+      int help_destination;
 
       friend class boost::serialization::access;
       template<class Archive>
         void serialize(Archive & ar, const unsigned int version) {
-          ar & graph_id;
+          ar & node;
           ar & destination;
         }
     };
     bool operator<(const RobotState& l, const RobotState& r); 
     bool operator==(const RobotState& l, const RobotState& r);
-    bool operator>(const RobotState& l, const RobotState& r); 
 
     inline size_t hash_value(const bwi_guidance_solver::mrn::RobotState &rs) {
       size_t seed = 0;
-      boost::hash_combine(seed, rs.graph_id);
-      boost::hash_combine(seed, rs.destination);
-      boost::hash_combine(seed, rs.precision);
-      boost::hash_combine(seed, rs.other_graph_node);
-      return seed;
-    }
-
-    struct InUseRobotState {
-      int robot_id; //~10
-      int destination; //~20
-      bool reached_destination; //~2
-      friend class boost::serialization::access;
-      template<class Archive>
-        void serialize(Archive & ar, const unsigned int version) {
-          ar & robot_id;
-          ar & destination;
-          ar & reached_destination;
-        }
-    };
-    bool operator<(const InUseRobotState& l, const InUseRobotState& r); 
-    bool operator==(const InUseRobotState& l, const InUseRobotState& r);
-    bool operator>(const InUseRobotState& l, const InUseRobotState& r); 
-
-    inline size_t hash_value(const bwi_guidance_solver::mrn::InUseRobotState &iurs) {
-      size_t seed = 0;
-      boost::hash_combine(seed, iurs.robot_id);
-      boost::hash_combine(seed, iurs.destination);
-      boost::hash_combine(seed, iurs.reached_destination);
+      boost::hash_combine(seed, rs.loc_u);
+      boost::hash_combine(seed, rs.loc_v);
+      boost::hash_combine(seed, rs.loc_p);
+      boost::hash_combine(seed, rs.tau_d);
+      boost::hash_combine(seed, rs.tau_t);
+      boost::hash_combine(seed, rs.tau_u);
+      boost::hash_combine(seed, rs.help_destination);
       return seed;
     }
 
     struct State {
-      int graph_id; // ~50
-      int direction; // ~8 
 
-      /* Ignored while in the map */
-      float precision;
-      int from_graph_node;
+      int loc_node; // ~50
+      int direction; // ~16 
 
-      bool robot_gave_direction;
+      int assist_type;
+      int assist_loc;
 
-      std::vector<RobotState> robots; // ~10 * 50 * 50
-      std::vector<InUseRobotState> in_use_robots; // ~10 * 20 * 5
+      std::vector<RobotState> robots;
 
-      /* These just prevent bad action choices */
-      std::vector<int> acquired_locations;
-      std::vector<int> relieved_locations;
+      /* These are only used for visualization purposes. loc_node is the same as loc_u. */
+      int loc_v;
+      float loc_p;
 
       friend class boost::serialization::access;
       template<class Archive>
         void serialize(Archive &ar, const unsigned int version) {
-          ar & graph_id;
+          ar & loc_node;
           ar & direction;
+          ar & assist_type;
+          ar & assist_loc;
           ar & BOOST_SERIALIZATION_NVP(robots);
-          ar & BOOST_SERIALIZATION_NVP(in_use_robots);
+          ar & loc_v;
+          ar & loc_p;
         }
     };
 
@@ -129,14 +114,12 @@ namespace bwi_guidance_solver {
       StateHash() {}
       size_t operator()(const State& key) const {
         size_t seed = 0;
-        boost::hash_combine(seed, key.graph_id);
+        boost::hash_combine(seed, key.loc_node);
         boost::hash_combine(seed, key.direction);
-        boost::hash_combine(seed, key.precision);
-        boost::hash_combine(seed, key.from_graph_node);
-        boost::hash_combine(seed, key.robot_gave_direction);
+        boost::hash_combine(seed, key.assist_type);
+        boost::hash_combine(seed, key.assist_loc);
         boost::hash_range(seed, key.robots.begin(), key.robots.end());
-        boost::hash_range(seed, key.in_use_robots.begin(), key.in_use_robots.end());
-        boost::hash_range(seed, key.acquired_locations.begin(), key.acquired_locations.end());
+        /* Note that loc_v and precision are ignored here, as they are used for visualization purposes only. */
         return seed;
       }
     }; 

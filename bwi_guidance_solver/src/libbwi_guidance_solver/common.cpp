@@ -54,6 +54,33 @@ namespace bwi_guidance_solver {
     }
   }
 
+  void computeShorestPath(std::vector<std::vector<float> > &shortest_paths,
+                          std::vector<std::vector<std::vector<size_t> > > &shortest_distances,
+                          const bwi_mapper::Graph& graph) {
+
+    int num_vertices = boost::num_vertices(graph);
+    shortest_paths.resize(num_vertices);
+    shortest_distances.resize(num_vertices);
+
+    for (int idx = 0; idx < num_vertices; ++idx) {
+      shortest_distances[idx].resize(num_vertices);
+      shortest_paths[idx].resize(num_vertices);
+      for (int j = 0; j < num_vertices; ++j) {
+        if (j == idx) {
+          shortest_distances[idx][j] = 0;
+          shortest_paths[idx][j].clear();
+        } else {
+          shortest_distances[idx][j] = 
+            bwi_mapper::getShortestPathWithDistance(idx, j, shortest_paths[idx][j], graph_);
+          // Post-process the shortest path - add goal, remove start and reverse
+          shortest_paths[idx][j].insert(shortest_paths[idx][j].begin(), j); // Add j
+          shortest_paths[idx][j].pop_back(); // Remove idx
+          std::reverse(shortest_paths[idx][j].begin(), shortest_paths[idx][j].end());
+        }
+      }
+    }
+  }
+  
   void dashedLine(cv::Mat& image, cv::Point start, cv::Point goal,
       cv::Scalar color, int dash_width, int thickness, int linetype) {
     cv::LineIterator it(image, start, goal, 8);   
