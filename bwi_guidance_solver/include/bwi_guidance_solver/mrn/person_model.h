@@ -63,10 +63,13 @@ namespace bwi_guidance_solver {
                         float &utility_loss,
                         std::vector<State> &frame_vector);
 
+        /* A convenience function to visualize a model. */
+        void drawState(const State& state, cv::Mat& image);
+     
       private:
 
         /* Some private helper functions. */
-        bool isAssignedRobotColocated(const State& state);
+        void getColocatedRobotIds(const State& state, std::vector<int> &robot_ids);
         void getActionsAtState(const State &state, std::vector<Action>& actions);
 
         /* Some cached data. */
@@ -78,6 +81,8 @@ namespace bwi_guidance_solver {
         nav_msgs::OccupancyGrid map_;
 
         Params params_;
+        int goal_idx_;
+        int num_vertices_;
     };
 
   } /* mrn */

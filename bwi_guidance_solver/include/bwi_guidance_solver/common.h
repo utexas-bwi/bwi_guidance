@@ -40,9 +40,10 @@ namespace bwi_guidance_solver {
       const nav_msgs::OccupancyGrid& map,
       float visibility_range);
 
-  void cacheShortestPaths(std::vector<std::vector<float> > &shortest_paths,
-                          std::vector<std::vector<std::vector<size_t> > > &shortest_distances,
+  void cacheShortestPaths(std::vector<std::vector<float> > &shortest_distances,
+                          std::vector<std::vector<std::vector<size_t> > > &shortest_paths,
                           const bwi_mapper::Graph& graph);
+
   void dashedLine(cv::Mat& image, cv::Point start, cv::Point goal,
       cv::Scalar color=cv::Scalar(0,0,0), int dash_width = 10, 
       int thickness=1, int linetype=4);

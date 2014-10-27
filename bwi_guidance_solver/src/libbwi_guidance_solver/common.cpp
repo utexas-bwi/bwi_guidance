@@ -54,8 +54,8 @@ namespace bwi_guidance_solver {
     }
   }
 
-  void computeShorestPath(std::vector<std::vector<float> > &shortest_paths,
-                          std::vector<std::vector<std::vector<size_t> > > &shortest_distances,
+  void computeShorestPath(std::vector<std::vector<float> > &shortest_distances,
+                          std::vector<std::vector<std::vector<size_t> > > &shortest_paths,
                           const bwi_mapper::Graph& graph) {
 
     int num_vertices = boost::num_vertices(graph);
@@ -71,7 +71,7 @@ namespace bwi_guidance_solver {
           shortest_paths[idx][j].clear();
         } else {
           shortest_distances[idx][j] = 
-            bwi_mapper::getShortestPathWithDistance(idx, j, shortest_paths[idx][j], graph_);
+            bwi_mapper::getShortestPathWithDistance(idx, j, shortest_paths[idx][j], graph);
           // Post-process the shortest path - add goal, remove start and reverse
           shortest_paths[idx][j].insert(shortest_paths[idx][j].begin(), j); // Add j
           shortest_paths[idx][j].pop_back(); // Remove idx

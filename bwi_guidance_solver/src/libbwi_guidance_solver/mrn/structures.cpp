@@ -60,6 +60,10 @@ namespace bwi_guidance_solver {
               (l.help_destination == r.help_destination));
     }
 
+    bool operator>(const RobotState& l, const RobotState& r) {
+      return (l == r || l < r) ? false : true;
+    }
+
     bool operator<(const State& l, const State& r ) {
       COMPARE(loc_node);
       COMPARE(direction);

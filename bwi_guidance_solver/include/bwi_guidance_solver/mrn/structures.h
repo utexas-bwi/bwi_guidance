@@ -8,12 +8,6 @@
 #include <bwi_guidance_solver/common.h>
 #include <bwi_mapper/graph.h>
 
-namespace boost {
-  namespace serialization {
-    class access;
-  }
-}
-
 namespace bwi_guidance_solver {
 
   namespace mrn {
@@ -61,15 +55,10 @@ namespace bwi_guidance_solver {
 
       int help_destination;
 
-      friend class boost::serialization::access;
-      template<class Archive>
-        void serialize(Archive & ar, const unsigned int version) {
-          ar & node;
-          ar & destination;
-        }
     };
     bool operator<(const RobotState& l, const RobotState& r); 
     bool operator==(const RobotState& l, const RobotState& r);
+    bool operator>(const RobotState& l, const RobotState& r); 
 
     inline size_t hash_value(const bwi_guidance_solver::mrn::RobotState &rs) {
       size_t seed = 0;

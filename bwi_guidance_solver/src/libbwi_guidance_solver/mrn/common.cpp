@@ -1,4 +1,4 @@
-#include <bwi_guidance_solver/mrn/common.cpp>
+#include <bwi_guidance_solver/mrn/common.h>
 
 namespace bwi_guidance_solver {
 
@@ -29,17 +29,19 @@ namespace bwi_guidance_solver {
                             int destination, 
                             const std::vector<std::vector<float> > &shortest_distances,
                             bool &shortest_path_through_u) {
-      float current_edge_distance = shortest_distances_[loc_u][loc_v];
+
+      float current_edge_distance = shortest_distances[loc_u][loc_v];
       float distance_to_u = loc_p * current_edge_distance;
       float distance_to_v = current_edge_distance - distance_to_u;
 
-      float distance_from_u = shortest_distance_[loc_u][destination] + distance_to_u;
-      float distance_from_v = shortest_distance_[loc_u][destination] + distance_to_u;
+      float distance_from_u = shortest_distances[loc_u][destination] + distance_to_u;
+      float distance_from_v = shortest_distances[loc_u][destination] + distance_to_u;
       shortest_path_through_u = (distance_from_u < distance_from_v);
 
       return (shortest_path_through_u) ? distance_from_u : distance_from_v;
     }
     
+
   } /* mrn */
   
 } /* bwi_guidance_solver */

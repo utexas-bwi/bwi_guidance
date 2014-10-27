@@ -9,6 +9,7 @@
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/vector.hpp>
 
+#include <bwi_guidance_solver/mrn/common.h>
 #include <bwi_guidance_solver/mrn/person_model.h>
 #include <bwi_mapper/point_utils.h>
 #include <bwi_mapper/map_utils.h>
@@ -17,11 +18,11 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
     
-    PersonModel::PersonModel(const bwi_mapper::Graph &graph, 
+    PersonModel::PersonModel(const bwi_mapper::Graph &graph_, 
                              const nav_msgs::OccupancyGrid &map, 
                              int goal_idx, 
                              const Params &params) :
-      graph_(graph), map_(map), goal_idx_(goal_idx), params_(params) {
+      graph_(graph_), map_(map), goal_idx_(goal_idx), params_(params) {
 
         params_.avg_robot_speed /= map_.info.resolution;
         params_.avg_human_speed /= map_.info.resolution;
@@ -29,8 +30,7 @@ namespace bwi_guidance_solver {
         num_vertices_ = boost::num_vertices(graph_);
         computeAdjacentVertices(adjacent_vertices_map_, graph_);
 
-        cacheNewGoalsByDistance();
-        cacheShortestPaths();
+        cacheShortestPaths(shortest_distances_, shortest_paths_, graph_);
       }
 
     void PersonModel::getActionsAtState(const State& state, 
@@ -80,10 +80,10 @@ namespace bwi_guidance_solver {
       // reasons. Do not call it! For this reason, here is a very suboptimal implementation.
       std::vector<Action> actions;
       getActionsAtState(state, actions);
-      return actions[0];
+      action = actions[0];
     }
 
-    virtual bool getNextAction(const State &state, Action &action) {
+    bool PersonModel::getNextAction(const State &state, Action &action) {
       // This function cannot be optimized without maintaining state. Only present for legacy
       // reasons. Do not call it!
       std::vector<Action> actions;
@@ -136,9 +136,9 @@ namespace bwi_guidance_solver {
       if (action.type != WAIT) {
         next_state = state;
         if (action.type == ASSIGN_ROBOT) {
-          next_state.robots[action.robot].help_destination = action.node;
+          next_state.robots[action.robot_id].help_destination = action.node;
         } else if (action.type == RELEASE_ROBOT) {
-          next_state.robots[action.robot].help_destination = NONE;
+          next_state.robots[action.robot_id].help_destination = NONE;
         } else if (action.type == DIRECT_PERSON) {
           next_state.assist_type = DIRECT_PERSON;
           next_state.assist_loc = action.node;
@@ -154,10 +154,10 @@ namespace bwi_guidance_solver {
         // Compute the current distance to destination so that we can compute the utility loss later.
         std::vector<float> distance_to_service_destination_before_action(state.robots.size(), 0);
         for(unsigned int i = 0; i < state.robots.size(); ++i) {
-          const RobotState &robot = state.robot[i];
+          const RobotState &robot = state.robots[i];
           if (robot.help_destination != NONE) {
             distance_to_service_destination_before_action[i] = 
-              getTrueDistanceTo(robot.loc_u, robot.loc_v, robot.loc_p, robot.tau_d);
+              getTrueDistanceTo(robot.loc_u, robot.loc_v, robot.loc_p, robot.tau_d, shortest_distances_);
           }
         }
 
@@ -165,11 +165,12 @@ namespace bwi_guidance_solver {
         int next_node = human_model_->GetNextNode(state);
 
         float total_time;
-        if (frame_rate_ == 0.0f) {
+        if (params_.frame_rate == 0.0f) {
           transition_model_->move(next_state, next_node, task_generation_model_, rng, total_time); 
         } else {
           frame_vector.clear();
-          while (!transition_model_->move(next_state, next_node, task_generation_model_, rng, total_time, 1.0f / frame_rate_)) {
+          while (!transition_model_->move(next_state, next_node, task_generation_model_, 
+                                          rng, total_time, 1.0f / params_.frame_rate)) {
             frame_vector.push_back(next_state);
           }
         }
@@ -177,13 +178,13 @@ namespace bwi_guidance_solver {
         // After the robots have been moved, let's compute the distance to destination again to compute the utility loss
         utility_loss = 0.0f;
         for(unsigned int i = 0; i < state.robots.size(); ++i) {
-          const RobotState &robot = state.robot[i];
+          const RobotState &robot = state.robots[i];
           if (robot.help_destination != NONE) {
             float distance_to_service_destination = 
-              getTrueDistanceTo(robot.loc_u, robot.loc_v, robot.loc_p, robot.tau_d);
+              getTrueDistanceTo(robot.loc_u, robot.loc_v, robot.loc_p, robot.tau_d, shortest_distances_);
             float distance_difference = 
               std::max(0.0f, distance_to_service_destination_before_action[i] - distance_to_service_destination);
-            float time_difference = distance_difference / robot_speed_;
+            float time_difference = distance_difference / params_.avg_robot_speed;
             float utility_loss_per_robot = time_difference * robot.tau_u; 
             utility_loss += utility_loss_per_robot;
           }
@@ -196,114 +197,102 @@ namespace bwi_guidance_solver {
       }
       
       depth_count = (action.type != WAIT) ? 0 : lrint(time_loss); 
-      terminal = (next_state.graph_id == goal_idx_);
+      terminal = (next_state.loc_node == goal_idx_);
     }
 
-    bool PersonModel::isAssignedRobotColocated(const State& state) {
+    void PersonModel::getColocatedRobotIds(const State& state, std::vector<int> &robot_ids) {
       // Figure out if there is a robot at the current position
-      for (int i = 0; i < state.in_use_robots.size(); ++i) {
-        if ((state.in_use_robots[i].destination == state.graph_id) && 
-            (state.in_use_robots[i].reached_destination)) {
-          return true;
+      for (int robot_id = 0; robot_id < state.robots.size(); ++robot_id) {
+        if ((state.robots[robot_id].help_destination == state.loc_node) &&
+            isRobotExactlyAt(state.robots[robot_id], state.loc_node)) {
+          robot_ids.push_back(robot_id);
         }
       }
-      return false;
     }
 
     void PersonModel::drawState(const State& state, cv::Mat& image) {
 
-      std::vector<std::pair<cv::Point2f, cv::Scalar> > draw_circles;
-      std::vector<std::vector<SquareToDraw> > draw_squares;
+      std::vector<std::pair<cv::Point2f, cv::Scalar> > draw_robots;
+      std::vector<std::vector<SquareToDraw> > draw_robot_destinations;
       std::vector<std::vector<std::vector<LineToDraw> > > draw_lines;
+
       draw_lines.resize(num_vertices_);
-      draw_squares.resize(num_vertices_);
+      draw_robot_destinations.resize(num_vertices_);
       for (int i = 0; i < num_vertices_; ++i) {
         draw_lines[i].resize(num_vertices_);
       }
 
       for (int r = 0; r < state.robots.size(); ++r) {
         RobotState robot = state.robots[r];
-        cv::Scalar color(0, 128 + (r * 12345) % 128, 128 + (r * 23457) % 128);
-        bool robot_in_use = false;
+        cv::Scalar color(0, 64 + (r * 191) / state.robots.size(), 0);
+
+        // There can be at most 2 destinations. The line to the service task destination needs to be dashed.
         std::vector<int> destinations;
-        // The destination can be -1 for visualization purposes only.
-        if (robot.destination != -1)
-        {
-          destinations.push_back(robot.destination);
-        }
-        bool use_dashed_line = false;
-        for (int j = 0; j < state.in_use_robots.size(); ++j) {
-          if (state.in_use_robots[j].robot_id == r) {
-            robot_in_use = true;
-            if (state.in_use_robots[j].destination != -1 && !(state.in_use_robots[j].reached_destination)) {
-              destinations.insert(destinations.begin(), state.in_use_robots[j].destination);
-            } else {
-              use_dashed_line = true;
-            }
-            break;
+        if (robot.tau_d != NONE) {
+          destinations.push_back(robot.tau_d);
+          if (isRobotExactlyAt(robot, robot.tau_d)) {
+            // Draw the robot in red since it is in the middle of performing the service task.
+            color = cv::Scalar(0, 0, 255);
           }
         }
-        if (robot_in_use) {
+
+        if (robot.help_destination != NONE) {
+          // Draw the robot in blue.
+          destinations.push_back(robot.help_destination);
           color = cv::Scalar(255, 0, 0);
         }
-        cv::Point2f robot_pos; 
-        if (robot.precision < 0.5f) {
-          robot_pos = 
-            (1.0f - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
-            (robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
-        } else {
-          robot_pos = 
-            robot.precision * bwi_mapper::getLocationFromGraphId(robot.graph_id, graph_) + 
-            (1.0f - robot.precision) * bwi_mapper::getLocationFromGraphId(robot.other_graph_node, graph_);
-        }
+
+        cv::Point2f robot_pos = 
+          (1.0f - robot.loc_p) * bwi_mapper::getLocationFromGraphId(robot.loc_u, graph_) + 
+          (robot.loc_p) * bwi_mapper::getLocationFromGraphId(robot.loc_p, graph_);
+        
+        bool use_dashed_line = false;
         BOOST_FOREACH(int destination, destinations) {
-          changeRobotDirectionIfNeeded(robot, 0, destination);
-          std::vector<size_t>* shortest_path = NULL;
-          int shortest_path_start_id;
-          if (robot.precision < 0.5f) {
-            shortest_path = &(shortest_paths_[robot.other_graph_node][destination]);
-            shortest_path_start_id = robot.other_graph_node;
+          // Only draw the destination if we're not exactly at that destination.
+          if (!isRobotExactlyAt(robot, destination)) {
+
+            bool shortest_path_through_u = isShortestPathThroughLocU(robot.loc_u,
+                                                                     robot.loc_v,
+                                                                     robot.loc_p,
+                                                                     destination,
+                                                                     shortest_distances_);
+
+            const std::vector<size_t> &shortest_path = (shortest_path_through_u) ?
+              shortest_paths_[robot.loc_u][destination] : shortest_paths_[robot.loc_v][destination];
+            int shortest_path_start_id = (shortest_path_through_u) ? robot.loc_u : robot.loc_v;
+
             LineToDraw l;
             l.priority = r;
-            l.precision = robot.precision;
             l.color = color;
             l.dashed = use_dashed_line;
-            draw_lines[robot.graph_id][robot.other_graph_node].push_back(l); 
-          } else {
-            shortest_path = &(shortest_paths_[robot.graph_id][destination]);
-            shortest_path_start_id = robot.graph_id;
-            LineToDraw l;
-            l.priority = r;
-            l.precision = robot.precision;
-            l.color = color;
-            l.dashed = use_dashed_line;
-            draw_lines[robot.other_graph_node][robot.graph_id].push_back(l); 
-          }
-          if (shortest_path->size() != 0) {
-            int current_node = shortest_path_start_id;
-            for (int s = 0; s < shortest_path->size(); ++s) {
-              int next_node = (*shortest_path)[s];
-              LineToDraw l;
-              l.priority = r;
-              l.precision = 0.0f;
-              l.color = color;
-              l.dashed = use_dashed_line;
-              draw_lines[current_node][next_node].push_back(l); 
-              current_node = next_node;
+
+            if (shortest_path_through_u) {
+              l.precision = robot.loc_p;
+              draw_lines[robot.loc_u][robot.loc_v].push_back(l); 
+            } else {
+              l.precision = 1.0f - robot.loc_p;
+              draw_lines[robot.loc_v][robot.loc_u].push_back(l); 
             }
+
+            if (shortest_path.size() != 0) {
+              int current_node = shortest_path_start_id;
+              for (int s = 0; s < shortest_path.size(); ++s) {
+                int next_node = shortest_path[s];
+                l.precision = 0.0f;
+                draw_lines[current_node][next_node].push_back(l); 
+                current_node = next_node;
+              }
+            }
+
+            // Draw the destination as well.
+            SquareToDraw s;
+            s.color = color;
+            draw_robot_destinations[destination].push_back(s);
           }
-          SquareToDraw s;
-          s.color = color;
-          draw_squares[destination].push_back(s);
           use_dashed_line = true;
         }
-        draw_circles.push_back(std::make_pair(robot_pos, color));
+        draw_robots.push_back(std::make_pair(robot_pos, color));
       }
-
-      // Draw the person's destination
-      // SquareToDraw s;
-      // s.color = cv::Scalar(0,0,255);
-      // draw_squares[goal_idx_].push_back(s);
 
       for (int i = 0; i < num_vertices_; ++i) {
         for (int j = i+1; j < num_vertices_; ++j) {
@@ -328,9 +317,6 @@ namespace bwi_guidance_solver {
 
           int ijcounter = 0;
           int jicounter = 0;
-          // if (thickness != 2) {
-          //   std::cout << "ST: " << thickness << std::endl;
-          // }
           while (ijcounter < ijlines.size() || jicounter < jilines.size()) {
             LineToDraw* line = NULL;
             int s, e;
@@ -370,10 +356,9 @@ namespace bwi_guidance_solver {
       }
 
       for (int i = 0; i < num_vertices_; ++i) {
-        int size = 18 + 8 * draw_squares[i].size();
-        BOOST_FOREACH(const SquareToDraw& square, draw_squares[i]) {
-          bwi_mapper::drawSquareOnGraph(image, graph_, i, square.color, 0, 0,
-                                        size);
+        int size = 18 + 8 * draw_robot_destinations[i].size();
+        BOOST_FOREACH(const SquareToDraw& square, draw_robot_destinations[i]) {
+          bwi_mapper::drawSquareOnGraph(image, graph_, i, square.color, 0, 0, size);
           size -= 8;
         }
       }
@@ -381,37 +366,30 @@ namespace bwi_guidance_solver {
       cv::Point2f goal_loc = bwi_mapper::getLocationFromGraphId(goal_idx_, graph_);
       drawCheckeredFlagOnImage(image, goal_loc);
 
-      for (int i = 0; i < draw_circles.size(); ++i) {
-        drawRobotOnImage(image, draw_circles[i].first + cv::Point2f(6, 6), draw_circles[i].second); 
+      for (int i = 0; i < draw_robots.size(); ++i) {
+        drawRobotOnImage(image, draw_robots[i].first + cv::Point2f(6, 6), draw_robots[i].second); 
       }
 
       cv::Point2f human_pos = 
-        (1 - state.precision) * bwi_mapper::getLocationFromGraphId(state.from_graph_node, graph_) + 
-        state.precision * bwi_mapper::getLocationFromGraphId(state.graph_id, graph_);
+        (1 - state.loc_p) * bwi_mapper::getLocationFromGraphId(state.loc_node, graph_) + 
+        state.loc_p * bwi_mapper::getLocationFromGraphId(state.loc_v, graph_);
 
       // Offset for person
       human_pos.x -= 6;
       human_pos.y -= 0;
       drawPersonOnImage(image, human_pos);
 
-    }
+      // If human is being assisted, then display the assistance type.
+      if (state.assist_type != NONE) {
+        // Add the offset for the robot's location.
+        cv::Point2f colocated_robot_pos = human_pos + cv::Point2f(12, 6); 
 
-    void PersonModel::drawAction(const State& state, const Action& action, cv::Mat& image) {
-
-      cv::Point2f colocated_robot_pos = 
-        (1 - state.precision) * bwi_mapper::getLocationFromGraphId(state.from_graph_node, graph_) + 
-        state.precision * bwi_mapper::getLocationFromGraphId(state.graph_id, graph_);
-      colocated_robot_pos += cv::Point2f(6, 6); // Add the offset for the robot's location.
-
-      if (action.type == DIRECT_PERSON) {
-        int from_graph_id = state.from_graph_node;
-        if (state.precision == 1.0f) {
-          from_graph_id = state.graph_id;
+        if (state.assist_type == DIRECT_PERSON) {
+          float orientation = bwi_mapper::getNodeAngle(state.loc_node, state.assist_loc, graph_);
+          drawScreenWithDirectedArrowOnImage(image, colocated_robot_pos, orientation);
+        } else if (state.assist_type == LEAD_PERSON) {
+          drawScreenWithFollowMeText(image, colocated_robot_pos);
         }
-        float orientation = bwi_mapper::getNodeAngle(from_graph_id, action.guide_graph_id, graph_);
-        drawScreenWithDirectedArrowOnImage(image, colocated_robot_pos, orientation);
-      } else if (action.type == LEAD_PERSON) {
-        drawScreenWithFollowMeText(image, colocated_robot_pos);
       }
 
     }
