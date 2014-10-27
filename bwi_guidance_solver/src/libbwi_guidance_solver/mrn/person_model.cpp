@@ -21,8 +21,17 @@ namespace bwi_guidance_solver {
     PersonModel::PersonModel(const bwi_mapper::Graph &graph_, 
                              const nav_msgs::OccupancyGrid &map, 
                              int goal_idx, 
+                             const MotionModel::Ptr &motion_model,
+                             const HumanDecisionModel::Ptr &human_decision_model,
+                             const TaskGenerationModel::Ptr &task_generation_model,
                              const Params &params) :
-      graph_(graph_), map_(map), goal_idx_(goal_idx), params_(params) {
+      graph_(graph_), 
+      map_(map), 
+      goal_idx_(goal_idx), 
+      motion_model_(motion_model), 
+      human_decision_model_(human_decision_model), 
+      task_generation_model_(task_generation_model),
+      params_(params) {
 
         params_.avg_robot_speed /= map_.info.resolution;
         params_.avg_human_speed /= map_.info.resolution;
@@ -30,7 +39,7 @@ namespace bwi_guidance_solver {
         num_vertices_ = boost::num_vertices(graph_);
         computeAdjacentVertices(adjacent_vertices_map_, graph_);
 
-        cacheShortestPaths(shortest_distances_, shortest_paths_, graph_);
+        computeShortestPath(shortest_distances_, shortest_paths_, graph_);
       }
 
     void PersonModel::getActionsAtState(const State& state, 
@@ -145,6 +154,7 @@ namespace bwi_guidance_solver {
         } else {
           next_state.assist_type = LEAD_PERSON;
           next_state.assist_loc = action.node;
+          next_state.robots[action.robot_id].help_destination = action.node;
         }
         utility_loss = 0.0f;
         time_loss = 0.0f;
@@ -162,15 +172,15 @@ namespace bwi_guidance_solver {
         }
 
         next_state = state;
-        int next_node = human_model_->GetNextNode(state);
+        int next_node = human_decision_model_->GetNextNode(state, *rng);
 
         float total_time;
         if (params_.frame_rate == 0.0f) {
-          transition_model_->move(next_state, next_node, task_generation_model_, rng, total_time); 
+          motion_model_->move(next_state, next_node, task_generation_model_, *rng, total_time); 
         } else {
           frame_vector.clear();
-          while (!transition_model_->move(next_state, next_node, task_generation_model_, 
-                                          rng, total_time, 1.0f / params_.frame_rate)) {
+          while (!motion_model_->move(next_state, next_node, task_generation_model_, 
+                                      *rng, total_time, 1.0f / params_.frame_rate)) {
             frame_vector.push_back(next_state);
           }
         }

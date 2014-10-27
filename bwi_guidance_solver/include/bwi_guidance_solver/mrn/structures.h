@@ -50,7 +50,8 @@ namespace bwi_guidance_solver {
       float loc_p;
 
       int tau_d;
-      int tau_t;
+      float tau_t;
+      float tau_total_task_time;
       int tau_u;
 
       int help_destination;
@@ -67,6 +68,7 @@ namespace bwi_guidance_solver {
       boost::hash_combine(seed, rs.loc_p);
       boost::hash_combine(seed, rs.tau_d);
       boost::hash_combine(seed, rs.tau_t);
+      boost::hash_combine(seed, rs.tau_total_task_time);
       boost::hash_combine(seed, rs.tau_u);
       boost::hash_combine(seed, rs.help_destination);
       return seed;

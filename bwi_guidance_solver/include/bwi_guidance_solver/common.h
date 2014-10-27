@@ -40,7 +40,7 @@ namespace bwi_guidance_solver {
       const nav_msgs::OccupancyGrid& map,
       float visibility_range);
 
-  void cacheShortestPaths(std::vector<std::vector<float> > &shortest_distances,
+  void computeShortestPath(std::vector<std::vector<float> > &shortest_distances,
                           std::vector<std::vector<std::vector<size_t> > > &shortest_paths,
                           const bwi_mapper::Graph& graph);
 

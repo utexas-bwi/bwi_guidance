@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #include <bwi_guidance_solver/mrn/structures.h>
+#include <bwi_guidance_solver/mrn/transition_model.h>
 #include <bwi_mapper/graph.h>
 #include <bwi_tools/common/Params.h>
 
@@ -29,6 +30,9 @@ namespace bwi_guidance_solver {
         PersonModel(const bwi_mapper::Graph& graph, 
                     const nav_msgs::OccupancyGrid& map, 
                     int goal_idx,
+                    const MotionModel::Ptr &motion_model,
+                    const HumanDecisionModel::Ptr &human_decision_model,
+                    const TaskGenerationModel::Ptr &task_generation_model,
                     const Params &params);
 
         /* Functions inherited from PredictiveModel */
@@ -76,6 +80,11 @@ namespace bwi_guidance_solver {
         std::vector<std::vector<std::vector<size_t> > > shortest_paths_;
         std::vector<std::vector<float> > shortest_distances_;
         std::map<int, std::vector<int> > adjacent_vertices_map_;
+
+        /* The three subcomponents of the transition model. */
+        const TaskGenerationModel::Ptr task_generation_model_;
+        const MotionModel::Ptr motion_model_;
+        const HumanDecisionModel::Ptr human_decision_model_;
 
         bwi_mapper::Graph graph_;
         nav_msgs::OccupancyGrid map_;
