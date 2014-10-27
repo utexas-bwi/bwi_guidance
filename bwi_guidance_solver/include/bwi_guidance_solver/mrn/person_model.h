@@ -21,7 +21,6 @@ namespace bwi_guidance_solver {
 #define PARAMS(_) \
           _(float,frame_rate,frame_rate,0.0f) \
           _(int,num_robots,num_robots,10) \
-          _(float,avg_human_speed,avg_human_speed,1.0f) \
           _(float,avg_robot_speed,avg_robot_speed,0.5f)
 
           Params_STRUCT(PARAMS)

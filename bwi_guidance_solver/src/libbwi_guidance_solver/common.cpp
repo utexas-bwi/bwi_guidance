@@ -54,9 +54,9 @@ namespace bwi_guidance_solver {
     }
   }
 
-  void computeShorestPath(std::vector<std::vector<float> > &shortest_distances,
-                          std::vector<std::vector<std::vector<size_t> > > &shortest_paths,
-                          const bwi_mapper::Graph& graph) {
+  void computeShortestPath(std::vector<std::vector<float> > &shortest_distances,
+                           std::vector<std::vector<std::vector<size_t> > > &shortest_paths,
+                           const bwi_mapper::Graph& graph) {
 
     int num_vertices = boost::num_vertices(graph);
     shortest_paths.resize(num_vertices);

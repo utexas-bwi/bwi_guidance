@@ -64,17 +64,17 @@ target_link_libraries(bwi_guidance_solver
 )
 
 ## Add a few libraries for producing images.
-## add_executable(bwi_guidance_solver_aamas_figure_1
-##   src/aamas2015/figure_1.cpp
-## )
-## target_link_libraries(bwi_guidance_solver_aamas_figure_1
-##   bwi_guidance_solver
-## )
+add_executable(bwi_guidance_solver_aamas_figure_1
+  src/aamas2015/figure_1.cpp
+)
+target_link_libraries(bwi_guidance_solver_aamas_figure_1
+  bwi_guidance_solver
+)
 
 ## Mark executables and/or libraries for installation
 install(TARGETS 
   bwi_guidance_solver
-  ## bwi_guidance_solver_aamas_figure_1
+  bwi_guidance_solver_aamas_figure_1
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

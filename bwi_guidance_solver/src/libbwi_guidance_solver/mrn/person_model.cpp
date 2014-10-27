@@ -34,7 +34,6 @@ namespace bwi_guidance_solver {
       params_(params) {
 
         params_.avg_robot_speed /= map_.info.resolution;
-        params_.avg_human_speed /= map_.info.resolution;
 
         num_vertices_ = boost::num_vertices(graph_);
         computeAdjacentVertices(adjacent_vertices_map_, graph_);
@@ -238,6 +237,13 @@ namespace bwi_guidance_solver {
 
         // There can be at most 2 destinations. The line to the service task destination needs to be dashed.
         std::vector<int> destinations;
+
+        if (robot.help_destination != NONE) {
+          // Draw the robot in blue.
+          destinations.push_back(robot.help_destination);
+          color = cv::Scalar(255, 0, 0);
+        }
+
         if (robot.tau_d != NONE) {
           destinations.push_back(robot.tau_d);
           if (isRobotExactlyAt(robot, robot.tau_d)) {
@@ -246,15 +252,9 @@ namespace bwi_guidance_solver {
           }
         }
 
-        if (robot.help_destination != NONE) {
-          // Draw the robot in blue.
-          destinations.push_back(robot.help_destination);
-          color = cv::Scalar(255, 0, 0);
-        }
-
         cv::Point2f robot_pos = 
           (1.0f - robot.loc_p) * bwi_mapper::getLocationFromGraphId(robot.loc_u, graph_) + 
-          (robot.loc_p) * bwi_mapper::getLocationFromGraphId(robot.loc_p, graph_);
+          (robot.loc_p) * bwi_mapper::getLocationFromGraphId(robot.loc_v, graph_);
         
         bool use_dashed_line = false;
         BOOST_FOREACH(int destination, destinations) {
@@ -276,12 +276,14 @@ namespace bwi_guidance_solver {
             l.color = color;
             l.dashed = use_dashed_line;
 
-            if (shortest_path_through_u) {
-              l.precision = robot.loc_p;
-              draw_lines[robot.loc_u][robot.loc_v].push_back(l); 
-            } else {
-              l.precision = 1.0f - robot.loc_p;
-              draw_lines[robot.loc_v][robot.loc_u].push_back(l); 
+            if (robot.loc_p != 0.0f && robot.loc_p != 1.0f) {
+              if (shortest_path_through_u) {
+                l.precision = 1.0f - robot.loc_p;
+                draw_lines[robot.loc_v][robot.loc_u].push_back(l); 
+              } else {
+                l.precision = robot.loc_p;
+                draw_lines[robot.loc_u][robot.loc_v].push_back(l); 
+              }
             }
 
             if (shortest_path.size() != 0) {
@@ -380,9 +382,10 @@ namespace bwi_guidance_solver {
         drawRobotOnImage(image, draw_robots[i].first + cv::Point2f(6, 6), draw_robots[i].second); 
       }
 
-      cv::Point2f human_pos = 
-        (1 - state.loc_p) * bwi_mapper::getLocationFromGraphId(state.loc_node, graph_) + 
-        state.loc_p * bwi_mapper::getLocationFromGraphId(state.loc_v, graph_);
+      cv::Point2f human_pos = (1 - state.loc_p) * bwi_mapper::getLocationFromGraphId(state.loc_node, graph_);
+      if (state.loc_p > 0.0f) {
+        human_pos += state.loc_p * bwi_mapper::getLocationFromGraphId(state.loc_v, graph_);
+      }
 
       // Offset for person
       human_pos.x -= 6;

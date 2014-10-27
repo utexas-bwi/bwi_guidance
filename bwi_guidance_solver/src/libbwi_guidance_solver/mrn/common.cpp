@@ -35,7 +35,7 @@ namespace bwi_guidance_solver {
       float distance_to_v = current_edge_distance - distance_to_u;
 
       float distance_from_u = shortest_distances[loc_u][destination] + distance_to_u;
-      float distance_from_v = shortest_distances[loc_u][destination] + distance_to_u;
+      float distance_from_v = shortest_distances[loc_v][destination] + distance_to_v;
       shortest_path_through_u = (distance_from_u < distance_from_v);
 
       return (shortest_path_through_u) ? distance_from_u : distance_from_v;

@@ -1,9 +1,11 @@
 #ifndef BWI_GUIDANCE_SOLVER_MRN_TRANSITION_MODEL_H
 #define BWI_GUIDANCE_SOLVER_MRN_TRANSITION_MODEL_H
 
+#include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <bwi_guidance_solver/common.h>
+#include <bwi_guidance_solver/mrn/common.h>
 #include <bwi_guidance_solver/mrn/structures.h>
 
 namespace bwi_guidance_solver {
@@ -96,17 +98,15 @@ namespace bwi_guidance_solver {
         void generateNewTaskForRobot(int robot_id, RobotState &robot, RNG &rng) {
           // Optimized!!!
           int idx = robot_home_base_[robot_id];
-          while(true) {
-            int graph_distance = rng.poissonInt(1);
-            if (graph_distance >= goals_by_distance_[idx].size()) {
-              continue;
-            }
-            std::vector<int>& possible_goals = goals_by_distance_[idx][graph_distance];
-            robot.tau_d = *(possible_goals.begin() + rng.randomInt(possible_goals.size() - 1));
-            robot.tau_t = 0.0f;
-            robot.tau_total_task_time = 5.0f;
-            robot.tau_u = task_utility_;
+          int graph_distance = rng.poissonInt(1);
+          while(graph_distance >= goals_by_distance_[idx].size()) {
+            graph_distance = rng.poissonInt(1);
           }
+          std::vector<int>& possible_goals = goals_by_distance_[idx][graph_distance];
+          robot.tau_d = *(possible_goals.begin() + rng.randomInt(possible_goals.size() - 1));
+          robot.tau_t = 0.0f;
+          robot.tau_total_task_time = 5.0f;
+          robot.tau_u = task_utility_;
         }
 
         void cacheNewGoalsByDistance(const bwi_mapper::Graph &graph) {
@@ -172,17 +172,17 @@ namespace bwi_guidance_solver {
 
           // Move the human.
           if (time_step == 0.0f) {
-            time_step = shortest_distances_[state.loc_node][state.loc_v] / human_speed;
+            time_step = shortest_distances_[state.loc_node][next_node] / human_speed;
             state.loc_v = state.loc_node;
             state.loc_node = next_node;
             state.loc_p = 0.0f;
             ready_for_next_action = true;
           } else {
-            float human_coverable_distance = time_step * human_speed;
-            float human_edge_distance = shortest_distances_[state.loc_node][state.loc_v];
-            float added_precision = human_coverable_distance / human_edge_distance;
             if ((state.loc_v == next_node) || (state.loc_p == 0.0f)) {
               state.loc_v = next_node;
+              float human_coverable_distance = time_step * human_speed;
+              float human_edge_distance = shortest_distances_[state.loc_node][state.loc_v];
+              float added_precision = human_coverable_distance / human_edge_distance;
               state.loc_p += added_precision;
               if (state.loc_p >= 1.0f) {
                 // We've reached next node.
@@ -197,6 +197,9 @@ namespace bwi_guidance_solver {
             }
           }
 
+          // Since the human has moved, remove any previous assistance.
+          state.assist_type = NONE;
+
           /* std::cout << "Moving ahead for " << time << " seconds" << std::endl; */
           // Optimized!!!
           for (int i = 0; i < state.robots.size(); ++i) {
@@ -209,6 +212,7 @@ namespace bwi_guidance_solver {
             // Get shortest path to destination, and figure out how much distance
             // of that path we can cover
             while (robot_time_remaining > 0.0f) {
+
               /* std::cout << robot.graph_id << " " << robot.precision << " " << destination << " " << robot.other_graph_node << std::endl; */
               // Check if the robot has already reached it's destination.
               if (isRobotExactlyAt(robot, destination)) {
@@ -225,6 +229,8 @@ namespace bwi_guidance_solver {
                   if (robot.tau_t > robot.tau_total_task_time) {
                     robot_time_remaining = robot.tau_t - robot.tau_total_task_time;
                     task_generation_model->generateNewTaskForRobot(i, robot, rng);
+                    // Update the destination for this robot.
+                    destination = robot.tau_d;
                   } 
                 }
               } else {

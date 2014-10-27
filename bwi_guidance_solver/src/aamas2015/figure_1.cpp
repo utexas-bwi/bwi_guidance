@@ -24,115 +24,84 @@ int main(int argc, const char *argv[]) {
   mapper.drawMap(base_image);
   bwi_mapper::readGraphFromFile(graph_file, map.info, graph);
 
-  PersonModel model(graph, map, 12, 0, 10, 0, 10, 0, 1.0, 0.5);
+  PersonModel::Params params;
+  MotionModel::Ptr motion_model(new MotionModel(graph, 
+                                                params.avg_robot_speed / map.info.resolution,
+                                                1.0f / map.info.resolution)); 
+  std::vector<int> robot_home_base;
+  robot_home_base.push_back(11);
+  robot_home_base.push_back(12);
+  TaskGenerationModel::Ptr task_generation_model(new TaskGenerationModel(robot_home_base, graph, 1.0f));
+
+  HumanDecisionModel::Ptr human_decision_model(new HumanDecisionModel(graph));
+
+  PersonModel model(graph, map, 12, motion_model, human_decision_model, task_generation_model, params);
 
   float unused_reward, unused_time_loss, unused_utility_loss;
   bool unused_terminal;
   int unused_depth_count;
   std::vector<State> unused_frame_vector;
 
-  boost::shared_ptr<RNG> rng(new RNG(1));
+  boost::shared_ptr<RNG> rng(new RNG(0));
   
   // Original state - state 1.
-  State s0;
-  s0.graph_id = 8;
-  s0.precision = 1.0f;
-  s0.from_graph_node = 8;
-  s0.direction = 0; // computeNextDirection(0, 8, 9, graph);
-  s0.robot_gave_direction = false;
-  s0.robots.resize(2);
-  s0.robots[0].graph_id = 8;
-  s0.robots[0].destination = 6;
-  s0.robots[0].precision = 0.0f;
-  s0.robots[0].other_graph_node = 8;
-  s0.robots[1].graph_id = 9;
-  s0.robots[1].destination = 10;
-  s0.robots[1].precision = 0.0f;
-  s0.robots[1].other_graph_node = 9;
+  State current_state, next_state;
+  current_state.loc_node = 8;
+  current_state.loc_p = 0.0f;
+  current_state.loc_v = 0;
+  current_state.direction = 0; // computeNextDirection(0, 8, 9, graph);
+  current_state.assist_type = NONE;
+  current_state.robots.resize(2);
+  current_state.robots[0].loc_u = 8;
+  current_state.robots[0].loc_p = 0.0f;
+  current_state.robots[0].loc_v = 0;
+  current_state.robots[0].tau_d = 6;
+  current_state.robots[0].tau_u = 1.0f;
+  current_state.robots[0].tau_t = 0.0f;
+  current_state.robots[0].tau_total_task_time = 5.0f;
+  current_state.robots[0].help_destination = NONE;
+  current_state.robots[1].loc_u = 9;
+  current_state.robots[1].loc_p = 0.0f;
+  current_state.robots[1].loc_v = 0;
+  current_state.robots[1].tau_d = 10;
+  current_state.robots[1].tau_u = 1.0f;
+  current_state.robots[1].tau_t = 0.0f;
+  current_state.robots[1].tau_total_task_time = 5.0f;
+  current_state.robots[1].help_destination = NONE;
+  std::cout << "Original state: " << current_state << std::endl;
 
-  State s1;
-  model.takeAction(s0, Action(ASSIGN_ROBOT, 8, 0), unused_reward, s1, unused_terminal, unused_depth_count, rng,
-                   unused_time_loss, unused_utility_loss, unused_frame_vector);
+  model.takeAction(current_state, Action(ASSIGN_ROBOT, 0, 8), unused_reward, next_state, unused_terminal, 
+                   unused_depth_count, rng, unused_time_loss, unused_utility_loss, unused_frame_vector);
+  current_state = next_state;
 
-  cv::Mat img1 = base_image.clone();
-  model.drawState(s1, img1);
-  cv::imwrite("intro_state_1.png", img1);
+  std::vector<Action> actions;
+  actions.push_back(Action(DIRECT_PERSON, 0, 9));
+  actions.push_back(Action(RELEASE_ROBOT, 0));
+  actions.push_back(Action(ASSIGN_ROBOT, 1, 9));
+  actions.push_back(Action(WAIT));
+  actions.push_back(Action(LEAD_PERSON, 1, 12));
+  actions.push_back(Action(WAIT));
 
-  // State 2 - After taking action AssignRobot(2, 9)
-  State s2;
-  model.takeAction(s1, Action(ASSIGN_ROBOT, 9, 0), unused_reward, s2, unused_terminal, unused_depth_count, rng,
-                   unused_time_loss, unused_utility_loss, unused_frame_vector);
-  cv::Mat img2 = base_image.clone();
-  model.drawState(s2, img2);
-  cv::imwrite("intro_state_2.png", img2);
+  int counter = 0;
+  while(true) { 
+    std::cout << "Drawing state: " << current_state << std::endl;
 
-  // State 3 - After taking action GuidePerson(1,9)
-  State s3 = s2;
-  Action a3;
-  a3.type = GUIDE_PERSON;
-  a3.at_graph_id = 8;
-  a3.guide_graph_id = 9;
+    cv::Mat img = base_image.clone();
+    model.drawState(current_state, img);
+    cv::imwrite("intro_state_" + boost::lexical_cast<std::string>(counter + 1) + ".png", img);
 
-  cv::Mat img3 = base_image.clone();
-  model.drawState(s3, img3);
-  model.drawAction(s3, a3, img3);
-  cv::imwrite("intro_state_3.png", img3);
+    if (current_state.loc_node == 12) {
+      break;
+    }
 
-  // State 4 - After taking action ReleaseRobot(1)
-  State s4;
-  model.takeAction(s3, Action(GUIDE_PERSON, 8, 0), unused_reward, s4, unused_terminal, unused_depth_count, rng,
-                   unused_time_loss, unused_utility_loss, unused_frame_vector);
-  cv::Mat img4 = base_image.clone();
-  model.drawState(s4, img4);
-  cv::imwrite("intro_state_4.png", img4);
+    std::cout << "  Taking action: " << actions[counter] << std::endl;
 
-  // State 5 - After taking action Wait
-  State s5;
-  model.takeAction(s4, Action(WAIT, 0, 0), unused_reward, s5, unused_terminal, unused_depth_count, rng,
-                   unused_time_loss, unused_utility_loss, unused_frame_vector);
-  cv::Mat img5 = base_image.clone();
-  s5.precision = 1.0f;
-  model.drawState(s5, img5);
-  cv::imwrite("intro_state_5.png", img5);
-  
-  // State 6 - After taking action lead Person
-  State s6 = s5;
-  Action a6;
-  a6.type = LEAD_PERSON;
-  a6.at_graph_id = 9;
-  a6.guide_graph_id = 12;
-  cv::Mat img6 = base_image.clone();
-  model.drawState(s6, img6);
-  model.drawAction(s6, a6, img6);
-  cv::imwrite("intro_state_6.png", img6);
+    model.takeAction(current_state, actions[counter], unused_reward, next_state, unused_terminal, 
+                     unused_depth_count, rng, unused_time_loss, unused_utility_loss, unused_frame_vector);
+    current_state = next_state;
 
-  // State 7 - terminal after taking WAIT.
-  State s7;
-  std::cout << s6.robots[0].graph_id << " " << s6.robots[0].precision << " " << s6.robots[0].other_graph_node << std::endl;
-  model.takeAction(s6, Action(LEAD_PERSON, 9, 12), unused_reward, s7, unused_terminal, unused_depth_count, rng,
-                   unused_time_loss, unused_utility_loss, unused_frame_vector);
-  s7.precision = 1.0f;
-  cv::Mat img7 = base_image.clone();
-  model.drawState(s7, img7);
-  cv::imwrite("intro_state_7.png", img7);
-
-  // Action a2 = a1;
-  // a2.type = LEAD_PERSON;
-
-  // // Draw the images and save them to file.
-  // cv::Mat img1 = base_image.clone();
-  // , img2 = base_image.clone();
-  // model.drawState(s1, img1);
-  // model.drawAction(s1, a1, img1);
-
-  // model.drawState(s1, img2);
-  // model.drawAction(s1, a2, img2);
-
-  // cv::imwrite("intro_state_1", img1);
-  // cv::imwrite("intro_state_2", img2);
-  // cv::imwrite("intro_state_3", img3);
-  // cv::imwrite("intro_state_4", img4);
-  // cv::imwrite("intro_state_5", img5);
+    ++counter;
+  }
   
   return 0;
 }

@@ -45,6 +45,7 @@ namespace bwi_guidance_solver {
       COMPARE(loc_p);
       COMPARE(tau_d);
       COMPARE(tau_t);
+      COMPARE(tau_total_task_time);
       COMPARE(tau_u);
       COMPARE(help_destination);
       return false;
@@ -56,6 +57,7 @@ namespace bwi_guidance_solver {
               (l.loc_p == r.loc_p) && 
               (l.tau_d == r.tau_d) &&
               (l.tau_t == r.tau_t) &&
+              (l.tau_total_task_time == r.tau_total_task_time) &&
               (l.tau_u == r.tau_u) &&
               (l.help_destination == r.help_destination));
     }
@@ -93,11 +95,10 @@ namespace bwi_guidance_solver {
       stream << "[" << s.loc_node << "," << s.direction << ",";
       for (unsigned int i = 0; i < s.robots.size(); ++i) {
         stream << "(<" << s.robots[i].loc_u << "," << s.robots[i].loc_v << "," << s.robots[i].loc_p << ">";
-        stream << ",<" << s.robots[i].tau_d << "," << s.robots[i].tau_t << "," << s.robots[i].tau_u << ">";
+        stream << ",<" << s.robots[i].tau_d << "," << s.robots[i].tau_t << "," << s.robots[i].tau_total_task_time << "," << s.robots[i].tau_u << ">";
         stream << "," << s.robots[i].help_destination << ")";
         stream << ","; 
       }
-      stream << "),";
       stream << "<"  << s.assist_type << "," << s.assist_loc << ">]";
       return stream;
     }
