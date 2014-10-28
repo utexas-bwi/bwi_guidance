@@ -1,3 +1,4 @@
+#include <boost/thread/thread.hpp>
 #include <bwi_guidance_solver/mrn/person_model.h>
 #include <bwi_mapper/graph.h>
 #include <bwi_mapper/map_loader.h>
@@ -35,12 +36,17 @@ int main(int argc, const char *argv[]) {
 
   HumanDecisionModel::Ptr human_decision_model(new HumanDecisionModel(graph));
 
+  /* Enable visualization. */
+  params.frame_rate = 10.0f;
+  cv::namedWindow("out");
+  cvStartWindowThread();
+
   PersonModel model(graph, map, 12, motion_model, human_decision_model, task_generation_model, params);
 
   float unused_reward, unused_time_loss, unused_utility_loss;
   bool unused_terminal;
   int unused_depth_count;
-  std::vector<State> unused_frame_vector;
+  std::vector<State> frame_vector;
 
   boost::shared_ptr<RNG> rng(new RNG(0));
   
@@ -71,7 +77,7 @@ int main(int argc, const char *argv[]) {
   std::cout << "Original state: " << current_state << std::endl;
 
   model.takeAction(current_state, Action(ASSIGN_ROBOT, 0, 8), unused_reward, next_state, unused_terminal, 
-                   unused_depth_count, rng, unused_time_loss, unused_utility_loss, unused_frame_vector);
+                   unused_depth_count, rng, unused_time_loss, unused_utility_loss, frame_vector);
   current_state = next_state;
 
   std::vector<Action> actions;
@@ -97,7 +103,15 @@ int main(int argc, const char *argv[]) {
     std::cout << "  Taking action: " << actions[counter] << std::endl;
 
     model.takeAction(current_state, actions[counter], unused_reward, next_state, unused_terminal, 
-                     unused_depth_count, rng, unused_time_loss, unused_utility_loss, unused_frame_vector);
+                     unused_depth_count, rng, unused_time_loss, unused_utility_loss, frame_vector);
+
+    BOOST_FOREACH(State &state, frame_vector) {
+      img = base_image.clone();
+      model.drawState(state, img);
+      cv::imshow("out", img);
+      boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params.frame_rate));
+    }
+
     current_state = next_state;
 
     ++counter;

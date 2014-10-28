@@ -166,7 +166,7 @@ namespace bwi_guidance_solver {
                   float &total_time,
                   float time_step = 0.0f) {
 
-          bool ready_for_next_action = true;
+          bool ready_for_next_action = false;
 
           float human_speed = (state.assist_type == LEAD_PERSON) ? robot_speed_ : human_speed_;
 
@@ -198,7 +198,9 @@ namespace bwi_guidance_solver {
           }
 
           // Since the human has moved, remove any previous assistance.
-          state.assist_type = NONE;
+          if (ready_for_next_action) {
+            state.assist_type = NONE;
+          }
 
           /* std::cout << "Moving ahead for " << time << " seconds" << std::endl; */
           // Optimized!!!

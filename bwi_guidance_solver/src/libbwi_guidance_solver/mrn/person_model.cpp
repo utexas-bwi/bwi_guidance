@@ -158,6 +158,10 @@ namespace bwi_guidance_solver {
         utility_loss = 0.0f;
         time_loss = 0.0f;
         reward = 0.0f;
+        frame_vector.clear();
+        if (params_.frame_rate != 0.0f) {
+          frame_vector.push_back(next_state);
+        }
       } else {
 
         // Compute the current distance to destination so that we can compute the utility loss later.
@@ -174,10 +178,10 @@ namespace bwi_guidance_solver {
         int next_node = human_decision_model_->GetNextNode(state, *rng);
 
         float total_time;
+        frame_vector.clear();
         if (params_.frame_rate == 0.0f) {
           motion_model_->move(next_state, next_node, task_generation_model_, *rng, total_time); 
         } else {
-          frame_vector.clear();
           while (!motion_model_->move(next_state, next_node, task_generation_model_, 
                                       *rng, total_time, 1.0f / params_.frame_rate)) {
             frame_vector.push_back(next_state);
@@ -397,7 +401,7 @@ namespace bwi_guidance_solver {
         // Add the offset for the robot's location.
         cv::Point2f colocated_robot_pos = human_pos + cv::Point2f(12, 6); 
 
-        if (state.assist_type == DIRECT_PERSON) {
+        if ((state.assist_type == DIRECT_PERSON) && state.loc_p == 0.0f) {
           float orientation = bwi_mapper::getNodeAngle(state.loc_node, state.assist_loc, graph_);
           drawScreenWithDirectedArrowOnImage(image, colocated_robot_pos, orientation);
         } else if (state.assist_type == LEAD_PERSON) {
