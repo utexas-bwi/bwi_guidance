@@ -54,9 +54,9 @@ int main(int argc, const char *argv[]) {
   State current_state, next_state;
   current_state.loc_node = 8;
   current_state.loc_p = 0.0f;
-  current_state.loc_v = 0;
-  current_state.direction = 0; // computeNextDirection(0, 8, 9, graph);
+  current_state.loc_prev = 8;
   current_state.assist_type = NONE;
+  current_state.assist_loc = NONE;
   current_state.robots.resize(2);
   current_state.robots[0].loc_u = 8;
   current_state.robots[0].loc_p = 0.0f;

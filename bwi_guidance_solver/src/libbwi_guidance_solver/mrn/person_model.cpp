@@ -388,7 +388,9 @@ namespace bwi_guidance_solver {
 
       cv::Point2f human_pos = (1 - state.loc_p) * bwi_mapper::getLocationFromGraphId(state.loc_node, graph_);
       if (state.loc_p > 0.0f) {
-        human_pos += state.loc_p * bwi_mapper::getLocationFromGraphId(state.loc_v, graph_);
+        // Note that loc_prev is a bit abused here. When loc_p != 0, loc_prev actually points to the node the person
+        // is transitioning to.
+        human_pos += state.loc_p * bwi_mapper::getLocationFromGraphId(state.loc_prev, graph_);
       }
 
       // Offset for person

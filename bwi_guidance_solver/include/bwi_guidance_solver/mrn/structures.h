@@ -76,27 +76,25 @@ namespace bwi_guidance_solver {
 
     struct State {
 
-      int loc_node; // ~50
-      int direction; // ~16 
+      int loc_node;
+      int loc_prev; 
 
       int assist_type;
       int assist_loc;
 
       std::vector<RobotState> robots;
 
-      /* These are only used for visualization purposes. loc_node is the same as loc_u. */
-      int loc_v;
+      /* The location precision is only used for visualization purposes. */
       float loc_p;
 
       friend class boost::serialization::access;
       template<class Archive>
         void serialize(Archive &ar, const unsigned int version) {
           ar & loc_node;
-          ar & direction;
+          ar & loc_prev;
           ar & assist_type;
           ar & assist_loc;
           ar & BOOST_SERIALIZATION_NVP(robots);
-          ar & loc_v;
           ar & loc_p;
         }
     };
@@ -106,7 +104,7 @@ namespace bwi_guidance_solver {
       size_t operator()(const State& key) const {
         size_t seed = 0;
         boost::hash_combine(seed, key.loc_node);
-        boost::hash_combine(seed, key.direction);
+        boost::hash_combine(seed, key.loc_prev);
         boost::hash_combine(seed, key.assist_type);
         boost::hash_combine(seed, key.assist_loc);
         boost::hash_range(seed, key.robots.begin(), key.robots.end());

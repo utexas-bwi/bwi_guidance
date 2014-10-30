@@ -39,8 +39,16 @@ namespace bwi_guidance_solver {
             expected_direction_of_motion = bwi_mapper::getNodeAngle(state.loc_node, state.assist_loc, graph_);
           } else /* no assistance provided. */ {
             // Do nothin. Use default values for exoe
-            expected_direction_of_motion = getAngleInRadians(state.direction);
-            expected_variance = 0.1f;
+            if (state.loc_prev != state.loc_node) {
+              expected_direction_of_motion = bwi_mapper::getNodeAngle(state.loc_prev, state.loc_node, graph_);
+              expected_variance = 0.1f;
+            } else {
+              // This can only mean that this is the start state (as the person does not have loc_prev set), and 
+              // the policy called Wait without first calling LEAD or DIRECT, which is a terrible action since
+              // some free help went to waste. Assume that the person will move completely randomly.
+              int rand_idx = rng.randomInt(adjacent_vertices_map_[state.loc_node].size() - 1);
+              return adjacent_vertices_map_[state.loc_node][rand_idx];
+            }
           }
 
           // Now assume that the person moves to one the adjacent locations
@@ -173,15 +181,15 @@ namespace bwi_guidance_solver {
           // Move the human.
           if (time_step == 0.0f) {
             time_step = shortest_distances_[state.loc_node][next_node] / human_speed;
-            state.loc_v = state.loc_node;
+            state.loc_prev = state.loc_node;
             state.loc_node = next_node;
             state.loc_p = 0.0f;
             ready_for_next_action = true;
           } else {
-            if ((state.loc_v == next_node) || (state.loc_p == 0.0f)) {
-              state.loc_v = next_node;
+            if ((state.loc_prev == next_node) || (state.loc_p == 0.0f)) {
+              state.loc_prev = next_node;
               float human_coverable_distance = time_step * human_speed;
-              float human_edge_distance = shortest_distances_[state.loc_node][state.loc_v];
+              float human_edge_distance = shortest_distances_[state.loc_node][state.loc_prev];
               float added_precision = human_coverable_distance / human_edge_distance;
               state.loc_p += added_precision;
               if (state.loc_p >= 1.0f) {
@@ -189,7 +197,7 @@ namespace bwi_guidance_solver {
                 ready_for_next_action = true;
                 time_step -= (state.loc_p - 1.0f) * (human_edge_distance / human_speed);
                 state.loc_p = 0.0f;
-                state.loc_v = state.loc_node;
+                state.loc_prev = state.loc_node;
                 state.loc_node = next_node;
               }
             } else {
@@ -200,6 +208,7 @@ namespace bwi_guidance_solver {
           // Since the human has moved, remove any previous assistance.
           if (ready_for_next_action) {
             state.assist_type = NONE;
+            state.assist_loc = NONE;
           }
 
           /* std::cout << "Moving ahead for " << time << " seconds" << std::endl; */

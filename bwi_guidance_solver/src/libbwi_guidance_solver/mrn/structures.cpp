@@ -68,7 +68,7 @@ namespace bwi_guidance_solver {
 
     bool operator<(const State& l, const State& r ) {
       COMPARE(loc_node);
-      COMPARE(direction);
+      COMPARE(loc_prev);
       COMPARE(assist_type);
       COMPARE(assist_loc);
 
@@ -85,18 +85,21 @@ namespace bwi_guidance_solver {
 
     bool operator==(const State& l, const State& r ) {
       return l.loc_node == r.loc_node &&
-        l.direction == r.direction &&
+        l.loc_prev == r.loc_prev &&
         l.assist_type == r.assist_type &&
         l.assist_loc == r.assist_loc &&
         l.robots == r.robots;
     }
 
+    std::ostream& operator<<(std::ostream& stream, const RobotState& rs) {
+      stream << "(<" << rs.loc_u << "," << rs.loc_v << "," << rs.loc_p << ">";
+      stream << ",<" << rs.tau_d << "," << rs.tau_t << "," << rs.tau_total_task_time << "," << rs.tau_u << ">";
+      stream << "," << rs.help_destination << ")";
+    }
     std::ostream& operator<<(std::ostream& stream, const State& s) {
-      stream << "[" << s.loc_node << "," << s.direction << ",";
+      stream << "[" << s.loc_node << "," << s.loc_prev << ",";
       for (unsigned int i = 0; i < s.robots.size(); ++i) {
-        stream << "(<" << s.robots[i].loc_u << "," << s.robots[i].loc_v << "," << s.robots[i].loc_p << ">";
-        stream << ",<" << s.robots[i].tau_d << "," << s.robots[i].tau_t << "," << s.robots[i].tau_total_task_time << "," << s.robots[i].tau_u << ">";
-        stream << "," << s.robots[i].help_destination << ")";
+        stream << s.robots[i];
         stream << ","; 
       }
       stream << "<"  << s.assist_type << "," << s.assist_loc << ">]";
