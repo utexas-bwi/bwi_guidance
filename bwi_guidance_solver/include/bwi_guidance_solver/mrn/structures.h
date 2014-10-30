@@ -28,14 +28,6 @@ namespace bwi_guidance_solver {
 
       int robot_id; // with ASSIGN_ROBOT, identifies the robot
       int node; // with DIRECT_PERSON or LEAD_PERSON, identifies the direction the robot should guide/lead to.
-
-      friend class boost::serialization::access;
-      template<class Archive>
-        void serialize(Archive &ar, const unsigned int version) {
-          ar & type;
-          ar & robot_id;
-          ar & node;
-        }
     };
 
     bool operator==(const Action& l, const Action& r);
@@ -86,32 +78,7 @@ namespace bwi_guidance_solver {
 
       /* The location precision is only used for visualization purposes. */
       float loc_p;
-
-      friend class boost::serialization::access;
-      template<class Archive>
-        void serialize(Archive &ar, const unsigned int version) {
-          ar & loc_node;
-          ar & loc_prev;
-          ar & assist_type;
-          ar & assist_loc;
-          ar & BOOST_SERIALIZATION_NVP(robots);
-          ar & loc_p;
-        }
     };
-
-    struct StateHash { 
-      StateHash() {}
-      size_t operator()(const State& key) const {
-        size_t seed = 0;
-        boost::hash_combine(seed, key.loc_node);
-        boost::hash_combine(seed, key.loc_prev);
-        boost::hash_combine(seed, key.assist_type);
-        boost::hash_combine(seed, key.assist_loc);
-        boost::hash_range(seed, key.robots.begin(), key.robots.end());
-        /* Note that loc_v and precision are ignored here, as they are used for visualization purposes only. */
-        return seed;
-      }
-    }; 
 
     bool operator<(const State& l, const State& r); 
     bool operator==(const State& l, const State& r);
