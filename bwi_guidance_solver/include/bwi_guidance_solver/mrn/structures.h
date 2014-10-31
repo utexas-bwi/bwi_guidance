@@ -32,6 +32,7 @@ namespace bwi_guidance_solver {
 
     bool operator==(const Action& l, const Action& r);
     bool operator<(const Action& l, const Action& r);
+    bool operator>(const Action& l, const Action& r);
     std::ostream& operator<<(std::ostream& stream, const Action& a);
 
     /* States */
@@ -53,7 +54,7 @@ namespace bwi_guidance_solver {
     bool operator==(const RobotState& l, const RobotState& r);
     bool operator>(const RobotState& l, const RobotState& r); 
 
-    inline size_t hash_value(const bwi_guidance_solver::mrn::RobotState &rs) {
+    inline size_t hash_value(const RobotState &rs) {
       size_t seed = 0;
       boost::hash_combine(seed, rs.loc_u);
       boost::hash_combine(seed, rs.loc_v);

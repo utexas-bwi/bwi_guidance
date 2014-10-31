@@ -52,6 +52,7 @@ add_library(bwi_guidance_solver
   ## src/libbwi_guidance_solver/mrn/single_robot_solver.cpp
   src/libbwi_guidance_solver/mrn/person_model.cpp
   src/libbwi_guidance_solver/mrn/structures.cpp
+  src/libbwi_guidance_solver/mrn/restricted_structures.cpp
   src/libbwi_guidance_solver/mrn/common.cpp
   ## src/libbwi_guidance_solver/mrn/domain.cpp
   ## src/libbwi_guidance_solver/mrn/solver.cpp

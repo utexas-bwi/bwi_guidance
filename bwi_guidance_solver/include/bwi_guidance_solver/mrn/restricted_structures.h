@@ -7,12 +7,10 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
 
-    struct RestrictedAction : public RestrictedAction {
-      RestrictedAction(ActionType a, int arg1 = 0) : RestrictedAction(a, arg1, arg1);
+    struct RestrictedAction : public Action {
+      RestrictedAction(ActionType a = WAIT, int arg1 = 0) : Action(a, arg1, arg1) {}
     };
     
-    bool operator==(const RestrictedAction& l, const RestrictedAction& r);
-    bool operator<(const RestrictedAction& l, const RestrictedAction& r);
     std::ostream& operator<<(std::ostream& stream, const RestrictedAction& a);
 
     struct RestrictedState : public State {
@@ -21,9 +19,8 @@ namespace bwi_guidance_solver {
       std::vector<int> released_locations;
     };
 
-    bool operator<(const State& l, const State& r); 
-    bool operator==(const State& l, const State& r);
-    std::ostream& operator<<(std::ostream& stream, const State& s);
+    bool operator<(const RestrictedState& l, const RestrictedState& r); 
+    bool operator==(const RestrictedState& l, const RestrictedState& r);
 
     struct RestrictedStateHash { 
       RestrictedStateHash() {}
@@ -33,7 +30,11 @@ namespace bwi_guidance_solver {
         boost::hash_combine(seed, key.loc_prev);
         boost::hash_combine(seed, key.assist_type);
         boost::hash_combine(seed, key.assist_loc);
+        boost::hash_combine(seed, key.prev_action.type);
+        boost::hash_combine(seed, key.prev_action.robot_id);
+        boost::hash_combine(seed, key.prev_action.node);
         boost::hash_range(seed, key.robots.begin(), key.robots.end());
+        boost::hash_range(seed, key.released_locations.begin(), key.released_locations.end());
         /* Note that loc_v and precision are ignored here, as they are used for visualization purposes only. */
         return seed;
       }

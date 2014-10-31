@@ -20,6 +20,10 @@ namespace bwi_guidance_solver {
               ((l.type == r.type) && (l.robot_id == r.robot_id) && (l.node < r.node))); 
     }
 
+    bool operator>(const Action& l, const Action& r) {
+      return (l == r || l < r) ? false : true;
+    }
+
     const std::string ACTION__NAMES[] = {
       "WAIT",
       "ASSIGN_ROBOT",
