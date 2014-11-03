@@ -21,19 +21,11 @@ namespace bwi_guidance_solver {
 
       public:
 
-#define PARAMS(_) \
-          _(int,max_robots_in_use,max_robots_in_use,1) \
-          _(int,action_vertex_visiblity_depth,action_vertex_visiblity_depth,0) \
-          _(int,action_vertex_adjacency_depth,action_vertex_adjacency_depth,1) \
-          _(float,visibility_range,visibility_range,20.0f) 
-
-          Params_STRUCT(PARAMS)
-#undef PARAMS
-
         bool initialize(Domain::Params &domain_params, 
                         Json::Value &params, 
                         const nav_msgs::OccupancyGrid &map,
                         const bwi_mapper::Graph &graph, 
+                        const std::vector<int> &robot_home_base,
                         const std::string &base_directory);
 
         void reset(int seed, int goal_idx);
@@ -50,11 +42,6 @@ namespace bwi_guidance_solver {
         virtual void performPostActionComputation(const State &state, float time = 0.0);
         virtual std::map<std::string, std::string> getParamsAsMapSolverSpecific();
 
-        inline int getMaxRobotsInUse() { return general_params_.max_robots_in_use; }
-        inline int getActionVertexVisibilityDepth() { return general_params_.action_vertex_visiblity_depth; }
-        inline int getActionVertexAdjacencyDepth() { return general_params_.action_vertex_adjacency_depth; }
-        inline float getVisibilityRange() { return general_params_.visibility_range; }
-
       protected:
 
         /* Some test instance/precomputation specific pieces of information */
@@ -66,9 +53,9 @@ namespace bwi_guidance_solver {
         std::string base_directory_;
         nav_msgs::OccupancyGrid map_;
         bwi_mapper::Graph graph_;
+        std::vector<int> robot_home_base_;
 
         Domain::Params domain_params_;
-        Params general_params_;
 
     };
 

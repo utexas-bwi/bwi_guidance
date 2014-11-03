@@ -24,7 +24,7 @@ namespace bwi_guidance_solver {
       return (l == r || l < r) ? false : true;
     }
 
-    const std::string ACTION__NAMES[] = {
+    const std::string ACTION_NAMES[] = {
       "WAIT",
       "ASSIGN_ROBOT",
       "DIRECT_PERSON",
@@ -32,7 +32,7 @@ namespace bwi_guidance_solver {
       "LEAD_PERSON"
     };
     std::ostream& operator<<(std::ostream& stream, const Action& a) {
-      stream << "[" << ACTION__NAMES[a.type];
+      stream << "[" << ACTION_NAMES[a.type];
       if (a.type != WAIT) {
         stream << " " << a.robot_id;
         if (a.type != RELEASE_ROBOT) {

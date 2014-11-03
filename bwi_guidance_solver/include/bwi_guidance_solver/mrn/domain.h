@@ -34,7 +34,8 @@ namespace bwi_guidance_solver {
           _(bool,use_shaping_reward,use_shaping_reward,false) \
           _(bool,discourage_bad_assignments,discourage_bad_assignments,false) \
           _(std::string,map_file,map_file,"") \
-          _(std::string,graph_file,graph_file,"")
+          _(std::string,graph_file,graph_file,"") \
+          _(std::string,robot_home_base_file,robot_home_base_file,"")
 
           Params_STRUCT(PARAMS)
 #undef PARAMS
@@ -55,6 +56,7 @@ namespace bwi_guidance_solver {
 
         nav_msgs::OccupancyGrid map_;
         bwi_mapper::Graph graph_;
+        std::vector<int> robot_home_base_;
         cv::Mat base_image_;
     };
 

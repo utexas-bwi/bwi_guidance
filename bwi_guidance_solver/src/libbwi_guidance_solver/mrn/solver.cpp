@@ -8,20 +8,15 @@ namespace bwi_guidance_solver {
                             Json::Value &params, 
                             const nav_msgs::OccupancyGrid &map,
                             const bwi_mapper::Graph &graph, 
+                            const std::vector<int> &robot_home_base,
                             const std::string &base_directory) {
       domain_params_ = domain_params;
-      general_params_.fromJson(params);
       map_ = map;
       graph_ = graph;
+      robot_home_base_ = robot_home_base;
 
       // Compute the base directory and create it.
-      std::ostringstream parametrized_dir_ss;
-      parametrized_dir_ss << std::fixed << std::setprecision(2);
-      parametrized_dir_ss << base_directory << "/mr" << general_params_.max_robots_in_use << 
-        "-avvd" << general_params_.action_vertex_visiblity_depth <<
-        "-avad" << general_params_.action_vertex_adjacency_depth << 
-        "-vr" << general_params_.visibility_range;
-      base_directory_ = parametrized_dir_ss.str();
+      base_directory_ = base_directory;
       if (!boost::filesystem::is_directory(base_directory_) &&
           !boost::filesystem::create_directory(base_directory_))
       {
@@ -35,28 +30,36 @@ namespace bwi_guidance_solver {
       seed_ = seed;
       goal_idx_ = goal_idx;
 
+      // Initialize the transition model.
+      MotionModel::Ptr motion_model(new MotionModel(graph_, 
+                                                    domain_params_.robot_speed / map_.info.resolution,
+                                                    domain_params_.human_speed / map_.info.resolution)); 
+
+      TaskGenerationModel::Ptr task_generation_model(new TaskGenerationModel(robot_home_base_, 
+                                                                             graph_, 
+                                                                             domain_params_.utility_multiplier));
+
+      HumanDecisionModel::Ptr human_decision_model(new HumanDecisionModel(graph_));
+
+      // Set the MDP parameters and initialize the MDP.
+      PersonModel::Params params;
+      params.frame_rate = 0.0f; // This version of the model should never visualize, as it is used for sampling only.
+      params.num_robots = robot_home_base_.size();
+      params.avg_robot_speed = domain_params_.robot_speed;
+
       model_.reset(new PersonModel(graph_, 
                                    map_, 
                                    goal_idx_, 
-                                   0, /* frame_rate is for visualization only. should not be required by a solver */
-                                   general_params_.max_robots_in_use,
-                                   general_params_.action_vertex_visiblity_depth,
-                                   general_params_.action_vertex_adjacency_depth,
-                                   general_params_.visibility_range,
-                                   domain_params_.human_speed,
-                                   domain_params_.robot_speed,
-                                   domain_params_.utility_multiplier,
-                                   domain_params_.use_shaping_reward,
-                                   domain_params_.discourage_bad_assignments));
+                                   motion_model,
+                                   human_decision_model,
+                                   task_generation_model,
+                                   params));
 
       this->resetSolverSpecific();
     }
 
     std::map<std::string, std::string> Solver::getParamsAsMap() { 
-      std::map<std::string, std::string> stringMap = this->getParamsAsMapSolverSpecific();
-      std::map<std::string, std::string> general_params_map = general_params_.asMap();
-      stringMap.insert(general_params_map.begin(), general_params_map.end());
-      return stringMap;
+      return this->getParamsAsMapSolverSpecific();
     }
 
     bool Solver::initializeSolverSpecific(Json::Value &params) { return true; }

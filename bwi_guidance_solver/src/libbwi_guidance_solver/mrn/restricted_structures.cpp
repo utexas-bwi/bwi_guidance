@@ -7,7 +7,10 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
     
-    const std::string ACTION__NAMES[] = {
+    RestrictedAction::RestrictedAction() : Action() {}
+    RestrictedAction::RestrictedAction(ActionType a, int robot_id, int node) : Action(a, robot_id, node) {}
+
+    const std::string ACTION_NAMES[] = {
       "WAIT",
       "ASSIGN_ROBOT",
       "DIRECT_PERSON",
@@ -15,7 +18,7 @@ namespace bwi_guidance_solver {
       "LEAD_PERSON"
     };
     std::ostream& operator<<(std::ostream& stream, const RestrictedAction& a) {
-      stream << "[" << ACTION__NAMES[a.type];
+      stream << "[" << ACTION_NAMES[a.type];
       if (a.type != WAIT) {
         if (a.type == RELEASE_ROBOT) {
           stream << " " << a.robot_id;

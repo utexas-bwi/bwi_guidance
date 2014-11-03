@@ -37,15 +37,18 @@ namespace bwi_guidance_solver {
 
       params_.map_file = bwi_tools::resolveRosResource(params_.map_file);
       params_.graph_file = bwi_tools::resolveRosResource(params_.graph_file);
+      params_.robot_home_base_file = bwi_tools::resolveRosResource(params_.robot_home_base_file);
 
-      // Read the map and graph file.
+      // Read the map and graph file and the home bases of the robots.
       if (boost::filesystem::is_regular_file(params_.map_file) &&
-          boost::filesystem::is_regular_file(params_.graph_file)) {
+          boost::filesystem::is_regular_file(params_.graph_file) &&
+          boost::filesystem::is_regular_file(params_.robot_home_base_file)) {
         // Read map and graph
         bwi_mapper::MapLoader mapper(params_.map_file);
         mapper.getMap(map_);
         mapper.drawMap(base_image_);
         bwi_mapper::readGraphFromFile(params_.graph_file, map_.info, graph_);
+        readRobotHomeBase(params_.robot_home_base_file, robot_home_base_);
       } else {
         // Print an error should the map file or graph file not exist.
         ROS_FATAL_STREAM("Either the map file (" << params_.map_file << ") or the graph file (" << 
@@ -84,7 +87,7 @@ namespace bwi_guidance_solver {
         for (unsigned solver_idx = 0; solver_idx < solvers.size(); ++solver_idx) {
           std::string solver_name = solvers[solver_idx]["name"].asString();
           boost::shared_ptr<Solver> solver = class_loader_->createInstance(solver_name);
-          if (!(solver->initialize(params_, solvers[solver_idx]["params"], map_, graph_, base_directory_))) {
+          if (!(solver->initialize(params_, solvers[solver_idx]["params"], map_, graph_, robot_home_base_, base_directory_))) {
             ROS_FATAL("Could not initialize solver.");
             return false;
           }
@@ -114,44 +117,39 @@ namespace bwi_guidance_solver {
 
       RNG rng(seed);
       int num_vertices = boost::num_vertices(graph_);
-      int start_idx = (params_.start_colocated) ? ROBOT_HOME_BASE[rng.randomInt(9)] : rng.randomInt(num_vertices - 1);
+      int start_robot_idx = rng.randomInt(robot_home_base_.size() - 1);
+      int start_idx = (params_.start_colocated) ? robot_home_base_[start_robot_idx] : rng.randomInt(num_vertices - 1);
       int goal_idx = rng.randomInt(num_vertices - 1);
       while (goal_idx == start_idx) {
         goal_idx = rng.randomInt(num_vertices - 1);
       }
-      // TODO How this is not a #define somewhere? I couldn't locate it. Needs more searching.
-      int start_direction = rng.randomInt(15);
 
       float shortest_distance = bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph_) * map_.info.resolution;
       std::cout << "Testing instance with start_idx: " << start_idx << ", goal_idx: " << goal_idx << " and shortest distance " << shortest_distance << std::endl;
       
       // We can create the model right now as loading the model is not dependent on the method parameters. We just need
       // to make sure we reinitialize the rng and update the reward structure for every method as necessary
-      int max_robots_in_use = 0;
-      int action_vertex_visiblity_depth = 0;
-      int action_vertex_adjacency_depth = 0;
-      float visibility_range = 0.0f;
-      BOOST_FOREACH(boost::shared_ptr<Solver>& solver, solvers_) {
-        max_robots_in_use = std::max(max_robots_in_use, solver->getMaxRobotsInUse());
-        action_vertex_visiblity_depth = 
-          std::max(action_vertex_visiblity_depth, solver->getActionVertexVisibilityDepth());
-        action_vertex_adjacency_depth = 
-          std::max(action_vertex_adjacency_depth, solver->getActionVertexAdjacencyDepth());
-        visibility_range = std::max(visibility_range, solver->getVisibilityRange());
-      }
+      // Initialize the transition model.
+      MotionModel::Ptr motion_model(new MotionModel(graph_, 
+                                                    params_.robot_speed / map_.info.resolution,
+                                                    params_.human_speed / map_.info.resolution)); 
+      TaskGenerationModel::Ptr task_generation_model(new TaskGenerationModel(robot_home_base_, 
+                                                                             graph_, 
+                                                                             params_.utility_multiplier));
+      HumanDecisionModel::Ptr human_decision_model(new HumanDecisionModel(graph_));
+
+      // Set the MDP parameters and initialize the MDP.
+      PersonModel::Params mdp_params;
+      mdp_params.frame_rate = params_.frame_rate; // This version of the model should never visualize, as it is used for sampling only.
+      mdp_params.num_robots = robot_home_base_.size();
+      mdp_params.avg_robot_speed = params_.robot_speed;
       boost::shared_ptr<PersonModel> evaluation_model(new PersonModel(graph_, 
                                                                       map_, 
                                                                       goal_idx, 
-                                                                      params_.frame_rate,
-                                                                      max_robots_in_use,
-                                                                      action_vertex_visiblity_depth,
-                                                                      action_vertex_adjacency_depth,
-                                                                      visibility_range,
-                                                                      params_.human_speed,
-                                                                      params_.robot_speed,
-                                                                      params_.utility_multiplier,
-                                                                      params_.use_shaping_reward,
-                                                                      params_.discourage_bad_assignments));
+                                                                      motion_model,
+                                                                      human_decision_model,
+                                                                      task_generation_model,
+                                                                      mdp_params));
 
       std::vector<std::map<std::string, std::string> > records;
       BOOST_FOREACH(boost::shared_ptr<Solver>& solver, solvers_) {
@@ -163,16 +161,26 @@ namespace bwi_guidance_solver {
         record["name"] = solver->getSolverName();
         record["start_idx"] = boost::lexical_cast<std::string>(start_idx);
         record["goal_idx"] = boost::lexical_cast<std::string>(goal_idx);
-        record["start_direction"] = boost::lexical_cast<std::string>(start_direction);
 
         boost::shared_ptr<RNG> evaluation_rng(new RNG(2 * (seed + 1)));
 
+        // Initialize the start state.
         State current_state; 
-        current_state.graph_id = start_idx;
-        current_state.direction = start_direction;
-        current_state.precision = 1.0f;
-        current_state.robot_gave_direction = false;
-        evaluation_model->addRobots(current_state, params_.max_robots, evaluation_rng);
+        current_state.loc_node = start_idx;
+        current_state.loc_p = 0.0f;
+        current_state.loc_prev = start_idx;
+        current_state.assist_type = NONE;
+        current_state.assist_loc = NONE;
+        current_state.robots.resize(robot_home_base_.size());
+        int robot_counter = 0;
+        BOOST_FOREACH(RobotState &robot, current_state.robots) {
+          robot.loc_u = robot_home_base_[robot_counter];
+          robot.loc_p = 0.0f;
+          robot.loc_v = robot.loc_u;
+          robot.help_destination = NONE;
+          task_generation_model->generateNewTaskForRobot(robot_counter, robot, *evaluation_rng);
+          ++robot_counter;
+        }
 
         if (params_.start_colocated) {
           // If the robot starts colocated as the human, then assign that robot to help the human.
@@ -180,7 +188,7 @@ namespace bwi_guidance_solver {
           int unused_depth_count;
           bool unused_terminal;
           State next_state;
-          evaluation_model->takeAction(current_state, Action(ASSIGN_ROBOT, start_idx, DIR_UNASSIGNED), 
+          evaluation_model->takeAction(current_state, Action(ASSIGN_ROBOT, start_robot_idx, start_idx), 
                                        unused_reward, next_state, unused_terminal, unused_depth_count, 
                                        evaluation_rng);
           current_state = next_state;
@@ -217,7 +225,7 @@ namespace bwi_guidance_solver {
           evaluation_model->takeAction(current_state, action, transition_reward, next_state, terminal, depth_count,
                                        evaluation_rng, time_loss, utility_loss, frame_vector);
           float transition_distance = 
-            bwi_mapper::getEuclideanDistance(next_state.graph_id, current_state.graph_id, graph_);
+            bwi_mapper::getEuclideanDistance(next_state.loc_node, current_state.loc_node, graph_);
 
           instance_distance += transition_distance;
           instance_reward += transition_reward;
@@ -235,31 +243,16 @@ namespace bwi_guidance_solver {
 
           // TODO we should do the computation with the original state and selected action.
           if (params_.frame_rate != 0.0f) {
-            if (action.type != GUIDE_PERSON) {
-              for (int time_step = 0; time_step < frame_vector.size(); ++time_step) {
-                cv::Mat out_img = base_image_.clone();
-                if (!terminal) {
-                  solver->performPostActionComputation(current_state, 1.0f / params_.frame_rate);
-                } else {
-                  boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
-                }
-                evaluation_model->drawState(frame_vector[time_step], out_img);
-                // For the first half second, draw the action as well.
-                if (time_step < params_.frame_rate / 2) {
-                  evaluation_model->drawAction(frame_vector[time_step], action, out_img);
-                }
-                // TODO replace call with something that produces the video as well.
-                cv::imshow("out", out_img);
-              }
-            } else {
+            for (int time_step = 0; time_step < frame_vector.size(); ++time_step) {
               cv::Mat out_img = base_image_.clone();
-              evaluation_model->drawState(current_state, out_img);
-              evaluation_model->drawAction(current_state, action, out_img);
-              for (int time_step = 0; time_step < params_.frame_rate / 2; ++time_step) {
-                // TODO replace call with something that produces the video as well.
-                cv::imshow("out", out_img);
+              if (!terminal) {
+                solver->performPostActionComputation(current_state, 1.0f / params_.frame_rate);
+              } else {
                 boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
               }
+              evaluation_model->drawState(frame_vector[time_step], out_img);
+              // TODO replace call with something that produces the video as well.
+              cv::imshow("out", out_img);
             }
           } else {
             if (!terminal) {

@@ -2,6 +2,7 @@
 #define BWI_GUIDANCE_SOLVER_MRN_COMMON_H
 
 #include <bwi_guidance_solver/mrn/structures.h>
+#include <fstream>
 #include <vector>
 
 namespace bwi_guidance_solver {
@@ -37,6 +38,17 @@ namespace bwi_guidance_solver {
                                float human_speed, 
                                float robot_speed,
                                const std::vector<std::vector<float> > &shortest_distances);
+
+    inline void readRobotHomeBase(const std::string& robot_home_base_file, std::vector<int> &robot_home_base) {
+      robot_home_base.clear();
+      std::ifstream fin(robot_home_base_file.c_str());
+      while (!fin.eof()) {
+        int home_base;
+        fin >> home_base;
+        robot_home_base.push_back(home_base);
+      }
+      fin.close();
+    }
 
   } /* mrn */
   
