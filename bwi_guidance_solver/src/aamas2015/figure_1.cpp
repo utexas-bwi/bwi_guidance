@@ -137,7 +137,6 @@ int main(int argc, const char *argv[]) {
 
     current_state = next_state;
 
-    std::cin.get();
     std::cin.ignore();
 
     ++counter;

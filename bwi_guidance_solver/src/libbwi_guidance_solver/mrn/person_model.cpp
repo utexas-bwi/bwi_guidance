@@ -72,7 +72,7 @@ namespace bwi_guidance_solver {
       for (unsigned int robot_id_num = 0; robot_id_num < robot_ids.size(); ++robot_id_num) {
         int robot = robot_ids[robot_id_num];
         actions.resize(action_counter + 2 * adjacent_vertices_map_[state.loc_node].size());
-        for (unsigned int adj = 0; adj < 2 * adjacent_vertices_map_[state.loc_node].size(); ++adj) {
+        for (unsigned int adj = 0; adj < adjacent_vertices_map_[state.loc_node].size(); ++adj) {
           actions[action_counter] = Action(DIRECT_PERSON, robot, adjacent_vertices_map_[state.loc_node][adj]);
           ++action_counter;
           actions[action_counter] = Action(LEAD_PERSON, robot, adjacent_vertices_map_[state.loc_node][adj]);
