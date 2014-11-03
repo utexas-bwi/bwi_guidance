@@ -88,7 +88,7 @@ namespace bwi_guidance_solver {
           std::string solver_name = solvers[solver_idx]["name"].asString();
           boost::shared_ptr<Solver> solver = class_loader_->createInstance(solver_name);
           if (!(solver->initialize(params_, solvers[solver_idx]["params"], map_, graph_, robot_home_base_, base_directory_))) {
-            ROS_FATAL("Could not initialize solver.");
+            ROS_FATAL("Could not initialize solver: %s", solver_name.c_str());
             return false;
           }
           solvers_.push_back(solver);

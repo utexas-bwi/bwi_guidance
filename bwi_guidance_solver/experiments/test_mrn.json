@@ -5,12 +5,10 @@
       "params": {
         "map_file": "package://bwi_guidance/maps/map3.yaml",
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
         "frame_rate": 10.0
       },
       "solvers": [
-        {
-          "name": "bwi_guidance_solver::mrn::HeuristicSolver"
-        },
         {
           "name": "bwi_guidance_solver::mrn::SingleRobotSolver"
         },

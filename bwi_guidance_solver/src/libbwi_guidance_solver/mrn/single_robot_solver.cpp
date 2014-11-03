@@ -16,6 +16,7 @@ namespace bwi_guidance_solver {
     bool SingleRobotSolver::initializeSolverSpecific(Json::Value &params) {
       computeShortestPath(shortest_distances_, shortest_paths_, graph_);
       computeAdjacentVertices(adjacent_vertices_map_, graph_);
+      return true;
     }
 
     void SingleRobotSolver::resetSolverSpecific() {
