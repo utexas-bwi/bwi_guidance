@@ -7,10 +7,7 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
 
-    struct RestrictedAction : public Action {
-      RestrictedAction(ActionType a = WAIT, int arg1 = 0) : Action(a, arg1, arg1) {}
-    };
-    
+    typedef Action RestrictedAction;
     std::ostream& operator<<(std::ostream& stream, const RestrictedAction& a);
 
     struct RestrictedState : public State {

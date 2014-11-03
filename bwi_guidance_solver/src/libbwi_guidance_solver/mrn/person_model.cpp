@@ -18,14 +18,14 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
     
-    PersonModel::PersonModel(const bwi_mapper::Graph &graph_, 
+    PersonModel::PersonModel(const bwi_mapper::Graph &graph, 
                              const nav_msgs::OccupancyGrid &map, 
                              int goal_idx, 
                              const MotionModel::Ptr &motion_model,
                              const HumanDecisionModel::Ptr &human_decision_model,
                              const TaskGenerationModel::Ptr &task_generation_model,
                              const Params &params) :
-      graph_(graph_), 
+      graph_(graph), 
       map_(map), 
       goal_idx_(goal_idx), 
       motion_model_(motion_model), 
@@ -46,8 +46,7 @@ namespace bwi_guidance_solver {
       int action_counter = 0;
 
       // Wait is allowed at all times.
-      actions.resize(1);
-      actions[action_counter] = Action(WAIT, 0, 0);
+      actions.push_back(Action(WAIT, 0, 0));
       ++action_counter;
 
       if (state.assist_type == LEAD_PERSON) {
@@ -65,6 +64,7 @@ namespace bwi_guidance_solver {
           }
         } else {
           actions.push_back(Action(RELEASE_ROBOT, robot));
+          ++action_counter;
         }
       }
 

@@ -32,6 +32,12 @@ namespace bwi_guidance_solver {
               ((robot.loc_v == loc) && (robot.loc_p == 1.0f)));
     }
 
+    int selectBestRobotForTask(const State& state, 
+                               int destination, 
+                               float human_speed, 
+                               float robot_speed,
+                               const std::vector<std::vector<float> > &shortest_distances);
+
   } /* mrn */
   
 } /* bwi_guidance_solver */

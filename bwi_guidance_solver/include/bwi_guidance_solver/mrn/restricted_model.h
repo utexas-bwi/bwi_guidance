@@ -58,6 +58,8 @@ namespace bwi_guidance_solver {
 
       private:
 
+        void getActionsAtState(const State &state, std::vector<Action>& actions);
+
         /* Underlying base model. */
         boost::shared_ptr<PersonModel> base_model_;
 
