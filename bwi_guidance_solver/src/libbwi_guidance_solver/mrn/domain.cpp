@@ -141,8 +141,6 @@ namespace bwi_guidance_solver {
       // Set the MDP parameters and initialize the MDP.
       RestrictedModel::Params extended_mdp_params;
       extended_mdp_params.frame_rate = params_.frame_rate; // This version of the model should never visualize, as it is used for sampling only.
-      extended_mdp_params.num_robots = robot_home_base_.size();
-      extended_mdp_params.avg_robot_speed = params_.robot_speed;
       extended_mdp_params.max_assigned_robots = robot_home_base_.size(); // maximum possible value of this parameter.
       boost::shared_ptr<RestrictedModel> extended_mdp(new RestrictedModel(graph_, 
                                                                           map_, 

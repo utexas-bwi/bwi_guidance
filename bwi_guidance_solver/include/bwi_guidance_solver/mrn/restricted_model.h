@@ -21,9 +21,7 @@ namespace bwi_guidance_solver {
 
 #define PARAMS(_) \
           _(float,frame_rate,frame_rate,0.0f) \
-          _(int,num_robots,num_robots,10) \
-          _(int,max_assigned_robots,kax_assigned_robots,1) \
-          _(float,avg_robot_speed,avg_robot_speed,0.5f)
+          _(int,max_assigned_robots,kax_assigned_robots,1)
 
           Params_STRUCT(PARAMS)
 #undef PARAMS
@@ -87,6 +85,7 @@ namespace bwi_guidance_solver {
         int goal_idx_;
         int num_vertices_;
         float avg_human_speed_;
+        float avg_robot_speed_;
     };
 
   } /* mrn */

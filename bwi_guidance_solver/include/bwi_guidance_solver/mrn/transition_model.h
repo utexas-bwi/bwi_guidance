@@ -307,6 +307,10 @@ namespace bwi_guidance_solver {
           return human_speed_;
         }
 
+        virtual float getRobotSpeed() {
+          return robot_speed_;
+        }
+
       private:
 
         bwi_mapper::Graph graph_;

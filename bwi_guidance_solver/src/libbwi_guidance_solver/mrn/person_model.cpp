@@ -33,8 +33,6 @@ namespace bwi_guidance_solver {
       task_generation_model_(task_generation_model),
       params_(params) {
 
-        params_.avg_robot_speed /= map_.info.resolution;
-
         num_vertices_ = boost::num_vertices(graph_);
         computeAdjacentVertices(adjacent_vertices_map_, graph_);
 
@@ -55,7 +53,7 @@ namespace bwi_guidance_solver {
       }
 
       // Allow robots to be assigned/released at any given location. 
-      for (unsigned int robot = 0; robot < params_.num_robots; ++robot) {
+      for (unsigned int robot = 0; robot < state.robots.size(); ++robot) {
         if (state.robots[robot].help_destination == NONE) {
           actions.resize(action_counter + num_vertices_);
           for (unsigned int node = 0; node < num_vertices_; ++node) {
@@ -197,7 +195,7 @@ namespace bwi_guidance_solver {
               getTrueDistanceTo(robot.loc_u, robot.loc_v, robot.loc_p, robot.tau_d, shortest_distances_);
             float distance_difference = 
               std::max(0.0f, distance_to_service_destination_before_action[i] - distance_to_service_destination);
-            float time_difference = distance_difference / params_.avg_robot_speed;
+            float time_difference = distance_difference / motion_model_->getRobotSpeed();
             float utility_loss_per_robot = time_difference * robot.tau_u; 
             utility_loss += utility_loss_per_robot;
           }

@@ -16,10 +16,8 @@ namespace bwi_guidance_solver {
 
         PersonModel::Params base_model_params;
         base_model_params.frame_rate = params.frame_rate;
-        base_model_params.num_robots = params.num_robots;
-        base_model_params.avg_robot_speed = params.avg_robot_speed;
 
-        params_.avg_robot_speed /= map.info.resolution;
+        avg_robot_speed_ = motion_model->getRobotSpeed();
         avg_human_speed_ = motion_model->getHumanSpeed();
 
         num_vertices_ = boost::num_vertices(graph);
@@ -38,6 +36,7 @@ namespace bwi_guidance_solver {
 
     void RestrictedModel::getActionsAtState(const ExtendedState& state, 
                                             std::vector<Action>& actions) {
+      actions.clear();
       int action_counter = 0;
 
       // If the previous action was DIRECT_HUMAN, then this action is fixed.
@@ -175,7 +174,7 @@ namespace bwi_guidance_solver {
         mapped_action.robot_id = selectBestRobotForTask(state, 
                                                         action.node,
                                                         avg_human_speed_,
-                                                        params_.avg_robot_speed,
+                                                        avg_robot_speed_,
                                                         shortest_distances_,
                                                         unused_reach_in_time);
       }

@@ -44,8 +44,6 @@ namespace bwi_guidance_solver {
       // Set the MDP parameters and initialize the MDP.
       PersonModel::Params params;
       params.frame_rate = 0.0f; // This version of the model should never visualize, as it is used for sampling only.
-      params.num_robots = robot_home_base_.size();
-      params.avg_robot_speed = domain_params_.robot_speed;
 
       model_.reset(new PersonModel(graph_, 
                                    map_, 

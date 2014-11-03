@@ -1,4 +1,5 @@
 #include <boost/thread/thread.hpp>
+#include <bwi_guidance_solver/mrn/restricted_model.h>
 #include <bwi_guidance_solver/mrn/person_model.h>
 #include <bwi_mapper/graph.h>
 #include <bwi_mapper/map_loader.h>
@@ -25,9 +26,8 @@ int main(int argc, const char *argv[]) {
   mapper.drawMap(base_image);
   bwi_mapper::readGraphFromFile(graph_file, map.info, graph);
 
-  PersonModel::Params params;
   MotionModel::Ptr motion_model(new MotionModel(graph, 
-                                                params.avg_robot_speed / map.info.resolution,
+                                                0.5f / map.info.resolution,
                                                 1.0f / map.info.resolution)); 
   std::vector<int> robot_home_base;
   robot_home_base.push_back(11);
@@ -37,11 +37,18 @@ int main(int argc, const char *argv[]) {
   HumanDecisionModel::Ptr human_decision_model(new HumanDecisionModel(graph));
 
   /* Enable visualization. */
+  PersonModel::Params params;
   params.frame_rate = 10.0f;
   cv::namedWindow("out");
   cvStartWindowThread();
 
   PersonModel model(graph, map, 12, motion_model, human_decision_model, task_generation_model, params);
+
+  /* Also create an extended model with defaults. */
+  RestrictedModel::Params extended_params;
+  extended_params.frame_rate = 10.0f;
+  extended_params.max_assigned_robots = 2;
+  RestrictedModel extended_model(graph, map, 12, motion_model, human_decision_model, task_generation_model, extended_params);
 
   float unused_reward, unused_time_loss, unused_utility_loss;
   bool unused_terminal;
@@ -51,7 +58,7 @@ int main(int argc, const char *argv[]) {
   boost::shared_ptr<RNG> rng(new RNG(0));
   
   // Original state - state 1.
-  State current_state, next_state;
+  ExtendedState current_state, next_state;
   current_state.loc_node = 8;
   current_state.loc_p = 0.0f;
   current_state.loc_prev = 8;
@@ -76,9 +83,11 @@ int main(int argc, const char *argv[]) {
   current_state.robots[1].help_destination = NONE;
   std::cout << "Original state: " << current_state << std::endl;
 
-  model.takeAction(current_state, Action(ASSIGN_ROBOT, 0, 8), unused_reward, next_state, unused_terminal, 
-                   unused_depth_count, rng, unused_time_loss, unused_utility_loss, frame_vector);
+  extended_model.takeAction(current_state, Action(ASSIGN_ROBOT, 0, 8), unused_reward, next_state, unused_terminal, 
+                            unused_depth_count, rng, unused_time_loss, unused_utility_loss, frame_vector);
   current_state = next_state;
+  current_state.prev_action = Action(WAIT);
+  current_state.released_locations.clear();
 
   std::vector<Action> actions;
   actions.push_back(Action(DIRECT_PERSON, 0, 9));
@@ -90,7 +99,21 @@ int main(int argc, const char *argv[]) {
 
   int counter = 0;
   while(true) { 
+
     std::cout << "Drawing state: " << current_state << std::endl;
+
+    std::cout << "  Unrestricted Actions: " << std::endl;
+    std::vector<Action> available_actions;
+    model.getAllActions(current_state, available_actions);
+    BOOST_FOREACH(Action &action, available_actions) {
+      std::cout << "    " << action << std::endl;
+    }
+
+    std::cout << "  Restricted Actions: " << std::endl;
+    extended_model.getAllActions(current_state, available_actions);
+    BOOST_FOREACH(Action &action, available_actions) {
+      std::cout << "    " << action << std::endl;
+    }
 
     cv::Mat img = base_image.clone();
     model.drawState(current_state, img);
@@ -102,8 +125,8 @@ int main(int argc, const char *argv[]) {
 
     std::cout << "  Taking action: " << actions[counter] << std::endl;
 
-    model.takeAction(current_state, actions[counter], unused_reward, next_state, unused_terminal, 
-                     unused_depth_count, rng, unused_time_loss, unused_utility_loss, frame_vector);
+    extended_model.takeAction(current_state, actions[counter], unused_reward, next_state, unused_terminal, 
+                              unused_depth_count, rng, unused_time_loss, unused_utility_loss, frame_vector);
 
     BOOST_FOREACH(State &state, frame_vector) {
       img = base_image.clone();
@@ -113,6 +136,9 @@ int main(int argc, const char *argv[]) {
     }
 
     current_state = next_state;
+
+    std::cin.get();
+    std::cin.ignore();
 
     ++counter;
   }
