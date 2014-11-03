@@ -103,7 +103,9 @@ namespace bwi_guidance_solver {
           cacheNewGoalsByDistance(graph);
         }
 
-        void generateNewTaskForRobot(int robot_id, RobotState &robot, RNG &rng) {
+        virtual ~TaskGenerationModel() {}
+
+        virtual void generateNewTaskForRobot(int robot_id, RobotState &robot, RNG &rng) {
           // Optimized!!!
           int idx = robot_home_base_[robot_id];
           int graph_distance = rng.poissonInt(1);
@@ -167,12 +169,12 @@ namespace bwi_guidance_solver {
         }
 
         virtual ~MotionModel() {}
-        bool move(State &state,
-                  int next_node,
-                  const TaskGenerationModel::Ptr &task_generation_model,
-                  RNG &rng,
-                  float &total_time,
-                  float time_step = 0.0f) {
+        virtual bool move(State &state,
+                          int next_node,
+                          const TaskGenerationModel::Ptr &task_generation_model,
+                          RNG &rng,
+                          float &total_time,
+                          float time_step = 0.0f) {
 
           bool ready_for_next_action = false;
 
@@ -301,6 +303,9 @@ namespace bwi_guidance_solver {
           return ready_for_next_action;
         }
 
+        virtual float getHumanSpeed() {
+          return human_speed_;
+        }
 
       private:
 

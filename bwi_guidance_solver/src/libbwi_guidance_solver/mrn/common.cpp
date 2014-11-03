@@ -50,7 +50,7 @@ namespace bwi_guidance_solver {
       std::vector<float> utility_loss(state.robots.size(), std::numeric_limits<float>::max());
       std::vector<float> time(state.robots.size(), std::numeric_limits<float>::max());
 
-      float time_to_destination = shortest_distances[state.loc][destination] / human_speed;
+      float time_to_destination = shortest_distances[state.loc_node][destination] / human_speed;
 
       for (int i = 0; i < state.robots.size(); ++i) {
         if (state.robots[i].help_destination != NONE) {
@@ -72,7 +72,7 @@ namespace bwi_guidance_solver {
                                                  state.robots[i].loc_p,
                                                  destination,
                                                  shortest_distances);
-        float new_distance_2 = shortest_distances_[destination][state.robots[i].tau_d];
+        float new_distance_2 = shortest_distances[destination][state.robots[i].tau_d];
         float new_time = 
           std::max(new_distance_1 / robot_speed, time_to_destination) + 
           new_distance_2 / robot_speed;
@@ -92,4 +92,4 @@ namespace bwi_guidance_solver {
 
   } /* mrn */
   
- /* bwi_guidance_solver */
+} /* bwi_guidance_solver */

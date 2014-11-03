@@ -1,18 +1,4 @@
-#include <boost/foreach.hpp>
-#include <cassert>
-#include <cmath>
-#include <fstream>
-
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/vector.hpp>
-
-#include <bwi_guidance_solver/mrn/common.h>
-#include <bwi_guidance_solver/mrn/person_model.h>
-#include <bwi_mapper/point_utils.h>
-#include <bwi_mapper/map_utils.h>
+#include <bwi_guidance_solver/mrn/restricted_model.h>
 
 namespace bwi_guidance_solver {
 
@@ -25,8 +11,6 @@ namespace bwi_guidance_solver {
                                      const HumanDecisionModel::Ptr &human_decision_model,
                                      const TaskGenerationModel::Ptr &task_generation_model,
                                      const Params &params) :
-      graph_(graph), 
-      map_(map), 
       goal_idx_(goal_idx), 
       params_(params) {
 
@@ -35,11 +19,12 @@ namespace bwi_guidance_solver {
         base_model_params.num_robots = params.num_robots;
         base_model_params.avg_robot_speed = params.avg_robot_speed;
 
-        params_.avg_robot_speed /= map_.info.resolution;
+        params_.avg_robot_speed /= map.info.resolution;
+        avg_human_speed_ = motion_model->getHumanSpeed();
 
-        num_vertices_ = boost::num_vertices(graph_);
-        computeAdjacentVertices(adjacent_vertices_map_, graph_);
-        computeShortestPath(shortest_distances_, shortest_paths_, graph_);
+        num_vertices_ = boost::num_vertices(graph);
+        computeAdjacentVertices(adjacent_vertices_map_, graph);
+        computeShortestPath(shortest_distances_, shortest_paths_, graph);
 
         /* Kickstart original model */
         base_model_.reset(new PersonModel(graph,
@@ -52,7 +37,7 @@ namespace bwi_guidance_solver {
       }
 
     void RestrictedModel::getActionsAtState(const RestrictedState& state, 
-                                            std::vector<Action>& actions) {
+                                            std::vector<RestrictedAction>& actions) {
       int action_counter = 0;
 
       // If the previous action was DIRECT_HUMAN, then this action is fixed.
@@ -76,7 +61,7 @@ namespace bwi_guidance_solver {
         actions.resize(action_counter + adjacent_vertices_map_[state.loc_node].size());
         for (unsigned int adj = 0; adj < adjacent_vertices_map_[state.loc_node].size(); ++adj) {
           actions[action_counter] = 
-            Action(LEAD_PERSON, colocated_robot_id, adjacent_vertices_map_[state.loc_node][adj]);
+            RestrictedAction(LEAD_PERSON, colocated_robot_id, adjacent_vertices_map_[state.loc_node][adj]);
           ++action_counter;
         }
       }
@@ -107,7 +92,7 @@ namespace bwi_guidance_solver {
           state.prev_action.type == DIRECT_PERSON) {
         for (unsigned int robot = 0; robot < state.robots.size(); ++robot) {
           if (state.robots[robot].help_destination != NONE) {
-            actions.push_back(Action(RELEASE_ROBOT, robot));
+            actions.push_back(RestrictedAction(RELEASE_ROBOT, robot));
           }
         }
       }
@@ -117,25 +102,25 @@ namespace bwi_guidance_solver {
         actions.resize(action_counter + adjacent_vertices_map_[state.loc_node].size());
         for (unsigned int adj = 0; adj < adjacent_vertices_map_[state.loc_node].size(); ++adj) {
           actions[action_counter] = 
-            Action(DIRECT_PERSON, colocated_robot_id, adjacent_vertices_map_[state.loc_node][adj]);
+            RestrictedAction(DIRECT_PERSON, colocated_robot_id, adjacent_vertices_map_[state.loc_node][adj]);
           ++action_counter;
         }
       }
 
     }
 
-    void RestrictedModel::getFirstAction(const RestrictedState &state, Action &action) {
+    void RestrictedModel::getFirstAction(const RestrictedState &state, RestrictedAction &action) {
       // This function cannot be optimized without maintaining state. Only present for legacy
       // reasons. Do not call it! For this reason, here is a very suboptimal implementation.
-      std::vector<Action> actions;
+      std::vector<RestrictedAction> actions;
       getActionsAtState(state, actions);
       action = actions[0];
     }
 
-    bool RestrictedModel::getNextAction(const RestrictedState &state, Action &action) {
+    bool RestrictedModel::getNextAction(const RestrictedState &state, RestrictedAction &action) {
       // This function cannot be optimized without maintaining state. Only present for legacy
       // reasons. Do not call it!
-      std::vector<Action> actions;
+      std::vector<RestrictedAction> actions;
       getActionsAtState(state, actions);
       for (unsigned int action_id = 0; action_id < actions.size() - 1; ++action_id) {
         if (actions[action_id] == action) {
@@ -146,12 +131,12 @@ namespace bwi_guidance_solver {
       return false;
     }
 
-    void RestrictedModel::getAllActions(const RestrictedState &state, std::vector<Action>& actions) {
+    void RestrictedModel::getAllActions(const RestrictedState &state, std::vector<RestrictedAction>& actions) {
       getActionsAtState(state, actions);
     }
 
     void RestrictedModel::takeAction(const RestrictedState &state, 
-                                     const Action &action, 
+                                     const RestrictedAction &action, 
                                      float &reward, 
                                      RestrictedState &next_state, 
                                      bool &terminal, 
@@ -162,18 +147,18 @@ namespace bwi_guidance_solver {
       if (action.type == ASSIGN_ROBOT) {
         mapped_action.robot_id = selectBestRobotForTask(state, 
                                                         action.node,
-                                                        human_speed_,
-                                                        params_.robot_speed_,
+                                                        avg_human_speed_,
+                                                        params_.avg_robot_speed,
                                                         shortest_distances_);
       }
 
-      base_model->takeAction(state, 
-                             mapped_action, 
-                             reward, 
-                             next_state, 
-                             terminal, 
-                             depth_count, 
-                             rng);
+      base_model_->takeAction(state, 
+                              mapped_action, 
+                              reward, 
+                              next_state, 
+                              terminal, 
+                              depth_count, 
+                              rng);
 
       next_state.prev_action = action;
       if (action.type == WAIT) {

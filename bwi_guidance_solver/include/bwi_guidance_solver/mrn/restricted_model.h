@@ -1,5 +1,5 @@
-#ifndef BWI_GUIDANCE_SOLVER_PERSON_MODEL_H
-#define BWI_GUIDANCE_SOLVER_PERSON_MODEL_H
+#ifndef BWI_GUIDANCE_SOLVER_RESTRICTED_MODEL_H
+#define BWI_GUIDANCE_SOLVER_RESTRICTED_MODEL_H
 
 #include <stdint.h>
 #include <nav_msgs/OccupancyGrid.h>
@@ -28,16 +28,16 @@ namespace bwi_guidance_solver {
           Params_STRUCT(PARAMS)
 #undef PARAMS
 
-        PersonModel(const bwi_mapper::Graph& graph, 
-                    const nav_msgs::OccupancyGrid& map, 
-                    int goal_idx,
-                    const MotionModel::Ptr &motion_model,
-                    const HumanDecisionModel::Ptr &human_decision_model,
-                    const TaskGenerationModel::Ptr &task_generation_model,
-                    const Params &params);
+        RestrictedModel(const bwi_mapper::Graph& graph, 
+                        const nav_msgs::OccupancyGrid& map, 
+                        int goal_idx,
+                        const MotionModel::Ptr &motion_model,
+                        const HumanDecisionModel::Ptr &human_decision_model,
+                        const TaskGenerationModel::Ptr &task_generation_model,
+                        const Params &params);
 
         /* Functions inherited from PredictiveModel */
-        virtual ~PersonModel() {};
+        virtual ~RestrictedModel() {};
 
         /* Functions inherited from Model */
         virtual void takeAction(const RestrictedState &state, 
@@ -58,7 +58,8 @@ namespace bwi_guidance_solver {
 
       private:
 
-        void getActionsAtState(const State &state, std::vector<Action>& actions);
+        void getActionsAtState(const RestrictedState &state, std::vector<RestrictedAction>& actions);
+        int getColocatedRobotId(const RestrictedState &state);
 
         /* Underlying base model. */
         boost::shared_ptr<PersonModel> base_model_;
@@ -71,10 +72,11 @@ namespace bwi_guidance_solver {
         Params params_;
         int goal_idx_;
         int num_vertices_;
+        float avg_human_speed_;
     };
 
   } /* mrn */
   
 } /* bwi_guidance_solver */
 
-#endif /* end of include guard: BWI_GUIDANCE_SOLVER_PERSON_MODEL_H */
+#endif /* end of include guard: BWI_GUIDANCE_SOLVER_RESTRICTED_MODEL_H */
