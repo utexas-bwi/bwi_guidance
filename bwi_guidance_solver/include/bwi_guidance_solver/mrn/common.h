@@ -1,6 +1,7 @@
 #ifndef BWI_GUIDANCE_SOLVER_MRN_COMMON_H
 #define BWI_GUIDANCE_SOLVER_MRN_COMMON_H
 
+#include <bwi_guidance_solver/mrn/extended_structures.h>
 #include <bwi_guidance_solver/mrn/structures.h>
 #include <fstream>
 #include <vector>
@@ -37,7 +38,8 @@ namespace bwi_guidance_solver {
                                int destination, 
                                float human_speed, 
                                float robot_speed,
-                               const std::vector<std::vector<float> > &shortest_distances);
+                               const std::vector<std::vector<float> > &shortest_distances,
+                               bool &reach_in_time);
 
     inline void readRobotHomeBase(const std::string& robot_home_base_file, std::vector<int> &robot_home_base) {
       robot_home_base.clear();
@@ -48,6 +50,16 @@ namespace bwi_guidance_solver {
         robot_home_base.push_back(home_base);
       }
       fin.close();
+    }
+
+    inline int getColocatedRobotId(const ExtendedState &state) {
+      for (int robot_id = 0; robot_id < state.robots.size(); ++robot_id) {
+        if ((state.robots[robot_id].help_destination == state.loc_node) &&
+            isRobotExactlyAt(state.robots[robot_id], state.loc_node)) {
+          return robot_id;
+        }
+      }
+      return NONE;
     }
 
   } /* mrn */

@@ -5,7 +5,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 
 #include <bwi_guidance_solver/mrn/person_model.h>
-#include <bwi_guidance_solver/mrn/restricted_structures.h>
+#include <bwi_guidance_solver/mrn/extended_structures.h>
 #include <bwi_guidance_solver/mrn/transition_model.h>
 #include <bwi_mapper/graph.h>
 #include <bwi_rl/planning/Model.h>
@@ -15,7 +15,7 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
     
-    class RestrictedModel : public Model<RestrictedState, RestrictedAction> {
+    class RestrictedModel : public Model<ExtendedState, Action> {
 
       public:
 
@@ -40,26 +40,41 @@ namespace bwi_guidance_solver {
         virtual ~RestrictedModel() {};
 
         /* Functions inherited from Model */
-        virtual void takeAction(const RestrictedState &state, 
-                                const RestrictedAction &action, 
+        virtual void takeAction(const ExtendedState &state, 
+                                const Action &action, 
                                 float &reward, 
-                                RestrictedState &next_state, 
+                                ExtendedState &next_state, 
                                 bool &terminal, 
                                 int &depth_count, 
                                 boost::shared_ptr<RNG> rng);
 
-        virtual void getFirstAction(const RestrictedState &state, RestrictedAction &action);
-        virtual bool getNextAction(const RestrictedState &state, RestrictedAction &action);
-        virtual void getAllActions(const RestrictedState &state, std::vector<RestrictedAction>& actions);
+        /* Same as the inherited takeAction function, but provides more information. */
+        void takeAction(const ExtendedState &state, 
+                        const Action &action, 
+                        float &reward, 
+                        ExtendedState &next_state, 
+                        bool &terminal, 
+                        int &depth_count,
+                        boost::shared_ptr<RNG> &rng,
+                        float &time_loss,
+                        float &utility_loss,
+                        std::vector<State> &frame_vector);
+
+        virtual void getFirstAction(const ExtendedState &state, Action &action);
+        virtual bool getNextAction(const ExtendedState &state, Action &action);
+        virtual void getAllActions(const ExtendedState &state, std::vector<Action>& actions);
 
         virtual std::string generateDescription(unsigned int indentation = 0) {
           return std::string("stub");
         }
 
+        /* A convenience function to visualize a model. */
+        void drawState(const State& state, cv::Mat& image);
+        void setMaxAssignedRobots(int max_assigned_robots);
+     
       private:
 
-        void getActionsAtState(const RestrictedState &state, std::vector<RestrictedAction>& actions);
-        int getColocatedRobotId(const RestrictedState &state);
+        void getActionsAtState(const ExtendedState &state, std::vector<Action>& actions);
 
         /* Underlying base model. */
         boost::shared_ptr<PersonModel> base_model_;

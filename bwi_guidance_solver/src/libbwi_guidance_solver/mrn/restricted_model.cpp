@@ -36,20 +36,20 @@ namespace bwi_guidance_solver {
                                           base_model_params));
       }
 
-    void RestrictedModel::getActionsAtState(const RestrictedState& state, 
-                                            std::vector<RestrictedAction>& actions) {
+    void RestrictedModel::getActionsAtState(const ExtendedState& state, 
+                                            std::vector<Action>& actions) {
       int action_counter = 0;
 
       // If the previous action was DIRECT_HUMAN, then this action is fixed.
       if (state.prev_action.type == DIRECT_PERSON) {
-        actions.push_back(RestrictedAction(RELEASE_ROBOT, state.prev_action.robot_id));
+        actions.push_back(Action(RELEASE_ROBOT, state.prev_action.robot_id));
         return;
       } 
 
       // Check if WAIT is a possible action. If LEAD_PERSON has been called, then return WAIT as the only valid action.
       int colocated_robot_id = getColocatedRobotId(state);
       if (state.assist_type != NONE || colocated_robot_id == NONE) {
-        actions.push_back(RestrictedAction(WAIT));
+        actions.push_back(Action(WAIT));
         ++action_counter;
       }
       if (state.assist_type == LEAD_PERSON) {
@@ -61,7 +61,7 @@ namespace bwi_guidance_solver {
         actions.resize(action_counter + adjacent_vertices_map_[state.loc_node].size());
         for (unsigned int adj = 0; adj < adjacent_vertices_map_[state.loc_node].size(); ++adj) {
           actions[action_counter] = 
-            RestrictedAction(LEAD_PERSON, colocated_robot_id, adjacent_vertices_map_[state.loc_node][adj]);
+            Action(LEAD_PERSON, colocated_robot_id, adjacent_vertices_map_[state.loc_node][adj]);
           ++action_counter;
         }
       }
@@ -80,7 +80,7 @@ namespace bwi_guidance_solver {
           if (std::find(unassignable_locations.begin(), unassignable_locations.end(), node) ==
               unassignable_locations.end()) {
             // Note that the robot id is unknown here.
-            actions.push_back(RestrictedAction(ASSIGN_ROBOT, 0, node));
+            actions.push_back(Action(ASSIGN_ROBOT, 0, node));
             ++action_counter;
           }
         }
@@ -92,7 +92,7 @@ namespace bwi_guidance_solver {
           state.prev_action.type == DIRECT_PERSON) {
         for (unsigned int robot = 0; robot < state.robots.size(); ++robot) {
           if (state.robots[robot].help_destination != NONE) {
-            actions.push_back(RestrictedAction(RELEASE_ROBOT, robot));
+            actions.push_back(Action(RELEASE_ROBOT, robot));
           }
         }
       }
@@ -102,25 +102,25 @@ namespace bwi_guidance_solver {
         actions.resize(action_counter + adjacent_vertices_map_[state.loc_node].size());
         for (unsigned int adj = 0; adj < adjacent_vertices_map_[state.loc_node].size(); ++adj) {
           actions[action_counter] = 
-            RestrictedAction(DIRECT_PERSON, colocated_robot_id, adjacent_vertices_map_[state.loc_node][adj]);
+            Action(DIRECT_PERSON, colocated_robot_id, adjacent_vertices_map_[state.loc_node][adj]);
           ++action_counter;
         }
       }
 
     }
 
-    void RestrictedModel::getFirstAction(const RestrictedState &state, RestrictedAction &action) {
+    void RestrictedModel::getFirstAction(const ExtendedState &state, Action &action) {
       // This function cannot be optimized without maintaining state. Only present for legacy
       // reasons. Do not call it! For this reason, here is a very suboptimal implementation.
-      std::vector<RestrictedAction> actions;
+      std::vector<Action> actions;
       getActionsAtState(state, actions);
       action = actions[0];
     }
 
-    bool RestrictedModel::getNextAction(const RestrictedState &state, RestrictedAction &action) {
+    bool RestrictedModel::getNextAction(const ExtendedState &state, Action &action) {
       // This function cannot be optimized without maintaining state. Only present for legacy
       // reasons. Do not call it!
-      std::vector<RestrictedAction> actions;
+      std::vector<Action> actions;
       getActionsAtState(state, actions);
       for (unsigned int action_id = 0; action_id < actions.size() - 1; ++action_id) {
         if (actions[action_id] == action) {
@@ -131,25 +131,53 @@ namespace bwi_guidance_solver {
       return false;
     }
 
-    void RestrictedModel::getAllActions(const RestrictedState &state, std::vector<RestrictedAction>& actions) {
+    void RestrictedModel::getAllActions(const ExtendedState &state, std::vector<Action>& actions) {
       getActionsAtState(state, actions);
     }
 
-    void RestrictedModel::takeAction(const RestrictedState &state, 
-                                     const RestrictedAction &action, 
+    void RestrictedModel::takeAction(const ExtendedState &state, 
+                                 const Action &action, 
+                                 float &reward, 
+                                 ExtendedState &next_state, 
+                                 bool &terminal, 
+                                 int &depth_count, 
+                                 boost::shared_ptr<RNG> rng) {
+
+      float unused_utility_loss, unused_time_loss;
+      std::vector<State> unused_frame_vector;
+      takeAction(state, 
+                 action, 
+                 reward, 
+                 next_state, 
+                 terminal, 
+                 depth_count, 
+                 rng,
+                 unused_time_loss, 
+                 unused_utility_loss, 
+                 unused_frame_vector);
+    }
+
+    void RestrictedModel::takeAction(const ExtendedState &state, 
+                                     const Action &action, 
                                      float &reward, 
-                                     RestrictedState &next_state, 
+                                     ExtendedState &next_state, 
                                      bool &terminal, 
-                                     int &depth_count, 
-                                     boost::shared_ptr<RNG> rng) {
+                                     int &depth_count,
+                                     boost::shared_ptr<RNG> &rng,
+                                     float &time_loss,
+                                     float &utility_loss,
+                                     std::vector<State> &frame_vector) {
+
 
       Action mapped_action = action;
       if (action.type == ASSIGN_ROBOT) {
+        bool unused_reach_in_time;
         mapped_action.robot_id = selectBestRobotForTask(state, 
                                                         action.node,
                                                         avg_human_speed_,
                                                         params_.avg_robot_speed,
-                                                        shortest_distances_);
+                                                        shortest_distances_,
+                                                        unused_reach_in_time);
       }
 
       base_model_->takeAction(state, 
@@ -158,7 +186,10 @@ namespace bwi_guidance_solver {
                               next_state, 
                               terminal, 
                               depth_count, 
-                              rng);
+                              rng,
+                              time_loss,
+                              utility_loss,
+                              frame_vector);
 
       next_state.prev_action = action;
       if (action.type == WAIT) {
@@ -170,15 +201,12 @@ namespace bwi_guidance_solver {
       }
     }
 
-    int RestrictedModel::getColocatedRobotId(const RestrictedState& state) {
-      // Figure out if there is a robot at the current position
-      for (int robot_id = 0; robot_id < state.robots.size(); ++robot_id) {
-        if ((state.robots[robot_id].help_destination == state.loc_node) &&
-            isRobotExactlyAt(state.robots[robot_id], state.loc_node)) {
-          return robot_id;
-        }
-      }
-      return NONE;
+    void RestrictedModel::drawState(const State& state, cv::Mat& image) {
+      base_model_->drawState(state, image);
+    }
+
+    void RestrictedModel::setMaxAssignedRobots(int max_assigned_robots) {
+      params_.max_assigned_robots = max_assigned_robots;
     }
 
   } /* mrn */

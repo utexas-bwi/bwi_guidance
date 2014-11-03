@@ -54,11 +54,11 @@ add_library(bwi_guidance_solver
   src/libbwi_guidance_solver/mrn/domain.cpp
   src/libbwi_guidance_solver/mrn/solver.cpp
   ## src/libbwi_guidance_solver/mrn/heuristic_solver.cpp
-  ## src/libbwi_guidance_solver/mrn/single_robot_solver.cpp
+  src/libbwi_guidance_solver/mrn/single_robot_solver.cpp
   ## src/libbwi_guidance_solver/mrn/mcts_solver.cpp
-  src/libbwi_guidance_solver/mrn/restricted_structures.cpp
+  src/libbwi_guidance_solver/mrn/extended_structures.cpp
   src/libbwi_guidance_solver/mrn/restricted_model.cpp
-  ## src/libbwi_guidance_solver/mrn/abstract_mapping.cpp
+  src/libbwi_guidance_solver/mrn/abstract_mapping.cpp
 )
 target_link_libraries(bwi_guidance_solver 
   ${catkin_LIBRARIES}

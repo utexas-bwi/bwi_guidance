@@ -5,12 +5,12 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
     
-    void AbstractMapping::map(State &state) {
-      state.precision = 0.0f;
-      state.from_graph_node = 0;
+    void AbstractMapping::map(ExtendedState &state) {
+      state.loc_p = 0.0f;
       BOOST_FOREACH(RobotState &r, state.robots) {
-        r.precision = 0.0f;
-        r.other_graph_node = 0;
+        r.loc_u = (r.loc_p > 0.5f) ? r.loc_v : r.loc_u;
+        r.loc_p = 0.0f;
+        r.loc_v = 0.0f;
       }
     }
 

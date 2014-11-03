@@ -45,7 +45,8 @@ namespace bwi_guidance_solver {
                                int destination, 
                                float human_speed, 
                                float robot_speed,
-                               const std::vector<std::vector<float> > &shortest_distances) {
+                               const std::vector<std::vector<float> > &shortest_distances,
+                               bool &reach_in_time) {
 
       std::vector<float> utility_loss(state.robots.size(), std::numeric_limits<float>::max());
       std::vector<float> time(state.robots.size(), std::numeric_limits<float>::max());
@@ -84,8 +85,10 @@ namespace bwi_guidance_solver {
       }
 
       if (*(std::min_element(utility_loss.begin(), utility_loss.end())) != std::numeric_limits<float>::max()) {
+        reach_in_time = true;
         return std::min_element(utility_loss.begin(), utility_loss.end()) - utility_loss.begin();
       } 
+      reach_in_time = false;
       return std::min_element(time.begin(), time.end()) - time.begin();
 
     }

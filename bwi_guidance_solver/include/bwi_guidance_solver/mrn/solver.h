@@ -10,6 +10,8 @@
 
 #include <bwi_guidance_solver/mrn/domain.h>
 #include <bwi_guidance_solver/mrn/person_model.h>
+#include <bwi_guidance_solver/mrn/extended_structures.h>
+#include <bwi_guidance_solver/mrn/restricted_model.h>
 #include <bwi_mapper/graph.h>
 #include <bwi_tools/common/Params.h>
 
@@ -32,7 +34,7 @@ namespace bwi_guidance_solver {
 
         std::map<std::string, std::string> getParamsAsMap();
 
-        virtual Action getBestAction(const State &state) = 0;
+        virtual Action getBestAction(const ExtendedState &state) = 0;
         virtual std::string getSolverName() = 0;
 
         virtual bool initializeSolverSpecific(Json::Value &params);
@@ -46,6 +48,7 @@ namespace bwi_guidance_solver {
 
         /* Some test instance/precomputation specific pieces of information */
         boost::shared_ptr<PersonModel> model_;
+        boost::shared_ptr<RestrictedModel> extended_model_;
         int seed_;
         int goal_idx_;
 

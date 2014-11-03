@@ -55,6 +55,21 @@ namespace bwi_guidance_solver {
                                    task_generation_model,
                                    params));
 
+      // Set the MDP parameters and initialize the MDP.
+      RestrictedModel::Params extended_mdp_params;
+      extended_mdp_params.frame_rate = 0.0f; // This version of the model should never visualize, as it is used for sampling only.
+      extended_mdp_params.num_robots = robot_home_base_.size();
+      extended_mdp_params.avg_robot_speed = domain_params_.robot_speed;
+      extended_mdp_params.max_assigned_robots = robot_home_base_.size();
+
+      extended_model_.reset(new RestrictedModel(graph_, 
+                                                map_, 
+                                                goal_idx_, 
+                                                motion_model,
+                                                human_decision_model,
+                                                task_generation_model,
+                                                extended_mdp_params));
+
       this->resetSolverSpecific();
     }
 

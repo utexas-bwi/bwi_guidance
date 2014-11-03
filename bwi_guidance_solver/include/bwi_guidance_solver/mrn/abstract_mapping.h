@@ -3,19 +3,19 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <bwi_guidance_solver/mrn/structures.h>
+#include <bwi_guidance_solver/mrn/extended_structures.h>
 #include <bwi_rl/planning/StateMapping.h>
 
 namespace bwi_guidance_solver {
 
   namespace mrn {
     
-    class AbstractMapping : public StateMapping<State> {
+    class AbstractMapping : public StateMapping<ExtendedState> {
 
       public:
         typedef boost::shared_ptr<AbstractMapping> Ptr;
 
-        virtual void map(State &state);
+        virtual void map(ExtendedState &state);
     };
 
   } /* mrn */

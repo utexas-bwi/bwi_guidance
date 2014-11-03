@@ -139,17 +139,18 @@ namespace bwi_guidance_solver {
       HumanDecisionModel::Ptr human_decision_model(new HumanDecisionModel(graph_));
 
       // Set the MDP parameters and initialize the MDP.
-      PersonModel::Params mdp_params;
-      mdp_params.frame_rate = params_.frame_rate; // This version of the model should never visualize, as it is used for sampling only.
-      mdp_params.num_robots = robot_home_base_.size();
-      mdp_params.avg_robot_speed = params_.robot_speed;
-      boost::shared_ptr<PersonModel> evaluation_model(new PersonModel(graph_, 
-                                                                      map_, 
-                                                                      goal_idx, 
-                                                                      motion_model,
-                                                                      human_decision_model,
-                                                                      task_generation_model,
-                                                                      mdp_params));
+      RestrictedModel::Params extended_mdp_params;
+      extended_mdp_params.frame_rate = params_.frame_rate; // This version of the model should never visualize, as it is used for sampling only.
+      extended_mdp_params.num_robots = robot_home_base_.size();
+      extended_mdp_params.avg_robot_speed = params_.robot_speed;
+      extended_mdp_params.max_assigned_robots = robot_home_base_.size(); // maximum possible value of this parameter.
+      boost::shared_ptr<RestrictedModel> extended_mdp(new RestrictedModel(graph_, 
+                                                                          map_, 
+                                                                          goal_idx, 
+                                                                          motion_model,
+                                                                          human_decision_model,
+                                                                          task_generation_model,
+                                                                          extended_mdp_params));
 
       std::vector<std::map<std::string, std::string> > records;
       BOOST_FOREACH(boost::shared_ptr<Solver>& solver, solvers_) {
@@ -165,7 +166,7 @@ namespace bwi_guidance_solver {
         boost::shared_ptr<RNG> evaluation_rng(new RNG(2 * (seed + 1)));
 
         // Initialize the start state.
-        State current_state; 
+        ExtendedState current_state; 
         current_state.loc_node = start_idx;
         current_state.loc_p = 0.0f;
         current_state.loc_prev = start_idx;
@@ -187,12 +188,14 @@ namespace bwi_guidance_solver {
           float unused_reward;
           int unused_depth_count;
           bool unused_terminal;
-          State next_state;
-          evaluation_model->takeAction(current_state, Action(ASSIGN_ROBOT, start_robot_idx, start_idx), 
+          ExtendedState next_state;
+          extended_mdp->takeAction(current_state, Action(ASSIGN_ROBOT, start_robot_idx, start_idx), 
                                        unused_reward, next_state, unused_terminal, unused_depth_count, 
                                        evaluation_rng);
           current_state = next_state;
         }
+        current_state.prev_action = Action(WAIT);
+        current_state.released_locations.clear();
 
         float instance_reward = 0.0f;
         float instance_distance = 0.0f;
@@ -203,7 +206,7 @@ namespace bwi_guidance_solver {
 
         if (params_.frame_rate != 0.0f) {
           cv::Mat out_img = base_image_.clone();
-          evaluation_model->drawState(current_state, out_img);
+          extended_mdp->drawState(current_state, out_img);
           // TODO replace call with something that produces the video as well.
           cv::imshow("out", out_img);
         }
@@ -218,11 +221,11 @@ namespace bwi_guidance_solver {
           EVALUATE_OUTPUT("   action: " << action);
 
           float transition_reward;
-          State next_state;
+          ExtendedState next_state;
           int depth_count;
           float time_loss, utility_loss;
           std::vector<State> frame_vector;
-          evaluation_model->takeAction(current_state, action, transition_reward, next_state, terminal, depth_count,
+          extended_mdp->takeAction(current_state, action, transition_reward, next_state, terminal, depth_count,
                                        evaluation_rng, time_loss, utility_loss, frame_vector);
           float transition_distance = 
             bwi_mapper::getEuclideanDistance(next_state.loc_node, current_state.loc_node, graph_);
@@ -250,7 +253,7 @@ namespace bwi_guidance_solver {
               } else {
                 boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
               }
-              evaluation_model->drawState(frame_vector[time_step], out_img);
+              extended_mdp->drawState(frame_vector[time_step], out_img);
               // TODO replace call with something that produces the video as well.
               cv::imshow("out", out_img);
             }
