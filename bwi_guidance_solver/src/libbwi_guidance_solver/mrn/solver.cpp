@@ -31,15 +31,15 @@ namespace bwi_guidance_solver {
       goal_idx_ = goal_idx;
 
       // Initialize the transition model.
-      MotionModel::Ptr motion_model(new MotionModel(graph_, 
-                                                    domain_params_.robot_speed / map_.info.resolution,
-                                                    domain_params_.human_speed / map_.info.resolution)); 
+      motion_model_.reset(new MotionModel(graph_, 
+                                          domain_params_.robot_speed / map_.info.resolution,
+                                          domain_params_.human_speed / map_.info.resolution)); 
 
-      TaskGenerationModel::Ptr task_generation_model(new TaskGenerationModel(robot_home_base_, 
-                                                                             graph_, 
-                                                                             domain_params_.utility_multiplier));
+      task_generation_model_.reset(new TaskGenerationModel(robot_home_base_, 
+                                                           graph_, 
+                                                           domain_params_.utility_multiplier));
 
-      HumanDecisionModel::Ptr human_decision_model(new HumanDecisionModel(graph_));
+      human_decision_model_.reset(new HumanDecisionModel(graph_));
 
       // Set the MDP parameters and initialize the MDP.
       PersonModel::Params params;
@@ -50,25 +50,11 @@ namespace bwi_guidance_solver {
       model_.reset(new PersonModel(graph_, 
                                    map_, 
                                    goal_idx_, 
-                                   motion_model,
-                                   human_decision_model,
-                                   task_generation_model,
+                                   motion_model_,
+                                   human_decision_model_,
+                                   task_generation_model_,
                                    params));
 
-      // Set the MDP parameters and initialize the MDP.
-      RestrictedModel::Params extended_mdp_params;
-      extended_mdp_params.frame_rate = 0.0f; // This version of the model should never visualize, as it is used for sampling only.
-      extended_mdp_params.num_robots = robot_home_base_.size();
-      extended_mdp_params.avg_robot_speed = domain_params_.robot_speed;
-      extended_mdp_params.max_assigned_robots = robot_home_base_.size();
-
-      extended_model_.reset(new RestrictedModel(graph_, 
-                                                map_, 
-                                                goal_idx_, 
-                                                motion_model,
-                                                human_decision_model,
-                                                task_generation_model,
-                                                extended_mdp_params));
 
       this->resetSolverSpecific();
     }
@@ -80,8 +66,8 @@ namespace bwi_guidance_solver {
     bool Solver::initializeSolverSpecific(Json::Value &params) { return true; }
     void Solver::resetSolverSpecific() {}
     void Solver::precomputeAndSavePolicy(int problem_identifier) {}
-    void Solver::performEpisodeStartComputation(const State &state) {}
-    void Solver::performPostActionComputation(const State &state, float time) {}
+    void Solver::performEpisodeStartComputation(const ExtendedState &state) {}
+    void Solver::performPostActionComputation(const ExtendedState &state, float time) {}
     std::map<std::string, std::string> Solver::getParamsAsMapSolverSpecific() { 
       return std::map<std::string, std::string>();
     }

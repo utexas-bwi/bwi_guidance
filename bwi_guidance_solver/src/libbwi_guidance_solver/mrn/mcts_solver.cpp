@@ -16,49 +16,52 @@ namespace bwi_guidance_solver {
     bool MCTSSolver::initializeSolverSpecific(Json::Value &params) {
       mcts_solver_params_.fromJson(params);
       mcts_params_.fromJson(params);
+      extended_mdp_params_.fromJson(params);
       return true;
     }
 
     void MCTSSolver::resetSolverSpecific() {
       // Create the RNG required for mcts rollouts
+      
+      // Set the MDP parameters and initialize the MDP.
+      boost::shared_ptr<RestrictedModel> extended_model(new RestrictedModel(graph_, 
+                                                                            map_, 
+                                                                            goal_idx_, 
+                                                                            motion_model_,
+                                                                            human_decision_model_,
+                                                                            task_generation_model_,
+                                                                            extended_mdp_params_));
+
       boost::shared_ptr<RNG> mcts_rng(new RNG(1 * (seed_ + 1)));
-      boost::shared_ptr<ModelUpdaterSingle<State, Action> >
-        mcts_model_updator(new ModelUpdaterSingle<State, Action>(model_));
-      boost::shared_ptr<StateMapping<State> > mcts_state_mapping;
+      boost::shared_ptr<ModelUpdaterSingle<ExtendedState, Action> >
+        mcts_model_updator(new ModelUpdaterSingle<ExtendedState, Action>(extended_model));
+      boost::shared_ptr<StateMapping<ExtendedState> > mcts_state_mapping;
       if (mcts_solver_params_.use_abstract_mapping) {
         mcts_state_mapping.reset(new AbstractMapping);
       } else {
-        mcts_state_mapping.reset(new IdentityStateMapping<State>);
+        mcts_state_mapping.reset(new IdentityStateMapping<ExtendedState>);
       }
       
-      // boost::shared_ptr<DefaultPolicy<State, Action> > default_policy;
-      // default_policy.reset(new RandomPolicy<State, Action>);
-      // mcts_.reset(new MultiThreadedMCTS<State, StateHash, Action>(default_policy,
-      //                                                             mcts_model_updator, 
-      //                                                             mcts_state_mapping, 
-      //                                                             mcts_rng,
-      //                                                             mcts_params_));
-
       boost::shared_ptr<SingleRobotSolver> default_policy;
       default_policy.reset(new SingleRobotSolver);
 
       // TODO fill this from the current solver values.
       Json::Value empty_json; // Force the single robot solver to use default parameters.
-      default_policy->initialize(domain_params_, empty_json, map_, graph_, base_directory_);
+      default_policy->initialize(domain_params_, empty_json, map_, graph_, robot_home_base_, base_directory_);
       default_policy->reset(seed_, goal_idx_);
 
-      mcts_.reset(new MultiThreadedMCTS<State, StateHash, Action>(default_policy,
-                                                                  mcts_model_updator, 
-                                                                  mcts_state_mapping, 
-                                                                  mcts_rng,
-                                                                  mcts_params_));
+      mcts_.reset(new MultiThreadedMCTS<ExtendedState, ExtendedStateHash, Action>(default_policy,
+                                                                                  mcts_model_updator, 
+                                                                                  mcts_state_mapping, 
+                                                                                  mcts_rng,
+                                                                                  mcts_params_));
     }
 
-    Action MCTSSolver::getBestAction(const State &state) {
+    Action MCTSSolver::getBestAction(const ExtendedState &state) {
       return mcts_->selectWorldAction(state);
     }
 
-    void MCTSSolver::performEpisodeStartComputation(const State &state) {
+    void MCTSSolver::performEpisodeStartComputation(const ExtendedState &state) {
       float time = mcts_solver_params_.initial_planning_time * mcts_solver_params_.planning_time_multiplier;
       search(state, time);
     }
@@ -67,13 +70,13 @@ namespace bwi_guidance_solver {
       return std::string("UCT");
     }
 
-    void MCTSSolver::performPostActionComputation(const State &state, float distance) {
+    void MCTSSolver::performPostActionComputation(const ExtendedState &state, float distance) {
       // NOTE This assumes the human is moving at a speed of 1m/s.
       float time = distance * mcts_solver_params_.planning_time_multiplier;
       search(state, time);
     }
 
-    void MCTSSolver::search(const State &state, float time) {
+    void MCTSSolver::search(const ExtendedState &state, float time) {
       // Only perform the search if the search time is greater than 0, and there is something to search over.
       if (time > 0.0f) {
         unsigned int unused_rollout_termination_count;

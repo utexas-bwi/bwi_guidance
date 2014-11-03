@@ -20,22 +20,23 @@ namespace bwi_guidance_solver {
           Params_STRUCT(PARAMS)
 #undef PARAMS
 
-        virtual Action getBestAction(const State &state);
+        virtual Action getBestAction(const ExtendedState &state);
         virtual std::string getSolverName();
 
         virtual bool initializeSolverSpecific(Json::Value &params);
         virtual void resetSolverSpecific();
-        virtual void performEpisodeStartComputation(const State &state);
-        virtual void performPostActionComputation(const State &state, float time = 0.0f);
+        virtual void performEpisodeStartComputation(const ExtendedState &state);
+        virtual void performPostActionComputation(const ExtendedState &state, float time = 0.0f);
         virtual std::map<std::string, std::string> getParamsAsMapSolverSpecific();
 
       protected:
 
-        virtual void search(const State &state, float time);
+        virtual void search(const ExtendedState &state, float time);
         
-        boost::shared_ptr<MultiThreadedMCTS<State, StateHash, Action> > mcts_;
+        boost::shared_ptr<MultiThreadedMCTS<ExtendedState, ExtendedStateHash, Action> > mcts_;
         Params mcts_solver_params_;
-        MultiThreadedMCTS<State, StateHash, Action>::Params mcts_params_;
+        RestrictedModel::Params extended_mdp_params_;
+        MultiThreadedMCTS<ExtendedState, ExtendedStateHash, Action>::Params mcts_params_;
 
     };
 

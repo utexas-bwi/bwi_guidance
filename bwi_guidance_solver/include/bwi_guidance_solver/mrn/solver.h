@@ -40,15 +40,17 @@ namespace bwi_guidance_solver {
         virtual bool initializeSolverSpecific(Json::Value &params);
         virtual void resetSolverSpecific();
         virtual void precomputeAndSavePolicy(int problem_identifier);
-        virtual void performEpisodeStartComputation(const State &state);
-        virtual void performPostActionComputation(const State &state, float time = 0.0);
+        virtual void performEpisodeStartComputation(const ExtendedState &state);
+        virtual void performPostActionComputation(const ExtendedState &state, float time = 0.0);
         virtual std::map<std::string, std::string> getParamsAsMapSolverSpecific();
 
       protected:
 
         /* Some test instance/precomputation specific pieces of information */
+        MotionModel::Ptr motion_model_;
+        TaskGenerationModel::Ptr task_generation_model_;
+        HumanDecisionModel::Ptr human_decision_model_;
         boost::shared_ptr<PersonModel> model_;
-        boost::shared_ptr<RestrictedModel> extended_model_;
         int seed_;
         int goal_idx_;
 

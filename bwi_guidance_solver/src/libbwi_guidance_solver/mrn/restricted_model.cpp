@@ -205,10 +205,6 @@ namespace bwi_guidance_solver {
       base_model_->drawState(state, image);
     }
 
-    void RestrictedModel::setMaxAssignedRobots(int max_assigned_robots) {
-      params_.max_assigned_robots = max_assigned_robots;
-    }
-
   } /* mrn */
 
 } /* bwi_guidance */

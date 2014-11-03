@@ -70,7 +70,6 @@ namespace bwi_guidance_solver {
 
         /* A convenience function to visualize a model. */
         void drawState(const State& state, cv::Mat& image);
-        void setMaxAssignedRobots(int max_assigned_robots);
      
       private:
 

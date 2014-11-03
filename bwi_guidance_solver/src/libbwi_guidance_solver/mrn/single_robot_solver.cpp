@@ -171,14 +171,14 @@ namespace bwi_guidance_solver {
       return rng->randomInt(actions.size() - 1);
     }
 
-    void SingleRobotSolver::performEpisodeStartComputation(const State &state) {
+    void SingleRobotSolver::performEpisodeStartComputation(const ExtendedState &state) {
       if (domain_params_.frame_rate != 0.0f) {
         // MCTS waits for 10 seconds here, but let's wait only for 1 second for now.
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f));
       }
     }
 
-    void SingleRobotSolver::performPostActionComputation(const State &state, float time) {
+    void SingleRobotSolver::performPostActionComputation(const ExtendedState &state, float time) {
       if (domain_params_.frame_rate != 0.0f) {
         // MCTS waits for 10 seconds here, but let's wait only for 1 second for now.
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f * time));

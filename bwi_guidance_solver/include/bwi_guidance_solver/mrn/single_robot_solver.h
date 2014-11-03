@@ -26,8 +26,8 @@ namespace bwi_guidance_solver {
         virtual std::string getSolverName();
         virtual bool initializeSolverSpecific(Json::Value &params);
         virtual void resetSolverSpecific();
-        virtual void performEpisodeStartComputation(const State &state);
-        virtual void performPostActionComputation(const State &state, float time = 0.0);
+        virtual void performEpisodeStartComputation(const ExtendedState &state);
+        virtual void performPostActionComputation(const ExtendedState &state, float time = 0.0);
 
       private:
 
