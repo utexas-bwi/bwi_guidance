@@ -142,7 +142,9 @@ namespace bwi_guidance_solver {
             }
             // Required for restricted action space, as restricted action space does not know which robot to select
             // just yet.
-            return retval;
+            if (retval != -1) {
+              return retval;
+            }
           }
         }
 

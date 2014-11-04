@@ -78,8 +78,8 @@ namespace bwi_guidance_solver {
         for (unsigned int node = 0; node < num_vertices_; ++node) {
           if (std::find(unassignable_locations.begin(), unassignable_locations.end(), node) ==
               unassignable_locations.end()) {
-            // Note that the robot id is unknown here.
-            actions.push_back(Action(ASSIGN_ROBOT, 0, node));
+            // Note that the robot id is unknown here, so we'll use -1.
+            actions.push_back(Action(ASSIGN_ROBOT, -1, node));
             ++action_counter;
           }
         }
@@ -169,7 +169,7 @@ namespace bwi_guidance_solver {
 
 
       Action mapped_action = action;
-      if (action.type == ASSIGN_ROBOT) {
+      if (mapped_action.type == ASSIGN_ROBOT && mapped_action.robot_id == -1) {
         bool unused_reach_in_time;
         mapped_action.robot_id = selectBestRobotForTask(state, 
                                                         action.node,

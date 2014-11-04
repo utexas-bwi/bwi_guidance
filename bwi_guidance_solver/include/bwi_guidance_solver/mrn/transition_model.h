@@ -306,6 +306,10 @@ namespace bwi_guidance_solver {
               robot.loc_p = 1.0f;
             }
 
+            if (robot.loc_p < 1e-6) {
+              robot.loc_p = 0.0f;
+            }
+
           }
 
           return ready_for_next_action;

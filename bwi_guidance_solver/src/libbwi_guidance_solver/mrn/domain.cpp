@@ -225,6 +225,7 @@ namespace bwi_guidance_solver {
           std::vector<State> frame_vector;
           extended_mdp->takeAction(current_state, action, transition_reward, next_state, terminal, depth_count,
                                        evaluation_rng, time_loss, utility_loss, frame_vector);
+          EVALUATE_OUTPUT("   reward: " << transition_reward);
           float transition_distance = 
             bwi_mapper::getEuclideanDistance(next_state.loc_node, current_state.loc_node, graph_);
 

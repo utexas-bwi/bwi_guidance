@@ -44,10 +44,11 @@ namespace bwi_guidance_solver {
     inline void readRobotHomeBase(const std::string& robot_home_base_file, std::vector<int> &robot_home_base) {
       robot_home_base.clear();
       std::ifstream fin(robot_home_base_file.c_str());
+      int home_base;
+      fin >> home_base;
       while (!fin.eof()) {
-        int home_base;
-        fin >> home_base;
         robot_home_base.push_back(home_base);
+        fin >> home_base;
       }
       fin.close();
     }

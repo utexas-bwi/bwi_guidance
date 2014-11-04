@@ -2,7 +2,7 @@
 #include <pluginlib/class_list_macros.h>
 
 #include <bwi_guidance_solver/mrn/mcts_solver.h>
-#include <bwi_guidance_solver/mrn/abstract_mapping.h>
+/* #include <bwi_guidance_solver/mrn/abstract_mapping.h> */
 #include <bwi_guidance_solver/mrn/single_robot_solver.h>
 
 #include <bwi_rl/planning/IdentityStateMapping.h>
@@ -36,11 +36,11 @@ namespace bwi_guidance_solver {
       boost::shared_ptr<ModelUpdaterSingle<ExtendedState, Action> >
         mcts_model_updator(new ModelUpdaterSingle<ExtendedState, Action>(extended_model));
       boost::shared_ptr<StateMapping<ExtendedState> > mcts_state_mapping;
-      if (mcts_solver_params_.use_abstract_mapping) {
-        mcts_state_mapping.reset(new AbstractMapping);
-      } else {
+      // if (mcts_solver_params_.use_abstract_mapping) {
+      //   mcts_state_mapping.reset(new AbstractMapping);
+      // } else {
         mcts_state_mapping.reset(new IdentityStateMapping<ExtendedState>);
-      }
+      /* } */
       
       boost::shared_ptr<SingleRobotSolver> default_policy;
       default_policy.reset(new SingleRobotSolver);

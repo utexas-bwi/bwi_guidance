@@ -14,8 +14,7 @@ namespace bwi_guidance_solver {
 
 #define PARAMS(_) \
           _(float,initial_planning_time,initial_planning_time,10.0) \
-          _(float,planning_time_multiplier,planning_time_multiplier,1.0) \
-          _(bool,use_abstract_mapping,use_abstract_mapping,true)
+          _(float,planning_time_multiplier,planning_time_multiplier,1.0)
 
           Params_STRUCT(PARAMS)
 #undef PARAMS

@@ -162,16 +162,6 @@ namespace bwi_guidance_solver {
         }
       } else {
 
-        // Compute the current distance to destination so that we can compute the utility loss later.
-        std::vector<float> distance_to_service_destination_before_action(state.robots.size(), 0);
-        for(unsigned int i = 0; i < state.robots.size(); ++i) {
-          const RobotState &robot = state.robots[i];
-          if (robot.help_destination != NONE) {
-            distance_to_service_destination_before_action[i] = 
-              getTrueDistanceTo(robot.loc_u, robot.loc_v, robot.loc_p, robot.tau_d, shortest_distances_);
-          }
-        }
-
         next_state = state;
         int next_node = human_decision_model_->GetNextNode(state, *rng);
 
@@ -191,20 +181,32 @@ namespace bwi_guidance_solver {
 
         // After the robots have been moved, let's compute the distance to destination again to compute the utility loss
         utility_loss = 0.0f;
+        // Compute the current distance to destination so that we can compute the utility loss later.
+        std::vector<float> distance_to_service_destination_before_action(state.robots.size(), 0);
         for(unsigned int i = 0; i < state.robots.size(); ++i) {
           const RobotState &robot = state.robots[i];
           if (robot.help_destination != NONE) {
-            float distance_to_service_destination = 
-              getTrueDistanceTo(robot.loc_u, robot.loc_v, robot.loc_p, robot.tau_d, shortest_distances_);
-            float distance_difference = 
-              std::max(0.0f, distance_to_service_destination_before_action[i] - distance_to_service_destination);
-            float time_difference = distance_difference / motion_model_->getRobotSpeed();
-            float utility_loss_per_robot = time_difference * robot.tau_u; 
-            utility_loss += utility_loss_per_robot;
           }
         }
 
         time_loss = total_time;
+
+        for(unsigned int i = 0; i < next_state.robots.size(); ++i) {
+          const RobotState &orig_robot = state.robots[i];
+          const RobotState &robot = next_state.robots[i];
+          if (robot.help_destination != NONE) {
+            float distance_to_service_destination_before_action = 
+              getTrueDistanceTo(orig_robot.loc_u, orig_robot.loc_v, orig_robot.loc_p, orig_robot.tau_d, shortest_distances_);
+            float distance_to_service_destination = 
+              getTrueDistanceTo(robot.loc_u, robot.loc_v, robot.loc_p, robot.tau_d, shortest_distances_);
+            float extra_distance_to_service_destination = 
+              distance_to_service_destination - distance_to_service_destination_before_action;
+            float extra_time_to_service_destination = 
+              extra_distance_to_service_destination / motion_model_->getRobotSpeed();
+            float utility_loss_per_robot = (extra_time_to_service_destination + time_loss) * robot.tau_u; 
+            utility_loss += utility_loss_per_robot;
+          }
+        }
 
         // Compute reward
         reward = -(time_loss + utility_loss); 

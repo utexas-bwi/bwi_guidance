@@ -81,6 +81,9 @@ namespace bwi_guidance_solver {
         std::vector<std::vector<float> > shortest_distances_;
         std::map<int, std::vector<int> > adjacent_vertices_map_;
 
+        std::map<int, std::vector<int> > visible_vertices_map_;
+        std::map<int, std::vector<int> > action_vertices_map_;
+
         Params params_;
         int goal_idx_;
         int num_vertices_;
