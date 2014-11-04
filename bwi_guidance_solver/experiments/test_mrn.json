@@ -11,14 +11,15 @@
       "solvers": [
         {
           "name": "bwi_guidance_solver::mrn::SingleRobotSolver"
-        },
-        {
-          "name": "bwi_guidance_solver::mrn::MCTSSolver",
-          "params": {
-            "maxDepth": 150,
-            "unknownBootstrapValue": -1000.0
-          }
         }
+      // ,
+      //   {
+      //     "name": "bwi_guidance_solver::mrn::MCTSSolver",
+      //     "params": {
+      //       "maxDepth": 150,
+      //       "unknownBootstrapValue": -1000.0
+      //     }
+      //   }
       ]
     }
   ]

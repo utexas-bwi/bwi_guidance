@@ -159,6 +159,7 @@ namespace bwi_guidance_solver {
             }
           }
         }
+
       }
 
       // Could not assign a robot in time. Wait and do nothing.

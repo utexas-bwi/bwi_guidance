@@ -298,6 +298,12 @@ namespace bwi_guidance_solver {
                 }
               }
             }
+
+            // Account for any floating point errors, especially while leading a person.
+            if (robot.loc_p > 1.0f - 1e-6) {
+              robot.loc_p = 1.0f;
+            }
+
           }
 
           return ready_for_next_action;
