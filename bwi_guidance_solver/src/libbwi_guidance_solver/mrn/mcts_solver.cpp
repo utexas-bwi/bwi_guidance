@@ -2,7 +2,7 @@
 #include <pluginlib/class_list_macros.h>
 
 #include <bwi_guidance_solver/mrn/mcts_solver.h>
-/* #include <bwi_guidance_solver/mrn/abstract_mapping.h> */
+#include <bwi_guidance_solver/mrn/abstract_mapping.h>
 #include <bwi_guidance_solver/mrn/single_robot_solver.h>
 
 #include <bwi_rl/planning/IdentityStateMapping.h>
@@ -37,9 +37,9 @@ namespace bwi_guidance_solver {
         mcts_model_updator(new ModelUpdaterSingle<ExtendedState, Action>(extended_model));
       boost::shared_ptr<StateMapping<ExtendedState> > mcts_state_mapping;
       // if (mcts_solver_params_.use_abstract_mapping) {
-      //   mcts_state_mapping.reset(new AbstractMapping);
+         mcts_state_mapping.reset(new AbstractMapping);
       // } else {
-        mcts_state_mapping.reset(new IdentityStateMapping<ExtendedState>);
+        /* mcts_state_mapping.reset(new IdentityStateMapping<ExtendedState>); */
       /* } */
       
       boost::shared_ptr<SingleRobotSolver> default_policy;
@@ -58,7 +58,17 @@ namespace bwi_guidance_solver {
     }
 
     Action MCTSSolver::getBestAction(const ExtendedState &state) {
-      return mcts_->selectWorldAction(state);
+      Action action = mcts_->selectWorldAction(state);
+      if (action.type == ASSIGN_ROBOT && action.node == 1) {
+        action.node = 8;
+      }
+      if (action.type == DIRECT_PERSON && action.node == 1) {
+        action.type = LEAD_PERSON;
+        action.node = 9;
+        mcts_->printBestTrajectory(state, action);
+        throw std::runtime_error("blah!");
+      }
+      return action;
     }
 
     void MCTSSolver::performEpisodeStartComputation(const ExtendedState &state) {
@@ -70,9 +80,12 @@ namespace bwi_guidance_solver {
       return std::string("UCT");
     }
 
-    void MCTSSolver::performPostActionComputation(const ExtendedState &state, float distance) {
+    void MCTSSolver::performPostActionComputation(const ExtendedState &state, float distance, bool new_action) {
       // NOTE This assumes the human is moving at a speed of 1m/s.
       float time = distance * mcts_solver_params_.planning_time_multiplier;
+      if (new_action && time > 0.0f) {
+        mcts_->restart();
+      }
       search(state, time);
     }
 

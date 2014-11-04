@@ -215,9 +215,8 @@ namespace bwi_guidance_solver {
 
         while (!terminal && instance_time <= params_.time_limit) {
 
-          Action action = solver->getBestAction(current_state);;
+          Action action = solver->getBestAction(current_state);
           EVALUATE_OUTPUT("   action: " << action);
-
           float transition_reward;
           ExtendedState next_state;
           int depth_count;
@@ -245,11 +244,16 @@ namespace bwi_guidance_solver {
 
           // TODO we should do the computation with the original state and selected action.
           if (params_.frame_rate != 0.0f) {
+            bool new_action = true;
             for (int time_step = 0; time_step < frame_vector.size(); ++time_step) {
               cv::Mat out_img = base_image_.clone();
               if (!terminal) {
-                //solver->performPostActionComputation(current_state, 1.0f / params_.frame_rate);
-                boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
+                if (action.type == WAIT) {
+                  solver->performPostActionComputation(current_state, 1.0f / params_.frame_rate, new_action);
+                  new_action = false;
+                } else {
+                  boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
+                }
               } else {
                 boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
               }
@@ -259,7 +263,7 @@ namespace bwi_guidance_solver {
             }
           } else {
             if (!terminal) {
-              solver->performPostActionComputation(current_state, time);
+              solver->performPostActionComputation(current_state, time, true);
             }
           }
 

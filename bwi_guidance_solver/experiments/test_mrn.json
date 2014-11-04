@@ -13,8 +13,8 @@
           "name": "bwi_guidance_solver::mrn::MCTSSolver",
           "params": {
             "maxDepth": 150,
-            "numThreads": 8,
-            "rewardBound": 600,
+            "numThreads": 1,
+            "rewardBound": 1000,
             "unknownBootstrapValue": -300.0
           }
         }

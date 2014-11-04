@@ -27,7 +27,7 @@ namespace bwi_guidance_solver {
         virtual bool initializeSolverSpecific(Json::Value &params);
         virtual void resetSolverSpecific();
         virtual void performEpisodeStartComputation(const ExtendedState &state);
-        virtual void performPostActionComputation(const ExtendedState &state, float time = 0.0);
+        virtual void performPostActionComputation(const ExtendedState &state, float time, bool new_action);
 
       private:
 

@@ -65,7 +65,7 @@ namespace bwi_guidance_solver {
     void Solver::resetSolverSpecific() {}
     void Solver::precomputeAndSavePolicy(int problem_identifier) {}
     void Solver::performEpisodeStartComputation(const ExtendedState &state) {}
-    void Solver::performPostActionComputation(const ExtendedState &state, float time) {}
+    void Solver::performPostActionComputation(const ExtendedState &state, float time, bool new_action) {}
     std::map<std::string, std::string> Solver::getParamsAsMapSolverSpecific() { 
       return std::map<std::string, std::string>();
     }

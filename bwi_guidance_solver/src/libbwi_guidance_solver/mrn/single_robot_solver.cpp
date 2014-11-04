@@ -46,6 +46,9 @@ namespace bwi_guidance_solver {
         std::vector<int> states;
         int current_id = state.loc_node;
         float current_direction = bwi_mapper::getNodeAngle(state.loc_prev, state.loc_node, graph_);
+        if (state.assist_type != NONE) {
+          current_direction = bwi_mapper::getNodeAngle(state.loc_node, state.assist_loc, graph_);
+        }
         while(true) {
 
           states.push_back(current_id);
@@ -130,20 +133,13 @@ namespace bwi_guidance_solver {
                                                      shortest_distances_, 
                                                      reach_in_time); 
           if (reach_in_time) {
-            int retval = -1;
             for (int j = 0; j < actions.size(); ++j) {
               if (actions[j].type == ASSIGN_ROBOT && actions[j].node == states[i]) {
-                if (actions[j].robot_id == best_robot_id) {
-                  // Required for unrestricted action space.
+                // Robot_id can be -1 in the case of restricted action space.
+                if (actions[j].robot_id == -1 || actions[j].robot_id == best_robot_id) {
                   return j;
-                }
-                retval = j;
+                } 
               }
-            }
-            // Required for restricted action space, as restricted action space does not know which robot to select
-            // just yet.
-            if (retval != -1) {
-              return retval;
             }
           }
         }
@@ -182,7 +178,7 @@ namespace bwi_guidance_solver {
       }
     }
 
-    void SingleRobotSolver::performPostActionComputation(const ExtendedState &state, float time) {
+    void SingleRobotSolver::performPostActionComputation(const ExtendedState &state, float time, bool new_action) {
       if (domain_params_.frame_rate != 0.0f) {
         // MCTS waits for 10 seconds here, but let's wait only for 1 second for now.
         boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f * time));
