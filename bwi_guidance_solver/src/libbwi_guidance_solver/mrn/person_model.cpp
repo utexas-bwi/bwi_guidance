@@ -180,8 +180,11 @@ namespace bwi_guidance_solver {
         if (params_.frame_rate == 0.0f) {
           motion_model_->move(next_state, next_node, task_generation_model_, *rng, total_time); 
         } else {
+          total_time = 0.0f;
+          float step_time;
           while (!motion_model_->move(next_state, next_node, task_generation_model_, 
-                                      *rng, total_time, 1.0f / params_.frame_rate)) {
+                                      *rng, step_time, 1.0f / params_.frame_rate)) {
+            total_time += step_time;
             frame_vector.push_back(next_state);
           }
         }

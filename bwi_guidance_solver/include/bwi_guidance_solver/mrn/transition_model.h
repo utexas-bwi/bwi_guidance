@@ -207,6 +207,8 @@ namespace bwi_guidance_solver {
             }
           }
 
+          total_time = time_step;
+
           // Since the human has moved, remove any previous assistance.
           if (ready_for_next_action) {
             state.assist_type = NONE;
