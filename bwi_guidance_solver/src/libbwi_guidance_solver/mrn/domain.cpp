@@ -248,7 +248,8 @@ namespace bwi_guidance_solver {
             for (int time_step = 0; time_step < frame_vector.size(); ++time_step) {
               cv::Mat out_img = base_image_.clone();
               if (!terminal) {
-                solver->performPostActionComputation(current_state, 1.0f / params_.frame_rate);
+                //solver->performPostActionComputation(current_state, 1.0f / params_.frame_rate);
+                boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
               } else {
                 boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f / params_.frame_rate));
               }
