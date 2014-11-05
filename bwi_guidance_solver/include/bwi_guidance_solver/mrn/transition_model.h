@@ -99,7 +99,9 @@ namespace bwi_guidance_solver {
 
         TaskGenerationModel(const std::vector<int> robot_home_base,
                             const bwi_mapper::Graph &graph,
-                            float task_utility) : robot_home_base_(robot_home_base), task_utility_(task_utility) {
+                            float task_utility,
+                            bool home_base_only = false) : 
+          robot_home_base_(robot_home_base), task_utility_(task_utility), home_base_only_(home_base_only) {
           cacheNewGoalsByDistance(graph);
         }
 
@@ -107,13 +109,17 @@ namespace bwi_guidance_solver {
 
         virtual void generateNewTaskForRobot(int robot_id, RobotState &robot, RNG &rng) {
           // Optimized!!!
-          int idx = robot_home_base_[robot_id];
-          int graph_distance = rng.poissonInt(1);
-          while(graph_distance >= goals_by_distance_[idx].size()) {
-            graph_distance = rng.poissonInt(1);
+          if (home_base_only_) {
+            robot.tau_d = robot_home_base_[robot_id];
+          } else {
+            int idx = robot_home_base_[robot_id];
+            int graph_distance = rng.poissonInt(1);
+            while(graph_distance >= goals_by_distance_[idx].size()) {
+              graph_distance = rng.poissonInt(1);
+            }
+            std::vector<int>& possible_goals = goals_by_distance_[idx][graph_distance];
+            robot.tau_d = *(possible_goals.begin() + rng.randomInt(possible_goals.size() - 1));
           }
-          std::vector<int>& possible_goals = goals_by_distance_[idx][graph_distance];
-          robot.tau_d = *(possible_goals.begin() + rng.randomInt(possible_goals.size() - 1));
           robot.tau_t = 0.0f;
           robot.tau_total_task_time = 5.0f;
           robot.tau_u = task_utility_;
@@ -154,6 +160,7 @@ namespace bwi_guidance_solver {
         std::vector<std::vector<std::vector<int> > > goals_by_distance_;
 
         float task_utility_;
+        bool home_base_only_;
 
     };
 

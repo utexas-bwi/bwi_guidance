@@ -58,17 +58,7 @@ namespace bwi_guidance_solver {
     }
 
     Action MCTSSolver::getBestAction(const ExtendedState &state) {
-      Action action = mcts_->selectWorldAction(state);
-      if (action.type == ASSIGN_ROBOT && action.node == 1) {
-        action.node = 8;
-      }
-      if (action.type == DIRECT_PERSON && action.node == 1) {
-        action.type = LEAD_PERSON;
-        action.node = 9;
-        mcts_->printBestTrajectory(state, action);
-        throw std::runtime_error("blah!");
-      }
-      return action;
+      return mcts_->selectWorldAction(state);
     }
 
     void MCTSSolver::performEpisodeStartComputation(const ExtendedState &state) {

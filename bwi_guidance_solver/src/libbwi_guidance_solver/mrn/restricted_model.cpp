@@ -190,16 +190,16 @@ namespace bwi_guidance_solver {
                               utility_loss,
                               frame_vector);
 
-      float max_robot_utility = 0.0f;
-      for (int r = 0; r < state.robots.size(); ++r) {
-        if (state.robots[r].help_destination != NONE && state.robots[r].tau_u > max_robot_utility) {
-          max_robot_utility = state.robots[r].tau_u;
-        }
-      }
+      // float max_robot_utility = 0.0f;
+      // for (int r = 0; r < state.robots.size(); ++r) {
+      //   if (state.robots[r].help_destination != NONE && state.robots[r].tau_u > max_robot_utility) {
+      //     max_robot_utility = state.robots[r].tau_u;
+      //   }
+      // }
 
-      if (max_robot_utility > 0.0f && utility_loss < 1e-3 && action.type == WAIT && state.assist_type != LEAD_PERSON) {
-        reward -= 1000.0f;
-      }
+      // if (max_robot_utility > 0.0f && utility_loss < 1e-3 && action.type == WAIT && state.assist_type != LEAD_PERSON) {
+      //   reward -= 1000.0f;
+      // }
 
       next_state.prev_action = action;
       if (action.type == WAIT) {

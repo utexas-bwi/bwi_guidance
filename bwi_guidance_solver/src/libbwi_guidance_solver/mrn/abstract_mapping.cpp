@@ -11,8 +11,11 @@ namespace bwi_guidance_solver {
           r.loc_v = r.loc_u;
           r.loc_p = 1.0f;
         }
-        if (r.loc_v == 1.0f) {
+        if (r.loc_p == 1.0f) {
           r.loc_u = r.loc_v;
+        }
+        if (r.loc_p != 1.0f) {
+          r.loc_p = 0.5f;
         }
         if (r.help_destination == NONE && r.loc_v == r.tau_d && r.loc_p == 1.0f) {
           r.tau_t = r.tau_total_task_time / 2;
