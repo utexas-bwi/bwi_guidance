@@ -6,7 +6,7 @@
         "map_file": "package://bwi_guidance/maps/map3.yaml",
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
         "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
-        "frame_rate": 0.0
+        "frame_rate": 10.0
       },
       "solvers": [
         {
@@ -14,7 +14,7 @@
           "params": {
             "maxDepth": 150,
             "numThreads": 8,
-            "rewardBound": 500,
+            "rewardBound": 250,
             "unknownBootstrapValue": -150.0
           }
         }

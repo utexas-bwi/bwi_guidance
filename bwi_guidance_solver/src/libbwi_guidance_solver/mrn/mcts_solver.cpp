@@ -58,7 +58,22 @@ namespace bwi_guidance_solver {
     }
 
     Action MCTSSolver::getBestAction(const ExtendedState &state) {
-      return mcts_->selectWorldAction(state);
+      Action action = mcts_->selectWorldAction(state);
+      // if (action.type == ASSIGN_ROBOT && action.node == 1) {
+      //   action.node = 8;
+      //   return action;
+      // }
+      // if (state.loc_node == 23 && state.robots[9].help_destination == NONE && state.assist_type != NONE && state.robots[2].help_destination == NONE) {
+      //   return Action(ASSIGN_ROBOT, -1, 8);
+      // }
+      // if (action.type == RELEASE_ROBOT && action.robot_id == 9) {
+      //   return Action(WAIT);
+      // }
+      // if (state.loc_node == 8) {
+      //   mcts_->printBestTrajectory(state, Action(DIRECT_PERSON, 9, 1));
+      //   throw std::runtime_error("asdf");
+      // }
+      return action;
     }
 
     void MCTSSolver::performEpisodeStartComputation(const ExtendedState &state) {

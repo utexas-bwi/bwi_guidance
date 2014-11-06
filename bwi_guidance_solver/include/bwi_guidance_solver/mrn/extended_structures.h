@@ -11,6 +11,7 @@ namespace bwi_guidance_solver {
       Action prev_action;
       /* Locations that have been released since the last Wait action. No robot can be assigned to these locations. */
       std::vector<int> released_locations;
+      std::vector<int> robot_provided_help;
     };
 
     bool operator<(const ExtendedState& l, const ExtendedState& r); 
@@ -29,6 +30,7 @@ namespace bwi_guidance_solver {
         boost::hash_combine(seed, key.prev_action.node);
         boost::hash_range(seed, key.robots.begin(), key.robots.end());
         boost::hash_range(seed, key.released_locations.begin(), key.released_locations.end());
+        boost::hash_range(seed, key.robot_provided_help.begin(), key.robot_provided_help.end());
         /* Note that loc_v and precision are ignored here, as they are used for visualization purposes only. */
         return seed;
       }

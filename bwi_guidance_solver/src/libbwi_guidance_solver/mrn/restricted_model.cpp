@@ -23,6 +23,8 @@ namespace bwi_guidance_solver {
         num_vertices_ = boost::num_vertices(graph);
         computeAdjacentVertices(adjacent_vertices_map_, graph);
         computeShortestPath(shortest_distances_, shortest_paths_, graph);
+        computeVisibleVertices(visible_vertices_map_, graph, map, 0.0f);
+        action_vertices_map_ = visible_vertices_map_;
 
         /* Kickstart original model */
         base_model_.reset(new PersonModel(graph,
@@ -75,7 +77,8 @@ namespace bwi_guidance_solver {
 
       if (unassignable_locations.size() < params_.max_assigned_robots) {
         unassignable_locations.insert(unassignable_locations.end(), state.released_locations.begin(), state.released_locations.end());
-        for (unsigned int node = 0; node < num_vertices_; ++node) {
+        for (unsigned int adj = 0; adj < action_vertices_map_[state.loc_node].size(); ++adj) {
+          int node = action_vertices_map_[state.loc_node][adj];
           if (std::find(unassignable_locations.begin(), unassignable_locations.end(), node) ==
               unassignable_locations.end()) {
             // Note that the robot id is unknown here, so we'll use -1.
@@ -190,6 +193,21 @@ namespace bwi_guidance_solver {
                               utility_loss,
                               frame_vector);
 
+      next_state.robot_provided_help = state.robot_provided_help;
+      if (action.type == RELEASE_ROBOT) {
+        std::vector<int>::iterator it = 
+          std::find(next_state.robot_provided_help.begin(), next_state.robot_provided_help.end(), action.robot_id);
+        if (it == next_state.robot_provided_help.end()) {
+          reward -= 2.0f;
+        } else {
+          next_state.robot_provided_help.erase(it);
+        }
+      } 
+
+      if (action.type == LEAD_PERSON || action.type == DIRECT_PERSON) {
+        next_state.robot_provided_help.push_back(action.robot_id);
+      }
+      
       // float max_robot_utility = 0.0f;
       // for (int r = 0; r < state.robots.size(); ++r) {
       //   if (state.robots[r].help_destination != NONE && state.robots[r].tau_u > max_robot_utility) {

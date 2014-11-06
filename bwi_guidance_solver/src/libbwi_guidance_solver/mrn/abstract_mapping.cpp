@@ -15,6 +15,8 @@ namespace bwi_guidance_solver {
           r.loc_u = r.loc_v;
         }
         if (r.loc_p != 1.0f) {
+          r.loc_u = 0;
+          r.loc_v = 0;
           r.loc_p = 0.5f;
         }
         if (r.help_destination == NONE && r.loc_v == r.tau_d && r.loc_p == 1.0f) {
