@@ -10,6 +10,10 @@
       },
       "solvers": [
         {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
           "name": "bwi_guidance_solver::mrn::MCTSSolver",
           "params": {
             "maxDepth": 150,
