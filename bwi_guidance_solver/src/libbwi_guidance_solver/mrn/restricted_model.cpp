@@ -193,20 +193,20 @@ namespace bwi_guidance_solver {
                               utility_loss,
                               frame_vector);
 
-      next_state.robot_provided_help = state.robot_provided_help;
-      if (action.type == RELEASE_ROBOT) {
-        std::vector<int>::iterator it = 
-          std::find(next_state.robot_provided_help.begin(), next_state.robot_provided_help.end(), action.robot_id);
-        if (it == next_state.robot_provided_help.end()) {
-          reward -= 2.0f;
-        } else {
-          next_state.robot_provided_help.erase(it);
-        }
-      } 
+      // next_state.robot_provided_help = state.robot_provided_help;
+      // if (action.type == RELEASE_ROBOT) {
+      //   std::vector<int>::iterator it = 
+      //     std::find(next_state.robot_provided_help.begin(), next_state.robot_provided_help.end(), action.robot_id);
+      //   if (it == next_state.robot_provided_help.end()) {
+      //     reward -= 2.0f;
+      //   } else {
+      //     next_state.robot_provided_help.erase(it);
+      //   }
+      // } 
 
-      if (action.type == LEAD_PERSON || action.type == DIRECT_PERSON) {
-        next_state.robot_provided_help.push_back(action.robot_id);
-      }
+      // if (action.type == LEAD_PERSON || action.type == DIRECT_PERSON) {
+      //   next_state.robot_provided_help.push_back(action.robot_id);
+      // }
       
       // float max_robot_utility = 0.0f;
       // for (int r = 0; r < state.robots.size(); ++r) {
