@@ -204,7 +204,7 @@ namespace bwi_guidance_solver {
             EVALUATE_OUTPUT(" - manual " << current_state);
             reward += rewards[choice];
           }
-          record["starting_robots"] = boost::lexical_cast<std::string>(starting_robots);
+          record["max_robots"] = boost::lexical_cast<std::string>(starting_robots);
           record["reward"] = boost::lexical_cast<std::string>(reward);
           record["distance"] = boost::lexical_cast<std::string>(instance_distance * map_.info.resolution);
 

@@ -13,6 +13,7 @@ namespace bwi_guidance_solver {
     bool MCTSSolver::initializeSolverSpecific(Json::Value &params) {
       mcts_solver_params_.fromJson(params);
       mcts_params_.fromJson(params);
+      mcts_params_.rewardBound /= map_.info.resolution;
       return true;
     }
 
