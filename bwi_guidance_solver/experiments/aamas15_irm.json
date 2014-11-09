@@ -8,9 +8,6 @@
       },
       "solvers": [
         {
-          "name": "bwi_guidance_solver::irm::VISolver"
-        },
-        {
           "name": "bwi_guidance_solver::irm::MCTSSolver", 
           "params": {
             "rewardBound": 1,

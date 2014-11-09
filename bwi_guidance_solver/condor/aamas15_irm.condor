@@ -9,7 +9,7 @@
 +Project = "AI_ROBOTICS"
 
 Executable = /u/piyushk/aamas15_ws/src/bwi_guidance/bwi_guidance_solver/condor/condor_runner.sh
-Arguments = --exp /u/piyushk/aamas15_ws/src/bwi_guidance/bwi_guidance_solver/experiments/aamas15_irm.json --seed $(Process) --data-directory /projects/agents1/piyushk
+Arguments = --exp /u/piyushk/aamas15_ws/src/bwi_guidance/bwi_guidance_solver/experiments/aamas15_irm.json --seed $(Process) --data-directory /projects/agents1/piyushk/aamas15_irm
 Requirements = Arch == "X86_64" 
 
 Error = /projects/agents1/piyushk/logs/err.$(Process) 
