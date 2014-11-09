@@ -61,6 +61,8 @@ namespace bwi_guidance_solver {
     std::map<std::string, std::string> MCTSSolver::getParamsAsMapSolverSpecific() {
       std::map<std::string, std::string> mcts_solver_params = mcts_solver_params_.asMap();
       std::map<std::string, std::string> mcts_params = mcts_params_.asMap();
+      mcts_params["rewardBound"] = 
+        boost::lexical_cast<std::string>(boost::lexical_cast<float>(mcts_params["rewardBound"]) * map_.info.resolution);
       mcts_solver_params.insert(mcts_params.begin(), mcts_params.end());
       return mcts_solver_params;
     }
