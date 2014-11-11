@@ -1,0 +1,25 @@
+{
+  "domains": [
+    {
+      "domain": "bwi_guidance_solver::irm::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml"
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::irm::VISolver"
+        },
+        {
+          "name": "bwi_guidance_solver::irm::MCTSSolver", 
+          "params": {
+            "rewardBound": 250,
+            "lambda": 0.0,
+            "maxDepth": 50,
+            "unknownBootstrapValue": -300.0
+          }
+        }
+      ]
+    }
+  ]
+}
