@@ -9,11 +9,11 @@
 +Project = "AI_ROBOTICS"
 
 Executable = /u/piyushk/aamas15_ws/src/bwi_guidance/bwi_guidance_solver/condor/condor_runner.sh
-Arguments = --exp /u/piyushk/aamas15_ws/src/bwi_guidance/bwi_guidance_solver/experiments/aamas15_irm_3.json --seed $(Process) --data-directory /projects/agents1/piyushk/aamas_irm_3
+Arguments = --exp /u/piyushk/aamas15_ws/src/bwi_guidance/bwi_guidance_solver/experiments/aamas15_irm_3.json --seed $(Process) --data-directory /projects/agents1/piyushk/aamas15_irm_3
 Requirements = Arch == "X86_64" 
 
-Error = /projects/agents1/piyushk/logs/aamas_irm_3.err.$(Process) 
-Output = /projects/agents1/piyushk/logs/aamas_irm_3.out.$(Process) 
+Error = /projects/agents1/piyushk/logs/aamas15_irm_3.err.$(Process) 
+Output = /projects/agents1/piyushk/logs/aamas15_irm_3.out.$(Process) 
 Log = condor.log
 
 Queue 1000
