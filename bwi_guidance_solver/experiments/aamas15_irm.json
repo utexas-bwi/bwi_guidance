@@ -10,57 +10,73 @@
         {
           "name": "bwi_guidance_solver::irm::MCTSSolver", 
           "params": {
-            "rewardBound": 1,
-            "lambda": 0.0
-          }
-        },
-        {
-          "name": "bwi_guidance_solver::irm::MCTSSolver", 
-          "params": {
-            "rewardBound": 5,
-            "lambda": 0.0
-          }
-        },
-        {
-          "name": "bwi_guidance_solver::irm::MCTSSolver", 
-          "params": {
-            "rewardBound": 20,
-            "lambda": 0.0
-          }
-        },
-        {
-          "name": "bwi_guidance_solver::irm::MCTSSolver", 
-          "params": {
             "rewardBound": 50,
-            "lambda": 0.0
+            "lambda": 0.0,
+            "maxDepth": 50,
+            "unknownBootstrapValue": -300.0
           }
         },
         {
           "name": "bwi_guidance_solver::irm::MCTSSolver", 
           "params": {
             "rewardBound": 100,
-            "lambda": 0.0
+            "lambda": 0.0,
+            "maxDepth": 50,
+            "unknownBootstrapValue": -300.0
           }
         },
         {
           "name": "bwi_guidance_solver::irm::MCTSSolver", 
           "params": {
             "rewardBound": 250,
-            "lambda": 0.0
+            "lambda": 0.0,
+            "maxDepth": 50,
+            "unknownBootstrapValue": -300.0
           }
         },
         {
           "name": "bwi_guidance_solver::irm::MCTSSolver", 
           "params": {
             "rewardBound": 500,
-            "lambda": 0.0
+            "lambda": 0.0,
+            "maxDepth": 50,
+            "unknownBootstrapValue": -300.0
           }
         },
         {
           "name": "bwi_guidance_solver::irm::MCTSSolver", 
           "params": {
             "rewardBound": 1000,
-            "lambda": 0.0
+            "lambda": 0.0,
+            "maxDepth": 50,
+            "unknownBootstrapValue": -300.0
+          }
+        },
+        {
+          "name": "bwi_guidance_solver::irm::MCTSSolver", 
+          "params": {
+            "rewardBound": 2500,
+            "lambda": 0.0,
+            "maxDepth": 50,
+            "unknownBootstrapValue": -300.0
+          }
+        },
+        {
+          "name": "bwi_guidance_solver::irm::MCTSSolver", 
+          "params": {
+            "rewardBound": 5000,
+            "lambda": 0.0,
+            "maxDepth": 50,
+            "unknownBootstrapValue": -300.0
+          }
+        },
+        {
+          "name": "bwi_guidance_solver::irm::MCTSSolver", 
+          "params": {
+            "rewardBound": 10000,
+            "lambda": 0.0,
+            "maxDepth": 50,
+            "unknownBootstrapValue": -300.0
           }
         }
       ]
