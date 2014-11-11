@@ -131,13 +131,14 @@ namespace bwi_guidance_solver {
         std::map<std::string, std::string> record = solver->getParamsAsMap();
 
         record["name"] = solver->getSolverName();
+        record["seed"] = boost::lexical_cast<std::string>(seed);
         record["start_idx"] = boost::lexical_cast<std::string>(start_idx);
         record["goal_idx"] = boost::lexical_cast<std::string>(goal_idx);
         record["start_direction"] = boost::lexical_cast<std::string>(start_direction);
 
         RNG transition_rng(2 * (seed + 1));
 
-        for (int starting_robots = 1; starting_robots <= DEFAULT_MAX_ROBOTS; ++starting_robots) {
+        for (int starting_robots = 5; starting_robots <= DEFAULT_MAX_ROBOTS; ++starting_robots) {
 
           EVALUATE_OUTPUT("Evaluating solver " << solver->getSolverName() << " with " << starting_robots << " robots.");
 
