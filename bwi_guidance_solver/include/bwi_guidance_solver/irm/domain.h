@@ -24,7 +24,7 @@ namespace bwi_guidance_solver {
 
 #define PARAMS(_) \
           _(float,distance_limit,distance_limit,300.0f) \
-          _(bool,allow_robot_current_idx,allow_robot_current_idx,false) \
+          _(bool,allow_robot_current_idx,allow_robot_current_idx,true) \
           _(float,visibility_range,visibility_range,0.0f) \
           _(bool,allow_goal_visibility,allow_goal_visibility,false) \
           _(std::string,map_file,map_file,"") \

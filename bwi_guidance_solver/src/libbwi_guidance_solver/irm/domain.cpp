@@ -138,7 +138,7 @@ namespace bwi_guidance_solver {
 
         RNG transition_rng(2 * (seed + 1));
 
-        for (int starting_robots = 5; starting_robots <= DEFAULT_MAX_ROBOTS; ++starting_robots) {
+        for (int starting_robots = 1; starting_robots <= DEFAULT_MAX_ROBOTS; ++starting_robots) {
 
           EVALUATE_OUTPUT("Evaluating solver " << solver->getSolverName() << " with " << starting_robots << " robots.");
 
