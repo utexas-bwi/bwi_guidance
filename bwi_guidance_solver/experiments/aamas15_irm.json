@@ -69,15 +69,6 @@
             "maxDepth": 50,
             "unknownBootstrapValue": -300.0
           }
-        },
-        {
-          "name": "bwi_guidance_solver::irm::MCTSSolver", 
-          "params": {
-            "rewardBound": 10000,
-            "lambda": 0.0,
-            "maxDepth": 50,
-            "unknownBootstrapValue": -300.0
-          }
         }
       ]
     }
