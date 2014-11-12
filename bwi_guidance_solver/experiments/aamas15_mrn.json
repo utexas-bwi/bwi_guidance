@@ -20,7 +20,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -33,7 +33,7 @@
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
         "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
         "robot_speed": 0.1,
-        "utility_multiplier": 1.0,
+        "utility_multiplier": 0.0,
         "frame_rate": 0.0
       },
       "solvers": [
@@ -43,7 +43,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -69,7 +69,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -82,7 +82,7 @@
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
         "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
         "robot_speed": 0.2,
-        "utility_multiplier": 1.0,
+        "utility_multiplier": 0.0,
         "frame_rate": 0.0
       },
       "solvers": [
@@ -92,7 +92,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -118,7 +118,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -131,7 +131,7 @@
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
         "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
         "robot_speed": 0.3,
-        "utility_multiplier": 1.0,
+        "utility_multiplier": 0.0,
         "frame_rate": 0.0
       },
       "solvers": [
@@ -141,7 +141,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -167,7 +167,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -180,7 +180,7 @@
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
         "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
         "robot_speed": 0.4,
-        "utility_multiplier": 1.0,
+        "utility_multiplier": 0.0,
         "frame_rate": 0.0
       },
       "solvers": [
@@ -190,7 +190,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -216,7 +216,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -229,7 +229,7 @@
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
         "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
         "robot_speed": 0.5,
-        "utility_multiplier": 1.0,
+        "utility_multiplier": 0.0,
         "frame_rate": 0.0
       },
       "solvers": [
@@ -239,7 +239,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -265,7 +265,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -278,7 +278,7 @@
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
         "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
         "robot_speed": 0.6,
-        "utility_multiplier": 1.0,
+        "utility_multiplier": 0.0,
         "frame_rate": 0.0
       },
       "solvers": [
@@ -288,7 +288,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -314,7 +314,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -327,7 +327,7 @@
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
         "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
         "robot_speed": 0.7,
-        "utility_multiplier": 1.0,
+        "utility_multiplier": 0.0,
         "frame_rate": 0.0
       },
       "solvers": [
@@ -337,7 +337,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -363,7 +363,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -376,7 +376,7 @@
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
         "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
         "robot_speed": 0.8,
-        "utility_multiplier": 1.0,
+        "utility_multiplier": 0.0,
         "frame_rate": 0.0
       },
       "solvers": [
@@ -386,7 +386,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -412,7 +412,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -425,7 +425,7 @@
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
         "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
         "robot_speed": 0.9,
-        "utility_multiplier": 1.0,
+        "utility_multiplier": 0.0,
         "frame_rate": 0.0
       },
       "solvers": [
@@ -435,7 +435,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -461,7 +461,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
@@ -474,7 +474,7 @@
         "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
         "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
         "robot_speed": 1.0,
-        "utility_multiplier": 1.0,
+        "utility_multiplier": 0.0,
         "frame_rate": 0.0
       },
       "solvers": [
@@ -484,7 +484,7 @@
             "maxDepth": 150,
             "numThreads": 1,
             "planning_time_multiplier": 1,
-            "rewardBound": 250,
+            "rewardBound": 500,
             "unknownBootstrapValue": -150.0
           }
         }
