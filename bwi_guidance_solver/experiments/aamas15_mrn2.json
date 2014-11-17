@@ -1,0 +1,133 @@
+{
+  "domains": [
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "evaluation_human_speed": 0.875,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "evaluation_human_speed": 0.75,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "decision_variance_multiplier": 0.5,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "decision_variance_multiplier": 2.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    }
+  ]
+}

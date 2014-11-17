@@ -29,6 +29,8 @@ namespace bwi_guidance_solver {
           _(int,max_robots,max_robots,10) \
           _(float,time_limit,time_limit,300.0f) \
           _(float,human_speed,human_speed,1.0f) \
+          _(float,evaluation_human_speed,evaluation_human_speed,1.0f) \
+          _(float,decision_variance_multiplier,decision_variance_multiplier,1.0f) \
           _(float,robot_speed,robot_speed,0.5f) \
           _(float,utility_multiplier,utility_multiplier,1.0f) \
           _(bool,use_shaping_reward,use_shaping_reward,false) \

@@ -18,7 +18,8 @@ namespace bwi_guidance_solver {
 
         typedef boost::shared_ptr<HumanDecisionModel> Ptr;
 
-        HumanDecisionModel(const bwi_mapper::Graph graph) : graph_(graph) {
+        HumanDecisionModel(const bwi_mapper::Graph graph, float decision_variance_multiplier = 1.0f) : 
+            graph_(graph), decision_variance_multiplier_(decision_variance_multiplier) {
           computeAdjacentVertices(adjacent_vertices_map_, graph_);
         }
 
@@ -35,13 +36,13 @@ namespace bwi_guidance_solver {
             // Assume model is deterministic, and follows the system's assistance perfectly.
             return state.assist_loc;
           } else if (state.assist_type == DIRECT_PERSON) {
-            expected_variance = 0.05;
+            expected_variance = 0.05f * decision_variance_multiplier_;
             expected_direction_of_motion = bwi_mapper::getNodeAngle(state.loc_node, state.assist_loc, graph_);
           } else /* no assistance provided. */ {
             // Do nothin. Use default values for exoe
             if (state.loc_prev != state.loc_node) {
               expected_direction_of_motion = bwi_mapper::getNodeAngle(state.loc_prev, state.loc_node, graph_);
-              expected_variance = 0.1f;
+              expected_variance = 0.1f * decision_variance_multiplier_;
             } else {
               // This can only mean that this is the start state (as the person does not have loc_prev set), and 
               // the policy called Wait without first calling LEAD or DIRECT, which is a terrible action since
@@ -88,6 +89,7 @@ namespace bwi_guidance_solver {
 
         bwi_mapper::Graph graph_;
         std::map<int, std::vector<int> > adjacent_vertices_map_;
+        float decision_variance_multiplier_;
 
     };
 

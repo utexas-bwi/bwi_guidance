@@ -62,6 +62,8 @@ namespace bwi_guidance_solver {
       parametrized_dir_ss << base_directory << "/mrn" << 
         "-tl" << params_.time_limit << 
         "-hs" << params_.human_speed <<
+        "-ehs" << params_.evaluation_human_speed <<
+        "-dvm" << params_.decision_variance_multiplier <<
         "-rs" << params_.robot_speed <<
         "-um" << params_.utility_multiplier <<
         "-usr" << params_.use_shaping_reward <<
@@ -132,11 +134,11 @@ namespace bwi_guidance_solver {
       // Initialize the transition model.
       MotionModel::Ptr motion_model(new MotionModel(graph_, 
                                                     params_.robot_speed / map_.info.resolution,
-                                                    params_.human_speed / map_.info.resolution)); 
+                                                    params_.evaluation_human_speed / map_.info.resolution)); 
       TaskGenerationModel::Ptr task_generation_model(new TaskGenerationModel(robot_home_base_, 
                                                                              graph_, 
                                                                              params_.utility_multiplier));
-      HumanDecisionModel::Ptr human_decision_model(new HumanDecisionModel(graph_));
+      HumanDecisionModel::Ptr human_decision_model(new HumanDecisionModel(graph_, params_.decision_variance_multiplier));
 
       // Set the MDP parameters and initialize the MDP.
       RestrictedModel::Params extended_mdp_params;
@@ -156,6 +158,8 @@ namespace bwi_guidance_solver {
         EVALUATE_OUTPUT("Evaluating solver " << solver->getSolverName());
         solver->reset(seed, goal_idx);
         std::map<std::string, std::string> record = solver->getParamsAsMap();
+        std::map<std::string, std::string> domain_params_map = params_.asMap();
+        record.insert(domain_params_map.begin(), domain_params_map.end());
 
         record["name"] = solver->getSolverName();
         record["start_idx"] = boost::lexical_cast<std::string>(start_idx);
@@ -278,7 +282,7 @@ namespace bwi_guidance_solver {
         // Produce normalized distance results as well.
         float normalization_distance = 
           bwi_mapper::getShortestPathDistance(start_idx, goal_idx, graph_);
-        float normalization_time = map_.info.resolution * normalization_distance / params_.human_speed;
+        float normalization_time = map_.info.resolution * normalization_distance / params_.evaluation_human_speed;
         record["normalized_distance"] = boost::lexical_cast<std::string>(instance_distance / normalization_distance);
         record["normalized_reward"] = boost::lexical_cast<std::string>(instance_reward / normalization_time);
         record["normalized_time"] = boost::lexical_cast<std::string>(instance_time / normalization_time);
