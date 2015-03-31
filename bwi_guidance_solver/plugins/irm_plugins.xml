@@ -1,0 +1,11 @@
+<library path="lib/libbwi_guidance_solver">
+  <class type="bwi_guidance_solver::irm::HeuristicSolver" base_class_type="bwi_guidance_solver::irm::Solver">
+    <description>A heuristic approach to solving the multi-Robot guidance domain with instanteneous robot motion.</description>
+  </class>
+  <class type="bwi_guidance_solver::irm::VISolver" base_class_type="bwi_guidance_solver::irm::Solver">
+    <description>Value Iteration to solve the multi-robot guidance domain with instanteneous robot motion.</description>
+  </class>
+  <class type="bwi_guidance_solver::irm::MCTSSolver" base_class_type="bwi_guidance_solver::irm::Solver">
+    <description>UCT to solve the multi-robot guidance domain with instanteneous robot motion.</description>
+  </class>
+</library>

@@ -1,0 +1,55 @@
+{
+  "domains": [
+    {
+      "domain": "bwi_guidance_solver::irm::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml"
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::irm::MCTSSolver", 
+          "params": {
+            "rewardBound": 500,
+            "lambda": 0.0
+          }
+        },
+        {
+          "name": "bwi_guidance_solver::irm::MCTSSolver", 
+          "params": {
+            "rewardBound": 500,
+            "lambda": 0.2
+          }
+        },
+        {
+          "name": "bwi_guidance_solver::irm::MCTSSolver", 
+          "params": {
+            "rewardBound": 500,
+            "lambda": 0.4
+          }
+        },
+        {
+          "name": "bwi_guidance_solver::irm::MCTSSolver", 
+          "params": {
+            "rewardBound": 500,
+            "lambda": 0.6
+          }
+        },
+        {
+          "name": "bwi_guidance_solver::irm::MCTSSolver", 
+          "params": {
+            "rewardBound": 500,
+            "lambda": 0.8
+          }
+        },
+        {
+          "name": "bwi_guidance_solver::irm::MCTSSolver", 
+          "params": {
+            "rewardBound": 500,
+            "lambda": 1.0
+          }
+        }
+      ]
+    }
+  ]
+}

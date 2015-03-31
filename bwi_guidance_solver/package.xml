@@ -15,12 +15,22 @@
   <build_depend>bwi_guidance</build_depend>
   <build_depend>bwi_mapper</build_depend>
   <build_depend>bwi_rl</build_depend>
+  <build_depend>bwi_tools</build_depend>
+  <build_depend>pluginlib</build_depend>
 
   <run_depend>bwi_guidance</run_depend>
   <run_depend>bwi_mapper</run_depend>
   <run_depend>bwi_rl</run_depend>
+  <run_depend>bwi_tools</run_depend>
+  <run_depend>pluginlib</run_depend>
 
   <run_depend>python-scipy</run_depend>
   <!-- <run_depend>python-simplejson</run_depend> -->
+
+  <export>
+    <bwi_rl plugin="${prefix}/plugins/domain_plugins.xml" />
+    <bwi_guidance_solver plugin="${prefix}/plugins/irm_plugins.xml" />
+    <bwi_guidance_solver plugin="${prefix}/plugins/mrn_plugins.xml" />
+  </export>
 
 </package>

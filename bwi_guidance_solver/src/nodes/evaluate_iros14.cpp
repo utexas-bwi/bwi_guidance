@@ -7,7 +7,7 @@
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#include <bwi_rl/common/Util.h>
+#include <bwi_tools/common/Util.h>
 #include <bwi_rl/planning/MCTS.h>
 #include <bwi_rl/planning/UCTEstimator.h>
 #include <bwi_rl/planning/ModelUpdaterSingle.h>

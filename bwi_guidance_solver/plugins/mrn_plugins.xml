@@ -1,0 +1,11 @@
+<library path="lib/libbwi_guidance_solver">
+  <class type="bwi_guidance_solver::mrn::HeuristicSolver" base_class_type="bwi_guidance_solver::mrn::Solver">
+    <description>A heuristic approach to solving the multi-robot guidance domain with 2d navigation.</description>
+  </class>
+  <class type="bwi_guidance_solver::mrn::MCTSSolver" base_class_type="bwi_guidance_solver::mrn::Solver">
+    <description>UCT to solve the multi-robot guidance domain with 2d navigation.</description>
+  </class>
+  <class type="bwi_guidance_solver::mrn::SingleRobotSolver" base_class_type="bwi_guidance_solver::mrn::Solver">
+    <description>A single robot that guides the person all the way to the goal in the MRN domain.</description>
+  </class>
+</library>

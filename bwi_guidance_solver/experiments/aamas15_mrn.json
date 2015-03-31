@@ -1,0 +1,494 @@
+{
+  "domains": [
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.1,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.1,
+        "utility_multiplier": 0.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.2,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.2,
+        "utility_multiplier": 0.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.3,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.3,
+        "utility_multiplier": 0.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.4,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.4,
+        "utility_multiplier": 0.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.5,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.5,
+        "utility_multiplier": 0.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.6,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.6,
+        "utility_multiplier": 0.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.7,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.7,
+        "utility_multiplier": 0.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.8,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.8,
+        "utility_multiplier": 0.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.9,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 0.9,
+        "utility_multiplier": 0.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 1.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::SingleRobotSolver",
+          "params": {}
+        },
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    },
+    {
+      "domain": "bwi_guidance_solver::mrn::Domain",
+      "params": {
+        "map_file": "package://bwi_guidance/maps/map3.yaml",
+        "graph_file": "package://bwi_guidance/maps/graph_map3.yaml",
+        "robot_home_base_file": "package://bwi_guidance_solver/experiments/map3_robot_base.txt",
+        "robot_speed": 1.0,
+        "utility_multiplier": 0.0,
+        "frame_rate": 0.0
+      },
+      "solvers": [
+        {
+          "name": "bwi_guidance_solver::mrn::MCTSSolver",
+          "params": {
+            "maxDepth": 150,
+            "numThreads": 1,
+            "planning_time_multiplier": 1,
+            "rewardBound": 500,
+            "unknownBootstrapValue": -150.0
+          }
+        }
+      ]
+    }
+  ]
+}
