@@ -46,40 +46,44 @@
 
 namespace bwi_guidance {
 
-  struct Instance {
-    Location start_loc;
-    Location ball_loc;
-    float max_duration;
-    int max_robots;
-    bool is_tutorial;
-  };
+  namespace irm {
 
-  struct InstanceGroup {
-    std::string prefix;
-    int order;
-    std::vector<Instance> experiments;
-  };
+    struct Instance {
+      Location start_loc;
+      Location ball_loc;
+      float max_duration;
+      int max_robots;
+      bool is_tutorial;
+    };
 
-  struct Experiment {
-    std::string person_id;
-    std::vector<Robot> robots;
-    std::string ball_id;
-    std::vector<InstanceGroup> experiments; 
-  };
+    struct InstanceGroup {
+      std::string prefix;
+      int order;
+      std::vector<Instance> experiments;
+    };
 
-  void readExperimentFromFile(const std::string& file, 
-      Experiment& ec); 
+    struct Experiment {
+      std::string person_id;
+      std::vector<Robot> robots;
+      std::string ball_id;
+      std::vector<InstanceGroup> experiments;
+    };
 
-  void getInstanceNames(const Experiment& ec, 
-      std::vector<std::string> &names); 
+    void readExperimentFromFile(const std::string& file,
+        Experiment& ec);
 
-  void computeOrderings(const Experiment& ec,
-      std::vector< std::vector<std::string> >& orderings); 
+    void getInstanceNames(const Experiment& ec,
+        std::vector<std::string> &names);
 
-  Instance& getInstance(Experiment& ec, size_t idx);
+    void computeOrderings(const Experiment& ec,
+        std::vector< std::vector<std::string> >& orderings);
 
-  Instance& getInstance(Experiment& ec, std::string instance_name);
-  
+    Instance& getInstance(Experiment& ec, size_t idx);
+
+    Instance& getInstance(Experiment& ec, std::string instance_name);
+
+  }
+
 } /* bwi_guidance */
 
 #endif /* end of include guard: EXPERIMENT_500N2RKG */

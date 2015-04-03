@@ -33,34 +33,34 @@ include_directories(
 add_library(bwi_guidance
   src/libbwi_guidance/users.cpp
   src/libbwi_guidance/odometry.cpp
-  src/libbwi_guidance/experiment.cpp
-  src/libbwi_guidance/robots.cpp
-  src/libbwi_guidance/base_robot_positioner.cpp
+  src/libbwi_guidance/irm/experiment.cpp
+  src/libbwi_guidance/irm/static_robot_policy.cpp
+  src/libbwi_guidance/irm/base_robot_positioner.cpp
   src/libbwi_guidance/robot_screen_publisher.cpp
   )
-target_link_libraries(bwi_guidance 
+target_link_libraries(bwi_guidance
   ${catkin_LIBRARIES}
   ${YAML_CPP_LIBRARIES})
 add_dependencies(bwi_guidance bwi_guidance_msgs_gencpp)
 
 ## Declare a cpp executable
 add_executable(create_experiment src/create_experiment.cpp)
-target_link_libraries(create_experiment 
+target_link_libraries(create_experiment
   ${catkin_LIBRARIES})
 
 ## Declare a cpp executable
 add_executable(robot_positioner src/nodes/robot_positioner.cpp)
-target_link_libraries(robot_positioner 
+target_link_libraries(robot_positioner
   bwi_guidance
   ${catkin_LIBRARIES})
 
 add_executable(test_robot_positioner test/test_robot_positioner.cpp)
-target_link_libraries(test_robot_positioner 
+target_link_libraries(test_robot_positioner
   bwi_guidance
   ${catkin_LIBRARIES})
 
 add_executable(test_screen_publisher test/test_screen_publisher.cpp)
-target_link_libraries(test_screen_publisher 
+target_link_libraries(test_screen_publisher
   bwi_guidance
   ${catkin_LIBRARIES})
 

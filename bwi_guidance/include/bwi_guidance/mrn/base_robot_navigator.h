@@ -1,5 +1,5 @@
-#ifndef BASE_ROBOT_POSITIONER_IMH4RD8H
-#define BASE_ROBOT_POSITIONER_IMH4RD8H
+#ifndef BWI_GUIDANCE_BASE_ROBOT_NAVIGATOR_H
+#define BWI_GUIDANCE_BASE_ROBOT_NAVIGATOR_H
 
 #include <boost/shared_ptr.hpp>
 #include <gazebo_msgs/GetModelState.h>
@@ -19,11 +19,11 @@
 
 namespace bwi_guidance {
 
-  class BaseRobotPositioner {
+  class BaseRobotNavigator {
 
     public:
-      BaseRobotPositioner(boost::shared_ptr<ros::NodeHandle>& nh);
-      virtual ~BaseRobotPositioner();
+      BaseRobotNavigator(boost::shared_ptr<ros::NodeHandle>& nh);
+      virtual ~BaseRobotNavigator();
 
       virtual void startExperimentInstance(
           const std::string& instance_name) = 0;
@@ -34,11 +34,11 @@ namespace bwi_guidance {
       void produceDirectedArrow(float orientation, cv::Mat& image);
       void produceDirectedArrowAlt(float orientation, cv::Mat& image);
 
-      void experimentCallback(const bwi_guidance_msgs::ExperimentStatus::ConstPtr es); 
+      void experimentCallback(const bwi_guidance_msgs::ExperimentStatus::ConstPtr es);
       geometry_msgs::Pose convert2dToPose(float x, float y, float yaw);
       bool checkClosePoses(const geometry_msgs::Pose& p1,
           const geometry_msgs::Pose& p2);
-      bool teleportEntity(const std::string& entity, 
+      bool teleportEntity(const std::string& entity,
           const geometry_msgs::Pose& pose);
 
       geometry_msgs::Pose positionRobot(
@@ -75,7 +75,7 @@ namespace bwi_guidance {
       DefaultRobots default_robots_;
       Experiment experiment_;
 
-      std::map<std::string, geometry_msgs::Pose> robot_locations_; 
+      std::map<std::string, geometry_msgs::Pose> robot_locations_;
       std::map<std::string, geometry_msgs::Pose> assigned_robot_locations_;
       std::map<std::string, float> robot_screen_orientations_;
       std::map<std::string, float> prev_orientation_;
@@ -91,4 +91,4 @@ namespace bwi_guidance {
 
 } /* bwi_guidance */
 
-#endif /* end of include guard: BASE_ROBOT_POSITIONER_IMH4RD8H */
+#endif /* end of include guard: BWI_GUIDANCE_BASE_ROBOT_NAVIGATOR_H */
