@@ -10,12 +10,12 @@ find_package(Boost REQUIRED COMPONENTS serialization program_options)
 ###################################
 
 catkin_package(
-  INCLUDE_DIRS 
+  INCLUDE_DIRS
     include
-  LIBRARIES 
+  LIBRARIES
     bwi_guidance_solver
-  CATKIN_DEPENDS 
-    bwi_guidance 
+  CATKIN_DEPENDS
+    bwi_guidance
     bwi_mapper
     bwi_rl
     pluginlib
@@ -60,7 +60,7 @@ add_library(bwi_guidance_solver
   src/libbwi_guidance_solver/mrn/restricted_model.cpp
   src/libbwi_guidance_solver/mrn/abstract_mapping.cpp
 )
-target_link_libraries(bwi_guidance_solver 
+target_link_libraries(bwi_guidance_solver
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
 )
@@ -73,8 +73,16 @@ target_link_libraries(bwi_guidance_solver_aamas_figure_1
   bwi_guidance_solver
 )
 
+## Add a few libraries for producing images.
+add_executable(bwi_guidance_solver_aamas_figure_1_video
+  src/aamas2015/figure_1_video.cpp
+)
+target_link_libraries(bwi_guidance_solver_aamas_figure_1_video
+  bwi_guidance_solver
+)
+
 ## Mark executables and/or libraries for installation
-install(TARGETS 
+install(TARGETS
   bwi_guidance_solver
   bwi_guidance_solver_aamas_figure_1
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
