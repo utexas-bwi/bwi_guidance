@@ -49,6 +49,7 @@ namespace bwi_guidance {
       // action. Since this thread is responsible for sending navigation tasks to the robots, this thread should also
       // monitor each robot and figure out what the current status is.
       // This thread should also frontload all actions to get the cummulative effect until WAIT is called.
+      // Probably run
 
       // Start here.
       // TODO Expose an action_server for requesting assistance that terminates once the human reaches the goal. This
@@ -60,6 +61,7 @@ namespace bwi_guidance {
 
       // This is a step of time during WAIT where UCT can do its things. The timeout is based on the frequency of the
       // controller thread minus the processing time required by that thread.
+      // Do nothing in this function by default.
       virtual void compute(float timeout);
 
       // TODO: Move to common
