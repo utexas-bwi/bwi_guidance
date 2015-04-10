@@ -41,12 +41,13 @@
 #include <tf/transform_datatypes.h>
 #include <bwi_mapper/map_utils.h>
 #include <bwi_mapper/point_utils.h>
-#include <bwi_guidance/base_robot_positioner.h>
+#include <bwi_guidance/irm/base_robot_positioner.h>
 #include <boost/foreach.hpp>
 
 using namespace bwi_guidance;
+using namespace bwi_guidance::irm;
 
-class DataCollectionRobotPositioner : public bwi_guidance::BaseRobotPositioner {
+class DataCollectionRobotPositioner : public bwi_guidance::irm::BaseRobotPositioner {
 
   private:
     std::vector<cv::Mat> robot_images_;
