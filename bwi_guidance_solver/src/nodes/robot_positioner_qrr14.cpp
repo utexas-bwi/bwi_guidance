@@ -51,11 +51,11 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
       private_nh.param<double>("vi_gamma", vi_gamma_, 1.0);
       private_nh.param<int>("vi_max_iterations", vi_max_iterations_, 1000);
       private_nh.param<bool>("use_heuristic", use_heuristic_, false);
-      private_nh.param<bool>("allow_robot_current", allow_robot_current_idx_, 
+      private_nh.param<bool>("allow_robot_current", allow_robot_current_idx_,
           false);
-      private_nh.param<bool>("allow_goal_visibility", allow_goal_visibility_, 
+      private_nh.param<bool>("allow_goal_visibility", allow_goal_visibility_,
           true);
-      private_nh.param<double>("visibility_range", visibility_range_, 
+      private_nh.param<double>("visibility_range", visibility_range_,
           30.0);
 
       if (use_heuristic_)
@@ -75,7 +75,7 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
         bwi_mapper::Point2f goal_point(instance.ball_loc.x,
             instance.ball_loc.y);
         goal_point = bwi_mapper::toGrid(goal_point, map_info_);
-        int goal_idx = 
+        int goal_idx =
           bwi_mapper::getClosestIdOnGraph(goal_point, graph_);
 
         // Compute model file
@@ -101,8 +101,8 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
               model, estimator, vi_gamma_, epsilon, vi_max_iterations_,
               0.0, delta));
         hs.reset(new HeuristicSolver(map_, graph_, goal_idx,
-              allow_robot_current_idx_, pixel_visibility_range, 
-              allow_goal_visibility_)); 
+              allow_robot_current_idx_, pixel_visibility_range,
+              allow_goal_visibility_));
 
         bool policy_available = false;
         std::ifstream fin(vi_file.c_str());
@@ -142,21 +142,21 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
       bwi_mapper::Point2f start_point(instance.start_loc.x,
           instance.start_loc.y);
       start_point = bwi_mapper::toGrid(start_point, map_info_);
-      size_t start_idx = 
+      size_t start_idx =
         bwi_mapper::getClosestIdOnGraph(start_point, graph_);
 
       bwi_mapper::Point2f goal_point(instance.ball_loc.x,
           instance.ball_loc.y);
       goal_point = bwi_mapper::toGrid(goal_point, map_info_);
-      goal_idx_ = 
+      goal_idx_ =
         bwi_mapper::getClosestIdOnGraph(goal_point, graph_);
- 
+
       model_ = model_map_[goal_idx_];
       estimator_ = estimator_map_[goal_idx_];
       vi_ = vi_map_[goal_idx_];
       hs_ = hs_map_[goal_idx_];
 
-      size_t direction = 
+      size_t direction =
         getDiscretizedAngle(instance.start_loc.yaw);
 
       current_state_.graph_id = start_idx;
@@ -172,7 +172,7 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
 
       boost::mutex::scoped_lock lock(robot_modification_mutex_);
 
-      const Instance& instance = 
+      const Instance& instance =
         getInstance(experiment_, instance_name_);
 
       // First check if we need to place a robot according to VI policy
@@ -185,7 +185,7 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
       std::vector<StateQRR14> next_states;
       std::vector<float> probabilities;
       std::vector<float> rewards;
-      model_->getTransitionDynamics(current_state_, action, next_states, 
+      model_->getTransitionDynamics(current_state_, action, next_states,
           rewards, probabilities);
 
       while (action.type != DO_NOTHING) {
@@ -194,7 +194,7 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
         if (action.type == DIRECT_PERSON) {
 
           // Figure out direction to point towards here
-          bwi_mapper::Point2f to_loc = 
+          bwi_mapper::Point2f to_loc =
             bwi_mapper::getLocationFromGraphId(
                 current_state_.robot_direction, graph_);
           bwi_mapper::Point2f change_loc = to_loc - assigned_robot_loc_;
@@ -212,12 +212,12 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
 
           // Place a robot here. Use lookahead to determine the best positioning
           // around the node
-          bwi_mapper::Point2f at_loc = 
+          bwi_mapper::Point2f at_loc =
             bwi_mapper::getLocationFromGraphId(
                 current_state_.visible_robot, graph_);
 
           float angle = bwi_mapper::getNodeAngle(
-                current_state_.graph_id, 
+                current_state_.graph_id,
                 current_state_.visible_robot, graph_
                 );
           bwi_mapper::Point2f from_loc =
@@ -239,16 +239,16 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
           } else {
             robot_action = vi_->getBestAction(robot_state);
           }
-          bwi_mapper::Point2f to_loc = 
+          bwi_mapper::Point2f to_loc =
             bwi_mapper::getLocationFromGraphId(
                 robot_action.graph_id, graph_);
 
           // Compute robot pose
           geometry_msgs::Pose pose = positionRobot(from_loc, at_loc, to_loc);
           assigned_robot_yaw_ = tf::getYaw(pose.orientation);
-          assigned_robot_loc_ = 
+          assigned_robot_loc_ =
             bwi_mapper::Point2f(pose.position.x, pose.position.y);
-          assigned_robot_loc_ = 
+          assigned_robot_loc_ =
             bwi_mapper::toGrid(assigned_robot_loc_, map_info_);
 
           // Teleport the robot and forward this information
@@ -264,13 +264,13 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
         } else {
           action = vi_->getBestAction(current_state_);
         }
-        model_->getTransitionDynamics(current_state_, action, next_states, 
+        model_->getTransitionDynamics(current_state_, action, next_states,
             rewards, probabilities);
       }
     }
 
     virtual void odometryCallback(const nav_msgs::Odometry::ConstPtr odom) {
-      
+
       if (!instance_in_progress_)
         return;
 
@@ -284,19 +284,19 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
             graph_, current_state_.graph_id);
 
       if (current_graph_id != current_state_.graph_id) {
-        // A transition has happened. Compute next state and check if robot 
+        // A transition has happened. Compute next state and check if robot
         // needs to be placed.
         ActionQRR14 a(DO_NOTHING, 0);
-        std::vector<StateQRR14> next_states; 
-        model_->getNextStates(current_state_, a, next_states); 
+        std::vector<StateQRR14> next_states;
+        model_->getNextStates(current_state_, a, next_states);
         int old_robot_status = current_state_.robot_direction;
         if (old_robot_status != NONE) {
           boost::mutex::scoped_lock lock(robot_modification_mutex_);
-          int robot_number = 
+          int robot_number =
             graph_id_to_robot_map_[current_state_.graph_id];
-          std::string old_robot_id = 
+          std::string old_robot_id =
             default_robots_.robots[robot_number].id;
-          robot_locations_[old_robot_id] = 
+          robot_locations_[old_robot_id] =
             convert2dToPose(
                 default_robots_.robots[robot_number].default_loc.x,
                 default_robots_.robots[robot_number].default_loc.y,
@@ -307,14 +307,14 @@ class RobotPositionerQRR14 : public BaseRobotPositioner {
           if (state.graph_id == current_graph_id) {
             int old_robot_state = current_state_.visible_robot;
             current_state_ = state;
-            if (old_robot_state != NONE && 
+            if (old_robot_state != NONE &&
                 current_state_.visible_robot == NONE &&
                 current_state_.robot_direction == NONE) {
-              int robot_number = 
+              int robot_number =
                 graph_id_to_robot_map_[old_robot_state];
-              std::string old_robot_id = 
+              std::string old_robot_id =
                 default_robots_.robots[robot_number].id;
-              robot_locations_[old_robot_id] = 
+              robot_locations_[old_robot_id] =
                 convert2dToPose(
                     default_robots_.robots[robot_number].default_loc.x,
                     default_robots_.robots[robot_number].default_loc.y,

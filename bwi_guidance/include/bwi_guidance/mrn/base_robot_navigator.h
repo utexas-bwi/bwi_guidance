@@ -19,46 +19,58 @@
 
 namespace bwi_guidance {
 
-  class BaseRobotNavigator {
+  class BaseMultiRobotNavigator {
 
+    // TODO add current_state. The only  and decision.
     public:
+
       BaseRobotNavigator(boost::shared_ptr<ros::NodeHandle>& nh);
       virtual ~BaseRobotNavigator();
 
-      virtual void startExperimentInstance(
-          const std::string& instance_name) = 0;
-      virtual void odometryCallback(
-          const nav_msgs::Odometry::ConstPtr odom) = 0;
+      // TODO This is provided from somewhere, not necessarily gazebo.
+      void humanPositionCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr odom);
 
-      virtual void finalizeExperimentInstance();
+      // TODO We need to know the positions of all the robots to keep the state up to date
+      void robotPositionCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr robot);
+
+      // While available robot list is frozen, we can't add more robots.
+      bool freeze_available_robot_list_;
+
+      // This needs a mutex inside so that the list of available robots is not changed once the action server receives
+      // a request.
+      // TODO: Atleast assume that a robot that has become available won't suddenly vanish, for now.
+      void availableRobotSubscriber();
+      std::vector<std::string> available_robot_list;
+      std::vector</* robot controller */> robot_controller_; /* Directly corresponds to vector id in current state. */
+
+      // TODO Keep a separate thread on a timer that computes the current state based on human and robot positions, and
+      // keeps track on the amount of time a service robot has spent on a location and figure out when a new service
+      // task is necessary. This thread should also be responsible for requesting the best action and executing said
+      // action. Since this thread is responsible for sending navigation tasks to the robots, this thread should also
+      // monitor each robot and figure out what the current status is.
+      // This thread should also frontload all actions to get the cummulative effect until WAIT is called.
+
+      // Start here.
+      // TODO Expose an action_server for requesting assistance that terminates once the human reaches the goal. This
+      // should compute the initial state, and start the thread that attempts to achieve the task. Once the thread
+      // finishes or a cancel request is received, stop the task!
+
+      /* Once WAIT is returned, clean the MCTS state - DOWNSTREAM! */
+      virtual void getBestAction() = 0;
+
+      // This is a step of time during WAIT where UCT can do its things. The timeout is based on the frequency of the
+      // controller thread minus the processing time required by that thread.
+      virtual void compute(float timeout);
+
+      // TODO: Move to common
       void produceDirectedArrow(float orientation, cv::Mat& image);
       void produceDirectedArrowAlt(float orientation, cv::Mat& image);
-
-      void experimentCallback(const bwi_guidance_msgs::ExperimentStatus::ConstPtr es);
-      geometry_msgs::Pose convert2dToPose(float x, float y, float yaw);
-      bool checkClosePoses(const geometry_msgs::Pose& p1,
-          const geometry_msgs::Pose& p2);
-      bool teleportEntity(const std::string& entity,
-          const geometry_msgs::Pose& pose);
-
-      geometry_msgs::Pose positionRobot(
-          const bwi_mapper::Point2f& from,
-          const bwi_mapper::Point2f& at,
-          const bwi_mapper::Point2f& to);
-
-      void start();
-      void run();
 
     protected:
 
       boost::shared_ptr<ros::NodeHandle> nh_;
-      boost::shared_ptr<boost::thread> publishing_thread_;
 
-      bool gazebo_available_;
       ros::Subscriber odometry_subscriber_;
-      ros::Publisher position_publisher_;
-      ros::ServiceClient get_gazebo_model_client_;
-      ros::ServiceClient set_gazebo_model_client_;
 
       bool debug_;
       double search_distance_;
@@ -69,16 +81,8 @@ namespace bwi_guidance {
       nav_msgs::MapMetaData map_info_;
 
       RobotScreenPublisher robot_screen_publisher_;
-      cv::Mat blank_image_;
-      cv::Mat up_arrow_;
-      cv::Mat u_turn_image_;
-      DefaultRobots default_robots_;
-      Experiment experiment_;
 
-      std::map<std::string, geometry_msgs::Pose> robot_locations_;
-      std::map<std::string, geometry_msgs::Pose> assigned_robot_locations_;
       std::map<std::string, float> robot_screen_orientations_;
-      std::map<std::string, float> prev_orientation_;
       std::map<std::string, bool> robot_ok_;
       boost::mutex robot_modification_mutex_;
 
