@@ -12,9 +12,9 @@
 #include <opencv/cv.h>
 #include <ros/ros.h>
 
-#include <bwi_guidance/experiment.h>
+#include <bwi_guidance/irm/experiment.h>
+#include <bwi_guidance/irm/robots.h>
 #include <bwi_guidance/robot_screen_publisher.h>
-#include <bwi_guidance/robots.h>
 #include <bwi_guidance_msgs/ExperimentStatus.h>
 
 namespace bwi_guidance {

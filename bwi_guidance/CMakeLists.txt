@@ -34,7 +34,7 @@ add_library(bwi_guidance
   src/libbwi_guidance/users.cpp
   src/libbwi_guidance/odometry.cpp
   src/libbwi_guidance/irm/experiment.cpp
-  src/libbwi_guidance/irm/static_robot_policy.cpp
+  src/libbwi_guidance/irm/robots.cpp
   src/libbwi_guidance/irm/base_robot_positioner.cpp
   src/libbwi_guidance/robot_screen_publisher.cpp
   )
@@ -44,13 +44,13 @@ target_link_libraries(bwi_guidance
 add_dependencies(bwi_guidance bwi_guidance_msgs_gencpp)
 
 ## Declare a cpp executable
-add_executable(create_experiment src/create_experiment.cpp)
+add_executable(create_experiment src/data_collection/create_experiment.cpp)
 target_link_libraries(create_experiment
   ${catkin_LIBRARIES})
 
 ## Declare a cpp executable
-add_executable(robot_positioner src/nodes/robot_positioner.cpp)
-target_link_libraries(robot_positioner
+add_executable(data_collection_robot_positioner src/nodes/data_collection_robot_positioner.cpp)
+target_link_libraries(data_collection_robot_positioner
   bwi_guidance
   ${catkin_LIBRARIES})
 

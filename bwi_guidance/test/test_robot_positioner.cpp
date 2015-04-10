@@ -1,8 +1,8 @@
-#include <bwi_guidance/base_robot_positioner.h>
+#include <bwi_guidance/irm/base_robot_positioner.h>
 #include <opencv/highgui.h>
 #include <ros/ros.h>
 
-using namespace bwi_guidance;
+using namespace bwi_guidance::irm;
 
 class TestRobotPositioner : public BaseRobotPositioner {
   public:
