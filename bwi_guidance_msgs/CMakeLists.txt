@@ -1,7 +1,7 @@
 # http://ros.org/doc/groovy/api/catkin/html/user_guide/supposed.html
 cmake_minimum_required(VERSION 2.8.3)
 project(bwi_guidance_msgs)
-find_package(catkin REQUIRED COMPONENTS geometry_msgs message_generation)
+find_package(catkin REQUIRED COMPONENTS actionlib_msgs geometry_msgs message_generation)
 
 add_message_files(
   FILES
@@ -17,11 +17,16 @@ add_service_files(
   UpdateExperimentServer.srv
 )
 
+add_action_files(
+  DIRECTORY action
+  FILES MultiRobotNavigation.action
+)
+
 generate_messages(
-  DEPENDENCIES geometry_msgs
+  DEPENDENCIES actionlib_msgs geometry_msgs
 )
 
 catkin_package(
-    DEPENDS geometry_msgs
-    CATKIN_DEPENDS message_runtime
+  DEPENDS
+  CATKIN_DEPENDS actionlib_msgs geometry_msgs message_runtime
 )

@@ -1,6 +1,7 @@
 #ifndef BWI_GUIDANCE_BASE_ROBOT_NAVIGATOR_H
 #define BWI_GUIDANCE_BASE_ROBOT_NAVIGATOR_H
 
+#include <actionlib/server/simple_action_server.h>
 #include <boost/shared_ptr.hpp>
 #include <gazebo_msgs/GetModelState.h>
 #include <gazebo_msgs/SetModelState.h>
@@ -16,6 +17,7 @@
 #include <bwi_guidance/robot_screen_publisher.h>
 #include <bwi_guidance/robots.h>
 #include <bwi_guidance_msgs/ExperimentStatus.h>
+#include <bwi_guidance_msgs/MultiRobotNavigationAction.h>
 
 namespace bwi_guidance {
 
@@ -71,6 +73,14 @@ namespace bwi_guidance {
     protected:
 
       boost::shared_ptr<ros::NodeHandle> nh_;
+      boost::shared_ptr<actionlib::SimpleActionServer<bwi_guidance_msgs::MultiRobotNavigationAction> > as_;
+      bool cancel_controller_thread_;
+
+      boost::shared_ptr<boost::thread> controller_thread_;
+      void runControllerThread
+      float controller_thread_frequency_;
+
+      boost::shared_ptr</* TaskGenerationModel */>
 
       ros::Subscriber odometry_subscriber_;
 
