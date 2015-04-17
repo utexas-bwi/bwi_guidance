@@ -61,6 +61,8 @@ namespace bwi_guidance {
       /* Once WAIT is returned, clean the MCTS state - DOWNSTREAM! */
       virtual void getBestAction() = 0;
 
+      virtual void getNextTaskForRobot(int robot_id) = 0;
+
       // This is a step of time during WAIT where UCT can do its things. The timeout is based on the frequency of the
       // controller thread minus the processing time required by that thread.
       // Do nothing in this function by default.
@@ -76,11 +78,10 @@ namespace bwi_guidance {
       boost::shared_ptr<actionlib::SimpleActionServer<bwi_guidance_msgs::MultiRobotNavigationAction> > as_;
       bool cancel_controller_thread_;
 
+      int goal_node_id_;
       boost::shared_ptr<boost::thread> controller_thread_;
-      void runControllerThread
+      void runControllerThread();
       float controller_thread_frequency_;
-
-      boost::shared_ptr</* TaskGenerationModel */>
 
       ros::Subscriber odometry_subscriber_;
 
