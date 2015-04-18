@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+
+import numpy
+import rospy
+
+from geometry_msgs.msg import PoseWithCovarianceStamped
+from nav_msgs.msg import Odometry
+
+class OdomToPoseConverter:
+
+    def __init__(self):
+
+        self.last_pub_time = None
+        self.pub = rospy.Publisher('pose', PoseWithCovarianceStamped)
+        self.sub = rospy.Subscriber('odom', Odometry, self.handleOdomMsg)
+
+        rospy.spin()
+
+    def handleOdomMsg(self, msg):
+        if self.last_pub_time is not None:
+            if msg.header.stamp - self.last_pub_time < rospy.Duration(2):
+                return
+
+        error_x = numpy.random.normal(scale=0.2)
+        error_x = max(error_x, -0.5)
+        error_x = min(error_x, 0.5)
+
+        error_y = numpy.random.normal(scale=0.2)
+        error_y = max(error_y, -0.5)
+        error_y = min(error_y, 0.5)
+
+        msg = PoseWithCovarianceStamped(msg.header, msg.pose) 
+        msg.pose.pose.position.x += error_x
+        msg.pose.pose.position.y += error_y
+        self.last_pub_time = msg.header.stamp
+        self.pub.publish(msg)
+
+if __name__ == '__main__':
+    try:
+        rospy.init_node('robot_publisher', anonymous=True)
+        OdomToPoseConverter()
+    except rospy.ROSInterruptException:
+        pass
+
