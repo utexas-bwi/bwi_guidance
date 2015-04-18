@@ -1,0 +1,5 @@
+maps:
+  level1:
+    yaml: package://bwi_guidance/maps/map3/map3.yaml
+    origin: [0, 0, 0, 0, 0, 0]
+    data_directory: package://bwi_guidance/maps/map3
