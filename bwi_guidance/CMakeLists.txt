@@ -82,7 +82,7 @@ install(TARGETS
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
-foreach(dir config data images include launch maps Media worlds www)
+foreach(dir config images include launch maps Media worlds www)
   install(DIRECTORY ${dir}/
     DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${dir})
 endforeach(dir)
