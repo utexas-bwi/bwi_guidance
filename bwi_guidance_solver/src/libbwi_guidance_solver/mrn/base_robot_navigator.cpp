@@ -106,7 +106,10 @@ namespace bwi_guidance_solver {
           rs.loc_v = -1;
           rs.loc_p = 0.0f;
           rs.help_destination = NONE;
+
+          // TODO: The first task should just make them go to the closest node and sit there.
           getNextTaskForRobot(i, rs);
+
           system_state.robots.push_back(rs);
         }
 
@@ -130,6 +133,10 @@ namespace bwi_guidance_solver {
       while(ros::ok()) {
         // Let's see if we can update the position of all the robots first!
         BOOST_FOREACH(RobotState &rs, extended_state.robots) {
+          if (rs.loc_u == -1) {
+            // This robot's location has never been initialized. Initialize it using the
+
+          }
 
         }
         ros
