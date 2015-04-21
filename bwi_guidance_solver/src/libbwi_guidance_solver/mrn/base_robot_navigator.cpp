@@ -100,8 +100,8 @@ namespace bwi_guidance_solver {
           rs.loc_p = 0.0f;
           rs.help_destination = NONE;
 
-          // TODO: The first task should just make them go to the closest node and sit there.
           getNextTaskForRobot(i, rs);
+          // TODO Send this command
 
           system_state_.robots.push_back(rs);
         }
@@ -220,58 +220,35 @@ namespace bwi_guidance_solver {
               if (rs.help_destination != NONE) {
                 if (isRobotExactlyAt(rs, rs.help_destination)) {
                   // TODO See if the robot needs to be rotated to be in a good orientation w.r.t to the person. 
+                  // Otherwise, do nothing.
                 }
               } else {
                 if (isRobotExactlyAt(rs, rs.tau_d)) {
+
+                  // The robot is at the service task location performing the task. Figure out how much time
+                  // the task has been performed for.
                   if (rs.tau_t == 0.0f) {
-                    rs.tau_t = 1.0f / controller_thread_frequency_; // Accounts for time discretization errors.
-                    robot_service_task_start_time_; 
-
-                    
-                  } > rs.tau_T) {
-                    // The robot has completed it's task there. Get new task and move on.
-
+                    rs.tau_t = 1.0f / controller_thread_frequency_;
+                    // The second term tries to average for discretization errors. TODO think about this some more when
+                    // not sleepy.
+                    robot_service_task_start_time_[robot_idx] = boost::posix_time::microsec_clock::local_time() -
+                      boost::posix_time::milliseconds(0.5 * 1.0f / controller_thread_frequency_); 
                   } else {
+                    boost::posix_time::time_duration diff = 
+                      boost::posix_time::microsec_clock::local_time() - robot_service_task_start_time_[robot_idx];
+                    rs.tau_t = diff.total_milliseconds();
+                  }
 
+                  if (rs.tau_t > rs.tau_T) {
+                    // This service task is now complete. Get a new task.
+                    getNextTaskForRobot(robot_idx, rs); 
+                    // TODO Send this command.
                   }
                 }
               }
 
             }
-            if (isRobotExactlyAt(
-            if (rs.loc_u == -1) {
-              // This robot's location has never been initialized.
-              boost::scoped_lock lock(robot_location_mutex_[robot_idx]);
-              if (robot_location_available_[robot_idx]) {
-                determineStartLocation(robot_location_[robot_idx], rs.loc_u, rs.loc_v, rs.loc_p);
-                roundOffRobotLocation(rs);
-              } else {
-                all_robot_locations_available_ = false;
-              }
-            } else { 
-              determineRobotTransitionalLocation(robot_location_[robot_idx], rs);
-              actionlib::SimpleActionClient robot_state = robot_controller_[robot_idx]->getState(); 
-              if (robot_state == actionlib::SimpleClientGoalState::SUCCEEDED ||
-                robot_state == actionlib::SimpleClientGoalState::LOST) {
-                roundOffRobotLocation(rs);
-              } else if (robot_state == actionlib::SimpleClientGoalState::RECALLED ||
-                         robot_state == actionlib::SimpleClientGoalState::REJECTED ||
-                         robot_state == actionlib::SimpleClientGoalState::PREEMPTED ||
-                         robot_state == actionlib::SimpleClientGoalState::ABORTED) {
-                // TODO If status is anything other than aborted, then print a warning.
-                send_robot_command[robot_idx] = true;
-              }
-            }
           }
-          if (robot
-          
-
-            if (robot_controller_[robot_idx]->getState() == actionlib::SimpleClientGoalState::SUCCEEDED ||
-              robot_controller_[robot_idx]->getState() == actionlib::SimpleClientGoalState::LOST) {
-              roundOffRobotLocation(rs);
-            }
-        // TODO based on the new system state, see if any of the robots need new service tasks, need to be resent to
-        // their old locations or just increment the time they have spent at their current location.
         } else {
           ROS_WARN_THROTTLE_NAMED(1.0f, "MultiRobotNavigator", " still waiting for robot locations. This shouldn't take too long...");
         }
