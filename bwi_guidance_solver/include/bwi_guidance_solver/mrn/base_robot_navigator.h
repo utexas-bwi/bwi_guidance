@@ -55,10 +55,12 @@ namespace bwi_guidance_solver {
 
         std::vector<boost::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> > > robot_controller_; /* Directly corresponds to vector id in current state. */
 
+        std::vector<boost::posix_time::ptime> robot_service_task_start_time_;
         std::vector<bool> robot_location_available_;
+        std::vector<geometry_msgs::Pose> robot_location_;
+        std::vector<boost::mutex> robot_location_mutex_;
         std::vector<boost::shared_ptr<ros::Subscriber> > robot_location_subscriber_;
         void robotLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr robot_pose, int robot_idx);
-        std::vector<geometry_msgs::Pose> robot_location_;
 
         // TODO Keep a separate thread on a timer that computes the current state based on human and robot positions, and
         // keeps track on the amount of time a service robot has spent on a location and figure out when a new service
@@ -74,7 +76,7 @@ namespace bwi_guidance_solver {
         // finishes or a cancel request is received, stop the task!
 
         /* Once WAIT is returned, clean the MCTS state - DOWNSTREAM! */
-        void getBestAction();
+        Action getBestAction();
 
         void getNextTaskForRobot(int robot_id, RobotState &rs);
 
@@ -89,7 +91,7 @@ namespace bwi_guidance_solver {
 
       protected:
 
-        ExtendedState system_state;
+        ExtendedState system_state_;
 
         boost::shared_ptr<ros::NodeHandle> nh_;
         boost::shared_ptr<actionlib::SimpleActionServer<bwi_guidance_msgs::MultiRobotNavigationAction> > as_;

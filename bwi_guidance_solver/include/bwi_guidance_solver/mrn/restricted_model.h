@@ -21,7 +21,7 @@ namespace bwi_guidance_solver {
 
 #define PARAMS(_) \
           _(float,frame_rate,frame_rate,0.0f) \
-          _(int,max_assigned_robots,kax_assigned_robots,1)
+          _(int,max_assigned_robots,max_assigned_robots,1)
 
           Params_STRUCT(PARAMS)
 #undef PARAMS
