@@ -59,6 +59,7 @@ add_library(bwi_guidance_solver
   src/libbwi_guidance_solver/mrn/extended_structures.cpp
   src/libbwi_guidance_solver/mrn/restricted_model.cpp
   src/libbwi_guidance_solver/mrn/abstract_mapping.cpp
+  src/libbwi_guidance_solver/mrn/base_robot_navigator.cpp
 )
 target_link_libraries(bwi_guidance_solver
   ${catkin_LIBRARIES}

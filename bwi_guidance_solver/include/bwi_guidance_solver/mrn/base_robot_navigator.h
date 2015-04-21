@@ -4,14 +4,12 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/server/simple_action_server.h>
 #include <boost/shared_ptr.hpp>
-#include <gazebo_msgs/GetModelState.h>
-#include <gazebo_msgs/SetModelState.h>
 #include <bwi_mapper/point_utils.h>
 #include <bwi_mapper/map_loader.h>
 #include <bwi_mapper/map_utils.h>
 #include <bwi_mapper/graph.h>
-#include <nav_msgs/Odometry.h>
-#include <opencv/cv.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <move_base_msgs/MoveBaseAction.h>
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
 
@@ -41,7 +39,7 @@ namespace bwi_guidance_solver {
         // std_srvs/Empty call that freezes the available robot list and starts patrolling them via the concurrent thread.
         // Doesn't actually provide the goal.
         ros::ServiceServer start_server_;
-        void startMultiRobotNavigator(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+        bool startMultiRobotNavigator(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
 
         // This needs a mutex inside so that the list of available robots is not changed once the action server receives
         // a request.
@@ -58,7 +56,8 @@ namespace bwi_guidance_solver {
         std::vector<boost::posix_time::ptime> robot_service_task_start_time_;
         std::vector<bool> robot_location_available_;
         std::vector<geometry_msgs::Pose> robot_location_;
-        std::vector<boost::mutex> robot_location_mutex_;
+        std::vector<boost::shared_ptr<boost::mutex> > robot_location_mutex_;
+
         std::vector<boost::shared_ptr<ros::Subscriber> > robot_location_subscriber_;
         void robotLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr robot_pose, int robot_idx);
 
@@ -91,17 +90,27 @@ namespace bwi_guidance_solver {
 
       protected:
 
+        void sendRobotToDestination(int robot_idx, int destination, float orientation = 0.0f);
+        void determineHumanTransitionalLocation(const geometry_msgs::Pose &pose, int current_loc, int next_loc);
+        void determineStartLocation(const geometry_msgs::Pose &pose, int &u, int &v, float &p);
+        void determineStartLocation(const geometry_msgs::Pose &pose, int &u);
+        void determineRobotTransitionalLocation(const geometry_msgs::Pose &pose, RobotState &rs);
+        void roundOffRobotLocation(RobotState &rs);
+
         ExtendedState system_state_;
 
         boost::shared_ptr<ros::NodeHandle> nh_;
         boost::shared_ptr<actionlib::SimpleActionServer<bwi_guidance_msgs::MultiRobotNavigationAction> > as_;
         bool episode_in_progress_;
+        bool at_episode_start_;
 
         int goal_node_id_;
 
         boost::shared_ptr<boost::thread> controller_thread_;
         void runControllerThread();
         float controller_thread_frequency_;
+
+        std::string global_frame_id_;
 
         boost::shared_ptr<bwi_mapper::MapLoader> mapper_;
         bwi_mapper::Graph graph_;

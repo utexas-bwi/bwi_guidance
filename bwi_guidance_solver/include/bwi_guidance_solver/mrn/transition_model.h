@@ -4,6 +4,8 @@
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include <bwi_tools/common/RNG.h>
+
 #include <bwi_guidance_solver/common.h>
 #include <bwi_guidance_solver/mrn/common.h>
 #include <bwi_guidance_solver/mrn/structures.h>
@@ -14,11 +16,11 @@ namespace bwi_guidance_solver {
 
     class HumanDecisionModel {
 
-      public: 
+      public:
 
         typedef boost::shared_ptr<HumanDecisionModel> Ptr;
 
-        HumanDecisionModel(const bwi_mapper::Graph graph, float decision_variance_multiplier = 1.0f) : 
+        HumanDecisionModel(const bwi_mapper::Graph graph, float decision_variance_multiplier = 1.0f) :
             graph_(graph), decision_variance_multiplier_(decision_variance_multiplier) {
           computeAdjacentVertices(adjacent_vertices_map_, graph_);
         }
@@ -28,7 +30,7 @@ namespace bwi_guidance_solver {
         // TODO write a version that draws the probability on the image as well.
         virtual int GetNextNode(const State &state, RNG &rng) {
 
-          // In case no help has been provided to the human, the expected direction of motion can be given by. 
+          // In case no help has been provided to the human, the expected direction of motion can be given by.
           float expected_direction_of_motion;
           float expected_variance;
 
@@ -44,7 +46,7 @@ namespace bwi_guidance_solver {
               expected_direction_of_motion = bwi_mapper::getNodeAngle(state.loc_prev, state.loc_node, graph_);
               expected_variance = 0.1f * decision_variance_multiplier_;
             } else {
-              // This can only mean that this is the start state (as the person does not have loc_prev set), and 
+              // This can only mean that this is the start state (as the person does not have loc_prev set), and
               // the policy called Wait without first calling LEAD or DIRECT, which is a terrible action since
               // some free help went to waste. Assume that the person will move completely randomly.
               int rand_idx = rng.randomInt(adjacent_vertices_map_[state.loc_node].size() - 1);
@@ -74,10 +76,10 @@ namespace bwi_guidance_solver {
             probability_sum += probability;
             if (probability_counter == weights.size() - 1) {
               // Account for floating point errors. No surprises!
-              probability += 1.0f - probability_sum; 
+              probability += 1.0f - probability_sum;
             }
             probabilities.push_back(probability);
-            // std::cout << "  to " << 
+            // std::cout << "  to " <<
             //   adjacent_vertices_map_[next_state.graph_id][probability_counter] <<
             //   ": " << probability << std::endl;
           }
@@ -102,7 +104,7 @@ namespace bwi_guidance_solver {
         TaskGenerationModel(const std::vector<int> robot_home_base,
                             const bwi_mapper::Graph &graph,
                             float task_utility,
-                            bool home_base_only = false) : 
+                            bool home_base_only = false) :
           robot_home_base_(robot_home_base), task_utility_(task_utility), home_base_only_(home_base_only) {
           cacheNewGoalsByDistance(graph);
         }
@@ -172,7 +174,7 @@ namespace bwi_guidance_solver {
 
         typedef boost::shared_ptr<MotionModel> Ptr;
 
-        MotionModel(const bwi_mapper::Graph graph, float avg_robot_speed, float avg_human_speed) : 
+        MotionModel(const bwi_mapper::Graph graph, float avg_robot_speed, float avg_human_speed) :
           graph_(graph), robot_speed_(avg_robot_speed), human_speed_(avg_human_speed) {
           computeShortestPath(shortest_distances_, shortest_paths_, graph_);
         }
@@ -255,7 +257,7 @@ namespace bwi_guidance_solver {
                     task_generation_model->generateNewTaskForRobot(i, robot, rng);
                     // Update the destination for this robot.
                     destination = robot.tau_d;
-                  } 
+                  }
                 }
               } else {
 
@@ -275,7 +277,7 @@ namespace bwi_guidance_solver {
                   robot.loc_p += (robot_time_remaining * robot_speed_) / shortest_distances_[robot.loc_u][robot.loc_v];
                   robot_time_remaining = 0.0f;
                   if (robot.loc_p > 1.0f) {
-                    robot_time_remaining = 
+                    robot_time_remaining =
                       ((robot.loc_p - 1.0f) * (shortest_distances_[robot.loc_u][robot.loc_v])) / robot_speed_;
                     robot.loc_p = 1.0f;
                   }
@@ -292,7 +294,7 @@ namespace bwi_guidance_solver {
                     robot.loc_p -= (robot_time_remaining * robot_speed_) / shortest_distances_[robot.loc_u][robot.loc_v];
                     robot_time_remaining = 0.0f;
                     if (robot.loc_p < 0.0f) {
-                      robot_time_remaining = 
+                      robot_time_remaining =
                         ((-robot.loc_p) * (shortest_distances_[robot.loc_u][robot.loc_v])) / robot_speed_;
                       robot.loc_p = 0.0f;
                     }
@@ -301,7 +303,7 @@ namespace bwi_guidance_solver {
                     robot.loc_p += (robot_time_remaining * robot_speed_) / shortest_distances_[robot.loc_u][robot.loc_v];
                     robot_time_remaining = 0.0f;
                     if (robot.loc_p > 1.0f) {
-                      robot_time_remaining = 
+                      robot_time_remaining =
                         ((robot.loc_p - 1.0f) * (shortest_distances_[robot.loc_u][robot.loc_v])) / robot_speed_;
                       robot.loc_p = 1.0f;
                     }
