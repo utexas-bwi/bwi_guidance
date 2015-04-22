@@ -15,6 +15,7 @@ add_service_files(
   FILES
   UpdateExperiment.srv
   UpdateExperimentServer.srv
+  UpdateGuidanceGui.srv
 )
 
 add_action_files(

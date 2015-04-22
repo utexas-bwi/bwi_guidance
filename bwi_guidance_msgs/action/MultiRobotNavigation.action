@@ -1,4 +1,4 @@
-geometry_msgs/PoseStamped goal_pose
+int32 goal_node_id
 ---
 bool success
 string message # in case of failure
