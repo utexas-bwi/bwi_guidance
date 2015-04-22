@@ -20,7 +20,6 @@ namespace bwi_guidance_solver {
                                            const boost::shared_ptr<TaskGenerationModel>& model) {
 
       nh_ = nh;
-      task_generation_model_ = model;
 
       // This decides whether the MRN has frozen the list of available robots and started controlling them to perform
       // various background tasks, even if the human-guidance task is not being performed.
@@ -45,12 +44,14 @@ namespace bwi_guidance_solver {
         exit(-1);
       }
 
-      // Setup map, graph.
+      // Setup map, graph and random number generator.
       mapper_.reset(new bwi_mapper::MapLoader(map_file));
       mapper_->getMapInfo(map_info_);
       mapper_->getMap(map_);
       bwi_mapper::readGraphFromFile(graph_file, map_info_, graph_);
+      master_rng_.reset(new RNG(0));
 
+      task_generation_model_ = model;
       human_location_available_ = false;
       human_location_subscriber_ = nh_->subscribe("/person/odom", 1, &BaseRobotNavigator::humanLocationHandler, this);
 
@@ -61,7 +62,10 @@ namespace bwi_guidance_solver {
       // Start the service server that will eventually start the multi robot navigator controller thread.
       start_server_ = nh_->advertiseService("~start", &BaseRobotNavigator::startMultiRobotNavigator, this);
 
-      // Start the simple action server
+    }
+
+    BaseRobotNavigator::~BaseRobotNavigator() {
+      // TODO join the controller thread here if initialized?
     }
 
     void BaseRobotNavigator::humanLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr human_pose) {
@@ -118,6 +122,8 @@ namespace bwi_guidance_solver {
 
         // Now that all robots are initialized, start the controller thread.
         controller_thread_.reset(new boost::thread(&BaseRobotNavigator::runControllerThread, this));
+
+        // TODO start the simple action server here!
       } else {
         ROS_WARN_NAMED("MultiRobotNavigator", "has already started, cannot start again!");
       }
@@ -214,7 +220,7 @@ namespace bwi_guidance_solver {
                   int unused_depth_count;
 
                   // Note that the RNG won't be used as it is a deterministic action.
-                  model->takeAction(system_state_, action, unused_reward_value, next_state, unused_terminal, unused_depth_count, master_rng_);
+                  model_->takeAction(system_state_, action, unused_reward_value, next_state, unused_terminal, unused_depth_count, master_rng_);
                   for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
                     if (system_state_.robots[robot_idx].help_destination != next_state.robots[robot_idx].help_destination) {
                       send_robot_command[robot_idx] = true;
@@ -354,6 +360,20 @@ namespace bwi_guidance_solver {
         // u and v are correctly set anyway!
         rs.loc_p = 0.0f;
       }
+    }
+
+    Action BaseRobotNavigator::getBestAction() {
+      // TODO switch to MCTS getBestAction.
+      return Action(WAIT);
+    }
+
+    void BaseRobotNavigator::getNextTaskForRobot(int robot_id, RobotState &rs) {
+      task_generation_model_->generateNewTaskForRobot(robot_id, rs, *master_rng_);
+    }
+
+    void BaseRobotNavigator::compute(float timeout) {
+      // TODO switch to mcts compute.
+      boost::this_thread::sleep(boost::posix_time::milliseconds(timeout));
     }
 
   } /* mrn */

@@ -16,6 +16,7 @@
 #include <bwi_msgs/AvailableRobotArray.h>
 #include <bwi_guidance_msgs/ExperimentStatus.h>
 #include <bwi_guidance_msgs/MultiRobotNavigationAction.h>
+#include <bwi_guidance_solver/mrn/restricted_model.h>
 #include <bwi_guidance_solver/mrn/transition_model.h>
 #include <bwi_guidance_solver/mrn/extended_structures.h>
 
@@ -29,6 +30,7 @@ namespace bwi_guidance_solver {
 
         BaseRobotNavigator(const boost::shared_ptr<ros::NodeHandle>& nh,
                            const boost::shared_ptr<TaskGenerationModel>& model);
+
         virtual ~BaseRobotNavigator();
 
         bool human_location_available_;
@@ -60,19 +62,6 @@ namespace bwi_guidance_solver {
 
         std::vector<boost::shared_ptr<ros::Subscriber> > robot_location_subscriber_;
         void robotLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr robot_pose, int robot_idx);
-
-        // TODO Keep a separate thread on a timer that computes the current state based on human and robot positions, and
-        // keeps track on the amount of time a service robot has spent on a location and figure out when a new service
-        // task is necessary. This thread should also be responsible for requesting the best action and executing said
-        // action. Since this thread is responsible for sending navigation tasks to the robots, this thread should also
-        // monitor each robot and figure out what the current status is.
-        // This thread should also frontload all actions to get the cummulative effect until WAIT is called.
-        // Probably run
-
-        // Start here.
-        // TODO Expose an action_server for requesting assistance that terminates once the human reaches the goal. This
-        // should compute the initial state, and start the thread that attempts to achieve the task. Once the thread
-        // finishes or a cancel request is received, stop the task!
 
         /* Once WAIT is returned, clean the MCTS state - DOWNSTREAM! */
         Action getBestAction();
@@ -117,7 +106,9 @@ namespace bwi_guidance_solver {
         nav_msgs::OccupancyGrid map_;
         nav_msgs::MapMetaData map_info_;
 
+        boost::shared_ptr<RestrictedModel> model_;
         boost::shared_ptr<TaskGenerationModel> task_generation_model_;
+        boost::shared_ptr<RNG> master_rng_;
 
     };
 
