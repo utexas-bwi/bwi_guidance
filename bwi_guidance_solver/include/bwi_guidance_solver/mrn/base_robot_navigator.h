@@ -79,6 +79,7 @@ namespace bwi_guidance_solver {
 
       protected:
 
+        void execute(bwi_guidance_msgs::MultiRobotNavigationGoalConstPtr &goal);
         void sendRobotToDestination(int robot_idx, int destination, float orientation = 0.0f);
         void determineHumanTransitionalLocation(const geometry_msgs::Pose &pose, int current_loc, int next_loc);
         void determineStartLocation(const geometry_msgs::Pose &pose, int &u, int &v, float &p);
@@ -99,6 +100,9 @@ namespace bwi_guidance_solver {
         void runControllerThread();
         float controller_thread_frequency_;
 
+        float avg_robot_speed_;
+        float avg_human_speed_;
+
         std::string global_frame_id_;
 
         boost::shared_ptr<bwi_mapper::MapLoader> mapper_;
@@ -108,6 +112,8 @@ namespace bwi_guidance_solver {
 
         boost::shared_ptr<RestrictedModel> model_;
         boost::shared_ptr<TaskGenerationModel> task_generation_model_;
+        boost::shared_ptr<MotionModel> motion_model_;
+        boost::shared_ptr<HumanDecisionModel> human_decision_model_;
         boost::shared_ptr<RNG> master_rng_;
 
     };

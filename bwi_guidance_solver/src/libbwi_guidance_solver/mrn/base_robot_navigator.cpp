@@ -31,6 +31,8 @@ namespace bwi_guidance_solver {
       // TODO: Parametrize!
       controller_thread_frequency_ = 2.0f;
       global_frame_id_ = "/map";
+      avg_human_speed_ = 0.75f;
+      avg_robot_speed_ = 0.4f;
 
       // Read the graph from file.
       std::string map_file, graph_file;
@@ -51,7 +53,11 @@ namespace bwi_guidance_solver {
       bwi_mapper::readGraphFromFile(graph_file, map_info_, graph_);
       master_rng_.reset(new RNG(0));
 
+      // TODO just initialize the task generation model from scratch here.
       task_generation_model_ = model;
+      motion_model_.reset(new MotionModel(graph_, avg_robot_speed_, avg_human_speed_));
+      human_decision_model_.reset(new HumanDecisionModel(graph_, avg_robot_speed_, avg_human_speed_));
+      
       human_location_available_ = false;
       human_location_subscriber_ = nh_->subscribe("/person/odom", 1, &BaseRobotNavigator::humanLocationHandler, this);
 
@@ -61,11 +67,36 @@ namespace bwi_guidance_solver {
 
       // Start the service server that will eventually start the multi robot navigator controller thread.
       start_server_ = nh_->advertiseService("~start", &BaseRobotNavigator::startMultiRobotNavigator, this);
+execute_action_server_.reset(new LogicalNavActionServer(*nh_,                                                          
+                                                          "execute_logical_goal",                                        
+                                                          boost::bind(&SegbotLogicalNavigator::execute, this, _1),       
+                                                          false));
+      as_.reset(new actionlib::SimpleActionServer<bwi_guidance_msgs::MultiRobotNavigationAction>(*nh_,
+                                                                                                 "/guidance", 
+                                                                                                 boost::bind(&BaseRobotNavigator::execute, this, _1),       
+                                                                                                 true));
 
     }
 
     BaseRobotNavigator::~BaseRobotNavigator() {
       // TODO join the controller thread here if initialized?
+    }
+
+    void BaseRobotNavigator::execute(bwi_guidance_msgs::MultiRobotNavigationGoalConstPtr &goal) {
+      episode_in_progress_ = true;
+      at_episode_start_ = true;
+      goal_node_id_ = goal->goal_node_id_;
+
+      model.reset(new RestrictedModel(graph_,
+                                      map_,
+                                      goal_node_id_,
+                                      ));
+
+      while (ros::ok() && !as_->isPreemptRequested()) {
+
+
+      }
+
     }
 
     void BaseRobotNavigator::humanLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr human_pose) {
