@@ -8,6 +8,7 @@ bool episode_start_enabled_ = false;
 
 std::vector<std::string> goal_names;
 std::vector<int> goal_graph_ids;
+boost::
 
 void monitorEpisodeStartThread() {
   bwi_msgs::QuestionDialog srv;
@@ -19,17 +20,24 @@ void monitorEpisodeStartThread() {
   srv.request.timeout = 0.0f; // No timeout;
   enable_episode_start_service.call(srv);
   if (srv.response.index >= 0) {
+
+
+
     // TODO make the call to the action server.
   } else {
     // Do nothing. The request probably got preempted.
   }
 }
 
-void displayMessage() {
-
+void displayMessage(const std::string& msg) {
+  bwi_msgs::QuestionDialog srv;
+  srv.request.type = bwi_msgs::QuestionDialog::DISPLAY;
+  srv.request.message = msg;
+  srv.request.timeout = 0.0f; // No timeout;
+  enable_episode_start_service.call(srv);
 }
 
-bool enableEpisodeStart(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response) {
+bool update_(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response) {
   if (episode_start_enabled_) {
     ROS_WARN_NAMED("guidance_gui_controller", "Episode start already enabled!");
   }
@@ -40,8 +48,12 @@ bool enableEpisodeStart(std_srvs::Empty::Request& request, std_srvs::Empty::Resp
 int main(int argc, const char *argv[]) {
   ros::init(argc, argv, "guidance_gui_controller");
   ros::NodeHandle nh;
-  
+
+  // TODO read the goal names and graph ids.
+
   ros::ServiceServer enable_episode_start_service = nh.advertiseService("update_gui", enableEpisodeStart);
+
+  ros::spin();
 
   return 0;
 }
