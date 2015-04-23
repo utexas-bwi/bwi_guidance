@@ -27,6 +27,9 @@ namespace bwi_guidance_solver {
 
       // This decides whether an episode inside the MDP is running or not.
       episode_in_progress_ = false;
+      episode_completed_ = false;
+      terminate_episode_ = false;
+      at_episode_start_ = false;
 
       // TODO: Parametrize!
       controller_thread_frequency_ = 2.0f;
@@ -56,8 +59,8 @@ namespace bwi_guidance_solver {
       // TODO just initialize the task generation model from scratch here.
       task_generation_model_ = model;
       motion_model_.reset(new MotionModel(graph_, avg_robot_speed_, avg_human_speed_));
-      human_decision_model_.reset(new HumanDecisionModel(graph_, avg_robot_speed_, avg_human_speed_));
-      
+      human_decision_model_.reset(new HumanDecisionModel(graph_));
+
       human_location_available_ = false;
       human_location_subscriber_ = nh_->subscribe("/person/odom", 1, &BaseRobotNavigator::humanLocationHandler, this);
 
@@ -67,14 +70,6 @@ namespace bwi_guidance_solver {
 
       // Start the service server that will eventually start the multi robot navigator controller thread.
       start_server_ = nh_->advertiseService("~start", &BaseRobotNavigator::startMultiRobotNavigator, this);
-execute_action_server_.reset(new LogicalNavActionServer(*nh_,                                                          
-                                                          "execute_logical_goal",                                        
-                                                          boost::bind(&SegbotLogicalNavigator::execute, this, _1),       
-                                                          false));
-      as_.reset(new actionlib::SimpleActionServer<bwi_guidance_msgs::MultiRobotNavigationAction>(*nh_,
-                                                                                                 "/guidance", 
-                                                                                                 boost::bind(&BaseRobotNavigator::execute, this, _1),       
-                                                                                                 true));
 
     }
 
@@ -82,19 +77,32 @@ execute_action_server_.reset(new LogicalNavActionServer(*nh_,
       // TODO join the controller thread here if initialized?
     }
 
-    void BaseRobotNavigator::execute(bwi_guidance_msgs::MultiRobotNavigationGoalConstPtr &goal) {
+    void BaseRobotNavigator::execute(const bwi_guidance_msgs::MultiRobotNavigationGoalConstPtr &goal) {
+      episode_completed_ = false;
+      terminate_episode_ = false;
       episode_in_progress_ = true;
       at_episode_start_ = true;
-      goal_node_id_ = goal->goal_node_id_;
+      goal_node_id_ = goal->goal_node_id;
 
-      model.reset(new RestrictedModel(graph_,
-                                      map_,
-                                      goal_node_id_,
-                                      ));
+      model_.reset(new RestrictedModel(graph_,
+                                       map_,
+                                       goal_node_id_,
+                                       motion_model_,
+                                       human_decision_model_,
+                                       task_generation_model_,
+                                       RestrictedModel::Params()));
 
-      while (ros::ok() && !as_->isPreemptRequested()) {
-
-
+      while (ros::ok()) {
+        if (as_->isPreemptRequested()) {
+          terminate_episode_ = true;
+          as_->setAborted();
+          break;
+        }
+        if (episode_completed_) {
+          as_->setSucceeded();
+          break;
+        }
+        boost::this_thread::sleep(boost::posix_time::milliseconds(50));
       }
 
     }
@@ -154,7 +162,11 @@ execute_action_server_.reset(new LogicalNavActionServer(*nh_,
         // Now that all robots are initialized, start the controller thread.
         controller_thread_.reset(new boost::thread(&BaseRobotNavigator::runControllerThread, this));
 
-        // TODO start the simple action server here!
+        as_.reset(new actionlib::SimpleActionServer<bwi_guidance_msgs::MultiRobotNavigationAction>(*nh_,
+                                                                                                   "/guidance",
+                                                                                                   boost::bind(&BaseRobotNavigator::execute, this, _1),
+                                                                                                   true));
+
       } else {
         ROS_WARN_NAMED("MultiRobotNavigator", "has already started, cannot start again!");
       }
@@ -178,7 +190,7 @@ execute_action_server_.reset(new LogicalNavActionServer(*nh_,
 
         std::vector<bool> send_robot_command(system_state_.robots.size(), false);
 
-        bool all_robot_locations_available_ = true;
+        bool all_robot_locations_available = true;
         // Let's see if we can update the position of all the robots first!
         for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
           RobotState &rs = system_state_.robots[robot_idx];
@@ -188,7 +200,7 @@ execute_action_server_.reset(new LogicalNavActionServer(*nh_,
             if (robot_location_available_[robot_idx]) {
               determineStartLocation(robot_location_[robot_idx], rs.loc_u, rs.loc_v, rs.loc_p);
             } else {
-              all_robot_locations_available_ = false;
+              all_robot_locations_available = false;
             }
           } else {
             determineRobotTransitionalLocation(robot_location_[robot_idx], rs);
@@ -206,9 +218,9 @@ execute_action_server_.reset(new LogicalNavActionServer(*nh_,
           }
         }
 
-        if (all_robot_locations_available_) {
+        if (all_robot_locations_available) {
           bool its_decision_time = false;
-          if (episode_in_progress_) {
+          if (episode_in_progress_ && !terminate_episode_) {
             if (at_episode_start_) {
               int loc;
               determineStartLocation(human_location_, loc);
@@ -228,6 +240,7 @@ execute_action_server_.reset(new LogicalNavActionServer(*nh_,
                       send_robot_command[robot_idx] = true;
                     }
                   }
+                  episode_completed_ = true;
                   episode_in_progress_ = false;
                   // TODO set the action server to completed here!
                 } else {
@@ -239,80 +252,88 @@ execute_action_server_.reset(new LogicalNavActionServer(*nh_,
                 }
               }
             }
-
-            if (its_decision_time) {
-              while (true) {
-                Action action = getBestAction();
-                if (action.type != WAIT) {
-                  // Perform the deterministic transition as per the model
-                  ExtendedState next_state;
-                  bool unused_terminal; /* The resulting state can never be terminal via a non WAIT action */
-                  float unused_reward_value;
-                  int unused_depth_count;
-
-                  // Note that the RNG won't be used as it is a deterministic action.
-                  model_->takeAction(system_state_, action, unused_reward_value, next_state, unused_terminal, unused_depth_count, master_rng_);
-                  for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
-                    if (system_state_.robots[robot_idx].help_destination != next_state.robots[robot_idx].help_destination) {
-                      send_robot_command[robot_idx] = true;
-                    }
-                  }
-                  system_state_ = next_state;
-                } else {
-                  // Let's switch to non-deterministic transition logic.
-                  break;
-                }
-              }
-            }
-
-            // TODO handle the display!
+          } else if (terminate_episode_) {
+            terminate_episode_ = false;
             for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
-              RobotState &rs = system_state_.robots[robot_idx];
-              if (send_robot_command[robot_idx]) {
-                int destination = (rs.help_destination != NONE) ? rs.help_destination : rs.tau_d;
-                float orientation = (rs.help_destination != NONE) ?
-                    bwi_mapper::getNodeAngle(system_state_.loc_node, rs.help_destination, graph_) :
-                    bwi_mapper::getNodeAngle(rs.loc_u, rs.tau_d, graph_);
-                sendRobotToDestination(robot_idx, destination, orientation);
-              } else {
-                if (rs.help_destination != NONE) {
-                  if (isRobotExactlyAt(rs, rs.help_destination)) {
-                    // TODO See if the robot needs to be rotated to be in a good orientation w.r.t to the person.
-                    // Otherwise, do nothing.
-                  }
-                } else {
-                  if (isRobotExactlyAt(rs, rs.tau_d)) {
-
-                    // The robot is at the service task location performing the task. Figure out how much time
-                    // the task has been performed for.
-                    if (rs.tau_t == 0.0f) {
-                      rs.tau_t = 1.0f / controller_thread_frequency_;
-                      // The second term tries to average for discretization errors. TODO think about this some more when
-                      // not sleepy.
-                      robot_service_task_start_time_[robot_idx] = boost::posix_time::microsec_clock::local_time() -
-                        boost::posix_time::milliseconds(0.5 * 1.0f / controller_thread_frequency_);
-                    } else {
-                      boost::posix_time::time_duration diff =
-                        boost::posix_time::microsec_clock::local_time() - robot_service_task_start_time_[robot_idx];
-                      rs.tau_t = diff.total_milliseconds();
-                    }
-
-                    if (rs.tau_t > rs.tau_total_task_time) {
-                      // This service task is now complete. Get a new task.
-                      getNextTaskForRobot(robot_idx, rs);
-                      float orientation = bwi_mapper::getNodeAngle(rs.loc_u, rs.tau_d, graph_);
-                      sendRobotToDestination(robot_idx, rs.tau_d, orientation);
-                    }
-                  }
-                }
-
+              if (system_state_.robots[robot_idx].help_destination != NONE) {
+                system_state_.robots[robot_idx].help_destination = NONE;
+                send_robot_command[robot_idx] = true;
               }
             }
+          }
+          episode_in_progress_ = false;
 
-          } else {
-            ROS_WARN_THROTTLE_NAMED(1.0f, "MultiRobotNavigator", " still waiting for robot locations. This shouldn't take too long...");
+          if (its_decision_time) {
+            while (true) {
+              Action action = getBestAction();
+              if (action.type != WAIT) {
+                // Perform the deterministic transition as per the model
+                ExtendedState next_state;
+                bool unused_terminal; /* The resulting state can never be terminal via a non WAIT action */
+                float unused_reward_value;
+                int unused_depth_count;
+
+                // Note that the RNG won't be used as it is a deterministic action.
+                model_->takeAction(system_state_, action, unused_reward_value, next_state, unused_terminal, unused_depth_count, master_rng_);
+                for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
+                  if (system_state_.robots[robot_idx].help_destination != next_state.robots[robot_idx].help_destination) {
+                    send_robot_command[robot_idx] = true;
+                  }
+                }
+                system_state_ = next_state;
+              } else {
+                // Let's switch to non-deterministic transition logic.
+                break;
+              }
+            }
           }
 
+          // TODO handle the display!
+          for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
+            RobotState &rs = system_state_.robots[robot_idx];
+            if (send_robot_command[robot_idx]) {
+              int destination = (rs.help_destination != NONE) ? rs.help_destination : rs.tau_d;
+              float orientation = (rs.help_destination != NONE) ?
+                bwi_mapper::getNodeAngle(system_state_.loc_node, rs.help_destination, graph_) :
+                bwi_mapper::getNodeAngle(rs.loc_u, rs.tau_d, graph_);
+              sendRobotToDestination(robot_idx, destination, orientation);
+            } else {
+              if (rs.help_destination != NONE) {
+                if (isRobotExactlyAt(rs, rs.help_destination)) {
+                  // TODO See if the robot needs to be rotated to be in a good orientation w.r.t to the person.
+                  // Otherwise, do nothing.
+                }
+              } else {
+                if (isRobotExactlyAt(rs, rs.tau_d)) {
+
+                  // The robot is at the service task location performing the task. Figure out how much time
+                  // the task has been performed for.
+                  if (rs.tau_t == 0.0f) {
+                    rs.tau_t = 1.0f / controller_thread_frequency_;
+                    // The second term tries to average for discretization errors. TODO think about this some more when
+                    // not sleepy.
+                    robot_service_task_start_time_[robot_idx] = boost::posix_time::microsec_clock::local_time() -
+                      boost::posix_time::milliseconds(0.5 * 1.0f / controller_thread_frequency_);
+                  } else {
+                    boost::posix_time::time_duration diff =
+                      boost::posix_time::microsec_clock::local_time() - robot_service_task_start_time_[robot_idx];
+                    rs.tau_t = diff.total_milliseconds();
+                  }
+
+                  if (rs.tau_t > rs.tau_total_task_time) {
+                    // This service task is now complete. Get a new task.
+                    getNextTaskForRobot(robot_idx, rs);
+                    float orientation = bwi_mapper::getNodeAngle(rs.loc_u, rs.tau_d, graph_);
+                    sendRobotToDestination(robot_idx, rs.tau_d, orientation);
+                  }
+                }
+              }
+
+            }
+          }
+
+        } else {
+          ROS_WARN_THROTTLE_NAMED(1.0f, "MultiRobotNavigator", " still waiting for robot locations. This shouldn't take too long...");
         }
 
         if (sleep_via_system_time) {

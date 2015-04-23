@@ -79,7 +79,7 @@ namespace bwi_guidance_solver {
 
       protected:
 
-        void execute(bwi_guidance_msgs::MultiRobotNavigationGoalConstPtr &goal);
+        void execute(const bwi_guidance_msgs::MultiRobotNavigationGoalConstPtr &goal);
         void sendRobotToDestination(int robot_idx, int destination, float orientation = 0.0f);
         void determineHumanTransitionalLocation(const geometry_msgs::Pose &pose, int current_loc, int next_loc);
         void determineStartLocation(const geometry_msgs::Pose &pose, int &u, int &v, float &p);
@@ -91,7 +91,10 @@ namespace bwi_guidance_solver {
 
         boost::shared_ptr<ros::NodeHandle> nh_;
         boost::shared_ptr<actionlib::SimpleActionServer<bwi_guidance_msgs::MultiRobotNavigationAction> > as_;
+
         bool episode_in_progress_;
+        bool episode_completed_;
+        bool terminate_episode_;
         bool at_episode_start_;
 
         int goal_node_id_;
