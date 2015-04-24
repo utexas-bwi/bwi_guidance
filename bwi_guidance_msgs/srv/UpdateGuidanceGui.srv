@@ -3,7 +3,7 @@ int32 ENABLE_EPISODE_START = 0
 int32 DISABLE_EPISODE_START = 1
 int32 SHOW_NOTHING = 2
 int32 SHOW_ORIENTATION = 3
-int32 SHOW_FOLLOWME = 3
+int32 SHOW_FOLLOWME = 4
 
 int32 type
 geometry_msgs/Pose orientation_destination

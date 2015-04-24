@@ -2,7 +2,17 @@ cmake_minimum_required(VERSION 2.8.3)
 project(bwi_guidance_solver)
 
 ## Find catkin and external packages
-find_package(catkin REQUIRED COMPONENTS bwi_guidance bwi_mapper bwi_rl pluginlib)
+find_package(catkin REQUIRED COMPONENTS
+  actionlib
+  bwi_guidance
+  bwi_guidance_msgs
+  bwi_mapper
+  bwi_rl
+  cv_bridge
+  geometry_msgs
+  sensor_msgs
+  pluginlib
+)
 find_package(Boost REQUIRED COMPONENTS serialization program_options)
 
 ###################################
@@ -15,9 +25,14 @@ catkin_package(
   LIBRARIES
     bwi_guidance_solver
   CATKIN_DEPENDS
+    actionlib
     bwi_guidance
+    bwi_guidance_msgs
     bwi_mapper
     bwi_rl
+    cv_bridge
+    geometry_msgs
+    sensor_msgs
     pluginlib
 )
 
@@ -82,10 +97,19 @@ target_link_libraries(bwi_guidance_solver_aamas_figure_1_video
   bwi_guidance_solver
 )
 
+## Add a few libraries for producing images.
+add_executable(guidance_gui_controller
+  src/nodes/guidance_gui_controller.cpp
+)
+target_link_libraries(guidance_gui_controller
+  ${catkin_LIBRARIES}
+)
+
 ## Mark executables and/or libraries for installation
 install(TARGETS
   bwi_guidance_solver
   bwi_guidance_solver_aamas_figure_1
+  guidance_gui_controller
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

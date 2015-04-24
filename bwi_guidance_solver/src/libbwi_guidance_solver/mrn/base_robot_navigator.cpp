@@ -144,6 +144,8 @@ namespace bwi_guidance_solver {
           as.reset(new actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>("/" + robot_name + "/move_base_interruptable", true));
           robot_controller_.push_back(as);
 
+          // TODO Add a robot location handler!
+
           // Finally get a new task for this robot and setup the system state for this robot.
           RobotState rs;
           // rs.loc will be setup once the subscriber kicks in. set the loc to -1 for now to indicate the location has
