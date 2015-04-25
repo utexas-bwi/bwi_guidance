@@ -40,11 +40,11 @@ namespace bwi_guidance_solver {
       // Read the graph from file.
       std::string map_file, graph_file;
       double robot_radius, robot_padding;
-      if (!nh_->getParam("map_file", map_file)) {
+      if (!nh_->getParam("~map_file", map_file)) {
         ROS_FATAL_STREAM("RobotPosition: ~map_file parameter required");
         exit(-1);
       }
-      if (!nh_->getParam("graph_file", graph_file)) {
+      if (!nh_->getParam("~graph_file", graph_file)) {
         ROS_FATAL_STREAM("RobotPosition: ~graph_file parameter required");
         exit(-1);
       }
@@ -107,7 +107,7 @@ namespace bwi_guidance_solver {
 
     }
 
-    void BaseRobotNavigator::humanLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr human_pose) {
+    void BaseRobotNavigator::humanLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &human_pose) {
       human_location_ = human_pose->pose.pose;
     }
 
@@ -144,7 +144,11 @@ namespace bwi_guidance_solver {
           as.reset(new actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>("/" + robot_name + "/move_base_interruptable", true));
           robot_controller_.push_back(as);
 
-          // TODO Add a robot location handler!
+          boost::shared_ptr<ros::Subscriber> loc_sub(new ros::Subscriber);
+          *loc_sub = nh_->subscribe<geometry_msgs::PoseWithCovarianceStamped>("/" + robot_name + "/amcl_pose", 1,
+                                                                              boost::bind(&BaseRobotNavigator::robotLocationHandler,
+                                                                                          this, _1, i));
+          robot_location_subscriber_.push_back(loc_sub);
 
           // Finally get a new task for this robot and setup the system state for this robot.
           RobotState rs;
@@ -175,7 +179,7 @@ namespace bwi_guidance_solver {
       return true;
     }
 
-    void BaseRobotNavigator::robotLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr robot_pose,
+    void BaseRobotNavigator::robotLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &robot_pose,
                                                   int robot_idx) {
       boost::mutex::scoped_lock lock(*(robot_location_mutex_[robot_idx]));
       robot_location_[robot_idx] = robot_pose->pose.pose;

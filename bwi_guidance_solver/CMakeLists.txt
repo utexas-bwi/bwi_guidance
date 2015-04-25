@@ -105,6 +105,14 @@ target_link_libraries(guidance_gui_controller
   ${catkin_LIBRARIES}
 )
 
+## Add a few libraries for producing images.
+add_executable(base_robot_navigator
+  src/nodes/base_robot_navigator.cpp
+)
+target_link_libraries(base_robot_navigator
+  bwi_guidance_solver
+)
+
 ## Mark executables and/or libraries for installation
 install(TARGETS
   bwi_guidance_solver

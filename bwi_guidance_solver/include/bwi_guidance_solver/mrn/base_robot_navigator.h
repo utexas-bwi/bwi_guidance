@@ -35,7 +35,7 @@ namespace bwi_guidance_solver {
 
         bool human_location_available_;
         ros::Subscriber human_location_subscriber_;
-        void humanLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr human_pose);
+        void humanLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &human_pose);
         geometry_msgs::Pose human_location_;
 
         // std_srvs/Empty call that freezes the available robot list and starts patrolling them via the concurrent thread.
@@ -61,7 +61,7 @@ namespace bwi_guidance_solver {
         std::vector<boost::shared_ptr<boost::mutex> > robot_location_mutex_;
 
         std::vector<boost::shared_ptr<ros::Subscriber> > robot_location_subscriber_;
-        void robotLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr robot_pose, int robot_idx);
+        void robotLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &robot_pose, int robot_idx);
 
         /* Once WAIT is returned, clean the MCTS state - DOWNSTREAM! */
         Action getBestAction();
