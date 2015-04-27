@@ -24,6 +24,18 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
 
+    enum RobotCommandStatus {
+      INITIALIZED,
+      EPISODE_START_ENABLED,
+      EPISODE_START_DISABLED,
+      GOING_TO_SERVICE_TASK_LOCATION,
+      AT_SERVICE_TASK_LOCATION,
+      SERVICE_TASK_NAVIGATION_FAILED,
+      GOING_TO_HELP_DESTINATION_LOCATION,
+      AT_HELP_DESTINATION_LOCATION,
+      HELP_DESTINATION_NAVIGATION_FAILED,
+    };
+
     class BaseRobotNavigator {
 
       public:
@@ -60,9 +72,13 @@ namespace bwi_guidance_solver {
         std::vector<geometry_msgs::Pose> robot_location_;
         std::vector<boost::shared_ptr<boost::mutex> > robot_location_mutex_;
 
+        std::vector<RobotCommandStatus> robot_command_status_;
         std::vector<boost::shared_ptr<ros::Subscriber> > robot_location_subscriber_;
+        std::vector<boost::shared_ptr<ros::ServiceClient> > robot_gui_controller_;
         void robotLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &robot_pose, int robot_idx);
 
+        std::vector<bool> robot_offered_help_;
+        std::vector<boost::posix_time::ptime> robot_offered_help_start_time_;
         /* Once WAIT is returned, clean the MCTS state - DOWNSTREAM! */
         Action getBestAction();
 
