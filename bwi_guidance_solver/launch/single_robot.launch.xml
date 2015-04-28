@@ -33,7 +33,7 @@
       <arg name="map_frame" value="level_mux/map" />
       <arg name="map_service" value="level_mux/static_map" />
       <arg name="map_topic" value="level_mux/map" />
-      <arg name="navigation_map_topic" value="segbot_logical_navigator/map" />
+      <arg name="navigation_map_topic" value="level_mux/map" />
       <arg name="launch_localization" value="true" />
       <arg name="use_fake_localization" value="false" />
       <arg name="move_base_server" value="move_base_interruptable" />
@@ -42,17 +42,20 @@
     </include>
 
     <!-- Finally, launch the segbot_logical_navigator to do low-level logical navigation. -->
-    <node name="segbot_logical_navigator" pkg="segbot_logical_translator" type="segbot_logical_navigator">
-      <param name="global_frame_id" value="$(arg ns)/level_mux/map" />
-      <remap from="move_base" to="move_base_interruptable" />
-      <remap from="map_metadata" to="/map_metadata" />
-    </node>
+    <!-- <node name="segbot_logical_navigator" pkg="segbot_logical_translator" type="segbot_logical_navigator"> -->
+    <!--   <param name="global_frame_id" value="$(arg ns)/level_mux/map" /> -->
+    <!--   <remap from="move_base" to="move_base_interruptable" /> -->
+    <!--   <remap from="map_metadata" to="/map_metadata" /> -->
+    <!-- </node> -->
 
     <!-- launch vizualization -->
     <!-- <node name="rviz" type="rviz_runner" pkg="segbot_navigation" args="ns $(arg ns)" /> -->
 
     <!-- launch the segbot gui -->
-    <node name="gui" type="question_dialog_plugin" pkg="segbot_gui" />
+    <node name="gui" type="question_dialog_plugin" pkg="segbot_gui">
+      <param name="font_size" value="20" />
+    </node>
+    <node name="gui_image" type="image_view" pkg="image_view" />
 
     <node name="guidance_gui" type="guidance_gui_controller" pkg="bwi_guidance_solver" />
 

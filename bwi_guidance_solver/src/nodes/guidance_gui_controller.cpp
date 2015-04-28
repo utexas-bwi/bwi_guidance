@@ -35,14 +35,18 @@ void monitorEpisodeStartThread() {
   BOOST_FOREACH(const std::string& name, goal_names) {
     srv.request.options.push_back(name);
   }
-  srv.request.timeout = 0.0f; // No timeout;
-  gui_service.call(srv);
-  if (srv.response.index >= 0) {
-    bwi_guidance_msgs::MultiRobotNavigationGoal goal;
-    goal.goal_node_id = goal_graph_ids[srv.response.index];
-    mrn_client->sendGoal(goal);
+  srv.request.timeout = bwi_msgs::QuestionDialogRequest::NO_TIMEOUT;
+  if (gui_service.call(srv)) {
+    if (srv.response.index >= 0) {
+      ROS_INFO_NAMED("guidance_gui_controller", "req timed out, sending ep start request.");
+      bwi_guidance_msgs::MultiRobotNavigationGoal goal;
+      goal.goal_node_id = goal_graph_ids[srv.response.index];
+      mrn_client->sendGoal(goal);
+    } else {
+      // Do nothing. The request probably got preempted.
+    }
   } else {
-    // Do nothing. The request probably got preempted.
+    ROS_INFO_NAMED("guidance_gui_controller", "request failed for unspecified reasons.");
   }
 }
 
@@ -50,7 +54,7 @@ void displayMessage(const std::string& msg) {
   bwi_msgs::QuestionDialog srv;
   srv.request.type = bwi_msgs::QuestionDialogRequest::DISPLAY;
   srv.request.message = msg;
-  srv.request.timeout = 0.0f; // No timeout;
+  srv.request.timeout = bwi_msgs::QuestionDialogRequest::NO_TIMEOUT;
   gui_service.call(srv);
 }
 
@@ -124,6 +128,7 @@ bool updateGui(bwi_guidance_msgs::UpdateGuidanceGui::Request& request,
                bwi_guidance_msgs::UpdateGuidanceGui::Response& response) {
   response.success = true;
   response.message = "";
+  /* ROS_INFO_STREAM_NAMED("guidance_gui_controller", "received request type: " << request.type); */
   switch(request.type) {
     case bwi_guidance_msgs::UpdateGuidanceGuiRequest::ENABLE_EPISODE_START:
       if (system_state == bwi_guidance_msgs::UpdateGuidanceGuiRequest::ENABLE_EPISODE_START) {
@@ -208,7 +213,7 @@ int main(int argc, char **argv) {
   ROS_INFO_NAMED("guidance_gui_controller", "Guidance action server found.");
 
   ros::ServiceServer enable_episode_start_service = nh.advertiseService("update_gui", &updateGui);
-  ros::ServiceClient gui_service = nh.serviceClient<bwi_msgs::QuestionDialog>("question_dialog");
+  gui_service = nh.serviceClient<bwi_msgs::QuestionDialog>("question_dialog");
 
   ROS_INFO_NAMED("guidance_gui_controller", "Waiting for segbot_gui service.");
   gui_service.waitForExistence();

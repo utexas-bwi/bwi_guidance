@@ -74,6 +74,7 @@ namespace bwi_guidance_solver {
 
     void BaseRobotNavigator::execute(const bwi_guidance_msgs::MultiRobotNavigationGoalConstPtr &goal) {
       /* restricted mutex scope */ {
+        ROS_INFO_NAMED("BaseRobotNavigator", "Execute called!");
         boost::mutex::scoped_lock episode_modification_lock(episode_modification_mutex_);
         episode_completed_ = false;
         terminate_episode_ = false;
@@ -131,9 +132,11 @@ namespace bwi_guidance_solver {
         const std::string &robot_name = available_robot_list_[i];
 
         // Add a controller for this robot.
-        boost::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> > as;
-        as.reset(new actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>("/" + robot_name + "/move_base_interruptable", true));
-        robot_controller_.push_back(as);
+        ROS_INFO_STREAM_NAMED("BaseRobotNavigator", "Waiting for action server for robot: " << robot_name);
+        boost::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> > ac;
+        ac.reset(new actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>("/" + robot_name + "/move_base_interruptable", true));
+        ac->waitForServer();
+        robot_controller_.push_back(ac);
 
         boost::shared_ptr<ros::Subscriber> loc_sub(new ros::Subscriber);
         *loc_sub = nh_->subscribe<geometry_msgs::PoseWithCovarianceStamped>("/" + robot_name + "/amcl_pose", 1,
@@ -152,6 +155,7 @@ namespace bwi_guidance_solver {
         rs.loc_u = -1;
         rs.loc_v = -1;
         rs.loc_p = 0.0f;
+        rs.tau_d = -1; // No location initialized.
         rs.help_destination = NONE;
 
         system_state_.robots.push_back(rs);
@@ -178,6 +182,8 @@ namespace bwi_guidance_solver {
 
 
     void BaseRobotNavigator::runControllerThread() {
+
+      ROS_INFO_NAMED("BaseRobotNavigator", "Starting up...");
 
       // TODO figure out how you want to run this while computing/not-computing given that an instance is in progress.
       while(ros::ok()) {
@@ -212,10 +218,11 @@ namespace bwi_guidance_solver {
                     srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::ENABLE_EPISODE_START;
                     robot_gui_controller_[robot_idx]->call(srv);
                   }
-                } else {
-                  ROS_FATAL("BAD STATE TRANSITION 1 - robot successfully completed navigation action w/o actively performing one.");
-                  throw std::runtime_error("");
                 }
+                // else {
+                //   ROS_FATAL_STREAM("BAD STATE TRANSITION 1 - robot successfully completed navigation action in command status" << robot_command_status_[robot_idx]);
+                //   throw std::runtime_error("");
+                // }
               } else if (robot_state == actionlib::SimpleClientGoalState::RECALLED ||
                          robot_state == actionlib::SimpleClientGoalState::REJECTED ||
                          robot_state == actionlib::SimpleClientGoalState::PREEMPTED ||
@@ -224,10 +231,11 @@ namespace bwi_guidance_solver {
                   robot_command_status_[robot_idx] = HELP_DESTINATION_NAVIGATION_FAILED;
                 } else if (robot_command_status_[robot_idx] == GOING_TO_SERVICE_TASK_LOCATION) {
                   robot_command_status_[robot_idx] = SERVICE_TASK_NAVIGATION_RESET;
-                } else {
-                  ROS_FATAL("BAD STATE TRANSITION 2 - robot navigation failed w/o actively performing navigation.");
-                  throw std::runtime_error("");
                 }
+                // else {
+                //   ROS_FATAL_STREAM("BAD STATE TRANSITION 2 - robot failed navigation action in command status" << robot_command_status_[robot_idx]);
+                //   throw std::runtime_error("");
+                // }
               }
             }
           }
@@ -287,12 +295,12 @@ namespace bwi_guidance_solver {
                 if (action.type != WAIT) {
                   // See if the action requires some interaction with the GUI.
                   if (action.type == DIRECT_PERSON) {
-                    pause_robot_ = action.robot_id; 
+                    pause_robot_ = action.robot_id;
                     bwi_guidance_msgs::UpdateGuidanceGui srv;
                     srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::SHOW_ORIENTATION;
                     robot_gui_controller_[action.robot_id]->call(srv);
                   } else if (action.type == LEAD_PERSON) {
-                    pause_robot_ = action.robot_id; 
+                    pause_robot_ = action.robot_id;
                     bwi_guidance_msgs::UpdateGuidanceGui srv;
                     srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::SHOW_FOLLOWME;
                     robot_gui_controller_[action.robot_id]->call(srv);
@@ -320,15 +328,15 @@ namespace bwi_guidance_solver {
               // Check if a robot service task is still being initialized, or was just completed.
               if (robot_command_status_[robot_idx] == INITIALIZED) {
                 getNextTaskForRobot(robot_idx, rs);
-                sendRobotToDestination(robot_idx, rs.tau_d);
                 robot_command_status_[robot_idx] = SERVICE_TASK_NAVIGATION_RESET;
                 if (!episode_in_progress_) {
                   bwi_guidance_msgs::UpdateGuidanceGui srv;
                   srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::DISABLE_EPISODE_START;
                   robot_gui_controller_[robot_idx]->call(srv);
                 }
-              } else if (robot_command_status_[robot_idx] == AT_SERVICE_TASK_LOCATION) { 
+              } else if (robot_command_status_[robot_idx] == AT_SERVICE_TASK_LOCATION) {
                 if (rs.tau_t == 0.0f) {
+                  ROS_INFO_STREAM_NAMED("BaseRobotNavigator", available_robot_list_[robot_idx] << " reached service task location.");
                   rs.tau_t = 1.0f / controller_thread_frequency_;
                   // The second term tries to average for discretization errors. TODO think about this some more when
                   // not sleepy.
@@ -337,7 +345,8 @@ namespace bwi_guidance_solver {
                 } else {
                   boost::posix_time::time_duration diff =
                     boost::posix_time::microsec_clock::local_time() - robot_service_task_start_time_[robot_idx];
-                  rs.tau_t = diff.total_milliseconds();
+                  rs.tau_t = diff.total_milliseconds() / 1000.0f;
+                  ROS_INFO_STREAM_NAMED("BaseRobotNavigator", available_robot_list_[robot_idx] << " has been at service task location for " << rs.tau_t << " seconds.");
                 }
                 if (rs.tau_t > rs.tau_total_task_time) {
                   // This service task is now complete. Get a new task.
@@ -388,7 +397,7 @@ namespace bwi_guidance_solver {
         }
 
         if (!episode_in_progress_) {
-          boost::this_thread::sleep(boost::posix_time::milliseconds(1.0f/controller_thread_frequency_));
+          boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f/controller_thread_frequency_));
         } else {
           compute(1.0f/controller_thread_frequency_);
         }
@@ -397,7 +406,7 @@ namespace bwi_guidance_solver {
     }
 
     void BaseRobotNavigator::sendRobotToDestination(int robot_idx, int destination, float orientation) {
-      bwi_mapper::Point2f dest = bwi_mapper::getLocationFromGraphId(destination, graph_);
+      bwi_mapper::Point2f dest = getLocationFromGraphId(destination);
       move_base_msgs::MoveBaseGoal goal;
       geometry_msgs::PoseStamped &target_pose = goal.target_pose;
       target_pose.header.stamp = ros::Time::now();
@@ -406,7 +415,13 @@ namespace bwi_guidance_solver {
       target_pose.pose.position.y = dest.y;
       target_pose.pose.position.z = 0;
       target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(orientation);
+      ROS_INFO_STREAM("Sending " << available_robot_list_[robot_idx] << " to " << destination << " (" << dest.x << "," << dest.y << ")");
       robot_controller_[robot_idx]->sendGoal(goal);
+    }
+
+    bwi_mapper::Point2f BaseRobotNavigator::getLocationFromGraphId(int destination) {
+      bwi_mapper::Point2f dest = bwi_mapper::getLocationFromGraphId(destination, graph_);
+      return bwi_mapper::toMap(dest, map_.info);
     }
 
     void BaseRobotNavigator::determineHumanTransitionalLocation(const geometry_msgs::Pose &pose,
@@ -414,8 +429,8 @@ namespace bwi_guidance_solver {
                                                                 int next_loc) {
       bwi_mapper::Point2f human_pt(pose.position.x, pose.position.y);
       int next_graph_id = bwi_mapper::getClosestEdgeOnGraphGivenId(human_pt, graph_, current_loc);
-      bwi_mapper::Point2f current_pt = bwi_mapper::getLocationFromGraphId(current_loc, graph_);
-      bwi_mapper::Point2f next_pt = bwi_mapper::getLocationFromGraphId(next_graph_id, graph_);
+      bwi_mapper::Point2f current_pt = getLocationFromGraphId(current_loc);
+      bwi_mapper::Point2f next_pt = getLocationFromGraphId(next_graph_id);
       if (bwi_mapper::getMagnitude(next_pt - human_pt) <= 1.5f) {
         next_loc = next_graph_id;
       } else {
@@ -425,24 +440,27 @@ namespace bwi_guidance_solver {
 
     void BaseRobotNavigator::determineStartLocation(const geometry_msgs::Pose &pose, int &u, int &v, float &p) {
       bwi_mapper::Point2f pt(pose.position.x, pose.position.y);
-      u = bwi_mapper::getClosestIdOnGraph(pt, graph_);
-      v = bwi_mapper::getClosestEdgeOnGraphGivenId(pt, graph_, u);
-      bwi_mapper::Point2f u_loc = bwi_mapper::getLocationFromGraphId(u, graph_);
-      bwi_mapper::Point2f v_loc = bwi_mapper::getLocationFromGraphId(v, graph_);
+      bwi_mapper::Point2f pt_grid = bwi_mapper::toGrid(pt, map_.info);
+      u = bwi_mapper::getClosestIdOnGraph(pt_grid, graph_);
+      v = bwi_mapper::getClosestEdgeOnGraphGivenId(pt_grid, graph_, u);
+      bwi_mapper::Point2f u_loc = getLocationFromGraphId(u);
+      bwi_mapper::Point2f v_loc = getLocationFromGraphId(v);
       p = bwi_mapper::getMagnitude(pt - u_loc) / (bwi_mapper::getMagnitude(pt - u_loc) + bwi_mapper::getMagnitude(pt - v_loc));
     }
 
     void BaseRobotNavigator::determineStartLocation(const geometry_msgs::Pose &pose, int &u) {
       bwi_mapper::Point2f pt(pose.position.x, pose.position.y);
-      u = bwi_mapper::getClosestIdOnGraph(pt, graph_);
+      bwi_mapper::Point2f pt_grid = bwi_mapper::toGrid(pt, map_.info);
+      u = bwi_mapper::getClosestIdOnGraph(pt_grid, graph_);
     }
 
     void BaseRobotNavigator::determineRobotTransitionalLocation(const geometry_msgs::Pose &pose, RobotState &rs) {
       // Change loc_v everytime, but keep loc_u constant.
       bwi_mapper::Point2f pt(pose.position.x, pose.position.y);
-      rs.loc_v = bwi_mapper::getClosestEdgeOnGraphGivenId(pt, graph_, rs.loc_u);
-      bwi_mapper::Point2f u_loc = bwi_mapper::getLocationFromGraphId(rs.loc_u, graph_);
-      bwi_mapper::Point2f v_loc = bwi_mapper::getLocationFromGraphId(rs.loc_v, graph_);
+      bwi_mapper::Point2f pt_grid = bwi_mapper::toGrid(pt, map_.info);
+      rs.loc_v = bwi_mapper::getClosestEdgeOnGraphGivenId(pt_grid, graph_, rs.loc_u);
+      bwi_mapper::Point2f u_loc = getLocationFromGraphId(rs.loc_u);
+      bwi_mapper::Point2f v_loc = getLocationFromGraphId(rs.loc_v);
       rs.loc_p = bwi_mapper::getMagnitude(pt - u_loc) /
           (bwi_mapper::getMagnitude(pt - u_loc) + bwi_mapper::getMagnitude(pt - v_loc));
       // Swapping allows the robot to transition from one node to the next.
@@ -477,7 +495,7 @@ namespace bwi_guidance_solver {
 
     void BaseRobotNavigator::compute(float timeout) {
       // TODO switch to mcts compute.
-      boost::this_thread::sleep(boost::posix_time::milliseconds(timeout));
+      boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f * timeout));
     }
 
   } /* mrn */

@@ -92,6 +92,7 @@ namespace bwi_guidance_solver {
         void determineStartLocation(const geometry_msgs::Pose &pose, int &u);
         void determineRobotTransitionalLocation(const geometry_msgs::Pose &pose, RobotState &rs);
         void roundOffRobotLocation(RobotState &rs);
+        bwi_mapper::Point2f getLocationFromGraphId(int destination);
 
         ExtendedState system_state_;
         boost::mutex episode_modification_mutex_;

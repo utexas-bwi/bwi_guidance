@@ -15,7 +15,13 @@ class SimpleTaskGenerationModel : public TaskGenerationModel {
 
     virtual void generateNewTaskForRobot(int robot_id, RobotState &robot, RNG &rng) {
       for (int i = 0; i < task_list[robot_id].size(); ++i) {
-        if (task_list[robot_id][i] == robot.tau_d) {
+        if (robot.tau_d == -1) {
+          robot.tau_d = task_list[robot_id][0];
+          robot.tau_t = 0.0f;
+          robot.tau_total_task_time = 10.0f;
+          robot.tau_u = 1.0f;
+          break;
+        } else if (task_list[robot_id][i] == robot.tau_d) {
           robot.tau_d = task_list[robot_id][(i+1)%task_list[robot_id].size()];
           robot.tau_t = 0.0f;
           robot.tau_total_task_time = 10.0f;
@@ -46,7 +52,7 @@ int main(int argc, char **argv) {
 
   ros::ServiceServer start_server = nh->advertiseService("start_mrn", &start);
   ros::Subscriber available_robots_subscriber = nh->subscribe("/available_robots", 1, availableRobotHandler);
-  
+
   while(waiting_for_robots) {
     ros::spinOnce();
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
