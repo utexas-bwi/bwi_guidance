@@ -26,11 +26,9 @@ namespace bwi_guidance_solver {
 
     enum RobotCommandStatus {
       INITIALIZED,
-      EPISODE_START_ENABLED,
-      EPISODE_START_DISABLED,
       GOING_TO_SERVICE_TASK_LOCATION,
       AT_SERVICE_TASK_LOCATION,
-      SERVICE_TASK_NAVIGATION_FAILED,
+      SERVICE_TASK_NAVIGATION_RESET,
       GOING_TO_HELP_DESTINATION_LOCATION,
       AT_HELP_DESTINATION_LOCATION,
       HELP_DESTINATION_NAVIGATION_FAILED,
@@ -104,6 +102,7 @@ namespace bwi_guidance_solver {
         void roundOffRobotLocation(RobotState &rs);
 
         ExtendedState system_state_;
+        boost::mutex episode_modification_mutex_;
 
         boost::shared_ptr<ros::NodeHandle> nh_;
         boost::shared_ptr<actionlib::SimpleActionServer<bwi_guidance_msgs::MultiRobotNavigationAction> > as_;
@@ -114,6 +113,8 @@ namespace bwi_guidance_solver {
         bool at_episode_start_;
 
         int goal_node_id_;
+        int pause_robot_;
+        boost::posix_time::ptime wait_action_start_time_;
 
         boost::shared_ptr<boost::thread> controller_thread_;
         void runControllerThread();

@@ -10,6 +10,7 @@
 #include <opencv/highgui.h>
 #include <tf/transform_datatypes.h>
 
+#include <bwi_guidance_msgs/UpdateGuidanceGui.h>
 #include <bwi_guidance_solver/mrn/base_robot_navigator.h>
 
 namespace bwi_guidance_solver {
@@ -141,7 +142,7 @@ namespace bwi_guidance_solver {
         }
 
         robot_service_task_start_time_.resize(num_robots);
-        robot_command_.resize(num_robots, INITIALIZED);
+        robot_command_status_.resize(num_robots, INITIALIZED);
 
         for (int i = 0; i < num_robots; ++i) {
           const std::string &robot_name = available_robot_list_[i];
@@ -158,7 +159,7 @@ namespace bwi_guidance_solver {
           robot_location_subscriber_.push_back(loc_sub);
 
           boost::shared_ptr<ros::ServiceClient> gui_client(new ros::ServiceClient);
-          gui_client = nh_->serviceClient<bwi_guidance_msgs::UpdateGuidanceGui>("/" + robot_name + "/update_gui");
+          *gui_client = nh_->serviceClient<bwi_guidance_msgs::UpdateGuidanceGui>("/" + robot_name + "/update_gui");
           robot_gui_controller_.push_back(gui_client);
 
           // Finally get a new task for this robot and setup the system state for this robot.
@@ -201,9 +202,7 @@ namespace bwi_guidance_solver {
       while(ros::ok()) {
 
         /* restricted_mutex_scope */ {
-          boost::scoped_lock::mutex episode_modification_lock(episode_modification_mutex_);
-
-          bool sleep_via_system_time = true;
+          boost::mutex::scoped_lock episode_modification_lock(episode_modification_mutex_);
 
           bool all_robot_locations_available = true;
           // Let's see if we can update the position of all the robots first!
@@ -227,10 +226,10 @@ namespace bwi_guidance_solver {
                   robot_command_status_[robot_idx] = AT_HELP_DESTINATION_LOCATION;
                 } else if (robot_command_status_[robot_idx] == GOING_TO_SERVICE_TASK_LOCATION) {
                   robot_command_status_[robot_idx] = AT_SERVICE_TASK_LOCATION;
-                  if (!episode_in_progress) {
+                  if (!episode_in_progress_) {
                     bwi_guidance_msgs::UpdateGuidanceGui srv;
-                    srv.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::ENABLE_EPISODE_START;
-                    robot_gui_controller_[robot_idx].call(srv);
+                    srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::ENABLE_EPISODE_START;
+                    robot_gui_controller_[robot_idx]->call(srv);
                   }
                 } else {
                   ROS_FATAL("BAD STATE TRANSITION 1 - robot successfully completed navigation action w/o actively performing one.");
@@ -243,7 +242,7 @@ namespace bwi_guidance_solver {
                 if (robot_command_status_[robot_idx] == GOING_TO_HELP_DESTINATION_LOCATION) {
                   robot_command_status_[robot_idx] = HELP_DESTINATION_NAVIGATION_FAILED;
                 } else if (robot_command_status_[robot_idx] == GOING_TO_SERVICE_TASK_LOCATION) {
-                  robot_command_status_[robot_idx] = SERVICE_TASK_NAVIGATION_FAILED;
+                  robot_command_status_[robot_idx] = SERVICE_TASK_NAVIGATION_RESET;
                 } else {
                   ROS_FATAL("BAD STATE TRANSITION 2 - robot navigation failed w/o actively performing navigation.");
                   throw std::runtime_error("");
@@ -252,18 +251,15 @@ namespace bwi_guidance_solver {
             }
           }
 
-          getNextTaskForRobot(i, rs);
-          sendRobotToDestination(i, rs.tau_d);
-
           if (all_robot_locations_available) {
             bool its_decision_time = false;
             if (episode_in_progress_ && !terminate_episode_) {
               if (at_episode_start_) {
                 // Ensure that all robots switch to a scenario where they are no longer
                 bwi_guidance_msgs::UpdateGuidanceGui srv;
-                srv.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::SHOW_NOTHING;
+                srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::SHOW_NOTHING;
                 for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
-                  robot_gui_controller_[robot_idx].call(srv)
+                  robot_gui_controller_[robot_idx]->call(srv);
                 }
 
                 // Determine the human's start location.
@@ -303,7 +299,6 @@ namespace bwi_guidance_solver {
                 }
               }
             }
-            episode_in_progress_ = false;
 
             if (its_decision_time) {
               while (true) {
@@ -311,14 +306,15 @@ namespace bwi_guidance_solver {
                 if (action.type != WAIT) {
                   // See if the action requires some interaction with the GUI.
                   if (action.type == DIRECT_PERSON) {
-                    robot_offered_help_
+                    pause_robot_ = action.robot_id; 
                     bwi_guidance_msgs::UpdateGuidanceGui srv;
-                    srv.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::SHOW_ORIENTATION;
-                    robot_gui_controller_[robot_idx].call(srv);
+                    srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::SHOW_ORIENTATION;
+                    robot_gui_controller_[action.robot_id]->call(srv);
                   } else if (action.type == LEAD_PERSON) {
+                    pause_robot_ = action.robot_id; 
                     bwi_guidance_msgs::UpdateGuidanceGui srv;
-                    srv.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::SHOW_FOLLOWME;
-                    robot_gui_controller_[robot_idx].call(srv);
+                    srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::SHOW_FOLLOWME;
+                    robot_gui_controller_[action.robot_id]->call(srv);
                   }
                   // Perform the deterministic transition as per the model
                   ExtendedState next_state;
@@ -337,58 +333,80 @@ namespace bwi_guidance_solver {
               }
             }
 
-            boost::posix_time::time_duration time_since_wait_start =
-              boost::posix_time::microsec_clock::local_time() - wait_action_start_time_;
-            if (time_since_wait_start
-
             for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
               RobotState &rs = system_state_.robots[robot_idx];
-              if (send_robot_command[robot_idx]) {
-                int destination = (rs.help_destination != NONE) ? rs.help_destination : rs.tau_d;
-                float orientation = (rs.help_destination != NONE) ?
-                  bwi_mapper::getNodeAngle(system_state_.loc_node, rs.help_destination, graph_) :
-                  bwi_mapper::getNodeAngle(rs.loc_u, rs.tau_d, graph_);
-                sendRobotToDestination(robot_idx, destination, orientation);
-              } else {
-                if (rs.help_destination != NONE) {
-                  if (isRobotExactlyAt(rs, rs.help_destination)) {
-                    // TODO See if the robot needs to be rotated to be in a good orientation w.r.t to the person.
-                    // Otherwise, do nothing.
-                  }
+
+              // Check if a robot service task is still being initialized, or was just completed.
+              if (robot_command_status_[robot_idx] == INITIALIZED) {
+                getNextTaskForRobot(robot_idx, rs);
+                sendRobotToDestination(robot_idx, rs.tau_d);
+                robot_command_status_[robot_idx] = SERVICE_TASK_NAVIGATION_RESET;
+                if (!episode_in_progress_) {
+                  bwi_guidance_msgs::UpdateGuidanceGui srv;
+                  srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::DISABLE_EPISODE_START;
+                  robot_gui_controller_[robot_idx]->call(srv);
+                }
+              } else if (robot_command_status_[robot_idx] == AT_SERVICE_TASK_LOCATION) { 
+                if (rs.tau_t == 0.0f) {
+                  rs.tau_t = 1.0f / controller_thread_frequency_;
+                  // The second term tries to average for discretization errors. TODO think about this some more when
+                  // not sleepy.
+                  robot_service_task_start_time_[robot_idx] = boost::posix_time::microsec_clock::local_time() -
+                    boost::posix_time::milliseconds(0.5 * 1.0f / controller_thread_frequency_);
                 } else {
-                  if (isRobotExactlyAt(rs, rs.tau_d)) {
+                  boost::posix_time::time_duration diff =
+                    boost::posix_time::microsec_clock::local_time() - robot_service_task_start_time_[robot_idx];
+                  rs.tau_t = diff.total_milliseconds();
+                }
+                if (rs.tau_t > rs.tau_total_task_time) {
+                  // This service task is now complete. Get a new task.
+                  getNextTaskForRobot(robot_idx, rs);
+                  robot_command_status_[robot_idx] = SERVICE_TASK_NAVIGATION_RESET;
+                  if (!episode_in_progress_) {
+                    bwi_guidance_msgs::UpdateGuidanceGui srv;
+                    srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::DISABLE_EPISODE_START;
+                    robot_gui_controller_[robot_idx]->call(srv);
+                  }
+                }
+              }
 
-                    // The robot is at the service task location performing the task. Figure out how much time
-                    // the task has been performed for.
-                    if (rs.tau_t == 0.0f) {
-                      rs.tau_t = 1.0f / controller_thread_frequency_;
-                      // The second term tries to average for discretization errors. TODO think about this some more when
-                      // not sleepy.
-                      robot_service_task_start_time_[robot_idx] = boost::posix_time::microsec_clock::local_time() -
-                        boost::posix_time::milliseconds(0.5 * 1.0f / controller_thread_frequency_);
-                    } else {
-                      boost::posix_time::time_duration diff =
-                        boost::posix_time::microsec_clock::local_time() - robot_service_task_start_time_[robot_idx];
-                      rs.tau_t = diff.total_milliseconds();
-                    }
-
-                    if (rs.tau_t > rs.tau_total_task_time) {
-                      // This service task is now complete. Get a new task.
-                      getNextTaskForRobot(robot_idx, rs);
-                      float orientation = bwi_mapper::getNodeAngle(rs.loc_u, rs.tau_d, graph_);
-                      sendRobotToDestination(robot_idx, rs.tau_d, orientation);
-                    }
+              // Check if a robot that was manually paused no longer needs to be paused.
+              if (pause_robot_ == robot_idx) {
+                boost::posix_time::time_duration time_since_wait_start =
+                  boost::posix_time::microsec_clock::local_time() - wait_action_start_time_;
+                if (time_since_wait_start.total_milliseconds() > 3000) {
+                  pause_robot_ = NONE;
+                  bwi_guidance_msgs::UpdateGuidanceGui srv;
+                  srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::SHOW_NOTHING;
+                  robot_gui_controller_[robot_idx]->call(srv);
+                }
+              } else {
+                bool robot_aiding_human = rs.help_destination != NONE;
+                if (robot_aiding_human) {
+                  if (robot_command_status_[robot_idx] != AT_HELP_DESTINATION_LOCATION &&
+                      robot_command_status_[robot_idx] != GOING_TO_HELP_DESTINATION_LOCATION) {
+                    int destination = rs.help_destination;
+                    float orientation = bwi_mapper::getNodeAngle(system_state_.loc_node, rs.help_destination, graph_);
+                    sendRobotToDestination(robot_idx, destination, orientation);
+                    robot_command_status_[robot_idx] = GOING_TO_HELP_DESTINATION_LOCATION;
+                  } /* TODO see if the robot needs to be rotated. */
+                } else {
+                  if (robot_command_status_[robot_idx] != AT_SERVICE_TASK_LOCATION &&
+                      robot_command_status_[robot_idx] != GOING_TO_SERVICE_TASK_LOCATION) {
+                    int destination = rs.tau_d;
+                    float orientation = bwi_mapper::getNodeAngle(rs.loc_u, rs.tau_d, graph_);
+                    sendRobotToDestination(robot_idx, destination, orientation);
+                    robot_command_status_[robot_idx] = GOING_TO_SERVICE_TASK_LOCATION;
                   }
                 }
               }
             }
-
           } else {
             ROS_WARN_THROTTLE_NAMED(1.0f, "MultiRobotNavigator", " still waiting for robot locations. This shouldn't take too long...");
           }
         }
 
-        if (sleep_via_system_time) {
+        if (!episode_in_progress_) {
           boost::this_thread::sleep(boost::posix_time::milliseconds(1.0f/controller_thread_frequency_));
         } else {
           compute(1.0f/controller_thread_frequency_);
