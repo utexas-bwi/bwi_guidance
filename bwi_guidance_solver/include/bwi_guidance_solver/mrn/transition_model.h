@@ -101,6 +101,9 @@ namespace bwi_guidance_solver {
 
         typedef boost::shared_ptr<TaskGenerationModel> Ptr;
 
+        // TODO turn this class abstract.
+        TaskGenerationModel() {}
+
         TaskGenerationModel(const std::vector<int> robot_home_base,
                             const bwi_mapper::Graph &graph,
                             float task_utility,

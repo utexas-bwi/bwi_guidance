@@ -39,6 +39,7 @@ namespace bwi_guidance_solver {
       public:
 
         BaseRobotNavigator(const boost::shared_ptr<ros::NodeHandle>& nh,
+                           const std::vector<std::string>& available_robot_list,
                            const boost::shared_ptr<TaskGenerationModel>& model);
 
         virtual ~BaseRobotNavigator();
@@ -50,18 +51,9 @@ namespace bwi_guidance_solver {
 
         // std_srvs/Empty call that freezes the available robot list and starts patrolling them via the concurrent thread.
         // Doesn't actually provide the goal.
-        ros::ServiceServer start_server_;
-        bool startMultiRobotNavigator(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res);
+        void start();
 
-        // This needs a mutex inside so that the list of available robots is not changed once the action server receives
-        // a request.
-        // TODO: Atleast assume that a robot that has become available won't suddenly vanish, for now.
-        ros::Subscriber available_robots_subscriber_;
-        void availableRobotHandler(const bwi_msgs::AvailableRobotArray::ConstPtr available_robots);
         std::vector<std::string> available_robot_list_;
-
-        // While available robot list is frozen, we can't add more robots.
-        bool multi_robot_navigator_started_;
 
         std::vector<boost::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> > > robot_controller_; /* Directly corresponds to vector id in current state. */
 
@@ -122,8 +114,6 @@ namespace bwi_guidance_solver {
 
         float avg_robot_speed_;
         float avg_human_speed_;
-
-        std::string global_frame_id_;
 
         boost::shared_ptr<bwi_mapper::MapLoader> mapper_;
         bwi_mapper::Graph graph_;

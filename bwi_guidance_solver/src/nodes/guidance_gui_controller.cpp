@@ -168,6 +168,18 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "guidance_gui_controller");
   ros::NodeHandle nh, private_nh("~");
 
+  // TODO paramtrize
+  goal_names.push_back("top-left");
+  goal_graph_ids.push_back(27);
+  goal_names.push_back("top-right");
+  goal_graph_ids.push_back(23);
+  goal_names.push_back("bottom-left");
+  goal_graph_ids.push_back(42);
+  goal_names.push_back("bottom-right");
+  goal_graph_ids.push_back(8);
+  goal_names.push_back("center");
+  goal_graph_ids.push_back(39);
+
   // Read images from parameters
   std::string up_arrow_image_file, u_turn_image_file;
   std::string images_dir = ros::package::getPath("bwi_guidance") + "/images";

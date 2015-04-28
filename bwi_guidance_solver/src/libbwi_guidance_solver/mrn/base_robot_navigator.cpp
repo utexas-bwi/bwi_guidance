@@ -18,34 +18,34 @@ namespace bwi_guidance_solver {
   namespace mrn {
 
     BaseRobotNavigator::BaseRobotNavigator(const boost::shared_ptr<ros::NodeHandle>& nh,
+                                           const std::vector<std::string>& available_robot_list,
                                            const boost::shared_ptr<TaskGenerationModel>& model) {
 
       nh_ = nh;
 
-      // This decides whether the MRN has frozen the list of available robots and started controlling them to perform
-      // various background tasks, even if the human-guidance task is not being performed.
-      multi_robot_navigator_started_ = false;
+      available_robot_list_ = available_robot_list;
 
       // This decides whether an episode inside the MDP is running or not.
       episode_in_progress_ = false;
       episode_completed_ = false;
       terminate_episode_ = false;
       at_episode_start_ = false;
+      pause_robot_ = NONE;
 
       // TODO: Parametrize!
       controller_thread_frequency_ = 2.0f;
-      global_frame_id_ = "/map";
       avg_human_speed_ = 0.75f;
       avg_robot_speed_ = 0.4f;
 
       // Read the graph from file.
       std::string map_file, graph_file;
       double robot_radius, robot_padding;
-      if (!nh_->getParam("~map_file", map_file)) {
+      ros::NodeHandle private_nh("~");
+      if (!private_nh.getParam("map_file", map_file)) {
         ROS_FATAL_STREAM("RobotPosition: ~map_file parameter required");
         exit(-1);
       }
-      if (!nh_->getParam("~graph_file", graph_file)) {
+      if (!private_nh.getParam("graph_file", graph_file)) {
         ROS_FATAL_STREAM("RobotPosition: ~graph_file parameter required");
         exit(-1);
       }
@@ -63,14 +63,8 @@ namespace bwi_guidance_solver {
       human_decision_model_.reset(new HumanDecisionModel(graph_));
 
       human_location_available_ = false;
-      human_location_subscriber_ = nh_->subscribe("/person/odom", 1, &BaseRobotNavigator::humanLocationHandler, this);
+      human_location_subscriber_ = nh_->subscribe("/person/pose", 1, &BaseRobotNavigator::humanLocationHandler, this);
 
-      // Subscribe to the list of available robots
-      available_robots_subscriber_ =
-        nh_->subscribe("/available_robots", 1, &BaseRobotNavigator::availableRobotHandler, this);
-
-      // Start the service server that will eventually start the multi robot navigator controller thread.
-      start_server_ = nh_->advertiseService("~start", &BaseRobotNavigator::startMultiRobotNavigator, this);
 
     }
 
@@ -118,74 +112,61 @@ namespace bwi_guidance_solver {
       human_location_ = human_pose->pose.pose;
     }
 
-    void BaseRobotNavigator::availableRobotHandler(const bwi_msgs::AvailableRobotArray::ConstPtr available_robots) {
-      if (!multi_robot_navigator_started_) {
-        BOOST_FOREACH(const bwi_msgs::AvailableRobot &robot, available_robots->robots) {
-          if (std::find(available_robot_list_.begin(), available_robot_list_.end(), robot.name) == available_robot_list_.end()) {
-            available_robot_list_.push_back(robot.name);
-          }
-        }
+    void BaseRobotNavigator::start() {
+
+      // Setup variables/controllers for reach robot.
+      int num_robots = available_robot_list_.size();
+
+      robot_location_available_.resize(num_robots, false);
+      robot_location_.resize(num_robots); // We're just resizing the vector here.
+      robot_location_mutex_.resize(num_robots);
+      for (int i = 0; i < num_robots; ++i) {
+        robot_location_mutex_[i].reset(new boost::mutex);
       }
-    }
 
-    bool BaseRobotNavigator::startMultiRobotNavigator(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res) {
-      if (!multi_robot_navigator_started_) {
-        multi_robot_navigator_started_ = true; // This freezes the list of robots.
-        // Setup variables/controllers for reach robot.
-        int num_robots = available_robot_list_.size();
+      robot_service_task_start_time_.resize(num_robots);
+      robot_command_status_.resize(num_robots, INITIALIZED);
 
-        robot_location_available_.resize(num_robots, false);
-        robot_location_.resize(num_robots); // We're just resizing the vector here.
-        robot_location_mutex_.resize(num_robots);
-        for (int i = 0; i < num_robots; ++i) {
-          robot_location_mutex_[i].reset(new boost::mutex);
-        }
+      for (int i = 0; i < num_robots; ++i) {
+        const std::string &robot_name = available_robot_list_[i];
 
-        robot_service_task_start_time_.resize(num_robots);
-        robot_command_status_.resize(num_robots, INITIALIZED);
+        // Add a controller for this robot.
+        boost::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> > as;
+        as.reset(new actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>("/" + robot_name + "/move_base_interruptable", true));
+        robot_controller_.push_back(as);
 
-        for (int i = 0; i < num_robots; ++i) {
-          const std::string &robot_name = available_robot_list_[i];
+        boost::shared_ptr<ros::Subscriber> loc_sub(new ros::Subscriber);
+        *loc_sub = nh_->subscribe<geometry_msgs::PoseWithCovarianceStamped>("/" + robot_name + "/amcl_pose", 1,
+                                                                            boost::bind(&BaseRobotNavigator::robotLocationHandler,
+                                                                                        this, _1, i));
+        robot_location_subscriber_.push_back(loc_sub);
 
-          // Add a controller for this robot.
-          boost::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> > as;
-          as.reset(new actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>("/" + robot_name + "/move_base_interruptable", true));
-          robot_controller_.push_back(as);
+        boost::shared_ptr<ros::ServiceClient> gui_client(new ros::ServiceClient);
+        *gui_client = nh_->serviceClient<bwi_guidance_msgs::UpdateGuidanceGui>("/" + robot_name + "/update_gui");
+        robot_gui_controller_.push_back(gui_client);
 
-          boost::shared_ptr<ros::Subscriber> loc_sub(new ros::Subscriber);
-          *loc_sub = nh_->subscribe<geometry_msgs::PoseWithCovarianceStamped>("/" + robot_name + "/amcl_pose", 1,
-                                                                              boost::bind(&BaseRobotNavigator::robotLocationHandler,
-                                                                                          this, _1, i));
-          robot_location_subscriber_.push_back(loc_sub);
+        // Finally get a new task for this robot and setup the system state for this robot.
+        RobotState rs;
+        // rs.loc will be setup once the subscriber kicks in. set the loc to -1 for now to indicate the location has
+        // not been received.
+        rs.loc_u = -1;
+        rs.loc_v = -1;
+        rs.loc_p = 0.0f;
+        rs.help_destination = NONE;
 
-          boost::shared_ptr<ros::ServiceClient> gui_client(new ros::ServiceClient);
-          *gui_client = nh_->serviceClient<bwi_guidance_msgs::UpdateGuidanceGui>("/" + robot_name + "/update_gui");
-          robot_gui_controller_.push_back(gui_client);
-
-          // Finally get a new task for this robot and setup the system state for this robot.
-          RobotState rs;
-          // rs.loc will be setup once the subscriber kicks in. set the loc to -1 for now to indicate the location has
-          // not been received.
-          rs.loc_u = -1;
-          rs.loc_v = -1;
-          rs.loc_p = 0.0f;
-          rs.help_destination = NONE;
-
-          system_state_.robots.push_back(rs);
-        }
-
-        // Now that all robots are initialized, start the controller thread.
-        controller_thread_.reset(new boost::thread(&BaseRobotNavigator::runControllerThread, this));
-
-        as_.reset(new actionlib::SimpleActionServer<bwi_guidance_msgs::MultiRobotNavigationAction>(*nh_,
-                                                                                                   "/guidance",
-                                                                                                   boost::bind(&BaseRobotNavigator::execute, this, _1),
-                                                                                                   true));
-
-      } else {
-        ROS_WARN_NAMED("MultiRobotNavigator", "has already started, cannot start again!");
+        system_state_.robots.push_back(rs);
       }
-      return true;
+
+      // Now that all robots are initialized, start the controller thread.
+      controller_thread_.reset(new boost::thread(&BaseRobotNavigator::runControllerThread, this));
+
+      as_.reset(new actionlib::SimpleActionServer<bwi_guidance_msgs::MultiRobotNavigationAction>(*nh_,
+                                                                                                 "/guidance",
+                                                                                                 boost::bind(&BaseRobotNavigator::execute, this, _1),
+                                                                                                 false));
+
+      as_->start();
+      ros::spin();
     }
 
     void BaseRobotNavigator::robotLocationHandler(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &robot_pose,
@@ -420,7 +401,7 @@ namespace bwi_guidance_solver {
       move_base_msgs::MoveBaseGoal goal;
       geometry_msgs::PoseStamped &target_pose = goal.target_pose;
       target_pose.header.stamp = ros::Time::now();
-      target_pose.header.frame_id = global_frame_id_;
+      target_pose.header.frame_id = available_robot_list_[robot_idx] + "/level_mux/map";
       target_pose.pose.position.x = dest.x;
       target_pose.pose.position.y = dest.y;
       target_pose.pose.position.z = 0;
