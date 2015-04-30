@@ -11,8 +11,14 @@ using namespace bwi_guidance_solver::mrn;
 
 int main(int argc, const char *argv[]) {
 
-  std::string map_file = "package://bwi_guidance/maps/graph.yaml";
-  std::string graph_file = "package://bwi_guidance/maps/graph_graph.yaml";
+  int seed = 0;
+  if (argc > 1) {
+    seed = atoi(argv[1]);
+  }
+
+  std::string map_file = "package://bwi_guidance/maps/map3.yaml";
+  std::string graph_file = "package://bwi_guidance/maps/graph_map3.yaml";
+  std::string robot_home_base_file = "package://bwi_guidance/experiments/map3_robot_base.txt";
 
   // Initialize map, graph and model.
   cv::Mat base_image;
@@ -25,13 +31,12 @@ int main(int argc, const char *argv[]) {
   mapper.getMap(map);
   mapper.drawMap(base_image);
   bwi_mapper::readGraphFromFile(graph_file, map.info, graph);
+  std::vector<int> robot_home_base;
+  readRobotHomeBase(robot_home_base_file, robot_home_base);
 
   MotionModel::Ptr motion_model(new MotionModel(graph,
                                                 0.5f / map.info.resolution,
                                                 1.0f / map.info.resolution));
-  std::vector<int> robot_home_base;
-  robot_home_base.push_back(11);
-  robot_home_base.push_back(12);
   TaskGenerationModel::Ptr task_generation_model(new TaskGenerationModel(robot_home_base, graph, 1.0f));
 
   HumanDecisionModel::Ptr human_decision_model(new HumanDecisionModel(graph));
@@ -55,106 +60,108 @@ int main(int argc, const char *argv[]) {
   int unused_depth_count;
   std::vector<State> frame_vector;
 
-  boost::shared_ptr<RNG> rng(new RNG(0));
+  boost::shared_ptr<RNG> rng(new RNG(seed));
+  int num_vertices = boost::num_vertices(graph_);
+  int start_robot_idx = rng.randomInt(robot_home_base.size() - 1);
+  int start_idx = (params_.start_colocated) ? robot_home_base[start_robot_idx] : rng.randomInt(num_vertices - 1);
+  int goal_idx = rng.randomInt(num_vertices - 1);
+  while (true) {
+    // Measure distance between goal_idx and start_idx.
+    goal_idx = rng.randomInt(num_vertices - 1);
+  }
 
   // Original state - state 1.
-  ExtendedState current_state, next_state;
-  current_state.loc_node = 8;
-  current_state.loc_p = 0.0f;
-  current_state.loc_prev = 8;
-  current_state.assist_type = NONE;
-  current_state.assist_loc = NONE;
-  current_state.robots.resize(2);
-  current_state.robots[0].loc_u = 8;
-  current_state.robots[0].loc_p = 0.0f;
-  current_state.robots[0].loc_v = 0;
-  current_state.robots[0].tau_d = 6;
-  current_state.robots[0].tau_u = 1.0f;
-  current_state.robots[0].tau_t = 0.0f;
-  current_state.robots[0].tau_total_task_time = 5.0f;
-  current_state.robots[0].help_destination = NONE;
-  current_state.robots[1].loc_u = 9;
-  current_state.robots[1].loc_p = 0.0f;
-  current_state.robots[1].loc_v = 0;
-  current_state.robots[1].tau_d = 10;
-  current_state.robots[1].tau_u = 1.0f;
-  current_state.robots[1].tau_t = 0.0f;
-  current_state.robots[1].tau_total_task_time = 5.0f;
-  current_state.robots[1].help_destination = NONE;
-  std::cout << "Original state: " << current_state << std::endl;
+  ExtendedState current_state_sr, next_state;
+  current_state_sr.loc_node = start_idx;
+  current_state_sr.loc_p = 0.0f;
+  current_state_sr.loc_prev = start_idx;
+  current_state_sr.assist_type = NONE;
+  current_state_sr.assist_loc = NONE;
+  current_state_sr.robots.resize(robot_home_base_.size());
+  int robot_counter = 0;
+  BOOST_FOREACH(RobotState &robot, current_state_sr.robots) {
+    robot.loc_u = robot_home_base_[robot_counter];
+    robot.loc_p = 0.0f;
+    robot.loc_v = robot.loc_u;
+    robot.help_destination = NONE;
+    task_generation_model->generateNewTaskForRobot(robot_counter, robot, *evaluation_rng);
+    ++robot_counter;
+  }
+  std::cout << "Original state: " << current_state_sr << std::endl;
 
-  extended_model.takeAction(current_state, Action(ASSIGN_ROBOT, 0, 8), unused_reward, next_state, unused_terminal,
-                            unused_depth_count, rng, unused_time_loss, unused_utility_loss, frame_vector);
-  current_state = next_state;
-  current_state.prev_action = Action(WAIT);
-  current_state.released_locations.clear();
+  extended_model.takeAction(current_state_sr, Action(ASSIGN_ROBOT, start_robot_idx, start_idx),
+                            unused_reward, next_state, unused_terminal, unused_depth_count,
+                            evaluation_rng);
+  current_state_sr = next_state;
+  current_state_sr.prev_action = Action(WAIT);
+  current_state_sr.released_locations.clear();
 
-  std::vector<Action> actions;
-  actions.push_back(Action(DIRECT_PERSON, 0, 9));
-  actions.push_back(Action(RELEASE_ROBOT, 0));
-  actions.push_back(Action(ASSIGN_ROBOT, 1, 9));
-  actions.push_back(Action(WAIT));
-  actions.push_back(Action(LEAD_PERSON, 1, 12));
-  actions.push_back(Action(WAIT));
+  ExtendedState current_state_mcts = current_state_sr;
 
   // Draw the original state and wait 8 seconds.
-  cv::Mat img = base_image.clone();
-  model.drawState(current_state, img);
-  cv::imshow("out", img);
-  std::cin.ignore();
-  boost::this_thread::sleep(boost::posix_time::milliseconds(15000.0f));
+  cv::Mat img_sr = base_image.clone(), img_mcts;
+  model.drawState(current_state_sr, img_sr);
+  img_mcts = img_sr.clone();
+  cv::Mat img_final;
+  std::string text_sr = "Episode Starting...";
+  constructFinalImage(img_final, "Episode Starting...", img_sr, "Episode Starting...", Startimg_mcts);
+  cv::imshow("out", img_final);
+  boost::this_thread::sleep(boost::posix_time::milliseconds(5000.0f));
 
-  int counter = 0;
-  while(true) {
+  cv::VideoWriter writer("/tmp/guidance.mp4", CV_FOURCC('F','M','P','4'), params.frame_rate, img_final.size());
+  for (int i = 0; i < 5.0f / params.frame_rate) {
+    writer.write(img_final);
+  }
 
-    std::cout << "Drawing state: " << current_state << std::endl;
+  std::vector<cv::Mat> img_arr_sr, img_arr_mcts;
+  std::vector<std::string> str_arr_sr, str_arr_mcts;
 
-    std::cout << "  Unrestricted Actions: " << std::endl;
-    std::vector<Action> available_actions;
-    model.getAllActions(current_state, available_actions);
-    BOOST_FOREACH(Action &action, available_actions) {
-      std::cout << "    " << action << std::endl;
-    }
-
-    std::cout << "  Restricted Actions: " << std::endl;
-    extended_model.getAllActions(current_state, available_actions);
-    BOOST_FOREACH(Action &action, available_actions) {
-      std::cout << "    " << action << std::endl;
-    }
-
-    // img = base_image.clone();
-    // model.drawState(current_state, img);
-    // cv::imwrite("intro_state_" + boost::lexical_cast<std::string>(counter + 1) + ".png", img);
-
-    if (current_state.loc_node == 12) {
-      break;
-    }
-
-    std::cout << "  Taking action: " << actions[counter] << std::endl;
-
-    extended_model.takeAction(current_state, actions[counter], unused_reward, next_state, unused_terminal,
+  while (current_state_sr.loc_node != goal_idx) {
+    Action action = sr->getBestAction(current_state);
+    extended_model.takeAction(current_state_sr, action, unused_reward, next_state, unused_terminal,
                               unused_depth_count, rng, unused_time_loss, unused_utility_loss, frame_vector);
 
     BOOST_FOREACH(State &state, frame_vector) {
-      img = base_image.clone();
-      model.drawState(state, img);
+      img_sr = base_image.clone();
+      model.drawState(state, img_sr);
       std::stringstream ss;
       ss << actions[counter];
-      cv::putText(img, ss.str(), cv::Point2f(22, img.rows-22), CV_FONT_HERSHEY_SIMPLEX, 0.75, cv::Scalar(0, 0, 0), 3);
-      cv::imshow("out", img);
-      boost::this_thread::sleep(boost::posix_time::milliseconds(0.25f * 1000.0f / params.frame_rate));
+      img_arr_sr.push_back(img_sr);
+      str_arr_sr.push_back(ss.str());
+      /* cv::putText(img, ss.str(), cv::Point2f(22, img.rows-22), CV_FONT_HERSHEY_SIMPLEX, 0.75, cv::Scalar(0, 0, 0), 3); */
+      /* boost::this_thread::sleep(boost::posix_time::milliseconds(0.25f * 1000.0f / params.frame_rate)); */
     }
 
-    if (actions[counter].type != WAIT) {
-      boost::this_thread::sleep(boost::posix_time::milliseconds(4000.0f));
-    }
-
-    current_state = next_state;
-
-    //std::cin.ignore();
-
-    ++counter;
+    current_state_sr = next_state;
   }
+
+  img_arr_sr.push_back(img_sr);
+  str_arr_sr.push_back("Episode Finished");
+
+  while (current_state_mcts.loc_node != goal_idx) {
+    Action action = mcts->getBestAction(current_state);
+    extended_model.takeAction(current_state_mcts, action, unused_reward, next_state, unused_terminal,
+                              unused_depth_count, rng, unused_time_loss, unused_utility_loss, frame_vector);
+
+    BOOST_FOREACH(State &state, frame_vector) {
+      img_mcts = base_image.clone();
+      model.drawState(state, img_mcts);
+      std::stringstream ss;
+      ss << actions[counter];
+      img_arr_mcts.push_back(img_mcts);
+      str_arr_mcts.push_back(ss.str());
+      /* cv::putText(img, ss.str(), cv::Point2f(22, img.rows-22), CV_FONT_HERSHEY_SIMPLEX, 0.75, cv::Scalar(0, 0, 0), 3); */
+      /* boost::this_thread::sleep(boost::posix_time::milliseconds(0.25f * 1000.0f / params.frame_rate)); */
+    }
+
+    current_state_mcts = next_state;
+  }
+
+  img_arr_mcts.push_back(img_mcts);
+  str_arr_mcts.push_back("Episode Finished");
+
+  int max_counter = std::max(img_arr_sr.size(), img_arr_mcts.size());
+
 
   return 0;
 }

@@ -11,7 +11,10 @@
 #include <tf/transform_datatypes.h>
 
 #include <bwi_guidance_msgs/UpdateGuidanceGui.h>
+#include <bwi_guidance_solver/mrn/abstract_mapping.h>
 #include <bwi_guidance_solver/mrn/base_robot_navigator.h>
+#include <bwi_guidance_solver/mrn/single_robot_solver.h>
+#include <bwi_rl/planning/ModelUpdaterSingle.h>
 
 namespace bwi_guidance_solver {
 
@@ -81,15 +84,40 @@ namespace bwi_guidance_solver {
         episode_in_progress_ = true;
         at_episode_start_ = true;
         goal_node_id_ = goal->goal_node_id;
-      }
 
-      model_.reset(new RestrictedModel(graph_,
-                                       map_,
-                                       goal_node_id_,
-                                       motion_model_,
-                                       human_decision_model_,
-                                       task_generation_model_,
-                                       RestrictedModel::Params()));
+        model_.reset(new RestrictedModel(graph_,
+                                         map_,
+                                         goal_node_id_,
+                                         motion_model_,
+                                         human_decision_model_,
+                                         task_generation_model_,
+                                         RestrictedModel::Params()));
+
+        boost::shared_ptr<ModelUpdaterSingle<ExtendedState, Action> >
+          mcts_model_updator(new ModelUpdaterSingle<ExtendedState, Action>(model_));
+        boost::shared_ptr<StateMapping<ExtendedState> > mcts_state_mapping;
+        mcts_state_mapping.reset(new AbstractMapping);
+
+        boost::shared_ptr<SingleRobotSolver> default_policy;
+        default_policy.reset(new SingleRobotSolver);
+
+        // TODO fill this from the current solver values.
+        Json::Value empty_json; // Force the single robot solver to use default parameters.
+        std::vector<int> empty_robot_home_base(available_robot_list_.size(), 0);
+        std::string base_directory = "/tmp";
+        Domain::Params domain_params;
+        default_policy->initialize(domain_params, empty_json, map_, graph_, empty_robot_home_base, base_directory);
+        default_policy->reset(0, goal_node_id_);
+        MultiThreadedMCTS<ExtendedState, ExtendedStateHash, Action>::Params mcts_params;
+
+        mcts_.reset(new MultiThreadedMCTS<ExtendedState, ExtendedStateHash, Action>(default_policy,
+                                                                                    mcts_model_updator,
+                                                                                    mcts_state_mapping,
+                                                                                    master_rng_,
+                                                                                    mcts_params));
+
+        ROS_INFO_NAMED("BaseRobotNavigator", "Execute ended!");
+      }
 
       while (ros::ok()) {
         /* restricted mutex scope */ {
@@ -155,7 +183,10 @@ namespace bwi_guidance_solver {
         rs.loc_u = -1;
         rs.loc_v = -1;
         rs.loc_p = 0.0f;
-        rs.tau_d = -1; // No location initialized.
+
+        rs.tau_d = -1; // Get Starting task.
+        getNextTaskForRobot(i, rs);
+
         rs.help_destination = NONE;
 
         system_state_.robots.push_back(rs);
@@ -240,6 +271,8 @@ namespace bwi_guidance_solver {
             }
           }
 
+          std::cout << system_state_ << std::endl;
+
           if (all_robot_locations_available) {
             bool its_decision_time = false;
             if (episode_in_progress_ && !terminate_episode_) {
@@ -255,6 +288,12 @@ namespace bwi_guidance_solver {
                 int loc;
                 determineStartLocation(human_location_, loc);
                 system_state_.loc_node = system_state_.loc_prev = loc;
+                system_state_.assist_loc = NONE;
+                system_state_.assist_type = NONE;
+                ROS_INFO_STREAM_NAMED("base_robot_navigator", "System state at start determined: " << system_state_);
+                wait_start_state_ = system_state_;
+                mcts_->restart();
+                compute(5.0f);
                 at_episode_start_ = false;
                 its_decision_time = true;
               } else {
@@ -276,6 +315,9 @@ namespace bwi_guidance_solver {
                     system_state_.loc_node = next_loc;
                     system_state_.assist_type = NONE;
                     system_state_.assist_loc = NONE;
+                    wait_start_state_ = system_state_;
+                    mcts_->restart();
+                    compute(5.0f);
                     its_decision_time = true;
                   }
                 }
@@ -292,6 +334,7 @@ namespace bwi_guidance_solver {
             if (its_decision_time) {
               while (true) {
                 Action action = getBestAction();
+                ROS_INFO_STREAM_NAMED("base_robot_navigator", "taking action " << action);
                 if (action.type != WAIT) {
                   // See if the action requires some interaction with the GUI.
                   if (action.type == DIRECT_PERSON) {
@@ -304,6 +347,7 @@ namespace bwi_guidance_solver {
                     bwi_guidance_msgs::UpdateGuidanceGui srv;
                     srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::SHOW_FOLLOWME;
                     robot_gui_controller_[action.robot_id]->call(srv);
+                    robot_command_status_[action.robot_id] = SERVICE_TASK_NAVIGATION_RESET;
                   }
                   // Perform the deterministic transition as per the model
                   ExtendedState next_state;
@@ -316,6 +360,7 @@ namespace bwi_guidance_solver {
                   system_state_ = next_state;
                 } else {
                   // Let's switch to non-deterministic transition logic.
+                  wait_start_state_ = system_state_;
                   wait_action_start_time_ = boost::posix_time::microsec_clock::local_time();
                   break;
                 }
@@ -327,7 +372,6 @@ namespace bwi_guidance_solver {
 
               // Check if a robot service task is still being initialized, or was just completed.
               if (robot_command_status_[robot_idx] == INITIALIZED) {
-                getNextTaskForRobot(robot_idx, rs);
                 robot_command_status_[robot_idx] = SERVICE_TASK_NAVIGATION_RESET;
                 if (!episode_in_progress_) {
                   bwi_guidance_msgs::UpdateGuidanceGui srv;
@@ -336,7 +380,7 @@ namespace bwi_guidance_solver {
                 }
               } else if (robot_command_status_[robot_idx] == AT_SERVICE_TASK_LOCATION) {
                 if (rs.tau_t == 0.0f) {
-                  ROS_INFO_STREAM_NAMED("BaseRobotNavigator", available_robot_list_[robot_idx] << " reached service task location.");
+                  ROS_DEBUG_STREAM_NAMED("BaseRobotNavigator", available_robot_list_[robot_idx] << " reached service task location.");
                   rs.tau_t = 1.0f / controller_thread_frequency_;
                   // The second term tries to average for discretization errors. TODO think about this some more when
                   // not sleepy.
@@ -346,7 +390,7 @@ namespace bwi_guidance_solver {
                   boost::posix_time::time_duration diff =
                     boost::posix_time::microsec_clock::local_time() - robot_service_task_start_time_[robot_idx];
                   rs.tau_t = diff.total_milliseconds() / 1000.0f;
-                  ROS_INFO_STREAM_NAMED("BaseRobotNavigator", available_robot_list_[robot_idx] << " has been at service task location for " << rs.tau_t << " seconds.");
+                  ROS_DEBUG_STREAM_NAMED("BaseRobotNavigator", available_robot_list_[robot_idx] << " has been at service task location for " << rs.tau_t << " seconds.");
                 }
                 if (rs.tau_t > rs.tau_total_task_time) {
                   // This service task is now complete. Get a new task.
@@ -426,9 +470,10 @@ namespace bwi_guidance_solver {
 
     void BaseRobotNavigator::determineHumanTransitionalLocation(const geometry_msgs::Pose &pose,
                                                                 int current_loc,
-                                                                int next_loc) {
+                                                                int& next_loc) {
       bwi_mapper::Point2f human_pt(pose.position.x, pose.position.y);
-      int next_graph_id = bwi_mapper::getClosestEdgeOnGraphGivenId(human_pt, graph_, current_loc);
+      bwi_mapper::Point2f human_grid_pt = bwi_mapper::toGrid(human_pt, map_.info);
+      int next_graph_id = bwi_mapper::getClosestEdgeOnGraphGivenId(human_grid_pt, graph_, current_loc);
       bwi_mapper::Point2f current_pt = getLocationFromGraphId(current_loc);
       bwi_mapper::Point2f next_pt = getLocationFromGraphId(next_graph_id);
       if (bwi_mapper::getMagnitude(next_pt - human_pt) <= 1.5f) {
@@ -485,8 +530,7 @@ namespace bwi_guidance_solver {
     }
 
     Action BaseRobotNavigator::getBestAction() {
-      // TODO switch to MCTS getBestAction.
-      return Action(WAIT);
+      return mcts_->selectWorldAction(system_state_);
     }
 
     void BaseRobotNavigator::getNextTaskForRobot(int robot_id, RobotState &rs) {
@@ -494,8 +538,8 @@ namespace bwi_guidance_solver {
     }
 
     void BaseRobotNavigator::compute(float timeout) {
-      // TODO switch to mcts compute.
-      boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f * timeout));
+      unsigned int unused_rollout_termination_count;
+      mcts_->search(wait_start_state_, unused_rollout_termination_count, timeout);
     }
 
   } /* mrn */

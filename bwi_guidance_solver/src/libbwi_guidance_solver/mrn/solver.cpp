@@ -4,10 +4,10 @@ namespace bwi_guidance_solver {
 
   namespace mrn {
 
-    bool Solver::initialize(Domain::Params &domain_params, 
-                            Json::Value &params, 
+    bool Solver::initialize(Domain::Params &domain_params,
+                            Json::Value &params,
                             const nav_msgs::OccupancyGrid &map,
-                            const bwi_mapper::Graph &graph, 
+                            const bwi_mapper::Graph &graph,
                             const std::vector<int> &robot_home_base,
                             const std::string &base_directory) {
       domain_params_ = domain_params;
@@ -31,12 +31,12 @@ namespace bwi_guidance_solver {
       goal_idx_ = goal_idx;
 
       // Initialize the transition model.
-      motion_model_.reset(new MotionModel(graph_, 
+      motion_model_.reset(new MotionModel(graph_,
                                           domain_params_.robot_speed / map_.info.resolution,
-                                          domain_params_.human_speed / map_.info.resolution)); 
+                                          domain_params_.human_speed / map_.info.resolution));
 
-      task_generation_model_.reset(new TaskGenerationModel(robot_home_base_, 
-                                                           graph_, 
+      task_generation_model_.reset(new TaskGenerationModel(robot_home_base_,
+                                                           graph_,
                                                            domain_params_.utility_multiplier));
 
       human_decision_model_.reset(new HumanDecisionModel(graph_));
@@ -45,9 +45,9 @@ namespace bwi_guidance_solver {
       PersonModel::Params params;
       params.frame_rate = 0.0f; // This version of the model should never visualize, as it is used for sampling only.
 
-      model_.reset(new PersonModel(graph_, 
-                                   map_, 
-                                   goal_idx_, 
+      model_.reset(new PersonModel(graph_,
+                                   map_,
+                                   goal_idx_,
                                    motion_model_,
                                    human_decision_model_,
                                    task_generation_model_,
@@ -57,7 +57,7 @@ namespace bwi_guidance_solver {
       this->resetSolverSpecific();
     }
 
-    std::map<std::string, std::string> Solver::getParamsAsMap() { 
+    std::map<std::string, std::string> Solver::getParamsAsMap() {
       return this->getParamsAsMapSolverSpecific();
     }
 
@@ -66,7 +66,7 @@ namespace bwi_guidance_solver {
     void Solver::precomputeAndSavePolicy(int problem_identifier) {}
     void Solver::performEpisodeStartComputation(const ExtendedState &state) {}
     void Solver::performPostActionComputation(const ExtendedState &state, float time, bool new_action) {}
-    std::map<std::string, std::string> Solver::getParamsAsMapSolverSpecific() { 
+    std::map<std::string, std::string> Solver::getParamsAsMapSolverSpecific() {
       return std::map<std::string, std::string>();
     }
   } /* irm - InstantaneousRobotMotion */

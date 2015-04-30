@@ -18,13 +18,13 @@ class SimpleTaskGenerationModel : public TaskGenerationModel {
         if (robot.tau_d == -1) {
           robot.tau_d = task_list[robot_id][0];
           robot.tau_t = 0.0f;
-          robot.tau_total_task_time = 10.0f;
+          robot.tau_total_task_time = 30.0f;
           robot.tau_u = 1.0f;
           break;
         } else if (task_list[robot_id][i] == robot.tau_d) {
           robot.tau_d = task_list[robot_id][(i+1)%task_list[robot_id].size()];
           robot.tau_t = 0.0f;
-          robot.tau_total_task_time = 10.0f;
+          robot.tau_total_task_time = 30.0f;
           robot.tau_u = 1.0f;
           break;
         }

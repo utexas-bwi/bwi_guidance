@@ -19,6 +19,7 @@
 #include <bwi_guidance_solver/mrn/restricted_model.h>
 #include <bwi_guidance_solver/mrn/transition_model.h>
 #include <bwi_guidance_solver/mrn/extended_structures.h>
+#include <bwi_guidance_solver/mrn/mcts_solver.h>
 
 namespace bwi_guidance_solver {
 
@@ -87,7 +88,7 @@ namespace bwi_guidance_solver {
 
         void execute(const bwi_guidance_msgs::MultiRobotNavigationGoalConstPtr &goal);
         void sendRobotToDestination(int robot_idx, int destination, float orientation = 0.0f);
-        void determineHumanTransitionalLocation(const geometry_msgs::Pose &pose, int current_loc, int next_loc);
+        void determineHumanTransitionalLocation(const geometry_msgs::Pose &pose, int current_loc, int &next_loc);
         void determineStartLocation(const geometry_msgs::Pose &pose, int &u, int &v, float &p);
         void determineStartLocation(const geometry_msgs::Pose &pose, int &u);
         void determineRobotTransitionalLocation(const geometry_msgs::Pose &pose, RobotState &rs);
@@ -95,6 +96,7 @@ namespace bwi_guidance_solver {
         bwi_mapper::Point2f getLocationFromGraphId(int destination);
 
         ExtendedState system_state_;
+        ExtendedState wait_start_state_;
         boost::mutex episode_modification_mutex_;
 
         boost::shared_ptr<ros::NodeHandle> nh_;
@@ -125,6 +127,7 @@ namespace bwi_guidance_solver {
         boost::shared_ptr<TaskGenerationModel> task_generation_model_;
         boost::shared_ptr<MotionModel> motion_model_;
         boost::shared_ptr<HumanDecisionModel> human_decision_model_;
+        boost::shared_ptr<MultiThreadedMCTS<ExtendedState, ExtendedStateHash, Action> > mcts_;
         boost::shared_ptr<RNG> master_rng_;
 
     };
