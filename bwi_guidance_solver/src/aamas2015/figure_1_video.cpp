@@ -9,6 +9,17 @@
 using namespace bwi_guidance_solver;
 using namespace bwi_guidance_solver::mrn;
 
+void constructFinalImage(cv::Mat &img_final, 
+                         const std::string &str_sr.
+                         const cv::Mat &img_sr,
+                         const std::string &str_sr.
+                         const cv::Mat &img_sr) {
+  
+
+  cv::Rect
+  
+}
+
 int main(int argc, const char *argv[]) {
 
   int seed = 0;
@@ -104,7 +115,7 @@ int main(int argc, const char *argv[]) {
   img_mcts = img_sr.clone();
   cv::Mat img_final;
   std::string text_sr = "Episode Starting...";
-  constructFinalImage(img_final, "Episode Starting...", img_sr, "Episode Starting...", Startimg_mcts);
+  constructFinalImage(img_final, "Episode Starting...", img_sr, "Episode Starting...", img_mcts);
   cv::imshow("out", img_final);
   boost::this_thread::sleep(boost::posix_time::milliseconds(5000.0f));
 
