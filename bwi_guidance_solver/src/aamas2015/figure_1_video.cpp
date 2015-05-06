@@ -13,17 +13,19 @@
 using namespace bwi_guidance_solver;
 using namespace bwi_guidance_solver::mrn;
 
+int text_height = 70;
+int crop_border = 30;
+int padding = 15;
+float scale = 1.5f;
+
+// TODO do single image function!
+
 void constructFinalImage(cv::Mat &img_final, 
                          const std::string &str_sr,
                          const cv::Mat &img_sr,
                          const std::string &str_mcts,
                          const cv::Mat &img_mcts) {
   
-  int text_height = 70;
-  int crop_border = 30;
-  int padding = 15;
-  float scale = 1.5f;
-
   int final_img_height = img_sr.rows + 2 * text_height - 2 * crop_border;
   int final_img_width = 2 * img_sr.cols - 4 * crop_border;
 
@@ -57,6 +59,10 @@ int main(int argc, const char *argv[]) {
   int seed = 0;
   if (argc > 1) {
     seed = atoi(argv[1]);
+  }
+  float search_time = 10.0f;
+  if (argc > 2) {
+    search_time = atof(argv[2]);
   }
 
   std::string map_file = "package://bwi_guidance/maps/map3.yaml";
@@ -173,7 +179,7 @@ int main(int argc, const char *argv[]) {
   ExtendedState current_state_mcts = current_state_sr;
   unsigned int unused_rollout_termination_count;
   std::cout << "Starting initial mcts search" << std::endl;
-  mcts->search(current_state_mcts, unused_rollout_termination_count, 80.0f);
+  mcts->search(current_state_mcts, unused_rollout_termination_count, search_time);
   std::cout << "Ending initial mcts search" << std::endl;
 
   // Draw the original state and wait 8 seconds.
@@ -183,7 +189,7 @@ int main(int argc, const char *argv[]) {
   cv::Mat img_final;
   std::string text_sr = "Episode Starting...";
   constructFinalImage(img_final, "Episode Starting...", img_sr, "Episode Starting...", img_mcts);
-  cv::imshow("out", img_final);
+  cv::imshow("out", img_mcts);
   boost::this_thread::sleep(boost::posix_time::milliseconds(5000.0f));
 
   std::cout << "Initiailizing video write." << std::endl;
@@ -224,6 +230,8 @@ int main(int argc, const char *argv[]) {
     BOOST_FOREACH(State &state, frame_vector) {
       img_mcts = base_image.clone();
       model->drawState(state, img_mcts);
+      cv::imshow("out", img_mcts);
+      boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f/params.frame_rate));
       std::stringstream ss;
       ss << action;
       img_arr_mcts.push_back(img_mcts);
@@ -232,9 +240,9 @@ int main(int argc, const char *argv[]) {
 
     current_state_mcts = next_state;
 
-    if (action.type == WAIT) {
+    if (action.type == WAIT && current_state_mcts.loc_node != goal_idx) {
       mcts->restart();
-      mcts->search(current_state_mcts, unused_rollout_termination_count, 100.0f);
+      mcts->search(current_state_mcts, unused_rollout_termination_count, search_time);
     }
 
   }
