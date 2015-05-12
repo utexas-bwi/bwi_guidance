@@ -386,7 +386,7 @@ namespace bwi_guidance_solver {
       drawCheckeredFlagOnImage(image, goal_loc);
 
       for (int i = 0; i < draw_robots.size(); ++i) {
-        drawRobotOnImage(image, draw_robots[i].first + cv::Point2f(6, 6), draw_robots[i].second); 
+        drawRobotOnImage(image, draw_robots[i].first + cv::Point2f(9, 6), draw_robots[i].second); 
       }
 
       cv::Point2f human_pos = (1 - state.loc_p) * bwi_mapper::getLocationFromGraphId(state.loc_node, graph_);
@@ -397,7 +397,7 @@ namespace bwi_guidance_solver {
       }
 
       // Offset for person
-      human_pos.x -= 6;
+      human_pos.x -= 9;
       human_pos.y -= 0;
       drawPersonOnImage(image, human_pos);
 

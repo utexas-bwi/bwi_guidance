@@ -100,44 +100,44 @@ namespace bwi_guidance_solver {
   void drawPersonOnImage(cv::Mat &image, const cv::Point2f &loc) {
 
     // Draw head
-    cv::Point2f head_center = loc; head_center.y -= 12;
-    cv::circle(image, head_center, 7, cv::Scalar(192, 226, 255), -1, CV_AA); 
-    cv::circle(image, head_center, 7, cv::Scalar(0, 0, 0), 1, CV_AA); 
+    cv::Point2f head_center = loc; head_center.y -= 18;
+    cv::circle(image, head_center, 10, cv::Scalar(192, 226, 255), -1, CV_AA); 
+    cv::circle(image, head_center, 10, cv::Scalar(0, 0, 0), 1, CV_AA); 
 
     // Draw torso
     cv::Point torso_loc = loc;
-    cv::Rect rect(torso_loc.x - 5, torso_loc.y - 5, 11, 12);
+    cv::Rect rect(torso_loc.x - 7, torso_loc.y - 7, 15, 18);
     cv::rectangle(image, rect, cv::Scalar(255, 137, 7), -1, CV_AA); 
     cv::rectangle(image, rect, cv::Scalar(0, 0, 0), 1, CV_AA); 
 
     // Draw legs
-    cv::Point legs_loc = loc; legs_loc.y += 12;
-    rect = cv::Rect(legs_loc.x - 5, legs_loc.y - 5, 11, 12);
+    cv::Point legs_loc = loc; legs_loc.y += 18;
+    rect = cv::Rect(legs_loc.x - 7, legs_loc.y - 7, 15, 18);
     cv::rectangle(image, rect, cv::Scalar(138, 138, 138), -1, CV_AA); 
     cv::rectangle(image, rect, cv::Scalar(0, 0, 0), 1, CV_AA); 
-    cv::line(image, legs_loc+cv::Point(0, -4), legs_loc+cv::Point(0, 6), cv::Scalar(0, 0, 0), 1, CV_AA);
+    cv::line(image, legs_loc+cv::Point(0, -6), legs_loc+cv::Point(0, 8), cv::Scalar(0, 0, 0), 1, CV_AA);
 
   }
 
   void drawRobotOnImage(cv::Mat &image, const cv::Point2f &loc, const cv::Scalar &color) {
 
     // Draw head
-    cv::Point head_center = loc; head_center.y -= 7;
-    cv::line(image, head_center - cv::Point(0, 12), head_center - cv::Point(0, 6), cv::Scalar(0, 0, 0), 1, CV_AA); 
-    cv::circle(image, head_center - cv::Point(0, 12), 3, cv::Scalar(0, 0, 0), -1, CV_AA); 
-    cv::circle(image, head_center, 7, color, -1, CV_AA); 
-    cv::circle(image, head_center, 7, cv::Scalar(0,0,0), 1, CV_AA); 
+    cv::Point head_center = loc; head_center.y -= 10;
+    cv::line(image, head_center - cv::Point(0, 18), head_center - cv::Point(0, 9), cv::Scalar(0, 0, 0), 1, CV_AA); 
+    cv::circle(image, head_center - cv::Point(0, 18), 4, cv::Scalar(0, 0, 0), -1, CV_AA); 
+    cv::circle(image, head_center, 10, color, -1, CV_AA); 
+    cv::circle(image, head_center, 10, cv::Scalar(0,0,0), 1, CV_AA); 
 
     // Draw torso
     cv::Point torso_loc = loc;
-    cv::Rect rect(torso_loc.x - 7, torso_loc.y - 7, 15, 14);
+    cv::Rect rect(torso_loc.x - 10, torso_loc.y - 10, 21, 20);
     cv::rectangle(image, rect, color, -1, CV_AA); 
     cv::rectangle(image, rect, cv::Scalar(0, 0, 0), 1, CV_AA); 
 
     // Draw legs
-    cv::Point legs_loc = loc; legs_loc.y += 7;
-    cv::line(image, legs_loc+cv::Point(-4, 0), legs_loc+cv::Point(-4, 5), cv::Scalar(0, 0, 0), 2, CV_AA);
-    cv::line(image, legs_loc+cv::Point(4, 0), legs_loc+cv::Point(4, 5), cv::Scalar(0, 0, 0), 2, CV_AA);
+    cv::Point legs_loc = loc; legs_loc.y += 10;
+    cv::line(image, legs_loc+cv::Point(-6, 0), legs_loc+cv::Point(-6, 7), cv::Scalar(0, 0, 0), 2, CV_AA);
+    cv::line(image, legs_loc+cv::Point(6, 0), legs_loc+cv::Point(6, 7), cv::Scalar(0, 0, 0), 2, CV_AA);
 
   }
 
@@ -145,7 +145,7 @@ namespace bwi_guidance_solver {
 
     int num_rows = 4;
     int num_cols = 6;
-    int square_size = 5;
+    int square_size = 9;
 
     for (int row = 0; row < num_rows; ++row) {
       bool draw_black = (row % 2) == 0;
@@ -168,11 +168,11 @@ namespace bwi_guidance_solver {
     int screen_size_x = 80;
 
     int screen_size_y = (screen_size_x * 3) / 4;
-    cv::Rect rect(robot_loc.x + screen_size_x / 6, robot_loc.y - screen_size_y / 2, screen_size_x, screen_size_y);
+    cv::Rect rect(robot_loc.x + screen_size_x / 3, robot_loc.y - screen_size_y / 2, screen_size_x, screen_size_y);
     cv::rectangle(image, rect, cv::Scalar(255, 255, 255), -1, CV_AA); 
     cv::rectangle(image, rect, cv::Scalar(0, 0, 0), 2, CV_AA); 
 
-    bwi_mapper::drawArrowOnImage(image, robot_loc + cv::Point2f((2 * screen_size_x) / 3, 0), orientation + M_PI / 2, 
+    bwi_mapper::drawArrowOnImage(image, robot_loc + cv::Point2f((5 * screen_size_x) / 6, 0), orientation + M_PI / 2, 
                                  cv::Scalar(0, 0, 0), screen_size_x / 4, screen_size_x / 40);
   }
 
@@ -181,12 +181,12 @@ namespace bwi_guidance_solver {
     int screen_size_x = 80;
 
     int screen_size_y = (screen_size_x * 3) / 4;
-    cv::Rect rect(robot_loc.x + screen_size_x / 6, robot_loc.y - screen_size_y / 2, screen_size_x, screen_size_y);
+    cv::Rect rect(robot_loc.x + screen_size_x / 3, robot_loc.y - screen_size_y / 2, screen_size_x, screen_size_y);
     cv::rectangle(image, rect, cv::Scalar(255, 255, 255), -1, CV_AA); 
     cv::rectangle(image, rect, cv::Scalar(0, 0, 0), 2, CV_AA); 
 
-    cv::putText(image, "FOLLOW", robot_loc + cv::Point2f(20, -4), CV_FONT_HERSHEY_SIMPLEX, 0.53, cv::Scalar(0, 0, 0), 2);
-    cv::putText(image, "ME", robot_loc + cv::Point2f(40, 12), CV_FONT_HERSHEY_SIMPLEX, 0.53, cv::Scalar(0, 0, 0), 2);
+    cv::putText(image, "FOLLOW", robot_loc + cv::Point2f(34, -4), CV_FONT_HERSHEY_SIMPLEX, 0.53, cv::Scalar(0, 0, 0), 2);
+    cv::putText(image, "ME", robot_loc + cv::Point2f(54, 12), CV_FONT_HERSHEY_SIMPLEX, 0.53, cv::Scalar(0, 0, 0), 2);
   }
 
 } /* bwi_guidance */

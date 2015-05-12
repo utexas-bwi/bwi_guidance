@@ -1,3 +1,4 @@
+#include <boost/algorithm/string/join.hpp>
 #include <boost/thread/thread.hpp>
 #include <bwi_guidance_solver/mrn/abstract_mapping.h>
 #include <bwi_guidance_solver/mrn/restricted_model.h>
@@ -19,6 +20,32 @@ int padding = 15;
 float scale = 1.5f;
 
 // TODO do single image function!
+void constructSingleImage(cv::Mat &img_final, 
+    const std::string &str,
+    const cv::Mat &img) {
+
+  int final_img_height = img.rows - 2 * crop_border;
+  int final_img_width = (4 * final_img_height) / 3;
+
+  img_final = cv::Mat(final_img_height, final_img_width, CV_8UC3, cv::Scalar(255, 255, 255));
+
+  cv::Rect source_roi(cv::Point(crop_border, crop_border), cv::Size(img.cols - 2 * crop_border, img.rows - 2 * crop_border));
+
+  // Copy over cropped image.
+  cv::Rect dest_roi(cv::Point(0, 0), cv::Size(img.cols - 2 * crop_border, img.rows - 2 * crop_border));
+  cv::Mat destination_img = img_final(dest_roi);
+  cv::Mat cropped_sr = img(source_roi);
+  cropped_sr.copyTo(destination_img);
+
+  // Left side text.
+  std::vector<std::string> results;
+  boost::split(results, str, boost::is_any_of("|"));
+  int counter = 0;
+  BOOST_FOREACH(const std::string &result, results) {
+    cv::putText(img_final, result, cv::Point2f(final_img_height + padding/2, final_img_height/2 + counter), CV_FONT_HERSHEY_SIMPLEX, 0.75f, cv::Scalar(0, 0, 0), 2);
+    counter += 25;
+  }
+}
 
 void constructFinalImage(cv::Mat &img_final, 
                          const std::string &str_sr,
@@ -46,12 +73,12 @@ void constructFinalImage(cv::Mat &img_final,
   cropped_mcts.copyTo(destination_img);
 
   // Left side text.
-  cv::putText(img_final, "Starting-Robot Solution", cv::Point2f(padding, text_height - padding), CV_FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(0, 0, 0), 3);
-  cv::putText(img_final, str_sr, cv::Point2f(padding, final_img_height - 2 * padding), CV_FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(0, 0, 0), 3);
+  cv::putText(img_final, "Starting-Robot Solution", cv::Point2f(padding, text_height - padding), CV_FONT_HERSHEY_SIMPLEX, 1.0f, cv::Scalar(0, 0, 0), 3);
+  cv::putText(img_final, str_sr, cv::Point2f(padding, final_img_height - 2 * padding), CV_FONT_HERSHEY_SIMPLEX, 1.0f, cv::Scalar(0, 0, 0), 3);
 
   // Right side text.
-  cv::putText(img_final, "Multi-Robot MCTS Solution", cv::Point2f(final_img_width / 2 + padding, text_height - padding), CV_FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(0, 0, 0), 3);
-  cv::putText(img_final, str_mcts, cv::Point2f(final_img_width / 2 + padding, final_img_height - 2 * padding), CV_FONT_HERSHEY_SIMPLEX, scale, cv::Scalar(0, 0, 0), 3);
+  cv::putText(img_final, "Multi-Robot MCTS Solution", cv::Point2f(final_img_width / 2 + padding, text_height - padding), CV_FONT_HERSHEY_SIMPLEX, 1.0f, cv::Scalar(0, 0, 0), 3);
+  cv::putText(img_final, str_mcts, cv::Point2f(final_img_width / 2 + padding, final_img_height - 2 * padding), CV_FONT_HERSHEY_SIMPLEX, 1.0f, cv::Scalar(0, 0, 0), 3);
 }
 
 int main(int argc, const char *argv[]) {
@@ -192,38 +219,64 @@ int main(int argc, const char *argv[]) {
   cv::imshow("out", img_mcts);
   boost::this_thread::sleep(boost::posix_time::milliseconds(5000.0f));
 
+  cv::Mat img_sr_final, img_mcts_final;
+  constructSingleImage(img_sr_final, "Episode Starting...", img_sr);
+  constructSingleImage(img_mcts_final, "Episode Starting...", img_mcts);
+
+  cv::imwrite("/tmp/start.jpg", img_sr_final);
   std::cout << "Initiailizing video write." << std::endl;
-  cv::VideoWriter writer("/tmp/guidance.avi", CV_FOURCC('I', 'Y', 'U', 'V'), params.frame_rate, img_final.size());
-  for (int i = 0; i < 5.0f / params.frame_rate; ++i) {
+  cv::VideoWriter writer("/tmp/guidance.avi", CV_FOURCC('I', 'Y', 'U', 'V'), 2*params.frame_rate, img_final.size());
+  cv::VideoWriter writer_sr("/tmp/guidance_sr.avi", CV_FOURCC('I', 'Y', 'U', 'V'), 2*params.frame_rate, img_sr_final.size());
+  cv::VideoWriter writer_mcts("/tmp/guidance_mcts.avi", CV_FOURCC('I', 'Y', 'U', 'V'), 2*params.frame_rate, img_mcts_final.size());
+  for (int i = 0; i < 5.0f * params.frame_rate; ++i) {
     writer.write(img_final);
+    writer_sr.write(img_sr_final);
+    writer_mcts.write(img_mcts_final);
   }
   std::cout << "Video write initialization complete." << std::endl;
 
   std::vector<cv::Mat> img_arr_sr, img_arr_mcts;
   std::vector<std::string> str_arr_sr, str_arr_mcts;
 
+  std::vector<std::string> action_texts;
+
   while (current_state_sr.loc_node != goal_idx) {
     Action action = sr->getBestAction(current_state_sr);
+    if (action.type != WAIT) {
+      std::stringstream ss;
+      ss << action;
+      action_texts.push_back(ss.str());
+    }
+
     model->takeAction(current_state_sr, action, unused_reward, next_state, unused_terminal,
                               unused_depth_count, rng, unused_time_loss, unused_utility_loss, frame_vector);
 
     BOOST_FOREACH(State &state, frame_vector) {
       img_sr = base_image.clone();
       model->drawState(state, img_sr);
-      std::stringstream ss;
-      ss << action;
       img_arr_sr.push_back(img_sr);
-      str_arr_sr.push_back(ss.str());
+      str_arr_sr.push_back(boost::algorithm::join(action_texts, "|"));
     }
 
     current_state_sr = next_state;
+
+    if (action.type == WAIT) {
+      action_texts.clear();
+    }
   }
 
   img_arr_sr.push_back(img_sr);
   str_arr_sr.push_back("Episode Finished");
 
+  action_texts.clear();
+
   while (current_state_mcts.loc_node != goal_idx) {
     Action action = mcts->selectWorldAction(current_state_mcts);
+    if (action.type != WAIT) {
+      std::stringstream ss;
+      ss << action;
+      action_texts.push_back(ss.str());
+    }
     model->takeAction(current_state_mcts, action, unused_reward, next_state, unused_terminal,
                               unused_depth_count, rng, unused_time_loss, unused_utility_loss, frame_vector);
 
@@ -231,16 +284,17 @@ int main(int argc, const char *argv[]) {
       img_mcts = base_image.clone();
       model->drawState(state, img_mcts);
       cv::imshow("out", img_mcts);
-      boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f/params.frame_rate));
+      boost::this_thread::sleep(boost::posix_time::milliseconds(100.0f/params.frame_rate));
       std::stringstream ss;
       ss << action;
       img_arr_mcts.push_back(img_mcts);
-      str_arr_mcts.push_back(ss.str());
+      str_arr_mcts.push_back(boost::algorithm::join(action_texts, "|"));
     }
 
     current_state_mcts = next_state;
 
     if (action.type == WAIT && current_state_mcts.loc_node != goal_idx) {
+      action_texts.clear();
       mcts->restart();
       mcts->search(current_state_mcts, unused_rollout_termination_count, search_time);
     }
@@ -253,9 +307,18 @@ int main(int argc, const char *argv[]) {
   int max_counter = std::max(img_arr_sr.size(), img_arr_mcts.size());
 
   for (int i = 0; i < max_counter; ++i) {
+    std::cout << "writing frame " << i + 1 << " of "  << max_counter << std::endl;
     int idx_sr = (i >= img_arr_sr.size()) ? img_arr_sr.size() - 1 : i;
     int idx_mcts = (i >= img_arr_mcts.size()) ? img_arr_mcts.size() - 1 : i;
     constructFinalImage(img_final, str_arr_sr[idx_sr], img_arr_sr[idx_sr], str_arr_mcts[idx_mcts], img_arr_mcts[idx_mcts]);
+    if (i < img_arr_sr.size()) {
+      constructSingleImage(img_sr_final, str_arr_sr[idx_sr], img_arr_sr[idx_sr]);
+      writer_sr.write(img_sr_final);
+    }
+    if (i < img_arr_mcts.size()) {
+      constructSingleImage(img_mcts_final, str_arr_mcts[idx_mcts], img_arr_mcts[idx_mcts]);
+      writer_mcts.write(img_mcts_final);
+    }
     writer.write(img_final);
   }
 
