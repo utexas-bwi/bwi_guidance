@@ -52,10 +52,13 @@
     <!-- <node name="rviz" type="rviz_runner" pkg="segbot_navigation" args="ns $(arg ns)" /> -->
 
     <!-- launch the segbot gui -->
-    <node name="gui" type="question_dialog_plugin" pkg="segbot_gui">
-      <param name="font_size" value="20" />
+    <!-- <node name="gui" type="question_dialog_plugin" pkg="segbot_gui"> -->
+    <!--   <param name="font_size" value="20" /> -->
+    <!-- </node> -->
+    <!-- <node name="gui_image" type="image_view" pkg="image_view" /> -->
+    <node name="robot_visualizer" pkg="rqt_gui" type="rqt_gui" args="--perspective-file $(find bwi_guidance_solver)/perspectives/marvin.perspective">
+      <remap from="/image" to="image" />
     </node>
-    <node name="gui_image" type="image_view" pkg="image_view" />
 
     <node name="guidance_gui" type="guidance_gui_controller" pkg="bwi_guidance_solver" />
 
