@@ -5,7 +5,7 @@
       "keys": {
         "running-plugins": {
           "type": "repr", 
-          "repr": "{u'rqt_robot_steering/RobotSteering': [1], u'rqt_image_view/ImageView': [1]}"
+          "repr": "{u'rqt_robot_steering/RobotSteering': [1], u'bwi_rqt_plugins/ImageView': [1]}"
         }
       }, 
       "groups": {
@@ -33,15 +33,15 @@
                 }, 
                 "vx_min": {
                   "type": "repr", 
-                  "repr": "-0.5"
+                  "repr": "-1.0"
                 }, 
                 "vw_min": {
                   "type": "repr", 
-                  "repr": "-1.5000000000000002"
+                  "repr": "-3.0"
                 }, 
                 "vw_max": {
                   "type": "repr", 
-                  "repr": "1.5000000000000002"
+                  "repr": "3.0"
                 }, 
                 "vx_max": {
                   "type": "repr", 
@@ -52,7 +52,7 @@
             }
           }
         }, 
-        "plugin__rqt_image_view__ImageView__1": {
+        "plugin__bwi_rqt_plugins__ImageView__1": {
           "keys": {}, 
           "groups": {
             "dock_widget__ImageViewWidget": {
@@ -67,27 +67,6 @@
                 }
               }, 
               "groups": {}
-            }, 
-            "plugin": {
-              "keys": {
-                "dynamic_range": {
-                  "type": "repr", 
-                  "repr": "False"
-                }, 
-                "max_range": {
-                  "type": "repr", 
-                  "repr": "10.0"
-                }, 
-                "topic": {
-                  "type": "repr", 
-                  "repr": "u'/person/camera/rgb/image_raw'"
-                }, 
-                "zoom1": {
-                  "type": "repr", 
-                  "repr": "False"
-                }
-              }, 
-              "groups": {}
             }
           }
         }
@@ -97,13 +76,13 @@
       "keys": {
         "geometry": {
           "type": "repr(QByteArray.hex)", 
-          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb00010000000003c0000000110000077f00000223000003c1000000120000077e00000222000000000000')", 
-          "pretty-print": "           #     ~ \"   "
+          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb0001000000000000000000110000077f0000043700000001000000120000077e00000436000000000000')", 
+          "pretty-print": "           7     ~ 6   "
         }, 
         "state": {
           "type": "repr(QByteArray.hex)", 
-          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd0000000100000003000003be000001e9fc0100000003fb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d0061006700650056006900650077005700690064006700650074010000000000000135000000c000fffffffb00000042007200710074005f007300720076005f005f00530065007200760069006300650073005f005f0031005f005f006d0065007300730061006700650073002e00750069010000016c000002520000000000000000fb0000006a007200710074005f0072006f0062006f0074005f007300740065006500720069006e0067005f005f0052006f0062006f0074005300740065006500720069006e0067005f005f0031005f005f0052006f0062006f0074005300740065006500720069006e006700550069010000013b00000283000000d800ffffff000003be0000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')", 
-          "pretty-print": "                 Zrqt_image_view__ImageView__1__ImageViewWidget          Brqt_srv__Services__1__messages.ui          jrqt_robot_steering__RobotSteering__1__RobotSteeringUi                            6MinimizedDockWidgetsToolbar        "
+          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd00000001000000030000077e000003fdfc0100000003fb0000005c006200770069005f007200710074005f0070006c007500670069006e0073005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d006100670065005600690065007700570069006400670065007401000000000000036b000000c000fffffffb00000080006200770069005f007200710074005f0070006c007500670069006e0073005f005f005100750065007300740069006f006e004400690061006c006f00670050006c007500670069006e005f005f0031005f005f005100750065007300740069006f006e004400690061006c006f00670050006c007500670069006e0055004901000000000000077e0000000000000000fb0000006a007200710074005f0072006f0062006f0074005f007300740065006500720069006e0067005f005f0052006f0062006f0074005300740065006500720069006e0067005f005f0031005f005f0052006f0062006f0074005300740065006500720069006e00670055006901000003710000040d000000d100ffffff0000077e0000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')", 
+          "pretty-print": "                 \\bwi_rqt_plugins__ImageView__1__ImageViewWidget           bwi_rqt_plugins__QuestionDialogPlugin__1__QuestionDialogPluginUI          jrqt_robot_steering__RobotSteering__1__RobotSteeringUi                            6MinimizedDockWidgetsToolbar        "
         }
       }, 
       "groups": {

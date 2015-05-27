@@ -1,7 +1,6 @@
 #ifndef BWI_GUIDANCE_SOLVER_IRM_PERSON_ESTIMATOR_H
 #define BWI_GUIDANCE_SOLVER_IRM_PERSON_ESTIMATOR_H
 
-#include <boost/lexical_cast.hpp>
 #include <stdexcept>
 #include <map>
 
@@ -17,7 +16,7 @@ namespace boost {
 namespace bwi_guidance_solver {
 
   namespace irm {
-  
+
     class PersonEstimator : public VIEstimator<State, Action> {
       public:
 

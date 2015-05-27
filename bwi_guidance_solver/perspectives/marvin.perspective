@@ -1,94 +1,73 @@
 {
-  "keys": {},
+  "keys": {}, 
   "groups": {
     "pluginmanager": {
       "keys": {
         "running-plugins": {
-          "type": "repr",
-          "repr": "{u'segbot_gui/QuestionDialogPlugin': [1], u'rqt_image_view/ImageView': [1]}"
+          "type": "repr", 
+          "repr": "{u'bwi_rqt_plugins/QuestionDialogPlugin': [1], u'bwi_rqt_plugins/ImageView': [1]}"
         }
-      },
+      }, 
       "groups": {
-        "plugin__segbot_gui__QuestionDialogPlugin__1": {
-          "keys": {},
+        "plugin__bwi_rqt_plugins__QuestionDialogPlugin__1": {
+          "keys": {}, 
           "groups": {
             "dock_widget__QuestionDialogPluginUI": {
               "keys": {
                 "dockable": {
-                  "type": "repr",
+                  "type": "repr", 
                   "repr": "True"
-                },
+                }, 
                 "parent": {
-                  "type": "repr",
+                  "type": "repr", 
                   "repr": "None"
                 }
-              },
+              }, 
               "groups": {}
             }
           }
-        },
-        "plugin__rqt_image_view__ImageView__1": {
-          "keys": {},
+        }, 
+        "plugin__bwi_rqt_plugins__ImageView__1": {
+          "keys": {}, 
           "groups": {
             "dock_widget__ImageViewWidget": {
               "keys": {
                 "dockable": {
-                  "type": "repr",
+                  "type": "repr", 
                   "repr": "True"
-                },
+                }, 
                 "parent": {
-                  "type": "repr",
+                  "type": "repr", 
                   "repr": "None"
                 }
-              },
-              "groups": {}
-            },
-            "plugin": {
-              "keys": {
-                "dynamic_range": {
-                  "type": "repr",
-                  "repr": "False"
-                },
-                "max_range": {
-                  "type": "repr",
-                  "repr": "10.0"
-                },
-                "topic": {
-                  "type": "repr",
-                  "repr": "u'/image'"
-                },
-                "zoom1": {
-                  "type": "repr",
-                  "repr": "False"
-                }
-              },
+              }, 
               "groups": {}
             }
           }
         }
       }
-    },
+    }, 
     "mainwindow": {
       "keys": {
         "geometry": {
-          "type": "repr(QByteArray.hex)",
-          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb00010000000003c0000000110000077f00000223000003c1000000120000077e00000222000000000000')",
-          "pretty-print": "           #     ~ \"   "
-        },
+          "type": "repr(QByteArray.hex)", 
+          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb0001000000000000000000110000077f0000043700000001000000120000077e00000436000000000000')", 
+          "pretty-print": "           7     ~ 6   "
+        }, 
         "state": {
-          "type": "repr(QByteArray.hex)",
-          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd0000000100000003000003be000001e9fc0100000004fb0000005a007200710074005f0069006d006100670065005f0076006900650077005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d00610067006500560069006500770057006900640067006500740100000000000001de000000c000fffffffb00000042007200710074005f007300720076005f005f00530065007200760069006300650073005f005f0031005f005f006d0065007300730061006700650073002e00750069010000016c000002520000000000000000fb0000006a007200710074005f0072006f0062006f0074005f007300740065006500720069006e0067005f005f0052006f0062006f0074005300740065006500720069006e0067005f005f0031005f005f0052006f0062006f0074005300740065006500720069006e0067005500690100000000000003be0000000000000000fb000000760073006500670062006f0074005f006700750069005f005f005100750065007300740069006f006e004400690061006c006f00670050006c007500670069006e005f005f0031005f005f005100750065007300740069006f006e004400690061006c006f00670050006c007500670069006e0055004901000001e4000001da0000007800ffffff000003be0000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')",
-          "pretty-print": "                 Zrqt_image_view__ImageView__1__ImageViewWidget          Brqt_srv__Services__1__messages.ui          jrqt_robot_steering__RobotSteering__1__RobotSteeringUi          vsegbot_gui__QuestionDialogPlugin__1__QuestionDialogPluginUI                            6MinimizedDockWidgetsToolbar        "
+          "type": "repr(QByteArray.hex)", 
+          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd00000001000000030000077e000003fdfc0100000002fb0000005c006200770069005f007200710074005f0070006c007500670069006e0073005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d00610067006500560069006500770057006900640067006500740100000000000003ac000000c000fffffffb00000080006200770069005f007200710074005f0070006c007500670069006e0073005f005f005100750065007300740069006f006e004400690061006c006f00670050006c007500670069006e005f005f0031005f005f005100750065007300740069006f006e004400690061006c006f00670050006c007500670069006e0055004901000003b2000003cc0000007800ffffff0000077e0000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')", 
+          "pretty-print": "                 \\bwi_rqt_plugins__ImageView__1__ImageViewWidget           bwi_rqt_plugins__QuestionDialogPlugin__1__QuestionDialogPluginUI                            6MinimizedDockWidgetsToolbar        "
         }
-      },
+      }, 
       "groups": {
         "toolbar_areas": {
           "keys": {
             "MinimizedDockWidgetsToolbar": {
-              "type": "repr",
+              "type": "repr", 
               "repr": "8"
             }
-          },
+          }, 
           "groups": {}
         }
       }
