@@ -5,14 +5,32 @@
       "keys": {
         "running-plugins": {
           "type": "repr", 
-          "repr": "{u'rqt_robot_steering/RobotSteering': [1], u'bwi_rqt_plugins/ImageView': [1]}"
+          "repr": "{u'bwi_rqt_plugins/SimpleRobotSteeringPlugin': [1], u'bwi_rqt_plugins/ImageView': [1]}"
         }
       }, 
       "groups": {
-        "plugin__rqt_robot_steering__RobotSteering__1": {
+        "plugin__bwi_rqt_plugins__QuestionDialogPlugin__1": {
           "keys": {}, 
           "groups": {
-            "dock_widget__RobotSteeringUi": {
+            "dock_widget__QuestionDialogPluginUI": {
+              "keys": {
+                "dockable": {
+                  "type": "repr", 
+                  "repr": "u'true'"
+                }, 
+                "parent": {
+                  "type": "repr", 
+                  "repr": "None"
+                }
+              }, 
+              "groups": {}
+            }
+          }
+        }, 
+        "plugin__bwi_rqt_plugins__SimpleRobotSteeringPlugin__1": {
+          "keys": {}, 
+          "groups": {
+            "dock_widget__SimpleRobotSteeringUi": {
               "keys": {
                 "dockable": {
                   "type": "repr", 
@@ -30,22 +48,36 @@
                 "topic": {
                   "type": "repr", 
                   "repr": "u'/person/cmd_vel'"
+                }
+              }, 
+              "groups": {}
+            }
+          }
+        }, 
+        "plugin__rqt_robot_steering__RobotSteering__1": {
+          "keys": {}, 
+          "groups": {
+            "plugin": {
+              "keys": {
+                "topic": {
+                  "type": "repr", 
+                  "repr": "u'/person/cmd_vel'"
                 }, 
                 "vx_min": {
                   "type": "repr", 
-                  "repr": "-1.0"
+                  "repr": "u'-1'"
                 }, 
                 "vw_min": {
                   "type": "repr", 
-                  "repr": "-3.0"
+                  "repr": "u'-3'"
                 }, 
                 "vw_max": {
                   "type": "repr", 
-                  "repr": "3.0"
+                  "repr": "u'3'"
                 }, 
                 "vx_max": {
                   "type": "repr", 
-                  "repr": "1.0"
+                  "repr": "u'1'"
                 }
               }, 
               "groups": {}
@@ -67,6 +99,15 @@
                 }
               }, 
               "groups": {}
+            }, 
+            "plugin": {
+              "keys": {
+                "topic": {
+                  "type": "repr", 
+                  "repr": "u'/person/camera/rgb/image_raw'"
+                }
+              }, 
+              "groups": {}
             }
           }
         }
@@ -76,13 +117,13 @@
       "keys": {
         "geometry": {
           "type": "repr(QByteArray.hex)", 
-          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb0001000000000000000000110000077f0000043700000001000000120000077e00000436000000000000')", 
-          "pretty-print": "           7     ~ 6   "
+          "repr(QByteArray.hex)": "QtCore.QByteArray('01d9d0cb00010000000003c00000028e0000077f00000362000003c10000028f0000077e00000361000000000000')", 
+          "pretty-print": "           b     ~ a   "
         }, 
         "state": {
           "type": "repr(QByteArray.hex)", 
-          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd00000001000000030000077e000003fdfc0100000003fb0000005c006200770069005f007200710074005f0070006c007500670069006e0073005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d006100670065005600690065007700570069006400670065007401000000000000036b000000c000fffffffb00000080006200770069005f007200710074005f0070006c007500670069006e0073005f005f005100750065007300740069006f006e004400690061006c006f00670050006c007500670069006e005f005f0031005f005f005100750065007300740069006f006e004400690061006c006f00670050006c007500670069006e0055004901000000000000077e0000000000000000fb0000006a007200710074005f0072006f0062006f0074005f007300740065006500720069006e0067005f005f0052006f0062006f0074005300740065006500720069006e0067005f005f0031005f005f0052006f0062006f0074005300740065006500720069006e00670055006901000003710000040d000000d100ffffff0000077e0000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')", 
-          "pretty-print": "                 \\bwi_rqt_plugins__ImageView__1__ImageViewWidget           bwi_rqt_plugins__QuestionDialogPlugin__1__QuestionDialogPluginUI          jrqt_robot_steering__RobotSteering__1__RobotSteeringUi                            6MinimizedDockWidgetsToolbar        "
+          "repr(QByteArray.hex)": "QtCore.QByteArray('000000ff00000000fd0000000100000003000003be000000abfc0100000004fb0000005c006200770069005f007200710074005f0070006c007500670069006e0073005f005f0049006d0061006700650056006900650077005f005f0031005f005f0049006d00610067006500560069006500770057006900640067006500740100000000000002b9000000c000fffffffb00000080006200770069005f007200710074005f0070006c007500670069006e0073005f005f005100750065007300740069006f006e004400690061006c006f00670050006c007500670069006e005f005f0031005f005f005100750065007300740069006f006e004400690061006c006f00670050006c007500670069006e0055004901000000000000077e0000000000000000fb0000006a007200710074005f0072006f0062006f0074005f007300740065006500720069006e0067005f005f0052006f0062006f0074005300740065006500720069006e0067005f005f0031005f005f0052006f0062006f0074005300740065006500720069006e00670055006901000001ba000002040000000000000000fb00000088006200770069005f007200710074005f0070006c007500670069006e0073005f005f00530069006d0070006c00650052006f0062006f0074005300740065006500720069006e00670050006c007500670069006e005f005f0031005f005f00530069006d0070006c00650052006f0062006f0074005300740065006500720069006e00670055006901000002bf000000ff000000ff00ffffff000003be0000000000000004000000040000000800000008fc00000001000000030000000100000036004d0069006e0069006d0069007a006500640044006f0063006b00570069006400670065007400730054006f006f006c0062006100720000000000ffffffff0000000000000000')", 
+          "pretty-print": "                 \\bwi_rqt_plugins__ImageView__1__ImageViewWidget           bwi_rqt_plugins__QuestionDialogPlugin__1__QuestionDialogPluginUI          jrqt_robot_steering__RobotSteering__1__RobotSteeringUi           bwi_rqt_plugins__SimpleRobotSteeringPlugin__1__SimpleRobotSteeringUi                            6MinimizedDockWidgetsToolbar        "
         }
       }, 
       "groups": {

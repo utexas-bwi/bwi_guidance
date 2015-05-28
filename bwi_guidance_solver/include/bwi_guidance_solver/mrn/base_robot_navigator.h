@@ -86,6 +86,9 @@ namespace bwi_guidance_solver {
 
       protected:
 
+        cv::Mat base_image_;
+        void publishCurrentSystemState();
+
         void execute(const bwi_guidance_msgs::MultiRobotNavigationGoalConstPtr &goal);
         void sendRobotToDestination(int robot_idx, int destination, float orientation = 0.0f);
         void determineHumanTransitionalLocation(const geometry_msgs::Pose &pose, int current_loc, int &next_loc);

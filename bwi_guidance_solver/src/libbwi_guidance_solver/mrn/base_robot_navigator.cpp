@@ -16,6 +16,8 @@
 #include <bwi_guidance_solver/mrn/single_robot_solver.h>
 #include <bwi_rl/planning/ModelUpdaterSingle.h>
 
+#include <opencv/highgui.h>
+
 namespace bwi_guidance_solver {
 
   namespace mrn {
@@ -57,6 +59,7 @@ namespace bwi_guidance_solver {
       mapper_.reset(new bwi_mapper::MapLoader(map_file));
       mapper_->getMapInfo(map_info_);
       mapper_->getMap(map_);
+      mapper_->drawMap(base_image_);
       bwi_mapper::readGraphFromFile(graph_file, map_info_, graph_);
       master_rng_.reset(new RNG(0));
 
@@ -68,6 +71,8 @@ namespace bwi_guidance_solver {
       human_location_available_ = false;
       human_location_subscriber_ = nh_->subscribe("/person/pose", 1, &BaseRobotNavigator::humanLocationHandler, this);
 
+      cvStartWindowThread();
+      cv::namedWindow("out");
 
     }
 
@@ -271,7 +276,6 @@ namespace bwi_guidance_solver {
             }
           }
 
-          std::cout << system_state_ << std::endl;
 
           if (all_robot_locations_available) {
             bool its_decision_time = false;
@@ -293,7 +297,7 @@ namespace bwi_guidance_solver {
                 ROS_INFO_STREAM_NAMED("base_robot_navigator", "System state at start determined: " << system_state_);
                 wait_start_state_ = system_state_;
                 mcts_->restart();
-                compute(5.0f);
+                compute(0.1f);
                 at_episode_start_ = false;
                 its_decision_time = true;
               } else {
@@ -317,11 +321,12 @@ namespace bwi_guidance_solver {
                     system_state_.assist_loc = NONE;
                     wait_start_state_ = system_state_;
                     mcts_->restart();
-                    compute(5.0f);
+                    compute(0.1f);
                     its_decision_time = true;
                   }
                 }
               }
+              publishCurrentSystemState();
             } else if (terminate_episode_) {
               terminate_episode_ = false;
               for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
@@ -447,6 +452,12 @@ namespace bwi_guidance_solver {
         }
 
       }
+    }
+
+    void BaseRobotNavigator::publishCurrentSystemState() {
+      cv::Mat img = base_image_.clone();
+      model_->drawState(system_state_, img);
+      cv::imshow("out", img);
     }
 
     void BaseRobotNavigator::sendRobotToDestination(int robot_idx, int destination, float orientation) {
