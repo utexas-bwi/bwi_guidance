@@ -82,7 +82,9 @@ void showArrowToDestination(const geometry_msgs::Pose &orientation_destination) 
   // of the robot and the destination which the robot wants to indicate.
   float destination_yaw = atan2(orientation_destination.position.y - robot_location.position.y,
                                 orientation_destination.position.x - robot_location.position.x);
-  float orientation = destination_yaw - tf::getYaw(robot_location.orientation) ;
+  float orientation = destination_yaw - tf::getYaw(robot_location.orientation);
+  while (orientation <= -M_PI) orientation += 2 * M_PI;
+  while (orientation > M_PI) orientation -= 2 * M_PI;
 
   cv::Mat rotated_image;
   int height = u_turn_image.rows, width = u_turn_image.cols;
