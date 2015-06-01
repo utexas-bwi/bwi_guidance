@@ -39,8 +39,8 @@ namespace bwi_guidance_solver {
 
       // TODO: Parametrize!
       controller_thread_frequency_ = 2.0f;
-      avg_human_speed_ = 0.75f;
-      avg_robot_speed_ = 0.4f;
+      avg_human_speed_ = 0.8f;
+      avg_robot_speed_ = 0.6f;
 
       // Read the graph from file.
       std::string map_file, graph_file;
@@ -223,6 +223,7 @@ namespace bwi_guidance_solver {
 
       while(ros::ok()) {
 
+        ROS_WARN_STREAM("1");
         /* restricted_mutex_scope */ {
           boost::mutex::scoped_lock episode_modification_lock(episode_modification_mutex_);
 
@@ -275,6 +276,7 @@ namespace bwi_guidance_solver {
             }
           }
 
+            ROS_WARN_STREAM("2");
 
           if (all_robot_locations_available) {
             bool its_decision_time = false;
@@ -293,8 +295,12 @@ namespace bwi_guidance_solver {
                 system_state_.loc_node = system_state_.loc_prev = loc;
                 system_state_.assist_loc = NONE;
                 system_state_.assist_type = NONE;
+                system_state_.prev_action = WAIT;
+                system_state_.released_locations.clear();
                 ROS_INFO_STREAM_NAMED("base_robot_navigator", "System state at start determined: " << system_state_);
                 wait_start_state_ = system_state_;
+                wait_action_next_states_.clear();
+                ROS_WARN_STREAM("Restart called!");
                 mcts_->restart();
                 // TODO show a please wait message.
                 compute(5.0f);
@@ -302,7 +308,17 @@ namespace bwi_guidance_solver {
                 its_decision_time = true;
               } else {
                 int next_loc;
-                determineHumanTransitionalLocation(human_location_, system_state_.loc_node, next_loc);
+                if (system_state_.prev_action.type == LEAD_PERSON) {
+                  // Check if the assigned robot has completed its navigation action.
+                  // TODO make sure the human is still close by!
+                  if (robot_command_status_[system_state_.prev_action.robot_id] == AT_HELP_DESTINATION_LOCATION) {
+                    next_loc = system_state_.prev_action.node;
+                  } else {
+                    next_loc = system_state_.loc_node;
+                  }
+                } else {
+                  determineHumanTransitionalLocation(human_location_, system_state_.loc_node, next_loc);
+                }
                 if (next_loc != system_state_.loc_node) {
                   if (next_loc == goal_node_id_) {
                     ROS_INFO_STREAM("Reached destination!");
@@ -319,9 +335,8 @@ namespace bwi_guidance_solver {
                     system_state_.loc_node = next_loc;
                     system_state_.assist_type = NONE;
                     system_state_.assist_loc = NONE;
-                    wait_start_state_ = system_state_;
-                    mcts_->restart();
-                    compute(0.1f);
+                    system_state_.prev_action = WAIT;
+                    system_state_.released_locations.clear();
                     its_decision_time = true;
                   }
                 }
@@ -336,6 +351,7 @@ namespace bwi_guidance_solver {
               }
             }
 
+            ROS_WARN_STREAM("3");
             if (its_decision_time) {
               while (true) {
                 Action action = getBestAction();
@@ -365,6 +381,8 @@ namespace bwi_guidance_solver {
                   system_state_ = next_state;
                 } else {
                   // Let's switch to non-deterministic transition logic.
+                  ROS_WARN_STREAM("Restart called!");
+                  mcts_->restart();
                   wait_start_state_ = system_state_;
                   wait_action_next_states_.clear();
                   for (int i = 0; i < 100; ++i) {
@@ -376,12 +394,17 @@ namespace bwi_guidance_solver {
                     model_->takeAction(system_state_, action, unused_reward_value, next_state, unused_terminal, unused_depth_count, master_rng_);
                     wait_action_next_states_.insert(next_state);
                   }
+                  ROS_WARN_STREAM("Expecting the following possible next states after wait action: ");
+                  BOOST_FOREACH(const ExtendedState& ns, wait_action_next_states_) {
+                    ROS_WARN_STREAM("  " << ns);
+                  }
                   wait_action_start_time_ = boost::posix_time::microsec_clock::local_time();
                   break;
                 }
               }
             }
 
+            ROS_WARN_STREAM("4");
             for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
               RobotState &rs = system_state_.robots[robot_idx];
 
@@ -455,10 +478,12 @@ namespace bwi_guidance_solver {
           }
         }
 
+        ROS_WARN_STREAM("5");
         if (!episode_in_progress_) {
           boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f/controller_thread_frequency_));
         } else {
           compute(1.0f/controller_thread_frequency_);
+          //boost::this_thread::sleep(boost::posix_time::milliseconds(1000.0f/controller_thread_frequency_));
         }
 
       }
@@ -551,6 +576,13 @@ namespace bwi_guidance_solver {
     }
 
     Action BaseRobotNavigator::getBestAction() {
+      // ROS_WARN_STREAM("MCTS recommends the following states in table: ");
+      // BOOST_FOREACH(const ExtendedState& next_state, mcts_->immediateNextStatesAfterStartState) {
+      //   ROS_WARN_STREAM("  "  << next_state);
+      // }
+      // ROS_WARN_STREAM("MCTS has following number of states in table: " << mcts_->stateInfoTable.size());
+      // ROS_WARN_STREAM("MCTS State Table: " << mcts_->getStateTableDescription());
+
       // Look through all possible next states and figure out positionally which one we are closest to. Then set
       // the robot locations to that one as long as that does not change the current action set.
       ExtendedState ask_state = system_state_;
@@ -563,28 +595,37 @@ namespace bwi_guidance_solver {
         }
       }
 
-      if (candidates.size() != 1) {
-        ROS_WARN("The size of candidate next states is not 1");
-      }
+      ROS_WARN_STREAM("The size of candidate next states is " << candidates.size());
 
       // TODO you could still probably do this better!
       // Make sure that changing robot values won't change the set of actions.
       BOOST_FOREACH(const ExtendedState& next_state, candidates) {
         ExtendedState temp_state = ask_state;
         for (int robot_idx = 0; robot_idx < next_state.robots.size(); ++robot_idx) {
-          temp_state.robots[robot_idx].loc_u = 
+          temp_state.robots[robot_idx].loc_u =
             next_state.robots[robot_idx].loc_u;
-          temp_state.robots[robot_idx].loc_v = 
+          temp_state.robots[robot_idx].loc_v =
             next_state.robots[robot_idx].loc_v;
-          temp_state.robots[robot_idx].loc_p = 
+          temp_state.robots[robot_idx].loc_p =
             next_state.robots[robot_idx].loc_p;
+          temp_state.robots[robot_idx].tau_t =
+            next_state.robots[robot_idx].tau_t;
+          temp_state.robots[robot_idx].tau_u =
+            next_state.robots[robot_idx].tau_u;
+          temp_state.robots[robot_idx].tau_d =
+            next_state.robots[robot_idx].tau_d;
+          temp_state.robots[robot_idx].tau_total_task_time =
+            next_state.robots[robot_idx].tau_total_task_time;
         }
         std::vector<Action> temp_state_actions;
         model_->getAllActions(temp_state, temp_state_actions);
         if (current_state_actions == temp_state_actions) {
-          ROS_WARN("Close candidate found!");
+          ROS_WARN_STREAM("Close candidate " << next_state << " found!");
+          ROS_WARN_STREAM("  Constructing stsate " << temp_state << " from this candidate!");
           ask_state = temp_state;
           break;
+        } else {
+          ROS_WARN("Resetting values changed action space!");
         }
       }
 
@@ -596,8 +637,9 @@ namespace bwi_guidance_solver {
     }
 
     void BaseRobotNavigator::compute(float timeout) {
+      ROS_WARN("Compute called!");
       unsigned int unused_rollout_termination_count;
-      mcts_->search(wait_start_state_, Action(WAIT), unused_rollout_termination_count, timeout);
+      mcts_->search(wait_start_state_, unused_rollout_termination_count, timeout);
     }
 
   } /* mrn */

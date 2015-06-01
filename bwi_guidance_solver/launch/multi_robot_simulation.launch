@@ -19,8 +19,8 @@
   <group ns="person">
     <arg name="personid" default="person" />
     <include file="$(find bwi_gazebo_entities)/launch/controllable_person.launch">
-      <arg name="x" value="1.2" />
-      <arg name="y" value="1.2" />
+      <arg name="x" value="18.75" />
+      <arg name="y" value="9.0" />
       <arg name="personid" default="$(arg personid)" />
     </include>
     <node name="odom_to_pose" pkg="bwi_guidance_solver" type="odom_to_pose" />

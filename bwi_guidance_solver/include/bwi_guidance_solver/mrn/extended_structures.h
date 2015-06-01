@@ -14,10 +14,12 @@ namespace bwi_guidance_solver {
       /* std::vector<int> robot_provided_help; */
     };
 
-    bool operator<(const ExtendedState& l, const ExtendedState& r); 
+    bool operator<(const ExtendedState& l, const ExtendedState& r);
     bool operator==(const ExtendedState& l, const ExtendedState& r);
 
-    struct ExtendedStateHash { 
+    std::ostream& operator<<(std::ostream& stream, const ExtendedState& s);
+
+    struct ExtendedStateHash {
       ExtendedStateHash() {}
       size_t operator()(const ExtendedState& key) const {
         size_t seed = 0;
@@ -34,10 +36,10 @@ namespace bwi_guidance_solver {
         /* Note that loc_v and precision are ignored here, as they are used for visualization purposes only. */
         return seed;
       }
-    }; 
+    };
 
   } /* mrn */
-  
+
 } /* bwi_guidance_solver */
 
 #endif /* end of include guard: BWI_GUIDANCE_SOLVER_MRN_EXTENDED_STRUCTURE_H */
