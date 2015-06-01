@@ -39,8 +39,8 @@ namespace bwi_guidance_solver {
 
       // TODO: Parametrize!
       controller_thread_frequency_ = 2.0f;
-      avg_human_speed_ = 0.8f;
-      avg_robot_speed_ = 0.6f;
+      avg_human_speed_ = 1.0f;
+      avg_robot_speed_ = 0.5f;
 
       // Read the graph from file.
       std::string map_file, graph_file;
@@ -307,6 +307,7 @@ namespace bwi_guidance_solver {
                 at_episode_start_ = false;
                 its_decision_time = true;
               } else {
+                ROS_WARN_STREAM("2b");
                 int next_loc;
                 if (system_state_.prev_action.type == LEAD_PERSON) {
                   // Check if the assigned robot has completed its navigation action.
@@ -319,6 +320,7 @@ namespace bwi_guidance_solver {
                 } else {
                   determineHumanTransitionalLocation(human_location_, system_state_.loc_node, next_loc);
                 }
+                ROS_WARN_STREAM("2c");
                 if (next_loc != system_state_.loc_node) {
                   if (next_loc == goal_node_id_) {
                     ROS_INFO_STREAM("Reached destination!");
@@ -341,7 +343,9 @@ namespace bwi_guidance_solver {
                   }
                 }
               }
+              ROS_WARN_STREAM("2d");
               publishCurrentSystemState();
+              ROS_WARN_STREAM("2e");
             } else if (terminate_episode_) {
               terminate_episode_ = false;
               for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
@@ -362,6 +366,9 @@ namespace bwi_guidance_solver {
                     pause_robot_ = action.robot_id;
                     bwi_guidance_msgs::UpdateGuidanceGui srv;
                     srv.request.type = bwi_guidance_msgs::UpdateGuidanceGuiRequest::SHOW_ORIENTATION;
+                    bwi_mapper::Point2f ori_dest_pt = getLocationFromGraphId(action.node);
+                    srv.request.orientation_destination.position.x = ori_dest_pt.x;
+                    srv.request.orientation_destination.position.y = ori_dest_pt.y;
                     robot_gui_controller_[action.robot_id]->call(srv);
                   } else if (action.type == LEAD_PERSON) {
                     pause_robot_ = action.robot_id;
