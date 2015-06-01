@@ -221,7 +221,6 @@ namespace bwi_guidance_solver {
 
       ROS_INFO_NAMED("BaseRobotNavigator", "Starting up...");
 
-      // TODO figure out how you want to run this while computing/not-computing given that an instance is in progress.
       while(ros::ok()) {
 
         /* restricted_mutex_scope */ {
@@ -297,7 +296,8 @@ namespace bwi_guidance_solver {
                 ROS_INFO_STREAM_NAMED("base_robot_navigator", "System state at start determined: " << system_state_);
                 wait_start_state_ = system_state_;
                 mcts_->restart();
-                compute(0.1f);
+                // TODO show a please wait message.
+                compute(5.0f);
                 at_episode_start_ = false;
                 its_decision_time = true;
               } else {
@@ -366,6 +366,16 @@ namespace bwi_guidance_solver {
                 } else {
                   // Let's switch to non-deterministic transition logic.
                   wait_start_state_ = system_state_;
+                  wait_action_next_states_.clear();
+                  for (int i = 0; i < 100; ++i) {
+                    // Perform the deterministic transition as per the model
+                    ExtendedState next_state;
+                    bool unused_terminal; /* The resulting state can never be terminal via a non WAIT action */
+                    float unused_reward_value;
+                    int unused_depth_count;
+                    model_->takeAction(system_state_, action, unused_reward_value, next_state, unused_terminal, unused_depth_count, master_rng_);
+                    wait_action_next_states_.insert(next_state);
+                  }
                   wait_action_start_time_ = boost::posix_time::microsec_clock::local_time();
                   break;
                 }
@@ -541,7 +551,44 @@ namespace bwi_guidance_solver {
     }
 
     Action BaseRobotNavigator::getBestAction() {
-      return mcts_->selectWorldAction(system_state_);
+      // Look through all possible next states and figure out positionally which one we are closest to. Then set
+      // the robot locations to that one as long as that does not change the current action set.
+      ExtendedState ask_state = system_state_;
+      std::vector<Action> current_state_actions;
+      model_->getAllActions(system_state_, current_state_actions);
+      std::set<ExtendedState> candidates;
+      BOOST_FOREACH(const ExtendedState& next_state, wait_action_next_states_) {
+        if (next_state.loc_node == system_state_.loc_node) {
+          candidates.insert(next_state);
+        }
+      }
+
+      if (candidates.size() != 1) {
+        ROS_WARN("The size of candidate next states is not 1");
+      }
+
+      // TODO you could still probably do this better!
+      // Make sure that changing robot values won't change the set of actions.
+      BOOST_FOREACH(const ExtendedState& next_state, candidates) {
+        ExtendedState temp_state = ask_state;
+        for (int robot_idx = 0; robot_idx < next_state.robots.size(); ++robot_idx) {
+          temp_state.robots[robot_idx].loc_u = 
+            next_state.robots[robot_idx].loc_u;
+          temp_state.robots[robot_idx].loc_v = 
+            next_state.robots[robot_idx].loc_v;
+          temp_state.robots[robot_idx].loc_p = 
+            next_state.robots[robot_idx].loc_p;
+        }
+        std::vector<Action> temp_state_actions;
+        model_->getAllActions(temp_state, temp_state_actions);
+        if (current_state_actions == temp_state_actions) {
+          ROS_WARN("Close candidate found!");
+          ask_state = temp_state;
+          break;
+        }
+      }
+
+      return mcts_->selectWorldAction(ask_state);
     }
 
     void BaseRobotNavigator::getNextTaskForRobot(int robot_id, RobotState &rs) {
@@ -550,7 +597,7 @@ namespace bwi_guidance_solver {
 
     void BaseRobotNavigator::compute(float timeout) {
       unsigned int unused_rollout_termination_count;
-      mcts_->search(wait_start_state_, unused_rollout_termination_count, timeout);
+      mcts_->search(wait_start_state_, Action(WAIT), unused_rollout_termination_count, timeout);
     }
 
   } /* mrn */

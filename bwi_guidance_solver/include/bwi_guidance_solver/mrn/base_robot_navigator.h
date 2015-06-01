@@ -99,7 +99,6 @@ namespace bwi_guidance_solver {
         bwi_mapper::Point2f getLocationFromGraphId(int destination);
 
         ExtendedState system_state_;
-        ExtendedState wait_start_state_;
         boost::mutex episode_modification_mutex_;
 
         boost::shared_ptr<ros::NodeHandle> nh_;
@@ -112,7 +111,9 @@ namespace bwi_guidance_solver {
 
         int goal_node_id_;
         int pause_robot_;
+        ExtendedState wait_start_state_;
         boost::posix_time::ptime wait_action_start_time_;
+        std::set<ExtendedState> wait_action_next_states_;
 
         boost::shared_ptr<boost::thread> controller_thread_;
         void runControllerThread();
