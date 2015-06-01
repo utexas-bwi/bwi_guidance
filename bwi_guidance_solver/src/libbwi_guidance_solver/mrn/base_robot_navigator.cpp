@@ -293,6 +293,7 @@ namespace bwi_guidance_solver {
                 int loc;
                 determineStartLocation(human_location_, loc);
                 system_state_.loc_node = system_state_.loc_prev = loc;
+                system_state_.loc_p = 0.0f;
                 system_state_.assist_loc = NONE;
                 system_state_.assist_type = NONE;
                 system_state_.prev_action = WAIT;
@@ -529,7 +530,9 @@ namespace bwi_guidance_solver {
       int next_graph_id = bwi_mapper::getClosestEdgeOnGraphGivenId(human_grid_pt, graph_, current_loc);
       bwi_mapper::Point2f current_pt = getLocationFromGraphId(current_loc);
       bwi_mapper::Point2f next_pt = getLocationFromGraphId(next_graph_id);
-      if (bwi_mapper::getMagnitude(next_pt - human_pt) <= 1.5f) {
+      // ROS_WARN_STREAM("Human's current location: " << current_pt << " and next_pt " << next_pt);
+      // ROS_WARN_STREAM("  Diff in magnitude: " << bwi_mapper::getMagnitude(next_pt - human_pt));
+      if (bwi_mapper::getMagnitude(next_pt - human_pt) <= 2.0f) {
         next_loc = next_graph_id;
       } else {
         next_loc = current_loc;
