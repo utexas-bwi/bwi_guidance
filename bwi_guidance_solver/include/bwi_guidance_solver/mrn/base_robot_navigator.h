@@ -77,12 +77,7 @@ namespace bwi_guidance_solver {
 
         // This is a step of time during WAIT where UCT can do its things. The timeout is based on the frequency of the
         // controller thread minus the processing time required by that thread.
-        // Do nothing in this function by default.
-        virtual void compute(float timeout);
-
-        // TODO: Move to common
-        void produceDirectedArrow(float orientation, cv::Mat& image);
-        void produceDirectedArrowAlt(float orientation, cv::Mat& image);
+        virtual void compute(float timeout, bool first_action_wait = false);
 
       protected:
 
@@ -111,7 +106,7 @@ namespace bwi_guidance_solver {
 
         int goal_node_id_;
         int pause_robot_;
-        ExtendedState wait_start_state_;
+        ExtendedState mcts_search_start_state_;
         boost::posix_time::ptime wait_action_start_time_;
         std::set<ExtendedState> wait_action_next_states_;
 
