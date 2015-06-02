@@ -114,6 +114,7 @@ namespace bwi_guidance_solver {
         default_policy->initialize(domain_params, empty_json, map_, graph_, empty_robot_home_base, base_directory);
         default_policy->reset(0, goal_node_id_);
         MultiThreadedMCTS<ExtendedState, ExtendedStateHash, Action>::Params mcts_params;
+        mcts_params.numThreads = 4;
 
         mcts_.reset(new MultiThreadedMCTS<ExtendedState, ExtendedStateHash, Action>(default_policy,
                                                                                     mcts_model_updator,
