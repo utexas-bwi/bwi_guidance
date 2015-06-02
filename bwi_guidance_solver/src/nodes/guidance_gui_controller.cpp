@@ -24,8 +24,9 @@ boost::shared_ptr<actionlib::SimpleActionClient<bwi_guidance_msgs::MultiRobotNav
 ros::ServiceClient gui_service;
 
 std::string tf_prefix;
+std::string robot_name;
 ros::Publisher image_publisher;
-cv::Mat blank_image, u_turn_image, up_arrow_image;
+cv::Mat u_turn_image, up_arrow_image;
 geometry_msgs::Pose robot_location;
 
 void monitorEpisodeStartThread() {
@@ -71,6 +72,11 @@ void displayImage(const cv::Mat& image) {
 }
 
 void clearImage() {
+  cv::Mat blank_image = cv::Mat::zeros(120, 160, CV_8UC3);
+  if (!robot_name.empty()) {
+    cv::putText(blank_image, ("Hi! I'm " + robot_name), cv::Point2f(10, 25),
+                CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 215, 255), 2);
+  }
   displayImage(blank_image);
 }
 
@@ -121,8 +127,12 @@ void showArrowToDestination(const geometry_msgs::Pose &orientation_destination) 
 
 void showFollowMeImage() {
   cv::Mat image = cv::Mat::zeros(120, 160, CV_8UC3);
-  cv::putText(image, "Follow Me!", cv::Point2f(10, image.rows/2-10),
-              CV_FONT_HERSHEY_SIMPLEX, 1.0, cv::Scalar(0, 215, 255), 4);
+  if (!robot_name.empty()) {
+    cv::putText(image, ("Hi! I'm " + robot_name), cv::Point2f(10, 25),
+                CV_FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 215, 255), 2);
+  }
+  cv::putText(image, "Follow Me!", cv::Point2f(10, image.rows/2-5),
+              CV_FONT_HERSHEY_SIMPLEX, 0.95, cv::Scalar(0, 215, 255), 4);
   displayImage(image);
 }
 
@@ -201,13 +211,15 @@ int main(int argc, char **argv) {
     tf_prefix = tf_prefix + "/";
   }
 
+  robot_name = tf_prefix.substr(0, tf_prefix.size() - 1);
+  if (!robot_name.empty()) {
+    robot_name[0] = toupper(robot_name[0]);
+  }
+
   private_nh.param<std::string>("up_arrow_image", up_arrow_image_file, images_dir + "/Up.png");
   up_arrow_image = cv::imread(up_arrow_image_file);
   private_nh.param<std::string>("u_turn_image", u_turn_image_file, images_dir + "/UTurn.png");
   u_turn_image = cv::imread(u_turn_image_file);
-
-  // TODO parametrize the image height and width.
-  blank_image = cv::Mat::zeros(120, 160, CV_8UC3);
 
   mrn_client.reset(new actionlib::SimpleActionClient<bwi_guidance_msgs::MultiRobotNavigationAction>("/guidance", true));
   ROS_INFO_NAMED("guidance_gui_controller", "Waiting for guidance action server.");
@@ -220,6 +232,7 @@ int main(int argc, char **argv) {
   ROS_INFO_NAMED("guidance_gui_controller", "Waiting for segbot_gui service.");
   gui_service.waitForExistence();
   ROS_INFO_NAMED("guidance_gui_controller", "segbot_gui service found.");
+
 
   image_publisher = nh.advertise<sensor_msgs::Image>("image", 1);
   ros::Subscriber robot_location_subscriber = nh.subscribe("amcl_pose", 1, locationHandler);
