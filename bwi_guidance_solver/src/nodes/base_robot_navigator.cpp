@@ -1,4 +1,5 @@
 #include <bwi_guidance_solver/mrn/base_robot_navigator.h>
+#include <yaml-cpp/yaml.h>
 
 using namespace bwi_guidance_solver::mrn;
 
@@ -6,6 +7,36 @@ bool waiting_for_robots = true;
 boost::shared_ptr<TaskGenerationModel> model;
 std::vector<std::string> available_robot_list;
 std::vector<std::vector<int> > task_list;
+
+std::map<std::string, std::vector<int> > robot_tasks_from_yaml;
+
+void readRobotTasksFromFile(std::string &filename) {
+
+  ROS_WARN_STREAM("Reading file: " << filename);
+  std::ifstream fin(filename.c_str());
+  YAML::Node doc;
+#ifdef HAVE_NEW_YAMLCPP
+  doc = YAML::Load(fin);
+#else
+  YAML::Parser parser(fin);
+  parser.GetNextDocument(doc);
+#endif
+  for (size_t i = 0; i < doc.size(); ++i) {
+    std::string key;
+    doc[i]["name"] >> key;
+    ROS_WARN_STREAM("Found robot " << key);
+    std::vector<int> tasks;
+    const YAML::Node& tasks_node = doc[i]["tasks"];
+    for (size_t j = 0; j < tasks_node.size(); ++j) {
+      int task;
+      tasks_node[j] >> task;
+      tasks.push_back(task);
+    }
+    robot_tasks_from_yaml[key] = tasks;
+  }
+  fin.close();
+
+}
 
 class SimpleTaskGenerationModel : public TaskGenerationModel {
 
@@ -19,13 +50,13 @@ class SimpleTaskGenerationModel : public TaskGenerationModel {
           robot.tau_d = task_list[robot_id][0];
           robot.tau_t = 0.0f;
           robot.tau_total_task_time = 30.0f;
-          robot.tau_u = 0.0f;
+          robot.tau_u = 0.5f;
           break;
         } else if (task_list[robot_id][i] == robot.tau_d) {
           robot.tau_d = task_list[robot_id][(i+1)%task_list[robot_id].size()];
           robot.tau_t = 0.0f;
           robot.tau_total_task_time = 30.0f;
-          robot.tau_u = 0.0f;
+          robot.tau_u = 0.5f;
           break;
         }
       }
@@ -58,31 +89,21 @@ int main(int argc, char **argv) {
     boost::this_thread::sleep(boost::posix_time::milliseconds(50));
   }
 
+  ros::NodeHandle private_nh("~");
+  std::string tasks_file;
+  if (!private_nh.getParam("tasks_file", tasks_file)) {
+    ROS_FATAL("Tasks file parameter ~tasks_file not specified!");
+    return -1;
+  }
+  readRobotTasksFromFile(tasks_file);
+
   BOOST_FOREACH(const std::string &robot_name, available_robot_list) {
-    std::vector<int> robot_task_list;
-    if (robot_name == "marvin") {
-      robot_task_list.push_back(42);
-      robot_task_list.push_back(44);
-      robot_task_list.push_back(43);
-      robot_task_list.push_back(41);
-      robot_task_list.push_back(39);
-      robot_task_list.push_back(38);
-      robot_task_list.push_back(37);
-      robot_task_list.push_back(40);
-    } else if (robot_name == "roberto") {
-      robot_task_list.push_back(13);
-      robot_task_list.push_back(47);
-      robot_task_list.push_back(46);
-      robot_task_list.push_back(45);
-      robot_task_list.push_back(48);
+    if (robot_tasks_from_yaml.find(robot_name) != robot_tasks_from_yaml.end()) {
+      task_list.push_back(robot_tasks_from_yaml[robot_name]);
     } else {
-      robot_task_list.push_back(21);
-      robot_task_list.push_back(26);
-      robot_task_list.push_back(27);
-      robot_task_list.push_back(28);
-      robot_task_list.push_back(17);
+      ROS_FATAL_STREAM("Robot " + robot_name + " is available, but no tasks provided for this robot!");
+      return -1;
     }
-    task_list.push_back(robot_task_list);
   }
 
   model.reset(new SimpleTaskGenerationModel());

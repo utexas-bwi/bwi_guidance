@@ -1,0 +1,6 @@
+- name: "marvin"
+  tasks: [42, 44, 43, 41, 39, 38, 37, 40]
+- name: "roberto"
+  tasks: [13, 47, 46, 45, 48]
+- name: "bender"
+  tasks: [21, 26, 27, 28, 17]
