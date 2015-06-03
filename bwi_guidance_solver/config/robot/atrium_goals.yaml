@@ -1,0 +1,10 @@
+- name: "Purchasing Office"
+  node: 17
+- name: "Auditorium Back"
+  node: 4
+- name: "Coffee Shop"
+  node: 15
+- name: "Auditorium Front"
+  node: 5
+- name: "GDC Entrance"
+  node: 13

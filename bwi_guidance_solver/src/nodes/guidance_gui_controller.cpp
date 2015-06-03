@@ -4,6 +4,7 @@
 #include <boost/thread/thread.hpp>
 #include <boost/foreach.hpp>
 #include <bwi_msgs/QuestionDialog.h>
+#include <fstream>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <opencv/highgui.h>
 #include <opencv/cv.h>
@@ -11,6 +12,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/image_encodings.h>
 #include <tf/transform_datatypes.h>
+#include <yaml-cpp/yaml.h>
 
 #include <bwi_guidance_msgs/MultiRobotNavigationAction.h>
 #include <bwi_guidance_msgs/UpdateGuidanceGui.h>
@@ -28,6 +30,28 @@ std::string robot_name;
 ros::Publisher image_publisher;
 cv::Mat u_turn_image, up_arrow_image;
 geometry_msgs::Pose robot_location;
+
+void readGoalsFromFile(std::string &filename) {
+
+  std::ifstream fin(filename.c_str());
+  YAML::Node doc;
+#ifdef HAVE_NEW_YAMLCPP
+  doc = YAML::Load(fin);
+#else
+  YAML::Parser parser(fin);
+  parser.GetNextDocument(doc);
+#endif
+  for (size_t i = 0; i < doc.size(); ++i) {
+    std::string name;
+    int node;
+    doc[i]["name"] >> name;
+    doc[i]["node"] >> node;
+    goal_names.push_back(name);
+    goal_graph_ids.push_back(node);
+  }
+  fin.close();
+
+}
 
 void monitorEpisodeStartThread() {
   bwi_msgs::QuestionDialog srv;
@@ -201,17 +225,18 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "guidance_gui_controller");
   ros::NodeHandle nh, private_nh("~");
 
-  // TODO paramtrize
-  goal_names.push_back("top-left");
-  goal_graph_ids.push_back(27);
-  goal_names.push_back("top-right");
-  goal_graph_ids.push_back(23);
-  goal_names.push_back("bottom-left");
-  goal_graph_ids.push_back(42);
-  goal_names.push_back("bottom-right");
-  goal_graph_ids.push_back(8);
-  goal_names.push_back("center");
-  goal_graph_ids.push_back(39);
+  std::string goals_file_param_key;
+  std::string goals_file;
+  if (private_nh.searchParam("goals_file", goals_file_param_key)) {
+    if (!private_nh.getParam(goals_file_param_key, goals_file)) {
+      ROS_FATAL("Goals file parameter goals_file not specified!");
+      return -1;
+    }
+  } else {
+    ROS_FATAL("Goals file parameter goals_file not specified!");
+    return -1;
+  }
+  readGoalsFromFile(goals_file);
 
   // Read images from parameters
   std::string up_arrow_image_file, u_turn_image_file;

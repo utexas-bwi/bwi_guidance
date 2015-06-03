@@ -2,6 +2,8 @@
 
   <arg name="multimap_file" default="$(find utexas_gdc)/maps/simulation/multimap/2_only_multimap.yaml" />
 
+  <param name="goals_file" value="$(find bwi_guidance_solver)/config/robot/atrium_goals.yaml" />
+
   <!-- start the simulation environment -->
   <include file="$(find utexas_gdc)/launch/simulation_2.launch" />
 
@@ -19,8 +21,9 @@
   <group ns="person">
     <arg name="personid" default="person" />
     <include file="$(find bwi_gazebo_entities)/launch/controllable_person.launch">
-      <arg name="x" value="5.5" />
-      <arg name="y" value="23" />
+      <arg name="x" value="56" />
+      <arg name="y" value="60" />
+      <arg name="yaw" value="0" />
       <arg name="personid" default="$(arg personid)" />
     </include>
     <node name="odom_to_pose" pkg="bwi_guidance_solver" type="odom_to_pose" />
@@ -31,8 +34,9 @@
 
   <!-- Launch the base robot navigator -->
   <node name="base_robot_navigator" pkg="bwi_guidance_solver" type="base_robot_navigator">
-    <param name="map_file" value="$(find bwi_guidance)/maps/map3.yaml" />
-    <param name="graph_file" value="$(find bwi_guidance)/maps/graph_map3.yaml" />
+    <param name="map_file" value="$(find utexas_gdc)/maps/simulation/2/2.yaml" />
+    <param name="graph_file" value="$(find bwi_guidance_solver)/maps/graph_2.yaml" />
+    <param name="tasks_file" value="$(find bwi_guidance_solver)/config/robot/atrium_task_list.yaml" />
   </node>
 
 </launch>

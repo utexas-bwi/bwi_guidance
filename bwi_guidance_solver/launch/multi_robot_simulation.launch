@@ -2,6 +2,8 @@
 
   <arg name="multimap_file" default="$(find bwi_guidance)/maps/multimap.yaml" />
 
+  <param name="goals_file" value="$(find bwi_guidance_solver)/config/robot/map3_goals.yaml" />
+
   <!-- start the simulation environment -->
   <include file="$(find bwi_guidance)/launch/map3_gazebo.launch" />
 

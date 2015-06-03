@@ -72,7 +72,7 @@ namespace bwi_guidance_solver {
       human_location_subscriber_ = nh_->subscribe("/person/pose", 1, &BaseRobotNavigator::humanLocationHandler, this);
 
       cvStartWindowThread();
-      cv::namedWindow("out");
+      cv::namedWindow("out", cv::WINDOW_NORMAL);
 
     }
 
@@ -439,6 +439,15 @@ namespace bwi_guidance_solver {
 
                   // Note that the RNG won't be used as it is a deterministic action.
                   model_->takeAction(system_state_, action, unused_reward_value, next_state, unused_terminal, unused_depth_count, master_rng_);
+
+                  // If a robot was assigned a task, and it is not exactly at the location it was at, then reset the nav
+                  // task.
+                  for (int robot_idx = 0; robot_idx < system_state_.robots.size(); ++robot_idx) {
+                    if (system_state_.robots[robot_idx].help_destination != next_state.robots[robot_idx].help_destination) {
+                      robot_command_status_[robot_idx] = SERVICE_TASK_NAVIGATION_RESET;
+                    }
+                  }
+
                   system_state_ = next_state;
                 } else {
                   // Let's switch to non-deterministic transition logic.

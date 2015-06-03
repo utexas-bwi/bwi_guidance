@@ -1,0 +1,10 @@
+- name: "TL"
+  node: 27
+- name: "TR"
+  node: 23
+- name: "BL"
+  node: 42
+- name: "BR"
+  node: 8
+- name: "C"
+  node: 39

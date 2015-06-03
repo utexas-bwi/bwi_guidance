@@ -12,7 +12,6 @@ std::map<std::string, std::vector<int> > robot_tasks_from_yaml;
 
 void readRobotTasksFromFile(std::string &filename) {
 
-  ROS_WARN_STREAM("Reading file: " << filename);
   std::ifstream fin(filename.c_str());
   YAML::Node doc;
 #ifdef HAVE_NEW_YAMLCPP
@@ -24,7 +23,6 @@ void readRobotTasksFromFile(std::string &filename) {
   for (size_t i = 0; i < doc.size(); ++i) {
     std::string key;
     doc[i]["name"] >> key;
-    ROS_WARN_STREAM("Found robot " << key);
     std::vector<int> tasks;
     const YAML::Node& tasks_node = doc[i]["tasks"];
     for (size_t j = 0; j < tasks_node.size(); ++j) {
@@ -50,13 +48,13 @@ class SimpleTaskGenerationModel : public TaskGenerationModel {
           robot.tau_d = task_list[robot_id][0];
           robot.tau_t = 0.0f;
           robot.tau_total_task_time = 30.0f;
-          robot.tau_u = 0.5f;
+          robot.tau_u = 0.0f;
           break;
         } else if (task_list[robot_id][i] == robot.tau_d) {
           robot.tau_d = task_list[robot_id][(i+1)%task_list[robot_id].size()];
           robot.tau_t = 0.0f;
           robot.tau_total_task_time = 30.0f;
-          robot.tau_u = 0.5f;
+          robot.tau_u = 0.0f;
           break;
         }
       }

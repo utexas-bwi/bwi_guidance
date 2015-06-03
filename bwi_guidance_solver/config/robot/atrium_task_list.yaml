@@ -1,6 +1,6 @@
 - name: "marvin"
   tasks: [3, 5, 6, 5]
 - name: "roberto"
-  tasks: [12, 10, 11, 10]
+  tasks: [10, 12, 10, 11]
 - name: "bender"
-  tasks: [14, 16, 0, 16]
+  tasks: [16, 0, 16, 14]
