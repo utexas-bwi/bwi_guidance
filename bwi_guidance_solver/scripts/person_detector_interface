@@ -1,0 +1,47 @@
+#! /usr/bin/env python
+
+import actionlib
+from geometry_msgs.msg import Pose, PoseWithCovarianceStamped
+import move_base_msgs.msg
+import rospy
+
+class MoveBaseAction(object):
+
+  def __init__(self, name):
+      self._action_name = name
+      self._pub = rospy.Publisher('pose', PoseWithCovarianceStamped)
+      self._robot_pose_pub = rospy.Publisher('/robot_pose', Pose, latch=True)
+      temp_pose = Pose()
+      temp_pose.orientation.w = 1.0
+      self._robot_pose_pub.publish(temp_pose)
+      self._as = actionlib.SimpleActionServer(self._action_name,
+                                              move_base_msgs.msg.MoveBaseAction,
+                                              execute_cb=self.execute_cb,
+                                              auto_start = False)
+      self.global_frame_id = rospy.get_param('global_frame_id', 'map')
+      self._as.start()
+
+  def execute_cb(self, goal):
+
+      # immediately republish entered location as feedback.
+      feedback = move_base_msgs.msg.MoveBaseFeedback()
+      feedback.base_position = goal.target_pose
+      self._as.publish_feedback(feedback)
+
+      msg = PoseWithCovarianceStamped()
+      msg.header.frame_id = self.global_frame_id
+      msg.header.stamp = rospy.get_rostime()
+      msg.pose.covariance = [0.0] * 36
+      msg.pose.covariance[0] = 0.5
+      msg.pose.covariance[7] = 0.5
+      msg.pose.covariance[35] = 0.5
+      msg.pose.pose = goal.target_pose.pose
+      self._pub.publish(msg)
+      self._robot_pose_pub.publish(msg.pose.pose)
+
+      self._as.set_succeeded()
+
+if __name__ == '__main__':
+    rospy.init_node('person_detector_interface')
+    MoveBaseAction(rospy.get_name())
+    rospy.spin()

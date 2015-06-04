@@ -14,7 +14,7 @@
 
   <node name="multi_robot_launcher" pkg="bwi_launch" type="multi_robot_launcher">
     <rosparam command="load" param="configuration" file="$(find bwi_guidance_solver)/config/simulation.yaml" />
-    <param name="launch_file" value="$(find bwi_guidance_solver)/launch/single_robot.launch.xml" />
+    <param name="launch_file" value="$(find bwi_guidance_solver)/launch/robot/single_robot.launch.xml" />
   </node>
 
   <!-- Launch the person -->

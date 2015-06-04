@@ -1,0 +1,17 @@
+<launch>
+
+  <!-- multimap -->
+  <arg name="multimap_file" default="$(find utexas_gdc)/maps/simulation/multimap/2_only_multimap.yaml" />
+  <node name="multi_level_map_server" pkg="multi_level_map_server" type="multi_level_map_server">
+    <param name="map_file" value="$(arg multimap_file)" />
+  </node>
+
+  <!-- rosbridge -->
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" >
+    <arg name="port" value="8080"/>
+  </include>
+
+  <!-- person detector interface that connects to the main web service. -->
+  <node name="person_detector_interface" type="person_detector_interface" pkg="bwi_guidance_solver" />
+
+</launch>
