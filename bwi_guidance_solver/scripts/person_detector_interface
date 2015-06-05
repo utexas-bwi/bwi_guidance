@@ -8,13 +8,12 @@ import rospy
 class MoveBaseAction(object):
 
   def __init__(self, name):
-      self._action_name = name
       self._pub = rospy.Publisher('pose', PoseWithCovarianceStamped)
       self._robot_pose_pub = rospy.Publisher('/robot_pose', Pose, latch=True)
       temp_pose = Pose()
       temp_pose.orientation.w = 1.0
       self._robot_pose_pub.publish(temp_pose)
-      self._as = actionlib.SimpleActionServer(self._action_name,
+      self._as = actionlib.SimpleActionServer('person_detector_interface',
                                               move_base_msgs.msg.MoveBaseAction,
                                               execute_cb=self.execute_cb,
                                               auto_start = False)
@@ -43,5 +42,5 @@ class MoveBaseAction(object):
 
 if __name__ == '__main__':
     rospy.init_node('person_detector_interface')
-    MoveBaseAction(rospy.get_name())
+    MoveBaseAction()
     rospy.spin()
