@@ -28,9 +28,8 @@
     </include>
     <node name="odom_to_pose" pkg="bwi_guidance_solver" type="odom_to_pose" />
   </group>
-  <node name="person_visualizer" pkg="rqt_gui" type="rqt_gui" args="--perspective-file $(find bwi_guidance_solver)/perspectives/person.perspective">
-    <remap from="/image" to="/person/camera/rgb/image_raw" />
-  </node>
+
+  <node name="person_visualizer" pkg="rqt_gui" type="rqt_gui" args="--perspective-file $(find bwi_guidance_solver)/perspectives/person.perspective" />
 
   <!-- Launch the base robot navigator -->
   <node name="base_robot_navigator" pkg="bwi_guidance_solver" type="base_robot_navigator">
