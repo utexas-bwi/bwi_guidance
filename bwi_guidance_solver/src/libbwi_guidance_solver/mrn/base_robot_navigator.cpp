@@ -69,7 +69,7 @@ namespace bwi_guidance_solver {
       human_decision_model_.reset(new HumanDecisionModel(graph_));
 
       human_location_available_ = false;
-      human_location_subscriber_ = nh_->subscribe("/person/pose", 1, &BaseRobotNavigator::humanLocationHandler, this);
+      human_location_subscriber_ = nh_->subscribe("person/pose", 1, &BaseRobotNavigator::humanLocationHandler, this);
 
       cvStartWindowThread();
       cv::namedWindow("out", cv::WINDOW_NORMAL);
